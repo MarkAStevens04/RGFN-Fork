@@ -232,3 +232,5 @@ experiments/**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*/
 !experiments/**/*_results.csv
 
 oracle/drd2_current.pkl
+
+validation/lsdflow/results/seh_rgfn_pilot/graph.gpickle

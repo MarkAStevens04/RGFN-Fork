@@ -1038,3 +1038,81 @@ timestamped dir (second granularity) and clobbered each other's rewrite-each-rou
 `run_name = <config>/<acq>_seed<seed>/<timestamp>` so concurrent arms/seeds never share a dir
 (required for the 6-job campaign). Pilot curve committed at
 `validation/results/6td3_acquisition_curve_pilot/`.
+
+---
+
+## LSD-Flow phase-1 vertical slice (2026-07-08) — post-hoc hub selection
+
+Built the first slice of **LSD-Flow** (`docs/LSD_FLOW_PROPOSAL.md`): post-hoc extraction of
+batchable "synthetic neighborhoods" (hubs) from a trained reaction GFN, split across the two
+axes exactly as the proposal §3 prescribes. This is the successor to the removed hub-analysis
+pipeline (see the memory note); none of the old code was resurrected.
+
+**Production side — `glue/` (the acquisition primitives; the AL loop imports these):**
+- `glue/metrics/lsdflow_flow.py` — the §2 flow recovery in log space:
+  `log F_hat(h;x) = logR + logP_B − logP_F(move) − logP_F(stop)`, plus `logsumexp`, the
+  median-consensus and total-terminating aggregators, and the reward-free `logZ`-shifted
+  visitation estimate.
+- `glue/metrics/uncertainty.py` — `U(h)` = population variance of the per-child log-flow
+  estimates (the flow-matching residual) + `effective_sample_count`.
+- `glue/samplers/lsdflow/` — `records.py` (the model-agnostic `FlowRecord` + the HubDAG-shaped
+  duck-type protocols); `dag.py` (`LiteHubDAG`, the lightweight in-loop aggregation; children
+  deduped by canonical key so `U(h)` isn't deflated by resampling); `rgfn_extract.py` (the
+  rgfn-native trajectory→`FlowRecord` extraction — composes the last reaction's A/B/C
+  micro-steps into one move, reads the final stop micro-step as `P_F(stop|x)`, and the C-step
+  backward log-prob as the learned `P_B`; shared with the validation RGFN adapter);
+  `hub/` (6 strategies — highest_terminating_flow, highest_flow, most_modes, parent_of_topk
+  [control], highest_visitation [reward-free], lowest_uncertainty — all `@gin.configurable`,
+  protocol-pure, + registry); `molecule/` (topk_reward, prob_weighted [Efraimidis–Spirakis
+  weighted-without-replacement], uniform_random + registry); `acquisition.py`
+  (`LSDFlowAcquisition`, the AL-facing entry point: trajectories+objective → flat molecule
+  batch; `select_grouped` keeps hub→children for the amortized-cost accounting).
+- Wired into gin discovery via `glue/samplers/__init__.py` + `glue/metrics/__init__.py`
+  (both already on the `glue.registry` path).
+
+**Validation side — `validation/lsdflow/` (analysis; imports `glue/`, never imported back):**
+- `adapters/` — `base.py` (`GFNAdapter` ABC + `FlowSample` canonical schema; the §4b
+  six-method contract, with the phase-2 enumeration methods raising a clear NotImplementedError
+  so an un-wired capability fails loudly); `rgfn_adapter.py` (the in-process RGFN anchor:
+  rebuilds objective + the **pure-policy** `valid_sampler` from a gin config + checkpoint,
+  loads `last_gfn.pt`, samples, extracts flow records); `registry.py` (declares all four
+  targets + env + build status; only RGFN wired); `workers/` (documented placeholder for the
+  cross-env SCENT/FragGFN/RxnFlow subprocess workers — phase 3-4).
+- `dag/` — `node.py` (canonical stereo-stripped cross-model key, §6); `graph.py` (`HubDAG`:
+  wraps `LiteHubDAG` for the strategy-facing duck type, adds a networkx view + per-node stats +
+  CSV/JSON/gpickle persistence keyed by model×reward×run); `build.py`.
+- `metrics/` — `diversity.py` (Butina modes on ECFP4 @ Tanimoto 0.65 + Bemis-Murcko
+  scaffolds, §11); `cost/` (reactions-per-mode PRIMARY: hub batch = depth(h)+k vs independent
+  = Σ depth(x_j); amortization-ratio declared for phase 2).
+- `harness/` — `config.py` (`LSDFlowRunConfig`) + `run.py` (the vertical-slice driver:
+  sample → build DAG → rank hubs under every strategy → run acquisition combos through
+  cost/modes → the flow-vs-visitation TB-integrity diagnostic → persist). `matrix.py` (full
+  sweep) and `analysis/` (severe tests, hub-coincidence, pareto) are declared, not built.
+
+**Verified on the Balam login node** (GFN inference only, no docking; `rgfn-smoke-env.sh`):
+pure-logic unit test of the aggregation + all strategies + acquisition (synthetic records)
+passes; the RGFN adapter builds from `configs/glue/fixed_reward_seh_proxy_stdlib.gin` +
+the `seh_proxy_stdlib` checkpoint and runs the whole slice end-to-end (300-traj smoke: flow
+recovery, `U(h)`, all 6 strategies, acquisition + reactions-per-mode, DAG persistence). One
+fix needed: import `Trainer` explicitly in the adapter to register the gin configurable (as
+`scripts/*.py` do). **Empirical finding under investigation:** sampled penultimate hubs are
+*sparse* — at 300 trajectories only 2/292 hubs had ≥2 terminal children (max 2), because a
+hub only accrues a child when a trajectory *stops exactly one reaction later*, and most
+trajectories through a hub continue deeper. A 20k-trajectory characterization run is in flight
+to see how multichild-hub density scales; this directly bears on whether phase-2
+`enumerate_children` (enumerate a selected hub's terminal children rather than waiting for
+sampling to hit them) is needed for the thesis. **NOT YET:** git commit; loop integration of
+`LSDFlowAcquisition` (needs a small `glue/active_learning/loop.py` change — the current loop
+has no pluggable-sampler hook, contra proposal §4a); the matrix/analysis modules; SCENT/
+FragGFN/RxnFlow adapters.
+
+**Correction + result (same day, Logs/025).** The 300-traj smoke and 20k run above were on the
+wrong checkpoint — `seh_proxy_stdlib/2026-07-02_13-45-03` is a **cancelled 30-iteration** stub,
+not the completed run. `seh_proxy_stdlib/` holds three timestamped dirs (jobs 69613/69615/69616);
+only **`2026-07-02_14-59-53`** is the completed 5,001-iter model (verified via `metrics['epoch']`
++ `candidates.csv` matching Logs/020). Re-ran the 10k slice on the correct checkpoint: **613/8183
+multi-child hubs (max 9), reactions-per-mode 3.55 hub vs 6.24 independent (~40% saving).** Severe-
+test caveats: 91% of multi-child hubs sit at the `max_num_reactions` boundary (forced stop); flow
+ranking ties the `parent_of_topk` control on cost (3.55 vs 3.47); flow-vs-visitation correlation
+~0 (0.086). Added a checkpoint-provenance caution to `validation/lsdflow/README.md`. Results:
+`validation/lsdflow/results/seh_rgfn_pilot/`.

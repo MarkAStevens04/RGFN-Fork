@@ -9,4 +9,9 @@ upstream `SamplerBase` (`rgfn/api/sampler_base.py`).
 Import new sampler modules below so `glue.registry` registers them.
 """
 
+# LSD-Flow post-hoc hub selection (docs/LSD_FLOW_PROPOSAL.md §3a): hub selection IS a
+# batch-selection strategy, so it lives here. Importing registers the @gin.configurable
+# hub/molecule strategies + LSDFlowAcquisition.
+from glue.samplers import lsdflow  # noqa: F401
+
 # from glue.samplers.diversity_sampler import DiversitySampler  # noqa: F401
