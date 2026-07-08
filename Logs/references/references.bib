@@ -33,7 +33,7 @@
   year      = {2022},
   eprint    = {2201.13259},
   archivePrefix = {arXiv},
-  note      = {The training objective RGFN optimizes (configs/objectives/trajectory_balance.gin): learns P_F, P_B and a single global Z, but no per-state flow F(s). Basis for the balance-based flow estimate F(h)=R(x)P_B(h|x)/P_F(x|h) in glue/analysis/tb_flow.py.}
+  note      = {The training objective RGFN optimizes (configs/objectives/trajectory_balance.gin): learns P_F, P_B and a single global Z, but no per-state flow F(s) -- which is why per-state flow must be recovered post-hoc from the balance condition F(h)=R(x)P_B(h|x)/P_F(x|h).}
 }
 
 % --- Baselines: synthesis-aware generators we compare against ---

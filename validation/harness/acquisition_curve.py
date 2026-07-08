@@ -31,7 +31,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
-# Okabe-Ito colourblind-safe palette (matches glue/analysis/plot.py), keyed by arm.
+# Okabe-Ito colourblind-safe palette, keyed by arm.
 _ARM_COLOR = {
     "policy": "#0072B2",  # blue  — the learned RGFN acquisition
     "random": "#D55E00",  # vermillion — the uniform-policy baseline

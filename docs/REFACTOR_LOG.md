@@ -985,44 +985,6 @@ FragGFN cross-env (69693) both COMPLETED with conformant candidates and 100% per
 success while torch trains. Imports/gin-parse/py_compile all pass. **NOT YET**: the full matrix
 launch (awaiting user go-ahead) and a `git` commit. rgfn/ + upstream configs untouched.
 
-## 2026-07-03 — `glue/analysis/`: trained-GFN hub-based late-stage-diversification pipeline
-
-New **post-hoc analysis** subpackage for a *trained* reaction-GFN. Goal: select the `m`
-highest-value **pre-terminal hubs** (shared `ReactionStateA` intermediates) and diversify
-each in parallel via a single diverging final reaction (late-stage diversification), then
-trade **diversity** against **concurrency** (# lanes) or **cost** (shared intermediate) — the
-infrastructure to build that Pareto front, not the front itself.
-
-- **`glue/analysis/`** — modular, registry-driven, NOT gin (driven by `scripts/analyze_gfn.py`
-  + a Python/JSON `SweepSpec`), so intentionally NOT imported by `glue.registry`:
-  - `loader.TrainedGFN` — load cfg+ckpt like `infer.py` (strict=False for sampling-cache
-    buffers; imports `Trainer` so config parse resolves `Trainer.*`); sample trajectories,
-    score states, expose env/policy/proxy.
-  - `hub_graph` — `build_hub_graph(traj)` reduces trajectories to hubs; **flow = visit count**
-    (TB trains no per-state flow), observed 1-reaction children off the penultimate `SA`.
-  - `expanders` — `observed` (cheap, sampled) vs `enumerative` (env-driven exhaustive +
-    proxy-scored, per-hub-key cached, capped-with-warning).
-  - `hub_selectors` (`highest_flow`/`most_modes`/`highest_expected_reward`/`highest_child_reward`
-    + `DiverseHubSelector`), `mol_selectors` (`top_k_reward`/`top_k_reward_diverse`/
-    `scaffold_diverse_k`/`random_k`), `registry` (add a strategy = subclass + one line).
-  - `batch_plan` (→ standard `CandidateDataset` + `lanes.csv`), `metrics` (diversity/
-    concurrency/cost/reward; reuses `glue.metrics` + `glue.chemistry` cost), `cost` (route
-    pricing from `ChemLibrary`), `select`, `sweep` (trials × strategies → `results.csv`),
-    `pareto` (front extraction + trial aggregation).
-- **`scripts/analyze_gfn.py`** — generic entry point (mirrors `scripts/infer.py`).
-- **`experiments/diversification/`** — new experiment group; `seh_stdlib/` example (spec.json
-  + submit).
-
-**Verified** end-to-end on a real trained checkpoint (fixed-reward sEH proxy on
-`glue_standard_v1`, GPU): observed sweep (2 trials × 24 configs → `results.csv`), all
-selectors, both Pareto fronts (diversity-vs-concurrency and -vs-cost), enumerative expander
-(single hubs → 29/87/105 products; `top_k_reward_diverse` lifts modes 48→75), cost saving
-33% (observed) → 50% (enumerative k=25/lane). `py_compile` + imports pass. rgfn/ + upstream
-untouched. **Placement is the recommended default** (`glue/analysis/` since `glue/metrics/`
-is already post-hoc analysis `validation/` imports); the child-expansion default, cost-now,
-and home are the open forks flagged to the user — a `git mv` moves the tree if they prefer
-`validation/`. **NOT YET**: `git` commit; user sign-off on the forks.
-
 ## 2026-07-06 — Oracle-call counting + random-acquisition arm (Objective 1, Fig. 7 curve)
 
 Instrumentation for the top-k-vs-oracle-calls curve reviewers ask for

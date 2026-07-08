@@ -67,9 +67,9 @@ When extending the model, "does this match RGFN?" is answered here.
 single **global** scalar `Z = F(s0)` (the `logZ` parameter) by matching, over each complete
 trajectory, `Z·∏P_F = R(x)·∏P_B` (their Eq. 13; Prop. 1 proves a global minimizer samples ∝ reward).
 Crucially it learns **no per-state flow `F(s)`** — unlike flow-matching/detailed-balance — which is why
-`glue/analysis/` estimates a hub's flow by forward-sampling visit count *and* recovers it from the
-balance condition as `F(h)=R(x)·P_B(h|x)/P_F(x|h)` (`glue/analysis/tb_flow.py`; the two are the
-`Z·∏P_F` and `R·∏P_B` sides of the TB loss, so their agreement is a training-quality check).
+per-state flow must be recovered *post-hoc*: as a forward-sampling visit count, *or* from the balance
+condition as `F(h)=R(x)·P_B(h|x)/P_F(x|h)` (the two are the `Z·∏P_F` and `R·∏P_B` sides of the TB loss,
+so their agreement is a training-quality check).
 &nbsp;`pdfs/malkin2022trajectorybalance.pdf` · arXiv:2201.13259
 
 ---

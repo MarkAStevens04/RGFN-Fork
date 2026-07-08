@@ -11,7 +11,7 @@ reload a finished SCENT run and analyse it faithfully later?
 ### Context & Summary
 
 SCENT is our cost-aware, synthesizable baseline generator (entry 017), one of four in the
-matched comparison. We want to run our hub-diversification / flow analysis (entry 022) on
+matched comparison. We want to run our post-hoc flow analysis on
 *every* generator, not just RGFN. That analysis reconstructs, for each intermediate
 molecule, how much "flow" the model routes through it — a calculation that needs both
 directions of the model's policy: the forward policy (how it builds molecules) **and** the
@@ -44,7 +44,7 @@ remain irrecoverable and are now labelled as such on disk.
 
 ### Relevance to our Publication
 
-SCENT is a baseline in our four-way generator comparison, and our flow / hub-diversification
+SCENT is a baseline in our four-way generator comparison, and our post-hoc flow
 analysis is a methodological contribution of the paper. Reviewers (e.g. NeurIPS) will expect
 that analysis to apply uniformly across generators — being unable to run it on the
 cost-aware baseline would be a visible gap. It's also a plain reproducibility point: a
@@ -58,12 +58,12 @@ close it for all future runs and document it for the past ones.
   (seh 70066, drd2 70067, 6td3 70068, clpp 70069) so each produces a checkpoint + guidance
   sidecar. When they finish, confirm exact P_B recovery on the genuinely-trained guidance
   weights (`verify_pb_recovery.py --checkpoint <new last_gfn.pt>`).
-- Run the balance-based flow analysis (entry 022 machinery) on a recovered SCENT model and
+- Run the balance-based flow analysis on a recovered SCENT model and
   compare its visit-count vs Trajectory-Balance flow agreement against RGFN's.
 
 **Next steps in project**
-- Fold SCENT into the cross-generator flow / hub-diversification comparison so the
-  concurrency-vs-diversity Pareto story covers the cost-aware baseline, not just RGFN.
+- Fold SCENT into the cross-generator flow analysis so the diversity/cost comparison
+  covers the cost-aware baseline, not just RGFN.
 
 ---
 
