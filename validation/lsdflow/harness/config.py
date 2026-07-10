@@ -49,7 +49,12 @@ class LSDFlowRunConfig:
     report_top_hubs: int = 10
     out_batch_size: int = 96  # molecules a selection should return
     per_hub: int = 8  # concurrency: products per shared hub
-    mode_cutoff: float = 0.65  # Butina Tanimoto cutoff for "modes" (§11)
+    # Mode definition (paper-comparable, matches TanimotoSimilarityModes / dataset_metrics):
+    # greedy ECFP r=3 sphere-exclusion at this Tanimoto threshold, gated by a reward/binding
+    # cutoff so a "mode" is a distinct *high-affinity* product (§11). reward_threshold=None
+    # counts structure-only modes; set it (orientation from the reward) for paper-comparable hits.
+    mode_similarity_threshold: float = 0.7
+    mode_reward_threshold: Optional[float] = None
     min_children_for_hub: int = 2  # a diversifying hub has >=2 distinct children
     seed: int = 0
 

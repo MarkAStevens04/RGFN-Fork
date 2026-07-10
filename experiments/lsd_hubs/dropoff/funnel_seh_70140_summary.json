@@ -1,0 +1,28 @@
+{
+  "similarity_threshold": 0.7,
+  "headline_reward_threshold": 7.0,
+  "higher_is_better": true,
+  "n_hubs": 12,
+  "total_raw_children": 4586,
+  "survival": {
+    "6.0": {
+      "count": 1356,
+      "pct": 29.6
+    },
+    "7.0": {
+      "count": 135,
+      "pct": 2.9
+    },
+    "7.5": {
+      "count": 22,
+      "pct": 0.5
+    },
+    "8.0": {
+      "count": 0,
+      "pct": 0.0
+    }
+  },
+  "total_structure_modes": 2010,
+  "raw_to_structure_redundancy": 2.28,
+  "total_hit_modes_at_headline": 71
+}

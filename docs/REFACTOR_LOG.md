@@ -1136,9 +1136,24 @@ committed 10k `records.csv` predates the stereo columns). Enumeration artifacts:
 **Deeper-hub result (Balam job 70140, fresh 30k stereo-keyed DAG, 3h39m, Logs/025).** A fresh run
 reconstructs hubs from live stereo SMILES → **fully fixed** deeper-hub enumeration (all 12 hubs
 100% sampled-child recovery, incl. depth-3; the limitation was stereo-stripping, not the
-max-depth boundary). Landed the reactions-per-mode amortization: depth-1 hub 4.2 vs 8.4 indep
-(~2×), depth-3 hubs 11-46 vs 44-183 (~4×); best enumerated sEH 7.1-7.9. Also added: the harness
+max-depth boundary). Landed the reactions-per-mode amortization — costed as **one
+representative per mode** (`_per_mode_cost`; hub = depth+n_modes, indep = n_modes·(depth+1),
+bounded by trajectory length; an earlier all-children/n_modes denominator inflated it to ~44,
+fixed): hub/mode ≈1.0 vs indep/mode = depth+1 → ~(depth+1)× saving (depth-1 ~2×, depth-3 ~4×,
+depth-0 fragments free); best enumerated sEH 7.1-7.9. Also added: the harness
 persists the DAG BEFORE enumeration (a slow enumeration can't lose the multi-hour sample), the
 `--from-records` reuse path, interior (depth 1-2) hub targeting, and
 `validation/lsdflow/submit_seh_enum.sh` (compute-node submit). Small artifacts committed to
 `validation/lsdflow/results/seh_rgfn_enum/`.
+
+**Paper-comparable modes + dropoff funnel (Logs/026).** Redefined a "mode" in
+`validation/lsdflow/metrics/diversity.py` to match upstream `TanimotoSimilarityModes` /
+`[bengio2021gflownet]`: reward-gated + best-first greedy sphere-exclusion (ECFP Morgan r=3, 2048,
+sim 0.7), replacing the structure-only ECFP4/0.65 Butina; `_per_mode_cost` now costs one
+representative per hit-mode; config knobs `mode_similarity_threshold` + `mode_reward_threshold`
+(+ CLI). New **modular analysis home `experiments/lsd_hubs/`** (one sub-dir per analysis; reuses
+`glue/`+`validation/lsdflow/` primitives) with `dropoff/funnel.py` (per-hub filter funnel) +
+committed `funnel_seh_70140_results.csv`/`_summary.json`. Finding (30k sEH): the binding gate is
+the dominant dropoff (4586 raw → 3% at sEH≥7, 0% at ≥8; Tanimoto dedup gentle 2.3×) — depth-0
+fragment hubs are diverse but hitless, depth-3 hubs carry the hits + amortize ~3.6×. Regenerated
+the committed `seh_rgfn_{enum,pilot}` acquisition/enumeration numbers under the gated definition.

@@ -40,10 +40,12 @@ next. First, **91% of those multi-product hubs sit at the model's maximum reacti
 where the model is *forced* to stop — so the raw hub count over-represents a boundary artifact
 of the 4-reaction cap rather than genuine mid-synthesis diversification (only ~42 hubs are
 shallow, depth 0–1, the "build-early, diversify-late" case the idea is really about). Second,
-**flow-based hub ranking did not beat a naive "just take the parents of the best molecules"
-control on synthesis cost** (3.55 vs 3.47 reactions/mode) — so if the flow signal earns its
-keep, it will be on diversity/mode-coverage, which is exactly what the planned falsification
-("severe test") suite is built to check.
+**flow-based hub ranking is a near-tie with a naive "just take the parents of the best
+molecules" control on synthesis cost** (~2.5 reactions/mode either way) — so if the flow signal
+earns its keep, it will be on diversity/mode-coverage, not cost per se; that is exactly what the
+planned falsification ("severe test") suite is built to check. (The reactions-per-mode metric
+was later fixed to cost one representative per mode — see the phase-2 addendum — which bounds it
+by the trajectory length; the near-tie conclusion is unchanged.)
 
 ## Relevance to our Publication
 
@@ -133,18 +135,45 @@ limitation was stereo-stripped reconstruction, **not** the max-reaction boundary
 stereo, even depth-4 children invert cleanly). The 30k DAG has 1,732 multi-child hubs (max 21
 children), of which **237 are interior (depth 1-2)** — enough to demonstrate amortization:
 
-| hub depth | example | sampled → enumerated (recov) | modes | best sEH | reactions/mode: hub vs independent |
-|---|---|---|---|---|---|
-| 0 (fragment) | `O=C(O)c1cc[nH]n1` | 9 → 402 (9/9) | 196 | 4.87 | 2.05 vs 2.05 (**no saving** — fragment is free) |
-| 1 | `O=C=Nc1ccc(-c2cccc(F)c2)cc1` | 4 → 134 (4/4) | 32 | 7.07 | **4.2 vs 8.4 (~2×)** |
-| 3 | `Nc1ccc(-c2ccc(CNc3ccc(-c4cncc(F)c4)cn3…` | 2 → 996 (2/2) | 90 | 7.92 | **11.1 vs 44.3 (~4×)** |
-| 3 | (another) | 3 → 686 (3/3) | 15 | 7.13 | 45.9 vs 182.9 — but only 15 modes ⇒ **redundant** neighborhood |
+**Mode definition (paper-comparable).** A "mode" follows the RGFN / `[bengio2021gflownet]`
+definition as implemented by upstream `TanimotoSimilarityModes`: a molecule **above a reward /
+binding threshold** (the "hit" bar) that is **Tanimoto-dissimilar** (greedy sphere-exclusion,
+ECFP Morgan r=3, 2048 bits, threshold 0.7) from every mode already accepted, processed
+best-reward-first (so each mode's representative is its best binder). So a mode is a *distinct
+high-affinity product*, not just a distinct structure. Reactions-per-mode costs **one
+representative per hit-mode**: hub = `depth(h) + n_modes`, independent = `n_modes·(depth+1)`,
+bounded by the trajectory length (`independent/mode = depth+1 ≤ max_num_reactions`). (Two earlier
+bugs fixed en route: dividing all-children cost by n_modes — inflated to 44 — and ECFP4/0.65
+Butina with no reward gate.)
 
-The reactions-per-mode saving scales with hub depth (~`depth+1`× for large batches): a depth-0
-fragment costs 0 reactions so shows diversity but no saving; depth-1 saves ~2×; depth-3 ~4×.
-The mode column doubles as a severe-test signal — a hub with many children but few modes (686 →
-15) is a *redundant* neighborhood, not a diverse one, and the metric surfaces it. Small artifacts
-committed to `validation/lsdflow/results/seh_rgfn_enum/`; full DAG + `enumerated_records.csv` on
+**sEH binding-threshold sweep** (total distinct-hit modes across the 12 enumerated hubs; sEH is
+higher-is-better, so the gate is `reward ≥ threshold`):
+
+| reward ≥ | none | 6.0 | **7.0** | 7.5 | 8.0 |
+|---|---|---|---|---|---|
+| total hit-modes | 2036 | 444 | **71** | 12 | 0 |
+
+At the training config's strict sEH mode bar (8.0) **no** one-reaction child is a hit — single-step
+diversification of these hubs rarely reaches reward-8. At a `≥7.0` strong-binder bar (≈ the 30k
+sample mean 7.15), the amortization is realized specifically at **deep** hubs:
+
+| hub depth | enumerated | hit-modes (≥7.0) | best sEH | rxn/mode: hub vs indep |
+|---|---|---|---|---|
+| 0 (fragment) | 60–402 | **0** | 4.6–6.1 | — (diverse but **no reward-7 hits**) |
+| 1 | 134 | 1 | 7.07 | 2.0 vs 2.0 (1 mode ⇒ nothing to amortize) |
+| 3 | 996 | **29** | 7.92 | **1.10 vs 4.0 (~3.6×)** |
+| 3 | 996 | 19 | 7.83 | **1.16 vs 4.0 (~3.5×)** |
+| 3 | 498 | 19 | 7.72 | 1.16 vs 4.0 |
+| 3 | 686 | 2 | 7.13 | 2.5 vs 4.0 |
+
+**The sharper, honest finding once modes are reward-gated:** shallow **fragment** hubs give lots
+of structural diversity but **not high-affinity hits** (0 modes at ≥7.0 — their children are small
+and low-sEH); the **deep** hubs are where the model's flow concentrates genuine strong binders,
+and there hub batching yields ~19–29 distinct sEH-hits at **~1.1 vs 4.0 reactions/mode (~3.6×)**.
+So the LSD value proposition — amortized synthesis of a diverse **hit** library — is real and
+lives at the elaborated (depth-3) hubs. The `≥7.0` bar is a config knob (`--mode-reward-threshold`);
+the sweep above is the sensitivity. Small artifacts committed to
+`validation/lsdflow/results/seh_rgfn_enum/`; full DAG + `enumerated_records.csv` on
 `$SCRATCH/rgfn_runs/lsdflow/seh_stdlib_70140/`.
 
 # Re-creation
@@ -250,19 +279,26 @@ molecule nodes; logZ = 74.99):**
 forces a stop (`P_F(stop)=1`). Only ~42 hubs are shallow (depth 0–1) genuine diversification
 points.
 
-**Acquisition — 96-molecule library, `per_hub=8`, reactions-per-mode (lower = cheaper):**
+**Acquisition — 96-molecule query batch, `per_hub=8`, reactions-per-mode (one representative per
+mode; lower = cheaper).** NOTE: these "modes" are the pre-`026` **structure-only** definition
+(ECFP4/0.65 Butina, no binding gate); Logs/`026` redefines a mode to the paper-comparable
+reward-gated recipe (ECFP r=3/0.7 greedy). Under the gated definition a sampled 96-molecule query
+batch has very few sEH≥7 *hits* (the committed `acquisitions.csv` reflects the gated numbers) —
+the batch-diversity comparison below is best read as *structure* diversity.
 
-| hub strategy × molecule strategy | hubs used | modes | scaffolds | rxn/mode (hub) | rxn/mode (independent) | reactions saved |
-|---|---|---|---|---|---|---|
-| highest_terminating_flow × topk_reward | 33 | 51 | 82 | **3.55** | 6.24 | 137 |
-| highest_terminating_flow × uniform_random | 33 | 51 | 82 | 3.55 | 6.24 | 137 |
-| lowest_uncertainty × prob_weighted | 48 | 51 | 52 | 4.53 | 7.18 | 135 |
-| parent_of_topk × topk_reward (control) | 34 | 53 | 82 | 3.47 | 6.00 | 134 |
+| hub strategy × molecule strategy | modes (structure) | rxn/mode (hub) | rxn/mode (independent) |
+|---|---|---|---|
+| highest_terminating_flow × topk_reward | 51 | 2.55 | 2.96 |
+| highest_terminating_flow × uniform_random | 51 | 2.55 | 2.96 |
+| lowest_uncertainty × prob_weighted | 51 | 3.41 | 3.67 |
+| parent_of_topk × topk_reward (control) | 53 | 2.49 | 3.00 |
 
-Hub-amortized selection cuts reactions-per-mode ~40–45% vs building independently — but the
-flow-ranked strategy (3.55) does **not** beat the naive control (3.47) on cost, and the control
-covers marginally more modes (53 vs 51). (topk_reward ≡ uniform_random here because most
-selected hubs have ≤8 children, so both pick nearly all of them.)
+Hub-amortized selection is cheaper per mode than building independently for every strategy. But
+choosing *which* hubs (flow vs the naive control) is a near-tie on cost — flow 2.55 vs control
+2.49 here (and flow slightly *cheaper* than control on the 30k run, 2.44 vs 2.66) — so the
+differentiation between hub strategies is a **diversity** story (modes covered), not a cost one;
+the depth-scaling cost saving above is what the *hub-vs-independent* comparison buys. (topk_reward
+≡ uniform_random here because most selected hubs have ≤8 children, so both pick nearly all.)
 
 **Diagnostics (TB-integrity, over the 613 multi-child hubs):**
 - Pearson(consensus `log F`, total-terminating `log F`) = **0.926** (sanity check — the two

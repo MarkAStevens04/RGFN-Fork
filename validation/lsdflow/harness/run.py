@@ -30,12 +30,44 @@ from glue.samplers.lsdflow.records import FlowRecord
 from validation.lsdflow.adapters import get_adapter
 from validation.lsdflow.dag import build_hub_dag
 from validation.lsdflow.harness.config import LSDFlowRunConfig
-from validation.lsdflow.metrics.cost import get_cost_model
 from validation.lsdflow.metrics.diversity import (
-    count_modes,
     mode_counter,
+    mode_representatives,
     unique_scaffolds,
 )
+
+
+def _per_mode_cost(items, similarity_threshold, reward_threshold, higher_is_better):
+    """Reactions to synthesize a **diverse library of one representative per (paper-comparable)
+    mode** (§11). Modes follow ``TanimotoSimilarityModes``: reward-gated + greedy ECFP-r3
+    sphere-exclusion at ``similarity_threshold``, best-reward-first (so each mode's
+    representative is its best binder — see :func:`mode_representatives`).
+
+    ``items``: ``(key, reward, hub_id, hub_depth)`` per candidate child. Then:
+
+      * **hub batch**: each *distinct* owner hub built once (``hub_depth`` reactions) + one final
+        reaction per representative — ``Σ_distinct_hub depth + n_modes``.
+      * **independent**: each representative built from scratch — ``Σ_rep (hub_depth + 1)``.
+
+    Costing one representative *per mode* (not all children) keeps the per-mode number bounded by
+    the trajectory length; redundancy (children per mode) is reported separately. Returns
+    ``(n_modes, hub_rx, indep_rx)``.
+    """
+    rep_idx = mode_representatives(
+        [it[0] for it in items],
+        [it[1] for it in items],
+        higher_is_better=higher_is_better,
+        reward_threshold=reward_threshold,
+        similarity_threshold=similarity_threshold,
+    )
+    if not rep_idx:
+        return 0, 0.0, 0.0
+    reps = [items[i] for i in rep_idx]
+    n_modes = len(reps)
+    distinct_hub_depth = {it[2]: it[3] for it in reps}
+    hub_rx = float(sum(distinct_hub_depth.values()) + n_modes)
+    indep_rx = float(sum(it[3] + 1 for it in reps))
+    return n_modes, hub_rx, indep_rx
 
 
 # ------------------------------------------------------------------ small helpers
@@ -83,7 +115,7 @@ def _build_hub_strategy(name: str, cfg: LSDFlowRunConfig):
     if name == "lowest_uncertainty":
         kwargs["min_effective_n"] = max(2, cfg.min_children_for_hub)
     if name == "most_modes":
-        kwargs["mode_counter"] = mode_counter(cfg.mode_cutoff)
+        kwargs["mode_counter"] = mode_counter(cfg.mode_similarity_threshold)
     return get_hub_strategy(name, **kwargs)
 
 
@@ -97,14 +129,14 @@ def _analyze_combo(dag, hub_name: str, mol_name: str, cfg: LSDFlowRunConfig) -> 
         higher_is_better=dag.higher_is_better,
     )
     groups = acq.select_grouped(dag)
-    cost = get_cost_model("reactions_per_mode")
-    batch_rx = sum(cost.batch_reactions(hub.depth, len(children)) for hub, children in groups)
-    child_depths = [hub.depth + 1 for hub, children in groups for _ in children]
-    indep_rx = cost.independent_reactions(child_depths)
-    cross_keys = [c.key for _hub, children in groups for c in children]  # stereo-stripped -> modes
-    n_modes = count_modes(cross_keys, cutoff=cfg.mode_cutoff)
-    n_scaffolds = unique_scaffolds(cross_keys)
-    n_mol = len(cross_keys)
+    # One representative per mode (each child tagged with its owner hub's id + build depth), so
+    # reactions/mode is bounded by trajectory length and not inflated by a redundant batch.
+    items = [(c.key, c.reward, hub.key, hub.depth) for hub, children in groups for c in children]
+    n_modes, batch_rx, indep_rx = _per_mode_cost(
+        items, cfg.mode_similarity_threshold, cfg.mode_reward_threshold, dag.higher_is_better
+    )
+    n_scaffolds = unique_scaffolds([it[0] for it in items])
+    n_mol = len(items)
     return {
         "hub_strategy": hub_name,
         "molecule_strategy": mol_name,
@@ -115,8 +147,10 @@ def _analyze_combo(dag, hub_name: str, mol_name: str, cfg: LSDFlowRunConfig) -> 
         "batch_reactions": batch_rx,
         "independent_reactions": indep_rx,
         "reaction_savings": indep_rx - batch_rx,
-        "reactions_per_mode_hub": _round(cost.per_mode(batch_rx, n_modes), 3),
-        "reactions_per_mode_independent": _round(cost.per_mode(indep_rx, n_modes), 3),
+        "reactions_per_mode_hub": _round((batch_rx / n_modes) if n_modes else float("nan"), 3),
+        "reactions_per_mode_independent": _round(
+            (indep_rx / n_modes) if n_modes else float("nan"), 3
+        ),
     }
 
 
@@ -292,7 +326,6 @@ def enumerate_and_report(adapter, dag, cfg: LSDFlowRunConfig) -> dict:
     enum_dag = LiteHubDAG.from_records(
         records, total_trajectories=0, log_z=dag.log_z, higher_is_better=dag.higher_is_better
     )
-    cost = get_cost_model("reactions_per_mode")
 
     rows = []
     for h in selected:
@@ -304,21 +337,29 @@ def enumerate_and_report(adapter, dag, cfg: LSDFlowRunConfig) -> dict:
         recovered = len(sampled_keys & enum_keys)
         rewards = [c.reward for c in enum_children if c.reward == c.reward]
         best = (max(rewards) if dag.higher_is_better else min(rewards)) if rewards else float("nan")
-        n_modes = count_modes(list(enum_keys), cutoff=cfg.mode_cutoff)
         k = len(enum_children)
-        batch_rx = cost.batch_reactions(h.depth, k)
-        indep_rx = cost.independent_reactions([h.depth + 1] * k)
+        # One representative per mode from this single hub (all children share its build depth),
+        # so reactions/mode is bounded by trajectory length; redundancy is reported separately.
+        items = [(c.key, c.reward, h.key, h.depth) for c in enum_children]
+        n_modes, batch_rx, indep_rx = _per_mode_cost(
+            items, cfg.mode_similarity_threshold, cfg.mode_reward_threshold, dag.higher_is_better
+        )
         row = {
             "hub_key": h.key,
             "depth": h.depth,
             "visit_count": h.visit_count,
             "n_sampled_children": len(sampled_keys),
             "n_enumerated_children": k,
+            "children_per_mode": _round(k / n_modes, 2) if n_modes else None,  # redundancy signal
             "sampled_recovered_by_enum": f"{recovered}/{len(sampled_keys)}",
             "enum_modes": n_modes,
             "enum_best_reward": _round(best, 3),
-            "enum_reactions_per_mode_hub": _round(cost.per_mode(batch_rx, n_modes), 3),
-            "enum_reactions_per_mode_independent": _round(cost.per_mode(indep_rx, n_modes), 3),
+            "enum_reactions_per_mode_hub": _round(
+                (batch_rx / n_modes) if n_modes else float("nan"), 3
+            ),
+            "enum_reactions_per_mode_independent": _round(
+                (indep_rx / n_modes) if n_modes else float("nan"), 3
+            ),
         }
         rows.append(row)
         print(
@@ -399,7 +440,19 @@ def _parse_args(argv: Optional[List[str]] = None) -> LSDFlowRunConfig:
     p.add_argument("--device", default="auto")
     p.add_argument("--out-batch-size", type=int, default=96)
     p.add_argument("--per-hub", type=int, default=8)
-    p.add_argument("--mode-cutoff", type=float, default=0.65)
+    p.add_argument(
+        "--mode-similarity",
+        type=float,
+        default=0.7,
+        help="Tanimoto greedy-mode similarity threshold (paper recipe: ECFP r=3, 0.7)",
+    )
+    p.add_argument(
+        "--mode-reward-threshold",
+        type=float,
+        default=None,
+        help="reward/binding 'hit' cutoff for a mode (orientation from the reward); "
+        "omit for structure-only modes",
+    )
     p.add_argument("--min-children", type=int, default=2)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument(
@@ -433,7 +486,8 @@ def _parse_args(argv: Optional[List[str]] = None) -> LSDFlowRunConfig:
         device=a.device,
         out_batch_size=a.out_batch_size,
         per_hub=a.per_hub,
-        mode_cutoff=a.mode_cutoff,
+        mode_similarity_threshold=a.mode_similarity,
+        mode_reward_threshold=a.mode_reward_threshold,
         min_children_for_hub=a.min_children,
         seed=a.seed,
         from_records=a.from_records,

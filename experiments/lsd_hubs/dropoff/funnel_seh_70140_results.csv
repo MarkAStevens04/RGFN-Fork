@@ -1,0 +1,13 @@
+hub_key,depth,raw_children,reward_pass_6.0,reward_pass_7.0,reward_pass_7.5,reward_pass_8.0,structure_modes,children_per_structure_mode,hit_modes,hits_per_hit_mode
+O=C(O)c1cc[nH]n1,0,402,0,0,0,0,359,1.12,0,
+CCCCCCBr,0,189,0,0,0,0,175,1.08,0,
+Cc1cccc(CBr)c1C,0,189,1,0,0,0,149,1.27,0,
+Fc1cncc(Br)c1,0,188,0,0,0,0,172,1.09,0,
+Cc1cccc(C)c1B(O)O,0,60,0,0,0,0,60,1.0,0,
+OB(O)c1cccc(F)c1,0,60,0,0,0,0,60,1.0,0,
+O=C=Nc1ccc(-c2cccc(F)c2)cc1,1,134,7,1,0,0,87,1.54,1,1.0
+Nc1ccc(-c2ccc(CNc3ccc(-c4cncc(F)c4)cn3)cc2)cc1,3,996,414,58,12,0,350,2.85,29,2.0
+Nc1cc(-c2ccc(CNc3cc(-c4cccc(F)c4)n[nH]3)cc2)n[nH]1,3,996,303,32,7,0,314,3.17,19,1.68
+Fc1cccc(CNc2cc(-c3ccc(-c4nc5cc(Br)ccc5o4)cc3)n[nH]2)c1F,3,686,212,2,0,0,105,6.53,2,1.0
+Nc1cc(-c2ccc(-c3nc4cc(-c5cccc(F)c5)ccc4o3)cc2)n[nH]1,3,498,354,41,3,0,110,4.53,19,2.16
+Fc1cccc(-c2ccc3nc(-c4nc5cc(Br)ccc5o4)oc3c2)c1,3,188,65,1,0,0,69,2.72,1,1.0
