@@ -1,0 +1,1079 @@
+{
+  "config": {
+    "model": "rgfn",
+    "config_path": "configs/glue/fixed_reward_seh_proxy_stdlib.gin",
+    "checkpoint_path": "/scratch/markymoo/rgfn_runs/experiments/fixed_reward/seh_proxy_stdlib/2026-07-02_14-59-53/train/checkpoints/last_gfn.pt",
+    "reward_name": "seh",
+    "run_id": "seh_stdlib_70140_enum",
+    "n_trajectories": 30000,
+    "sample_batch_size": 200,
+    "device": "auto",
+    "hub_strategies": [
+      "highest_terminating_flow",
+      "highest_flow",
+      "most_modes",
+      "highest_visitation",
+      "lowest_uncertainty",
+      "parent_of_topk"
+    ],
+    "combos": [
+      [
+        "highest_terminating_flow",
+        "topk_reward"
+      ],
+      [
+        "highest_terminating_flow",
+        "uniform_random"
+      ],
+      [
+        "lowest_uncertainty",
+        "prob_weighted"
+      ],
+      [
+        "parent_of_topk",
+        "topk_reward"
+      ]
+    ],
+    "report_top_hubs": 10,
+    "out_batch_size": 96,
+    "per_hub": 8,
+    "mode_cutoff": 0.65,
+    "min_children_for_hub": 2,
+    "seed": 0,
+    "from_records": "",
+    "enumerate_top_hubs": 6,
+    "enumerate_max_children": 4000,
+    "out_dir": "/scratch/markymoo/rgfn_runs/lsdflow/seh_stdlib_70140"
+  },
+  "summary": {
+    "model": "rgfn",
+    "reward": "seh",
+    "run_id": "seh_stdlib_70140_enum",
+    "n_trajectories": 30000,
+    "n_valid_terminals": 29839,
+    "log_z": 74.99439239501953,
+    "higher_is_better": true,
+    "n_hubs": 21829,
+    "n_multichild_hubs": 1732,
+    "max_children_per_hub": 21,
+    "mean_multichild_hub_depth": 2.7361431870669746,
+    "n_distinct_nodes": 63283
+  },
+  "strategies": {
+    "highest_terminating_flow": [
+      {
+        "hub_key": "Nc1ccc(-c2ccc(CNc3ccc(-c4cncc(F)c4)cn3)cc2)cc1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 58.3107,
+        "log_flow_terminating": 62.4927,
+        "uncertainty": 17.4872,
+        "effective_n": 2,
+        "best_reward": 7.3974,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "Fc1cccc(CNc2cc(-c3ccc(-c4nc5cc(Br)ccc5o4)cc3)n[nH]2)c1F",
+        "depth": 3,
+        "n_children": 3,
+        "visit_count": 3,
+        "log_flow_consensus": 55.7022,
+        "log_flow_terminating": 62.0178,
+        "uncertainty": 18.3596,
+        "effective_n": 3,
+        "best_reward": 7.0243,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "Nc1cc(-c2ccc(CNc3cc(-c4cccc(F)c4)n[nH]3)cc2)n[nH]1",
+        "depth": 3,
+        "n_children": 3,
+        "visit_count": 3,
+        "log_flow_consensus": 51.6228,
+        "log_flow_terminating": 61.4691,
+        "uncertainty": 41.0006,
+        "effective_n": 3,
+        "best_reward": 7.2416,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "Nc1cc(-c2ccc(-c3nc4cc(-c5cccc(F)c5)ccc4o3)cc2)n[nH]1",
+        "depth": 3,
+        "n_children": 3,
+        "visit_count": 3,
+        "log_flow_consensus": 56.0221,
+        "log_flow_terminating": 61.0161,
+        "uncertainty": 23.6138,
+        "effective_n": 3,
+        "best_reward": 6.7059,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "O=C=Nc1ccc(-c2cccc(F)c2)cc1",
+        "depth": 1,
+        "n_children": 4,
+        "visit_count": 69,
+        "log_flow_consensus": 46.8011,
+        "log_flow_terminating": 60.9533,
+        "uncertainty": 52.7796,
+        "effective_n": 4,
+        "best_reward": 7.0706,
+        "log_visitation": 68.9195
+      },
+      {
+        "hub_key": "Fc1cccc(-c2ccc3nc(-c4nc5cc(Br)ccc5o4)oc3c2)c1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 53.2592,
+        "log_flow_terminating": 60.5597,
+        "uncertainty": 53.2973,
+        "effective_n": 2,
+        "best_reward": 6.8564,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "O=C(Nc1cc(Br)n[nH]1)c1ccc(Cn2nnc(-c3ccc(-c4cncc(F)c4)cc3F)n2)cc1",
+        "depth": 3,
+        "n_children": 9,
+        "visit_count": 19,
+        "log_flow_consensus": 53.7124,
+        "log_flow_terminating": 60.0965,
+        "uncertainty": 20.7824,
+        "effective_n": 9,
+        "best_reward": 6.8299,
+        "log_visitation": 67.6299
+      },
+      {
+        "hub_key": "O=C(O)C1CCN1C(=O)Nc1cccc2ccccc12",
+        "depth": 1,
+        "n_children": 5,
+        "visit_count": 85,
+        "log_flow_consensus": 55.4492,
+        "log_flow_terminating": 59.8509,
+        "uncertainty": 24.8991,
+        "effective_n": 5,
+        "best_reward": 6.7148,
+        "log_visitation": 69.1281
+      },
+      {
+        "hub_key": "N#Cc1ccc(-c2cncc(F)c2)cc1F",
+        "depth": 1,
+        "n_children": 15,
+        "visit_count": 674,
+        "log_flow_consensus": 45.9375,
+        "log_flow_terminating": 59.7243,
+        "uncertainty": 22.4005,
+        "effective_n": 15,
+        "best_reward": 6.8041,
+        "log_visitation": 71.1987
+      },
+      {
+        "hub_key": "O=Cc1ccc(-c2cc(NC(=O)Nc3cc(-c4cccc(F)c4)n[nH]3)[nH]n2)cc1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 52.4099,
+        "log_flow_terminating": 59.6004,
+        "uncertainty": 51.7039,
+        "effective_n": 2,
+        "best_reward": 7.1201,
+        "log_visitation": 65.3786
+      }
+    ],
+    "highest_flow": [
+      {
+        "hub_key": "Nc1ccc(-c2ccc(CNc3ccc(-c4cncc(F)c4)cn3)cc2)cc1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 58.3107,
+        "log_flow_terminating": 62.4927,
+        "uncertainty": 17.4872,
+        "effective_n": 2,
+        "best_reward": 7.3974,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "Fc1cc(-c2nc(Br)cs2)ccc1-c1nnn(CC2CC2)n1",
+        "depth": 2,
+        "n_children": 3,
+        "visit_count": 4,
+        "log_flow_consensus": 56.3182,
+        "log_flow_terminating": 58.4636,
+        "uncertainty": 3.4687,
+        "effective_n": 3,
+        "best_reward": 6.8949,
+        "log_visitation": 66.0717
+      },
+      {
+        "hub_key": "Nc1cc(-c2ccc(NCc3ccc(-c4cncc(F)c4)cc3)nc2)n[nH]1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 3,
+        "log_flow_consensus": 56.3009,
+        "log_flow_terminating": 58.3869,
+        "uncertainty": 4.2857,
+        "effective_n": 2,
+        "best_reward": 7.0838,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "Nc1cc(-c2nc3ccc(-c4nc5cc(Br)ccc5o4)cc3[nH]2)ccc1NCc1cccc(F)c1F",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 56.2311,
+        "log_flow_terminating": 57.1349,
+        "uncertainty": 0.4517,
+        "effective_n": 2,
+        "best_reward": 6.7021,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "Cc1cccc(C)c1-c1cc(NC(=O)C2CCN2Cc2ccc(B(O)O)cc2)[nH]n1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 56.1741,
+        "log_flow_terminating": 57.8774,
+        "uncertainty": 2.7834,
+        "effective_n": 2,
+        "best_reward": 6.902,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "Nc1cc(-c2ccc(-c3nc4cc(-c5cccc(F)c5)ccc4o3)cc2)n[nH]1",
+        "depth": 3,
+        "n_children": 3,
+        "visit_count": 3,
+        "log_flow_consensus": 56.0221,
+        "log_flow_terminating": 61.0161,
+        "uncertainty": 23.6138,
+        "effective_n": 3,
+        "best_reward": 6.7059,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "Fc1cccc(CNc2cc(-c3ccc(-c4nc5cc(Br)ccc5o4)cc3)n[nH]2)c1F",
+        "depth": 3,
+        "n_children": 3,
+        "visit_count": 3,
+        "log_flow_consensus": 55.7022,
+        "log_flow_terminating": 62.0178,
+        "uncertainty": 18.3596,
+        "effective_n": 3,
+        "best_reward": 7.0243,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "O=C(O)C1CCN1C(=O)Nc1cccc2ccccc12",
+        "depth": 1,
+        "n_children": 5,
+        "visit_count": 85,
+        "log_flow_consensus": 55.4492,
+        "log_flow_terminating": 59.8509,
+        "uncertainty": 24.8991,
+        "effective_n": 5,
+        "best_reward": 6.7148,
+        "log_visitation": 69.1281
+      },
+      {
+        "hub_key": "N#Cc1ccc(-c2cc(Nc3ccc4oc(C5CCN5)nc4c3)[nH]n2)cc1F",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 55.3318,
+        "log_flow_terminating": 56.8771,
+        "uncertainty": 2.2392,
+        "effective_n": 2,
+        "best_reward": 6.6941,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "Nc1cc(C(=O)Nc2cc(Br)n[nH]2)ccc1NCC1CCN1c1cncc(F)c1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 55.1798,
+        "log_flow_terminating": 56.5882,
+        "uncertainty": 1.8019,
+        "effective_n": 2,
+        "best_reward": 6.0574,
+        "log_visitation": 65.3786
+      }
+    ],
+    "most_modes": [
+      {
+        "hub_key": "FC(F)(F)C1CCCN1",
+        "depth": 0,
+        "n_children": 9,
+        "visit_count": 153,
+        "log_flow_consensus": 29.0525,
+        "log_flow_terminating": 43.9326,
+        "uncertainty": 33.815,
+        "effective_n": 9,
+        "best_reward": 5.0287,
+        "log_visitation": 69.7159
+      },
+      {
+        "hub_key": "CCCCCCBr",
+        "depth": 0,
+        "n_children": 8,
+        "visit_count": 2111,
+        "log_flow_consensus": 14.946,
+        "log_flow_terminating": 32.9613,
+        "uncertainty": 112.3193,
+        "effective_n": 8,
+        "best_reward": 3.3983,
+        "log_visitation": 72.3404
+      },
+      {
+        "hub_key": "C#Cc1cncc(F)c1",
+        "depth": 1,
+        "n_children": 10,
+        "visit_count": 75,
+        "log_flow_consensus": 35.4611,
+        "log_flow_terminating": 54.7759,
+        "uncertainty": 47.6876,
+        "effective_n": 10,
+        "best_reward": 6.3137,
+        "log_visitation": 69.0029
+      },
+      {
+        "hub_key": "O=C(O)c1cc[nH]n1",
+        "depth": 0,
+        "n_children": 9,
+        "visit_count": 1221,
+        "log_flow_consensus": 31.8629,
+        "log_flow_terminating": 40.5242,
+        "uncertainty": 39.8211,
+        "effective_n": 9,
+        "best_reward": 4.2714,
+        "log_visitation": 71.7929
+      },
+      {
+        "hub_key": "Brc1cscn1",
+        "depth": 0,
+        "n_children": 7,
+        "visit_count": 184,
+        "log_flow_consensus": 21.1062,
+        "log_flow_terminating": 23.5342,
+        "uncertainty": 1.5984,
+        "effective_n": 7,
+        "best_reward": 2.439,
+        "log_visitation": 69.9004
+      },
+      {
+        "hub_key": "Cc1cccc(CBr)c1C",
+        "depth": 0,
+        "n_children": 8,
+        "visit_count": 1008,
+        "log_flow_consensus": 34.8852,
+        "log_flow_terminating": 56.1812,
+        "uncertainty": 102.7834,
+        "effective_n": 8,
+        "best_reward": 6.1423,
+        "log_visitation": 71.6012
+      },
+      {
+        "hub_key": "Fc1cncc(Br)c1",
+        "depth": 0,
+        "n_children": 11,
+        "visit_count": 3076,
+        "log_flow_consensus": 28.6807,
+        "log_flow_terminating": 33.1658,
+        "uncertainty": 6.0959,
+        "effective_n": 11,
+        "best_reward": 3.4782,
+        "log_visitation": 72.7168
+      },
+      {
+        "hub_key": "N#Cc1ccc(-c2cncc(F)c2)cc1F",
+        "depth": 1,
+        "n_children": 15,
+        "visit_count": 674,
+        "log_flow_consensus": 45.9375,
+        "log_flow_terminating": 59.7243,
+        "uncertainty": 22.4005,
+        "effective_n": 15,
+        "best_reward": 6.8041,
+        "log_visitation": 71.1987
+      },
+      {
+        "hub_key": "N#Cc1cncc(F)c1",
+        "depth": 1,
+        "n_children": 9,
+        "visit_count": 50,
+        "log_flow_consensus": 35.0,
+        "log_flow_terminating": 52.6823,
+        "uncertainty": 48.4744,
+        "effective_n": 9,
+        "best_reward": 6.0731,
+        "log_visitation": 68.5975
+      },
+      {
+        "hub_key": "[N-]=[N+]=NCCCO",
+        "depth": 0,
+        "n_children": 7,
+        "visit_count": 319,
+        "log_flow_consensus": 19.0435,
+        "log_flow_terminating": 26.0856,
+        "uncertainty": 52.9299,
+        "effective_n": 7,
+        "best_reward": 2.6831,
+        "log_visitation": 70.4506
+      }
+    ],
+    "highest_visitation": [
+      {
+        "hub_key": "Fc1cncc(Br)c1",
+        "depth": 0,
+        "n_children": 11,
+        "visit_count": 3076,
+        "log_flow_consensus": 28.6807,
+        "log_flow_terminating": 33.1658,
+        "uncertainty": 6.0959,
+        "effective_n": 11,
+        "best_reward": 3.4782,
+        "log_visitation": 72.7168
+      },
+      {
+        "hub_key": "CCCCCCBr",
+        "depth": 0,
+        "n_children": 8,
+        "visit_count": 2111,
+        "log_flow_consensus": 14.946,
+        "log_flow_terminating": 32.9613,
+        "uncertainty": 112.3193,
+        "effective_n": 8,
+        "best_reward": 3.3983,
+        "log_visitation": 72.3404
+      },
+      {
+        "hub_key": "O=C(O)c1cc[nH]n1",
+        "depth": 0,
+        "n_children": 9,
+        "visit_count": 1221,
+        "log_flow_consensus": 31.8629,
+        "log_flow_terminating": 40.5242,
+        "uncertainty": 39.8211,
+        "effective_n": 9,
+        "best_reward": 4.2714,
+        "log_visitation": 71.7929
+      },
+      {
+        "hub_key": "Cc1cccc(CBr)c1C",
+        "depth": 0,
+        "n_children": 8,
+        "visit_count": 1008,
+        "log_flow_consensus": 34.8852,
+        "log_flow_terminating": 56.1812,
+        "uncertainty": 102.7834,
+        "effective_n": 8,
+        "best_reward": 6.1423,
+        "log_visitation": 71.6012
+      },
+      {
+        "hub_key": "Cc1cccc(C)c1B(O)O",
+        "depth": 0,
+        "n_children": 6,
+        "visit_count": 895,
+        "log_flow_consensus": 34.4427,
+        "log_flow_terminating": 38.8624,
+        "uncertainty": 32.0848,
+        "effective_n": 6,
+        "best_reward": 4.152,
+        "log_visitation": 71.4823
+      },
+      {
+        "hub_key": "OB(O)c1cccc(F)c1",
+        "depth": 0,
+        "n_children": 5,
+        "visit_count": 802,
+        "log_flow_consensus": 33.1514,
+        "log_flow_terminating": 40.3798,
+        "uncertainty": 53.3535,
+        "effective_n": 5,
+        "best_reward": 4.3388,
+        "log_visitation": 71.3725
+      },
+      {
+        "hub_key": "N#Cc1ccc(-c2cncc(F)c2)cc1F",
+        "depth": 1,
+        "n_children": 15,
+        "visit_count": 674,
+        "log_flow_consensus": 45.9375,
+        "log_flow_terminating": 59.7243,
+        "uncertainty": 22.4005,
+        "effective_n": 15,
+        "best_reward": 6.8041,
+        "log_visitation": 71.1987
+      },
+      {
+        "hub_key": "BrCc1ccccn1",
+        "depth": 0,
+        "n_children": 5,
+        "visit_count": 332,
+        "log_flow_consensus": 37.5511,
+        "log_flow_terminating": 40.0497,
+        "uncertainty": 102.5597,
+        "effective_n": 5,
+        "best_reward": 4.2238,
+        "log_visitation": 70.4906
+      },
+      {
+        "hub_key": "CCCCCCn1nnc(-c2ccc(B(O)O)cc2F)n1",
+        "depth": 1,
+        "n_children": 6,
+        "visit_count": 331,
+        "log_flow_consensus": 41.1391,
+        "log_flow_terminating": 44.5425,
+        "uncertainty": 15.8604,
+        "effective_n": 6,
+        "best_reward": 4.9193,
+        "log_visitation": 70.4876
+      },
+      {
+        "hub_key": "[N-]=[N+]=NCCCO",
+        "depth": 0,
+        "n_children": 7,
+        "visit_count": 319,
+        "log_flow_consensus": 19.0435,
+        "log_flow_terminating": 26.0856,
+        "uncertainty": 52.9299,
+        "effective_n": 7,
+        "best_reward": 2.6831,
+        "log_visitation": 70.4506
+      }
+    ],
+    "lowest_uncertainty": [
+      {
+        "hub_key": "CCCCCCn1cnc(CC(NCc2ccc(-c3cncc(F)c3)cc2)C(=O)O)c1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 39.2591,
+        "log_flow_terminating": 39.9522,
+        "uncertainty": 0.0,
+        "effective_n": 2,
+        "best_reward": 4.8342,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "Cc1cccc(C)c1-c1cc(NC(=O)c2cccnc2Nc2cc(Br)n[nH]2)[nH]n1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 42.1056,
+        "log_flow_terminating": 42.7988,
+        "uncertainty": 0.0001,
+        "effective_n": 2,
+        "best_reward": 5.1287,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "O=C(Nc1cc(-c2cccc(F)c2)n[nH]1)c1nc2cc(Br)ccc2o1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 46.1025,
+        "log_flow_terminating": 46.7957,
+        "uncertainty": 0.0001,
+        "effective_n": 2,
+        "best_reward": 5.6707,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "COc1ccc(CNc2ccc3oc(-c4ccnc(-c5c(C)cccc5C)c4F)nc3c2)cc1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 50.9741,
+        "log_flow_terminating": 51.6674,
+        "uncertainty": 0.0002,
+        "effective_n": 2,
+        "best_reward": 6.0325,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "O=C(Oc1cccc(-c2cncc(F)c2)c1)c1cccc(F)c1NCc1ccc(C(F)(F)F)cc1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 39.4962,
+        "log_flow_terminating": 40.1894,
+        "uncertainty": 0.0002,
+        "effective_n": 2,
+        "best_reward": 4.5574,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "CC(O)C(=O)Oc1cc(F)cc(-c2cncc(F)c2)c1",
+        "depth": 2,
+        "n_children": 2,
+        "visit_count": 4,
+        "log_flow_consensus": 28.626,
+        "log_flow_terminating": 29.3192,
+        "uncertainty": 0.0002,
+        "effective_n": 2,
+        "best_reward": 3.4581,
+        "log_visitation": 66.0717
+      },
+      {
+        "hub_key": "CC(Cn1nnc(-c2ccc(F)cc2)n1)Nc1cc(Nc2cc(Br)n[nH]2)n[nH]1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 30.4024,
+        "log_flow_terminating": 31.0957,
+        "uncertainty": 0.0003,
+        "effective_n": 2,
+        "best_reward": 3.7664,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "COc1ccc(S(=O)(=O)N2CCC2C(=O)Nc2ccc(C(=O)Nc3cc(Br)n[nH]3)cc2N)cc1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 36.7005,
+        "log_flow_terminating": 37.3938,
+        "uncertainty": 0.0003,
+        "effective_n": 2,
+        "best_reward": 4.5457,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "COc1ccc(CNCc2ccc(-c3ccc4oc(-c5ccc(N)c(N)c5)nc4c3)cc2)cc1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 54.6882,
+        "log_flow_terminating": 55.3815,
+        "uncertainty": 0.0004,
+        "effective_n": 2,
+        "best_reward": 6.5842,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "O=C(c1cccc(F)c1F)N(Cc1cccc(F)c1F)c1cc(-c2cccc(F)c2)ccc1O",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 39.2791,
+        "log_flow_terminating": 39.9724,
+        "uncertainty": 0.0004,
+        "effective_n": 2,
+        "best_reward": 4.592,
+        "log_visitation": 65.3786
+      }
+    ],
+    "parent_of_topk": [
+      {
+        "hub_key": "Nc1ccc(-c2ccc(CNc3ccc(-c4cncc(F)c4)cn3)cc2)cc1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 58.3107,
+        "log_flow_terminating": 62.4927,
+        "uncertainty": 17.4872,
+        "effective_n": 2,
+        "best_reward": 7.3974,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "Nc1cc(-c2ccc(CNc3cc(-c4cccc(F)c4)n[nH]3)cc2)n[nH]1",
+        "depth": 3,
+        "n_children": 3,
+        "visit_count": 3,
+        "log_flow_consensus": 51.6228,
+        "log_flow_terminating": 61.4691,
+        "uncertainty": 41.0006,
+        "effective_n": 3,
+        "best_reward": 7.2416,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "O=Cc1ccc(-c2cc(NC(=O)Nc3cc(-c4cccc(F)c4)n[nH]3)[nH]n2)cc1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 52.4099,
+        "log_flow_terminating": 59.6004,
+        "uncertainty": 51.7039,
+        "effective_n": 2,
+        "best_reward": 7.1201,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "Nc1cc(-c2ccc(NCc3ccc(-c4cncc(F)c4)cc3)nc2)n[nH]1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 3,
+        "log_flow_consensus": 56.3009,
+        "log_flow_terminating": 58.3869,
+        "uncertainty": 4.2857,
+        "effective_n": 2,
+        "best_reward": 7.0838,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "O=C=Nc1ccc(-c2cccc(F)c2)cc1",
+        "depth": 1,
+        "n_children": 4,
+        "visit_count": 69,
+        "log_flow_consensus": 46.8011,
+        "log_flow_terminating": 60.9533,
+        "uncertainty": 52.7796,
+        "effective_n": 4,
+        "best_reward": 7.0706,
+        "log_visitation": 68.9195
+      },
+      {
+        "hub_key": "Fc1cccc(CNc2cc(-c3ccc(-c4nc5cc(Br)ccc5o4)cc3)n[nH]2)c1F",
+        "depth": 3,
+        "n_children": 3,
+        "visit_count": 3,
+        "log_flow_consensus": 55.7022,
+        "log_flow_terminating": 62.0178,
+        "uncertainty": 18.3596,
+        "effective_n": 3,
+        "best_reward": 7.0243,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "Fc1cc(-c2cc(-c3nc4cc(Br)ccc4o3)ccn2)ccc1-c1nnn(CC2CCCC2)n1",
+        "depth": 3,
+        "n_children": 3,
+        "visit_count": 3,
+        "log_flow_consensus": 52.1892,
+        "log_flow_terminating": 56.2573,
+        "uncertainty": 4.749,
+        "effective_n": 3,
+        "best_reward": 6.9955,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "N#Cc1cc(N)cc(-c2ccc(-c3nc4cc(C(=O)NCc5ccc(C(F)(F)F)cc5)ccc4[nH]3)cc2)c1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 53.6265,
+        "log_flow_terminating": 56.8819,
+        "uncertainty": 10.588,
+        "effective_n": 2,
+        "best_reward": 6.9896,
+        "log_visitation": 65.3786
+      },
+      {
+        "hub_key": "O=C(Nc1cc(Br)n[nH]1)C1CCN1C(=O)C1CCN1C(=O)Nc1cccc2ccccc12",
+        "depth": 3,
+        "n_children": 3,
+        "visit_count": 3,
+        "log_flow_consensus": 50.3764,
+        "log_flow_terminating": 55.7871,
+        "uncertainty": 9.4333,
+        "effective_n": 3,
+        "best_reward": 6.9563,
+        "log_visitation": 65.7841
+      },
+      {
+        "hub_key": "NC(Cc1ccccc1)C(=O)Nc1cc(-c2ccc(-c3nnn(CC4CC4)n3)c(F)c2)n[nH]1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 3,
+        "log_flow_consensus": 53.8023,
+        "log_flow_terminating": 56.4781,
+        "uncertainty": 7.1342,
+        "effective_n": 2,
+        "best_reward": 6.9555,
+        "log_visitation": 65.7841
+      }
+    ]
+  },
+  "acquisitions": [
+    {
+      "hub_strategy": "highest_terminating_flow",
+      "molecule_strategy": "topk_reward",
+      "n_hubs_used": 31,
+      "n_molecules": 96,
+      "n_modes": 57,
+      "n_scaffolds": 89,
+      "batch_reactions": 178.0,
+      "independent_reactions": 331.0,
+      "reaction_savings": 153.0,
+      "reactions_per_mode_hub": 3.123,
+      "reactions_per_mode_independent": 5.807
+    },
+    {
+      "hub_strategy": "highest_terminating_flow",
+      "molecule_strategy": "uniform_random",
+      "n_hubs_used": 31,
+      "n_molecules": 96,
+      "n_modes": 57,
+      "n_scaffolds": 88,
+      "batch_reactions": 178.0,
+      "independent_reactions": 331.0,
+      "reaction_savings": 153.0,
+      "reactions_per_mode_hub": 3.123,
+      "reactions_per_mode_independent": 5.807
+    },
+    {
+      "hub_strategy": "lowest_uncertainty",
+      "molecule_strategy": "prob_weighted",
+      "n_hubs_used": 47,
+      "n_molecules": 96,
+      "n_modes": 55,
+      "n_scaffolds": 92,
+      "batch_reactions": 233.0,
+      "independent_reactions": 376.0,
+      "reaction_savings": 143.0,
+      "reactions_per_mode_hub": 4.236,
+      "reactions_per_mode_independent": 6.836
+    },
+    {
+      "hub_strategy": "parent_of_topk",
+      "molecule_strategy": "topk_reward",
+      "n_hubs_used": 31,
+      "n_molecules": 96,
+      "n_modes": 50,
+      "n_scaffolds": 87,
+      "batch_reactions": 182.0,
+      "independent_reactions": 355.0,
+      "reaction_savings": 173.0,
+      "reactions_per_mode_hub": 3.64,
+      "reactions_per_mode_independent": 7.1
+    }
+  ],
+  "diagnostics": {
+    "n_multichild_hubs": 1732,
+    "pearson_flow_vs_visitation": -0.174,
+    "pearson_consensus_vs_terminating": 0.9266
+  },
+  "enumeration": {
+    "n_hubs_enumerated": 12,
+    "n_enumerated_records": 5900,
+    "enrichment": [
+      {
+        "hub_key": "Nc1ccc(-c2ccc(CNc3ccc(-c4cncc(F)c4)cn3)cc2)cc1",
+        "depth": 3,
+        "visit_count": 2,
+        "n_sampled_children": 2,
+        "n_enumerated_children": 996,
+        "sampled_recovered_by_enum": "2/2",
+        "enum_modes": 90,
+        "enum_best_reward": 7.918,
+        "enum_reactions_per_mode_hub": 11.1,
+        "enum_reactions_per_mode_independent": 44.267
+      },
+      {
+        "hub_key": "Fc1cccc(CNc2cc(-c3ccc(-c4nc5cc(Br)ccc5o4)cc3)n[nH]2)c1F",
+        "depth": 3,
+        "visit_count": 3,
+        "n_sampled_children": 3,
+        "n_enumerated_children": 686,
+        "sampled_recovered_by_enum": "3/3",
+        "enum_modes": 15,
+        "enum_best_reward": 7.126,
+        "enum_reactions_per_mode_hub": 45.933,
+        "enum_reactions_per_mode_independent": 182.933
+      },
+      {
+        "hub_key": "Nc1cc(-c2ccc(CNc3cc(-c4cccc(F)c4)n[nH]3)cc2)n[nH]1",
+        "depth": 3,
+        "visit_count": 3,
+        "n_sampled_children": 3,
+        "n_enumerated_children": 996,
+        "sampled_recovered_by_enum": "3/3",
+        "enum_modes": 73,
+        "enum_best_reward": 7.83,
+        "enum_reactions_per_mode_hub": 13.685,
+        "enum_reactions_per_mode_independent": 54.575
+      },
+      {
+        "hub_key": "Nc1cc(-c2ccc(-c3nc4cc(-c5cccc(F)c5)ccc4o3)cc2)n[nH]1",
+        "depth": 3,
+        "visit_count": 3,
+        "n_sampled_children": 3,
+        "n_enumerated_children": 498,
+        "sampled_recovered_by_enum": "3/3",
+        "enum_modes": 29,
+        "enum_best_reward": 7.722,
+        "enum_reactions_per_mode_hub": 17.276,
+        "enum_reactions_per_mode_independent": 68.69
+      },
+      {
+        "hub_key": "O=C=Nc1ccc(-c2cccc(F)c2)cc1",
+        "depth": 1,
+        "visit_count": 69,
+        "n_sampled_children": 4,
+        "n_enumerated_children": 134,
+        "sampled_recovered_by_enum": "4/4",
+        "enum_modes": 32,
+        "enum_best_reward": 7.071,
+        "enum_reactions_per_mode_hub": 4.219,
+        "enum_reactions_per_mode_independent": 8.375
+      },
+      {
+        "hub_key": "Fc1cccc(-c2ccc3nc(-c4nc5cc(Br)ccc5o4)oc3c2)c1",
+        "depth": 3,
+        "visit_count": 2,
+        "n_sampled_children": 2,
+        "n_enumerated_children": 188,
+        "sampled_recovered_by_enum": "2/2",
+        "enum_modes": 23,
+        "enum_best_reward": 7.159,
+        "enum_reactions_per_mode_hub": 8.304,
+        "enum_reactions_per_mode_independent": 32.696
+      },
+      {
+        "hub_key": "Fc1cncc(Br)c1",
+        "depth": 0,
+        "visit_count": 3076,
+        "n_sampled_children": 11,
+        "n_enumerated_children": 188,
+        "sampled_recovered_by_enum": "11/11",
+        "enum_modes": 105,
+        "enum_best_reward": 4.557,
+        "enum_reactions_per_mode_hub": 1.79,
+        "enum_reactions_per_mode_independent": 1.79
+      },
+      {
+        "hub_key": "CCCCCCBr",
+        "depth": 0,
+        "visit_count": 2111,
+        "n_sampled_children": 8,
+        "n_enumerated_children": 189,
+        "sampled_recovered_by_enum": "8/8",
+        "enum_modes": 99,
+        "enum_best_reward": 4.036,
+        "enum_reactions_per_mode_hub": 1.909,
+        "enum_reactions_per_mode_independent": 1.909
+      },
+      {
+        "hub_key": "O=C(O)c1cc[nH]n1",
+        "depth": 0,
+        "visit_count": 1221,
+        "n_sampled_children": 9,
+        "n_enumerated_children": 402,
+        "sampled_recovered_by_enum": "9/9",
+        "enum_modes": 196,
+        "enum_best_reward": 4.869,
+        "enum_reactions_per_mode_hub": 2.051,
+        "enum_reactions_per_mode_independent": 2.051
+      },
+      {
+        "hub_key": "Cc1cccc(CBr)c1C",
+        "depth": 0,
+        "visit_count": 1008,
+        "n_sampled_children": 8,
+        "n_enumerated_children": 189,
+        "sampled_recovered_by_enum": "8/8",
+        "enum_modes": 75,
+        "enum_best_reward": 6.142,
+        "enum_reactions_per_mode_hub": 2.52,
+        "enum_reactions_per_mode_independent": 2.52
+      },
+      {
+        "hub_key": "Cc1cccc(C)c1B(O)O",
+        "depth": 0,
+        "visit_count": 895,
+        "n_sampled_children": 6,
+        "n_enumerated_children": 60,
+        "sampled_recovered_by_enum": "6/6",
+        "enum_modes": 54,
+        "enum_best_reward": 4.152,
+        "enum_reactions_per_mode_hub": 1.111,
+        "enum_reactions_per_mode_independent": 1.111
+      },
+      {
+        "hub_key": "OB(O)c1cccc(F)c1",
+        "depth": 0,
+        "visit_count": 802,
+        "n_sampled_children": 5,
+        "n_enumerated_children": 60,
+        "sampled_recovered_by_enum": "5/5",
+        "enum_modes": 46,
+        "enum_best_reward": 4.405,
+        "enum_reactions_per_mode_hub": 1.304,
+        "enum_reactions_per_mode_independent": 1.304
+      }
+    ],
+    "per_hub": [
+      {
+        "hub": "Nc1ccc(-c2ccc(CNc3ccc(-c4cncc(F)c4)cn3)cc2)cc1",
+        "depth": 3,
+        "n_enumerated_paths": 1350,
+        "n_records": 1350
+      },
+      {
+        "hub": "Fc1cccc(CNc2cc(-c3ccc(-c4nc5cc(Br)ccc5o4)cc3)n[nH]2)c1F",
+        "depth": 3,
+        "n_enumerated_paths": 838,
+        "n_records": 838
+      },
+      {
+        "hub": "Nc1cc(-c2ccc(CNc3cc(-c4cccc(F)c4)n[nH]3)cc2)n[nH]1",
+        "depth": 3,
+        "n_enumerated_paths": 1350,
+        "n_records": 1350
+      },
+      {
+        "hub": "Nc1cc(-c2ccc(-c3nc4cc(-c5cccc(F)c5)ccc4o3)cc2)n[nH]1",
+        "depth": 3,
+        "n_enumerated_paths": 728,
+        "n_records": 728
+      },
+      {
+        "hub": "O=C=Nc1ccc(-c2cccc(F)c2)cc1",
+        "depth": 1,
+        "n_enumerated_paths": 162,
+        "n_records": 162
+      },
+      {
+        "hub": "Fc1cccc(-c2ccc3nc(-c4nc5cc(Br)ccc5o4)oc3c2)c1",
+        "depth": 3,
+        "n_enumerated_paths": 216,
+        "n_records": 216
+      },
+      {
+        "hub": "Fc1cncc(Br)c1",
+        "depth": 0,
+        "n_enumerated_paths": 216,
+        "n_records": 216
+      },
+      {
+        "hub": "CCCCCCBr",
+        "depth": 0,
+        "n_enumerated_paths": 222,
+        "n_records": 222
+      },
+      {
+        "hub": "O=C(O)c1cc[nH]n1",
+        "depth": 0,
+        "n_enumerated_paths": 474,
+        "n_records": 474
+      },
+      {
+        "hub": "Cc1cccc(CBr)c1C",
+        "depth": 0,
+        "n_enumerated_paths": 222,
+        "n_records": 222
+      },
+      {
+        "hub": "Cc1cccc(C)c1B(O)O",
+        "depth": 0,
+        "n_enumerated_paths": 61,
+        "n_records": 61
+      },
+      {
+        "hub": "OB(O)c1cccc(F)c1",
+        "depth": 0,
+        "n_enumerated_paths": 61,
+        "n_records": 61
+      }
+    ]
+  }
+}

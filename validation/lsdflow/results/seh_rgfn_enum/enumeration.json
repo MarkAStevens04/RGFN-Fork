@@ -1,0 +1,222 @@
+{
+  "per_hub_enumeration": [
+    {
+      "hub": "Nc1ccc(-c2ccc(CNc3ccc(-c4cncc(F)c4)cn3)cc2)cc1",
+      "depth": 3,
+      "n_enumerated_paths": 1350,
+      "n_records": 1350
+    },
+    {
+      "hub": "Fc1cccc(CNc2cc(-c3ccc(-c4nc5cc(Br)ccc5o4)cc3)n[nH]2)c1F",
+      "depth": 3,
+      "n_enumerated_paths": 838,
+      "n_records": 838
+    },
+    {
+      "hub": "Nc1cc(-c2ccc(CNc3cc(-c4cccc(F)c4)n[nH]3)cc2)n[nH]1",
+      "depth": 3,
+      "n_enumerated_paths": 1350,
+      "n_records": 1350
+    },
+    {
+      "hub": "Nc1cc(-c2ccc(-c3nc4cc(-c5cccc(F)c5)ccc4o3)cc2)n[nH]1",
+      "depth": 3,
+      "n_enumerated_paths": 728,
+      "n_records": 728
+    },
+    {
+      "hub": "O=C=Nc1ccc(-c2cccc(F)c2)cc1",
+      "depth": 1,
+      "n_enumerated_paths": 162,
+      "n_records": 162
+    },
+    {
+      "hub": "Fc1cccc(-c2ccc3nc(-c4nc5cc(Br)ccc5o4)oc3c2)c1",
+      "depth": 3,
+      "n_enumerated_paths": 216,
+      "n_records": 216
+    },
+    {
+      "hub": "Fc1cncc(Br)c1",
+      "depth": 0,
+      "n_enumerated_paths": 216,
+      "n_records": 216
+    },
+    {
+      "hub": "CCCCCCBr",
+      "depth": 0,
+      "n_enumerated_paths": 222,
+      "n_records": 222
+    },
+    {
+      "hub": "O=C(O)c1cc[nH]n1",
+      "depth": 0,
+      "n_enumerated_paths": 474,
+      "n_records": 474
+    },
+    {
+      "hub": "Cc1cccc(CBr)c1C",
+      "depth": 0,
+      "n_enumerated_paths": 222,
+      "n_records": 222
+    },
+    {
+      "hub": "Cc1cccc(C)c1B(O)O",
+      "depth": 0,
+      "n_enumerated_paths": 61,
+      "n_records": 61
+    },
+    {
+      "hub": "OB(O)c1cccc(F)c1",
+      "depth": 0,
+      "n_enumerated_paths": 61,
+      "n_records": 61
+    }
+  ],
+  "enrichment": [
+    {
+      "hub_key": "Nc1ccc(-c2ccc(CNc3ccc(-c4cncc(F)c4)cn3)cc2)cc1",
+      "depth": 3,
+      "visit_count": 2,
+      "n_sampled_children": 2,
+      "n_enumerated_children": 996,
+      "sampled_recovered_by_enum": "2/2",
+      "enum_modes": 90,
+      "enum_best_reward": 7.918,
+      "enum_reactions_per_mode_hub": 11.1,
+      "enum_reactions_per_mode_independent": 44.267
+    },
+    {
+      "hub_key": "Fc1cccc(CNc2cc(-c3ccc(-c4nc5cc(Br)ccc5o4)cc3)n[nH]2)c1F",
+      "depth": 3,
+      "visit_count": 3,
+      "n_sampled_children": 3,
+      "n_enumerated_children": 686,
+      "sampled_recovered_by_enum": "3/3",
+      "enum_modes": 15,
+      "enum_best_reward": 7.126,
+      "enum_reactions_per_mode_hub": 45.933,
+      "enum_reactions_per_mode_independent": 182.933
+    },
+    {
+      "hub_key": "Nc1cc(-c2ccc(CNc3cc(-c4cccc(F)c4)n[nH]3)cc2)n[nH]1",
+      "depth": 3,
+      "visit_count": 3,
+      "n_sampled_children": 3,
+      "n_enumerated_children": 996,
+      "sampled_recovered_by_enum": "3/3",
+      "enum_modes": 73,
+      "enum_best_reward": 7.83,
+      "enum_reactions_per_mode_hub": 13.685,
+      "enum_reactions_per_mode_independent": 54.575
+    },
+    {
+      "hub_key": "Nc1cc(-c2ccc(-c3nc4cc(-c5cccc(F)c5)ccc4o3)cc2)n[nH]1",
+      "depth": 3,
+      "visit_count": 3,
+      "n_sampled_children": 3,
+      "n_enumerated_children": 498,
+      "sampled_recovered_by_enum": "3/3",
+      "enum_modes": 29,
+      "enum_best_reward": 7.722,
+      "enum_reactions_per_mode_hub": 17.276,
+      "enum_reactions_per_mode_independent": 68.69
+    },
+    {
+      "hub_key": "O=C=Nc1ccc(-c2cccc(F)c2)cc1",
+      "depth": 1,
+      "visit_count": 69,
+      "n_sampled_children": 4,
+      "n_enumerated_children": 134,
+      "sampled_recovered_by_enum": "4/4",
+      "enum_modes": 32,
+      "enum_best_reward": 7.071,
+      "enum_reactions_per_mode_hub": 4.219,
+      "enum_reactions_per_mode_independent": 8.375
+    },
+    {
+      "hub_key": "Fc1cccc(-c2ccc3nc(-c4nc5cc(Br)ccc5o4)oc3c2)c1",
+      "depth": 3,
+      "visit_count": 2,
+      "n_sampled_children": 2,
+      "n_enumerated_children": 188,
+      "sampled_recovered_by_enum": "2/2",
+      "enum_modes": 23,
+      "enum_best_reward": 7.159,
+      "enum_reactions_per_mode_hub": 8.304,
+      "enum_reactions_per_mode_independent": 32.696
+    },
+    {
+      "hub_key": "Fc1cncc(Br)c1",
+      "depth": 0,
+      "visit_count": 3076,
+      "n_sampled_children": 11,
+      "n_enumerated_children": 188,
+      "sampled_recovered_by_enum": "11/11",
+      "enum_modes": 105,
+      "enum_best_reward": 4.557,
+      "enum_reactions_per_mode_hub": 1.79,
+      "enum_reactions_per_mode_independent": 1.79
+    },
+    {
+      "hub_key": "CCCCCCBr",
+      "depth": 0,
+      "visit_count": 2111,
+      "n_sampled_children": 8,
+      "n_enumerated_children": 189,
+      "sampled_recovered_by_enum": "8/8",
+      "enum_modes": 99,
+      "enum_best_reward": 4.036,
+      "enum_reactions_per_mode_hub": 1.909,
+      "enum_reactions_per_mode_independent": 1.909
+    },
+    {
+      "hub_key": "O=C(O)c1cc[nH]n1",
+      "depth": 0,
+      "visit_count": 1221,
+      "n_sampled_children": 9,
+      "n_enumerated_children": 402,
+      "sampled_recovered_by_enum": "9/9",
+      "enum_modes": 196,
+      "enum_best_reward": 4.869,
+      "enum_reactions_per_mode_hub": 2.051,
+      "enum_reactions_per_mode_independent": 2.051
+    },
+    {
+      "hub_key": "Cc1cccc(CBr)c1C",
+      "depth": 0,
+      "visit_count": 1008,
+      "n_sampled_children": 8,
+      "n_enumerated_children": 189,
+      "sampled_recovered_by_enum": "8/8",
+      "enum_modes": 75,
+      "enum_best_reward": 6.142,
+      "enum_reactions_per_mode_hub": 2.52,
+      "enum_reactions_per_mode_independent": 2.52
+    },
+    {
+      "hub_key": "Cc1cccc(C)c1B(O)O",
+      "depth": 0,
+      "visit_count": 895,
+      "n_sampled_children": 6,
+      "n_enumerated_children": 60,
+      "sampled_recovered_by_enum": "6/6",
+      "enum_modes": 54,
+      "enum_best_reward": 4.152,
+      "enum_reactions_per_mode_hub": 1.111,
+      "enum_reactions_per_mode_independent": 1.111
+    },
+    {
+      "hub_key": "OB(O)c1cccc(F)c1",
+      "depth": 0,
+      "visit_count": 802,
+      "n_sampled_children": 5,
+      "n_enumerated_children": 60,
+      "sampled_recovered_by_enum": "5/5",
+      "enum_modes": 46,
+      "enum_best_reward": 4.405,
+      "enum_reactions_per_mode_hub": 1.304,
+      "enum_reactions_per_mode_independent": 1.304
+    }
+  ]
+}

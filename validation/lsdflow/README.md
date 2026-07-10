@@ -71,7 +71,11 @@ Writes the persisted DAG (`records.csv`, `hub_summary.csv`, `meta.json`, `graph.
 
 - **Done (phase 1-2 code):** RGFN adapter, canonical DAG, flow recovery + `U(h)`, all hub +
   molecule strategy registries, reactions-per-mode cost + Butina diversity, the harness driver,
-  and `LSDFlowAcquisition` wired for the AL path.
+  `LSDFlowAcquisition` wired for the AL path, and the exhaustive **`enumerate_children`** path
+  (`rgfn_enumerate.py` + `--enumerate-top-hubs` / `--from-records`) — validated: a depth-0 hub
+  enumerates to 498 one-reaction children (sampling saw 8), 100% sampled-child recovery
+  (Logs/025 addendum). Enumeration is exact for fragment hubs; stereo-bearing hubs need a fresh
+  stereo-keyed DAG (now persisted).
 - **Next:** the matrix driver over RGFN's four fixed rewards; loop integration of
   `LSDFlowAcquisition` (a small, tracked `glue/active_learning/loop.py` change — the current
   loop has no pluggable-sampler hook, contrary to the proposal §4a note); SCENT adapter +

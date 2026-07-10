@@ -53,4 +53,13 @@ class LSDFlowRunConfig:
     min_children_for_hub: int = 2  # a diversifying hub has >=2 distinct children
     seed: int = 0
 
+    # Reuse a previously-persisted DAG (records.csv) instead of re-sampling — RGFN sampling on
+    # the stdlib library is CPU-bound and slow (Logs/020), so enumeration/iteration should not
+    # pay it repeatedly. Empty = sample fresh.
+    from_records: str = ""
+
+    # Phase-2 exhaustive child enumeration (proposal §4b/§6). 0 = off (sampled DAG only).
+    enumerate_top_hubs: int = 0  # enumerate children of this many selected hubs
+    enumerate_max_children: int = 4000  # per-hub enumeration cap (docking budget guard)
+
     out_dir: str = "validation/lsdflow/results/seh_rgfn_pilot"

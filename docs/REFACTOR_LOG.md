@@ -1116,3 +1116,29 @@ test caveats: 91% of multi-child hubs sit at the `max_num_reactions` boundary (f
 ranking ties the `parent_of_topk` control on cost (3.55 vs 3.47); flow-vs-visitation correlation
 ~0 (0.086). Added a checkpoint-provenance caution to `validation/lsdflow/README.md`. Results:
 `validation/lsdflow/results/seh_rgfn_pilot/`.
+
+**Phase-2 exhaustive enumeration (same day, Logs/025 addendum).** Added the §4b
+`enumerate_children` path: `glue/samplers/lsdflow/rgfn_enumerate.py` (DFS the env's A→B→C
+action spaces → all one-reaction products → rebuild each `hub→…→stop→Terminal` micro-step
+trajectory with the env's own action spaces → reuse `extract_flow_records`, so enumerated flow
+terms == sampled), `RGFNAdapter.enumerate_hub_children`, and harness flags
+`--enumerate-top-hubs` / `--enumerate-max-children` / `--from-records` (reuse a persisted DAG
+so enumeration skips the slow ~30–40 min RGFN re-sample). Persisted-records now carry
+`hub_stereo_key`/`child_stereo_key`. **Validated:** a depth-0 fragment hub enumerates to 498
+one-reaction children / 309 modes (sampling saw 8), 100% sampled-child recovery — resolving the
+boundary-artifact caveat for the cheapest hubs. Guard: children whose `P_B` the env can't invert
+(max-depth boundary / stereo-dependent disconnection) are skipped, never assigned a fabricated
+`P_B=1`. **Limitation:** hubs with stereocenters reconstructed from the stereo-stripped key
+enumerate to 0 (stereo-dependent disconnection fails) — a fresh stereo-keyed DAG fixes it (the
+committed 10k `records.csv` predates the stereo columns). Enumeration artifacts:
+`validation/lsdflow/results/seh_rgfn_pilot/enumeration.json` + `enumerated_records.csv`.
+
+**Deeper-hub result (Balam job 70140, fresh 30k stereo-keyed DAG, 3h39m, Logs/025).** A fresh run
+reconstructs hubs from live stereo SMILES → **fully fixed** deeper-hub enumeration (all 12 hubs
+100% sampled-child recovery, incl. depth-3; the limitation was stereo-stripping, not the
+max-depth boundary). Landed the reactions-per-mode amortization: depth-1 hub 4.2 vs 8.4 indep
+(~2×), depth-3 hubs 11-46 vs 44-183 (~4×); best enumerated sEH 7.1-7.9. Also added: the harness
+persists the DAG BEFORE enumeration (a slow enumeration can't lose the multi-hour sample), the
+`--from-records` reuse path, interior (depth 1-2) hub targeting, and
+`validation/lsdflow/submit_seh_enum.sh` (compute-node submit). Small artifacts committed to
+`validation/lsdflow/results/seh_rgfn_enum/`.

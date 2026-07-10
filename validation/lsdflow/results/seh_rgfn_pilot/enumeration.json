@@ -1,0 +1,114 @@
+{
+  "per_hub_enumeration": [
+    {
+      "hub": "O=C(Cn1ccc2cc(-c3ccc4nc(C5Cc6ccccc6CN5)oc4c3)ccc21)c1ccc(F)cc1",
+      "depth": 3,
+      "n_enumerated_paths": 946,
+      "n_records": 0
+    },
+    {
+      "hub": "O=C(NC12CC(C1)C2)C1Cc2ccccc2CN1",
+      "depth": 1,
+      "n_enumerated_paths": 622,
+      "n_records": 0
+    },
+    {
+      "hub": "CC(C)CC(Nc1ccc2oc(-c3ccc4nc(C5Cc6ccccc6CN5)oc4c3)nc2c1)C(=O)O",
+      "depth": 3,
+      "n_enumerated_paths": 1718,
+      "n_records": 0
+    },
+    {
+      "hub": "O=C=Nc1ccccc1",
+      "depth": 0,
+      "n_enumerated_paths": 162,
+      "n_records": 162
+    },
+    {
+      "hub": "NC12CC(C1)C2",
+      "depth": 0,
+      "n_enumerated_paths": 728,
+      "n_records": 728
+    },
+    {
+      "hub": "O=S(=O)(F)C1CC1",
+      "depth": 0,
+      "n_enumerated_paths": 162,
+      "n_records": 162
+    }
+  ],
+  "enrichment": [
+    {
+      "hub_key": "O=C(Cn1ccc2cc(-c3ccc4nc(C5Cc6ccccc6CN5)oc4c3)ccc21)c1ccc(F)cc1",
+      "depth": 3,
+      "visit_count": 4,
+      "n_sampled_children": 3,
+      "n_enumerated_children": 0,
+      "sampled_recovered_by_enum": "0/3",
+      "enum_modes": 0,
+      "enum_best_reward": null,
+      "enum_reactions_per_mode_hub": Infinity,
+      "enum_reactions_per_mode_independent": Infinity
+    },
+    {
+      "hub_key": "O=C(NC12CC(C1)C2)C1Cc2ccccc2CN1",
+      "depth": 1,
+      "visit_count": 10,
+      "n_sampled_children": 7,
+      "n_enumerated_children": 0,
+      "sampled_recovered_by_enum": "0/7",
+      "enum_modes": 0,
+      "enum_best_reward": null,
+      "enum_reactions_per_mode_hub": Infinity,
+      "enum_reactions_per_mode_independent": Infinity
+    },
+    {
+      "hub_key": "CC(C)CC(Nc1ccc2oc(-c3ccc4nc(C5Cc6ccccc6CN5)oc4c3)nc2c1)C(=O)O",
+      "depth": 3,
+      "visit_count": 5,
+      "n_sampled_children": 3,
+      "n_enumerated_children": 0,
+      "sampled_recovered_by_enum": "0/3",
+      "enum_modes": 0,
+      "enum_best_reward": null,
+      "enum_reactions_per_mode_hub": Infinity,
+      "enum_reactions_per_mode_independent": Infinity
+    },
+    {
+      "hub_key": "O=C=Nc1ccccc1",
+      "depth": 0,
+      "visit_count": 26,
+      "n_sampled_children": 3,
+      "n_enumerated_children": 134,
+      "sampled_recovered_by_enum": "3/3",
+      "enum_modes": 73,
+      "enum_best_reward": 6.077,
+      "enum_reactions_per_mode_hub": 1.836,
+      "enum_reactions_per_mode_independent": 1.836
+    },
+    {
+      "hub_key": "NC12CC(C1)C2",
+      "depth": 0,
+      "visit_count": 22,
+      "n_sampled_children": 8,
+      "n_enumerated_children": 498,
+      "sampled_recovered_by_enum": "8/8",
+      "enum_modes": 309,
+      "enum_best_reward": 6.92,
+      "enum_reactions_per_mode_hub": 1.612,
+      "enum_reactions_per_mode_independent": 1.612
+    },
+    {
+      "hub_key": "O=S(=O)(F)C1CC1",
+      "depth": 0,
+      "visit_count": 20,
+      "n_sampled_children": 3,
+      "n_enumerated_children": 134,
+      "sampled_recovered_by_enum": "3/3",
+      "enum_modes": 80,
+      "enum_best_reward": 3.54,
+      "enum_reactions_per_mode_hub": 1.675,
+      "enum_reactions_per_mode_independent": 1.675
+    }
+  ]
+}

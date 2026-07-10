@@ -81,6 +81,72 @@ axis, so the same hub-selection can later be dropped into the active-learning lo
 - Bring in SCENT (once its backward-policy-recoverable retrain lands, entry `024`/§9) for the
   RGFN-vs-SCENT hub-coincidence study that is the paper's spine, then FragGFN/RxnFlow.
 
+## Addendum — phase-2 exhaustive child enumeration (2026-07-08, same day)
+
+The sampled DAG above only credits a hub with a terminal child when a trajectory happens to
+**stop exactly one reaction later** — which is why shallow hubs looked sparse (a hub is visited
+often but most trajectories through it keep reacting). To measure a hub's *true* one-reaction
+neighborhood we built an exhaustive enumerator (proposal §4b `enumerate_children`, §6): for a
+selected hub it walks the reaction environment's A→B→C action spaces to enumerate every
+one-reaction product, rebuilds each `hub → … → stop → Terminal` micro-step path with the env's
+own forward/backward action spaces, and reuses the *same* `extract_flow_records` code as the
+sampled path — so enumerated flow terms are computed identically and merge into the DAG.
+
+**Result — shallow hubs are far richer than sampling shows.** The depth-0 fragment hub
+`NC12CC(C1)C2` (bicyclo[1.1.1]pentanamine) has **498 distinct one-reaction products spanning 309
+Butina modes** (best sEH reward 6.92) where sampling found only **8**; two more depth-0 hubs
+(`O=C=Nc1ccccc1`, `O=S(=O)(F)C1CC1`) each enumerate to **134** products (73 / 80 modes) vs 3
+sampled. In every case **100% of the sampled children are recovered by enumeration**, which
+validates the enumerator against ground truth. So the batchable neighborhoods the thesis is
+about genuinely exist and are large (~30–60× what sampling sees); they only *looked* sparse
+because the terminal-transition estimator can't see a hub's products unless a trajectory
+terminated on them.
+
+**Two issues found and handled in validation:** (1) an enumeration cap that is too low truncates
+a large neighborhood (a tiny fragment has hundreds of products), so recovery is only complete
+above the cap — raise `--enumerate-max-children`; (2) at the max-reaction boundary (and for
+stereo-dependent disconnections) the env cannot invert the reaction, so a guard **skips children
+whose `P_B` can't be recovered** rather than silently emitting `P_B=1`.
+
+**Known limitation (honest).** Enumeration is exact for **depth-0 (fragment) hubs**, but hubs
+carrying **stereocenters**, when reconstructed from the *stereo-stripped* cross-model key,
+fail the env's stereo-dependent disconnection check and enumerate to zero valid children (the
+guard correctly refuses to fabricate `P_B`; a non-stereo depth-1 hub recovered 5/5, confirming
+it is stereo — not depth). The enabling fix is in place: `HubDAG.save` now persists
+`hub_stereo_key` / `child_stereo_key`, so a **fresh** DAG reconstructs hubs faithfully; the
+committed 10k `records.csv` predates that column, so its deeper (stereo-bearing) hubs skip.
+Note also that depth-0 fragment hubs show huge *diversity* but **no cost saving** (a fragment
+costs 0 reactions to build, so hub-amortized ≈ independent) — the reactions-per-mode *saving*
+lives on depth ≥1 hubs, whose faithful enumeration is the immediate follow-up (a fresh
+stereo-keyed DAG; RGFN's CPU-bound sampling makes this a compute-node job, hence the
+`--from-records` reuse path so enumeration never re-pays the ~30–40 min sample).
+
+Artifacts: `validation/lsdflow/results/seh_rgfn_pilot/enumeration.json` (per-hub enrichment) +
+`enumerated_records.csv`; code in `glue/samplers/lsdflow/rgfn_enumerate.py`,
+`RGFNAdapter.enumerate_hub_children`, harness `--enumerate-top-hubs` / `--from-records`.
+
+**Deeper-hub result — fresh stereo-keyed DAG (Balam job 70140, 30k trajectories, 3h39m).** A
+fresh run (not `--from-records`) reconstructs hubs from the *live* stereo SMILES, which **fully
+fixed** the deeper-hub enumeration: all 12 enumerated hubs recovered 100% of their sampled
+children — including the depth-3 hubs that had zeroed out in the stale-CSV run. So the earlier
+limitation was stereo-stripped reconstruction, **not** the max-reaction boundary (with faithful
+stereo, even depth-4 children invert cleanly). The 30k DAG has 1,732 multi-child hubs (max 21
+children), of which **237 are interior (depth 1-2)** — enough to demonstrate amortization:
+
+| hub depth | example | sampled → enumerated (recov) | modes | best sEH | reactions/mode: hub vs independent |
+|---|---|---|---|---|---|
+| 0 (fragment) | `O=C(O)c1cc[nH]n1` | 9 → 402 (9/9) | 196 | 4.87 | 2.05 vs 2.05 (**no saving** — fragment is free) |
+| 1 | `O=C=Nc1ccc(-c2cccc(F)c2)cc1` | 4 → 134 (4/4) | 32 | 7.07 | **4.2 vs 8.4 (~2×)** |
+| 3 | `Nc1ccc(-c2ccc(CNc3ccc(-c4cncc(F)c4)cn3…` | 2 → 996 (2/2) | 90 | 7.92 | **11.1 vs 44.3 (~4×)** |
+| 3 | (another) | 3 → 686 (3/3) | 15 | 7.13 | 45.9 vs 182.9 — but only 15 modes ⇒ **redundant** neighborhood |
+
+The reactions-per-mode saving scales with hub depth (~`depth+1`× for large batches): a depth-0
+fragment costs 0 reactions so shows diversity but no saving; depth-1 saves ~2×; depth-3 ~4×.
+The mode column doubles as a severe-test signal — a hub with many children but few modes (686 →
+15) is a *redundant* neighborhood, not a diverse one, and the metric surfaces it. Small artifacts
+committed to `validation/lsdflow/results/seh_rgfn_enum/`; full DAG + `enumerated_records.csv` on
+`$SCRATCH/rgfn_runs/lsdflow/seh_stdlib_70140/`.
+
 # Re-creation
 
 ## Relevant Files

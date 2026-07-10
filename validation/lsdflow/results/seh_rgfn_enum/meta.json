@@ -1,0 +1,14 @@
+{
+  "model": "rgfn",
+  "reward": "seh",
+  "run_id": "seh_stdlib_70140_enum",
+  "n_trajectories": 30000,
+  "n_valid_terminals": 29839,
+  "log_z": 74.99439239501953,
+  "higher_is_better": true,
+  "n_hubs": 21829,
+  "n_multichild_hubs": 1732,
+  "max_children_per_hub": 21,
+  "mean_multichild_hub_depth": 2.7361431870669746,
+  "n_distinct_nodes": 63283
+}

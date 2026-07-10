@@ -257,7 +257,8 @@
       "Bash(git -C /home/markymoo/projects/RGFN_Fork/RGFN-Fork log --oneline -5)",
       "Bash(awk '{print $NF}')",
       "Bash(git checkout *)",
-      "Bash(git config *)"
+      "Bash(git config *)",
+      "Bash(sacct -j 70140 --format=JobID,JobName%20,State,Elapsed,ExitCode -n)"
     ]
   }
 }

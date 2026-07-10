@@ -54,10 +54,9 @@ close it for all future runs and document it for the past ones.
 ### Next Experiments
 
 **Refining for publication**
-- **Submitted (2026-07-07):** all four SCENT fixed-reward re-runs with the patched adapter
-  (seh 70066, drd2 70067, 6td3 70068, clpp 70069) so each produces a checkpoint + guidance
-  sidecar. When they finish, confirm exact P_B recovery on the genuinely-trained guidance
-  weights (`verify_pb_recovery.py --checkpoint <new last_gfn.pt>`).
+- **Done (2026-07-08):** all four SCENT fixed-reward re-runs (seh 70066, drd2 70067, 6td3
+  70068, clpp 70069) completed with the patched adapter and each PASSED end-to-end P_B
+  recovery on its own production checkpoint (`check_trained_sidecar.py`, Results table).
 - Run the balance-based flow analysis on a recovered SCENT model and
   compare its visit-count vs Trajectory-Balance flow agreement against RGFN's.
 
@@ -105,11 +104,10 @@ Root: `./validation/generators/scent/`
 - Five pre-fix checkpoint dirs (below) now each carry `BACKWARD_POLICY_NOT_SAVED.txt`.
 
 **Job logs** — root `/scratch/markymoo/rgfn_runs/`
-- Patched fixed-reward re-runs submitted 2026-07-07: **70066** seh (COMPLETED 11h47m),
-  **70067** drd2 (COMPLETED 12h16m) — both emitted `train/checkpoints/guidance_models.pt`
-  (2.1 MB) beside `last_gfn.pt` and PASSED the end-to-end recovery check (Results).
-  **70068** 6td3 (docking) + **70069** clpp (docking) still running as of write-up (per-step
-  GPU docking is slower); verify with `check_trained_sidecar.py` once they finish. Outputs at
+- Patched fixed-reward re-runs (submitted 2026-07-07), **all four COMPLETED and PASSED** the
+  end-to-end recovery check (Results): **70066** seh (11h47m), **70067** drd2 (12h16m),
+  **70068** 6td3 docking (15h06m), **70069** clpp docking (14h32m). Each emitted
+  `train/checkpoints/guidance_models.pt` (2.1 MB) beside `last_gfn.pt`. Outputs at
   `fr_scent_*-<jobid>.{out,err}`.
 
 ### Relevant Versions
@@ -206,12 +204,15 @@ completed re-runs, loaded from their own `last_gfn.pt` + `guidance_models.pt`:
 |---|---|---|---|---|
 | seh (70066) | 0 | C-phase max **7.62** / mean **1.20** nats, 146/195 steps | bit-exact (0.0) | **PASS** |
 | drd2 (70067) | 0 | C-phase max **8.25** / mean **1.16** nats, 141/191 steps | bit-exact (0.0) | **PASS** |
+| 6td3 (70068) | 0 | C-phase max **12.06** / mean **1.45** nats, 147/197 steps | bit-exact (0.0) | **PASS** |
+| clpp (70069) | 0 | C-phase max **7.86** / mean **1.00** nats, 134/184 steps | bit-exact (0.0) | **PASS** |
 
-The trained-vs-random gap (max ~8 nats) is ~25× the random-vs-random reseed gap (0.32 max,
-step 3), i.e. the trained guidance is strongly cost-tilted — without the sidecar a reload
-would mis-weight some backward transitions by ~e^8 ≈ 3000×, confirming recovery was
-load-bearing, not cosmetic. (6td3 + clpp docking runs still training at write-up; run
-`check_trained_sidecar.py <last_gfn.pt> <guidance_models.pt> <cfg>` on each when done.)
+All four re-runs recover their trained P_B exactly. The trained-vs-random gap (max 7.6–12
+nats) is ~25–40× the random-vs-random reseed gap (0.32 max, step 3), i.e. the trained
+guidance is strongly cost-tilted — without the sidecar a reload would mis-weight some
+backward transitions by up to ~e^12, confirming recovery was load-bearing, not cosmetic.
+(6td3/clpp built on the sEH config for the check — login-safe, no docking; `real-missing=0`
++ clean sidecar load confirm the shared-SMALL-library architecture matches.)
 
 **Pre-fix runs flagged (step 5).** `BACKWARD_POLICY_NOT_SAVED.txt` written to:
 `active_learning/scent_6td3/2026-06-30_19-46-47`, `fixed_reward/scent_6td3/2026-07-03_14-34-22`,

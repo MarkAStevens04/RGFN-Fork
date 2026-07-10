@@ -120,6 +120,65 @@ class RGFNAdapter(GFNAdapter):
             reward_name=self.reward_name,
         )
 
+    # ---------------------------------------------------------------- phase 2 enumeration
+    def enumerate_hub_children(self, hubs, *, max_children: int = 2000):
+        """Exhaustively enumerate one-reaction terminal children for each hub (§4b, §6).
+
+        Args:
+            hubs: iterable of ``(stereo_smiles, depth)`` — the hub's stereo-aware SMILES and its
+                observed build depth ``k`` (children land at ``k+1``, which sets stop
+                competition vs the ``max_num_reactions`` cap).
+            max_children: per-hub enumeration cap (docking budget guard; free for sEH).
+
+        Returns:
+            ``(records, per_hub_stats)`` — flow records for all enumerated children (mergeable
+            with the sampled DAG) + a per-hub dict of enumerated-path / record counts.
+        """
+        from glue.samplers.lsdflow.rgfn_enumerate import (
+            enumerate_terminal_children,
+            hub_state_from_smiles,
+        )
+
+        env = getattr(self.sampler, "env", None)
+        reward = getattr(self.sampler, "reward", None)
+        if env is None or reward is None:
+            raise RuntimeError(
+                "RGFNAdapter.enumerate_hub_children needs sampler.env + sampler.reward."
+            )
+        all_records = []
+        per_hub = []
+        for smiles, depth in hubs:
+            hub_state = hub_state_from_smiles(smiles, int(depth))
+            if hub_state is None:
+                per_hub.append(
+                    {
+                        "hub": smiles,
+                        "depth": int(depth),
+                        "n_enumerated_paths": 0,
+                        "n_records": 0,
+                        "error": "invalid_smiles",
+                    }
+                )
+                continue
+            recs, n_paths = enumerate_terminal_children(
+                env,
+                self.objective,
+                reward,
+                hub_state,
+                max_children=max_children,
+                strip_stereo=self.strip_stereo,
+            )
+            all_records.extend(recs)
+            per_hub.append(
+                {
+                    "hub": smiles,
+                    "depth": int(depth),
+                    "n_enumerated_paths": n_paths,
+                    "n_records": len(recs),
+                }
+            )
+        return all_records, per_hub
+
     # ---------------------------------------------------------------- helpers
     def _to_device(self, device: str) -> None:
         self.objective.device = device

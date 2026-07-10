@@ -165,6 +165,8 @@ class HubDAG:
                     "log_pb_move",
                     "log_pf_stop",
                     "hub_depth",
+                    "hub_stereo_key",
+                    "child_stereo_key",
                 ]
             )
             for r in self.sample.records:
@@ -178,6 +180,8 @@ class HubDAG:
                         r.log_pb_move,
                         r.log_pf_stop,
                         r.hub_depth,
+                        r.hub_stereo_key,
+                        r.child_stereo_key,
                     ]
                 )
 
