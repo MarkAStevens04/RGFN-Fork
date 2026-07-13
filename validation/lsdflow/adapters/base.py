@@ -48,6 +48,10 @@ class FlowSample:
     higher_is_better: bool = True
     model: str = "unknown"
     reward_name: str = "unknown"
+    # Per-molecule dynamic-fragment composition (SCENT nested cost, Logs/028):
+    # ``{node_key: {"promoted": [fragment_smiles...], "num_reactions": k}}``. Empty for models
+    # with no promoted fragments (RGFN — all base blocks free), so the cost model is a no-op there.
+    compositions: Dict[str, dict] = field(default_factory=dict)
 
     @property
     def n_valid_terminals(self) -> int:

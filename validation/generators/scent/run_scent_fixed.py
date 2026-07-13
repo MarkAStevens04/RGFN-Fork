@@ -47,6 +47,13 @@ def main() -> None:
         default=None,
         help="base run dir (absolute). On Balam set to $SCRATCH/rgfn_runs/experiments.",
     )
+    ap.add_argument(
+        "--log-recipes",
+        action="store_true",
+        help="log each promoted dynamic-library fragment's synthesis route into the "
+        "fragments_<N>.json snapshot (for exact nested LSD-Flow cost + chemist routes, entry 027). "
+        "Monkeypatches DynamicLibrary; SCENT clone untouched.",
+    )
     args = ap.parse_args()
 
     if not _SCENT_ROOT.exists():
@@ -86,6 +93,11 @@ def main() -> None:
 
     import rgfn  # noqa: F401  (side effect: registers most SCENT gin components)
     from rgfn.trainer.trainer import Trainer  # noqa: F401  (registers @Trainer)
+
+    if args.log_recipes:
+        import recipe_logging  # sibling module (validation/generators/scent)
+
+        recipe_logging.enable_recipe_logging()
 
     bindings = [
         f'user_root_dir="{root_dir}"',

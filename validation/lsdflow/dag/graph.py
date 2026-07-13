@@ -220,6 +220,11 @@ class HubDAG:
         with open(out / "meta.json", "w") as fh:
             json.dump(self.summary(), fh, indent=2)
 
+        # Per-molecule dynamic-fragment composition (SCENT nested cost, Logs/028); empty for RGFN.
+        if getattr(self.sample, "compositions", None):
+            with open(out / "compositions.json", "w") as fh:
+                json.dump(self.sample.compositions, fh)
+
         g = self.to_networkx()
         if g is not None:
             try:

@@ -1,0 +1,1054 @@
+{
+  "config": {
+    "model": "scent",
+    "config_path": "validation/configs/scent_drd2_fixed.gin",
+    "checkpoint_path": "/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_drd2/2026-07-10_17-28-06/train/checkpoints/last_gfn.pt",
+    "reward_name": "drd2",
+    "run_id": "scent_drd2_70190",
+    "n_trajectories": 30000,
+    "sample_batch_size": 200,
+    "device": "auto",
+    "hub_strategies": [
+      "highest_terminating_flow",
+      "highest_flow",
+      "most_modes",
+      "highest_visitation",
+      "lowest_uncertainty",
+      "parent_of_topk"
+    ],
+    "combos": [
+      [
+        "highest_terminating_flow",
+        "topk_reward"
+      ],
+      [
+        "highest_terminating_flow",
+        "uniform_random"
+      ],
+      [
+        "lowest_uncertainty",
+        "prob_weighted"
+      ],
+      [
+        "parent_of_topk",
+        "topk_reward"
+      ]
+    ],
+    "report_top_hubs": 10,
+    "out_batch_size": 96,
+    "per_hub": 8,
+    "mode_similarity_threshold": 0.7,
+    "mode_reward_threshold": 7.0,
+    "min_children_for_hub": 2,
+    "seed": 0,
+    "from_records": "",
+    "enumerate_top_hubs": 8,
+    "enumerate_max_children": 12000,
+    "out_dir": "/scratch/markymoo/rgfn_runs/lsdflow/scent_drd2_70190"
+  },
+  "summary": {
+    "model": "scent",
+    "reward": "drd2",
+    "run_id": "scent_drd2_70190",
+    "n_trajectories": 30000,
+    "n_valid_terminals": 29992,
+    "log_z": 61.90383529663086,
+    "higher_is_better": true,
+    "n_hubs": 28865,
+    "n_multichild_hubs": 864,
+    "max_children_per_hub": 7,
+    "mean_multichild_hub_depth": 2.386574074074074,
+    "n_distinct_nodes": 82629
+  },
+  "strategies": {
+    "highest_terminating_flow": [
+      {
+        "hub_key": "NC(Cc1c[nH]c2ccccc12)C(=O)O",
+        "depth": 0,
+        "n_children": 2,
+        "visit_count": 680,
+        "log_flow_consensus": 58.2627,
+        "log_flow_terminating": 59.5467,
+        "uncertainty": 1.4317,
+        "effective_n": 2,
+        "best_reward": 0.9958,
+        "log_visitation": 58.117
+      },
+      {
+        "hub_key": "O=Cc1c[nH]c2ccc(Br)cc12",
+        "depth": 0,
+        "n_children": 6,
+        "visit_count": 386,
+        "log_flow_consensus": 56.2318,
+        "log_flow_terminating": 58.7157,
+        "uncertainty": 101.635,
+        "effective_n": 6,
+        "best_reward": 1.0,
+        "log_visitation": 57.5507
+      },
+      {
+        "hub_key": "CC(N)C(=O)O",
+        "depth": 0,
+        "n_children": 3,
+        "visit_count": 1176,
+        "log_flow_consensus": 57.3328,
+        "log_flow_terminating": 58.64,
+        "uncertainty": 0.0895,
+        "effective_n": 3,
+        "best_reward": 1.0,
+        "log_visitation": 58.6648
+      },
+      {
+        "hub_key": "CC(N)CN1CCCC1C(=O)O",
+        "depth": 1,
+        "n_children": 2,
+        "visit_count": 79,
+        "log_flow_consensus": 50.736,
+        "log_flow_terminating": 58.1736,
+        "uncertainty": 55.318,
+        "effective_n": 2,
+        "best_reward": 0.9821,
+        "log_visitation": 55.9643
+      },
+      {
+        "hub_key": "c1cc(NC2CCNC2)c2[nH]ccc2c1",
+        "depth": 1,
+        "n_children": 2,
+        "visit_count": 32,
+        "log_flow_consensus": 56.9433,
+        "log_flow_terminating": 58.0042,
+        "uncertainty": 0.8298,
+        "effective_n": 2,
+        "best_reward": 0.9938,
+        "log_visitation": 55.0606
+      },
+      {
+        "hub_key": "CC(C)CC(N)C(=O)O",
+        "depth": 0,
+        "n_children": 2,
+        "visit_count": 107,
+        "log_flow_consensus": 36.5205,
+        "log_flow_terminating": 57.867,
+        "uncertainty": 455.6736,
+        "effective_n": 2,
+        "best_reward": 0.9882,
+        "log_visitation": 56.2677
+      },
+      {
+        "hub_key": "O=C(O)C1CCCN1Cc1c[nH]c2ccc(Br)cc12",
+        "depth": 1,
+        "n_children": 3,
+        "visit_count": 44,
+        "log_flow_consensus": 54.9026,
+        "log_flow_terminating": 57.3137,
+        "uncertainty": 1.5157,
+        "effective_n": 3,
+        "best_reward": 0.9883,
+        "log_visitation": 55.3791
+      },
+      {
+        "hub_key": "Nc1cccc2cc[nH]c12",
+        "depth": 0,
+        "n_children": 2,
+        "visit_count": 316,
+        "log_flow_consensus": 38.1224,
+        "log_flow_terminating": 56.9189,
+        "uncertainty": 353.3082,
+        "effective_n": 2,
+        "best_reward": 0.9854,
+        "log_visitation": 57.3506
+      },
+      {
+        "hub_key": "Brc1ccccc1CCNCC1CCCN1",
+        "depth": 1,
+        "n_children": 4,
+        "visit_count": 63,
+        "log_flow_consensus": 53.9607,
+        "log_flow_terminating": 56.4339,
+        "uncertainty": 8.2887,
+        "effective_n": 4,
+        "best_reward": 0.9973,
+        "log_visitation": 55.738
+      },
+      {
+        "hub_key": "CCC(N)CN1CC(=O)C1",
+        "depth": 1,
+        "n_children": 3,
+        "visit_count": 40,
+        "log_flow_consensus": 54.9799,
+        "log_flow_terminating": 56.3643,
+        "uncertainty": 5.5775,
+        "effective_n": 3,
+        "best_reward": 1.0,
+        "log_visitation": 55.2838
+      }
+    ],
+    "highest_flow": [
+      {
+        "hub_key": "NC(Cc1c[nH]c2ccccc12)C(=O)O",
+        "depth": 0,
+        "n_children": 2,
+        "visit_count": 680,
+        "log_flow_consensus": 58.2627,
+        "log_flow_terminating": 59.5467,
+        "uncertainty": 1.4317,
+        "effective_n": 2,
+        "best_reward": 0.9958,
+        "log_visitation": 58.117
+      },
+      {
+        "hub_key": "CC(N)C(=O)O",
+        "depth": 0,
+        "n_children": 3,
+        "visit_count": 1176,
+        "log_flow_consensus": 57.3328,
+        "log_flow_terminating": 58.64,
+        "uncertainty": 0.0895,
+        "effective_n": 3,
+        "best_reward": 1.0,
+        "log_visitation": 58.6648
+      },
+      {
+        "hub_key": "c1cc(NC2CCNC2)c2[nH]ccc2c1",
+        "depth": 1,
+        "n_children": 2,
+        "visit_count": 32,
+        "log_flow_consensus": 56.9433,
+        "log_flow_terminating": 58.0042,
+        "uncertainty": 0.8298,
+        "effective_n": 2,
+        "best_reward": 0.9938,
+        "log_visitation": 55.0606
+      },
+      {
+        "hub_key": "O=Cc1c[nH]c2ccc(Br)cc12",
+        "depth": 0,
+        "n_children": 6,
+        "visit_count": 386,
+        "log_flow_consensus": 56.2318,
+        "log_flow_terminating": 58.7157,
+        "uncertainty": 101.635,
+        "effective_n": 6,
+        "best_reward": 1.0,
+        "log_visitation": 57.5507
+      },
+      {
+        "hub_key": "c1ccc2c(CCNC3CCNCC3)c[nH]c2c1",
+        "depth": 1,
+        "n_children": 2,
+        "visit_count": 72,
+        "log_flow_consensus": 55.5464,
+        "log_flow_terminating": 56.2937,
+        "uncertainty": 0.1102,
+        "effective_n": 2,
+        "best_reward": 0.9969,
+        "log_visitation": 55.8715
+      },
+      {
+        "hub_key": "CCC(N)CN1CC(=O)C1",
+        "depth": 1,
+        "n_children": 3,
+        "visit_count": 40,
+        "log_flow_consensus": 54.9799,
+        "log_flow_terminating": 56.3643,
+        "uncertainty": 5.5775,
+        "effective_n": 3,
+        "best_reward": 1.0,
+        "log_visitation": 55.2838
+      },
+      {
+        "hub_key": "O=C(O)C1CCCN1Cc1c[nH]c2ccc(Br)cc12",
+        "depth": 1,
+        "n_children": 3,
+        "visit_count": 44,
+        "log_flow_consensus": 54.9026,
+        "log_flow_terminating": 57.3137,
+        "uncertainty": 1.5157,
+        "effective_n": 3,
+        "best_reward": 0.9883,
+        "log_visitation": 55.3791
+      },
+      {
+        "hub_key": "NC(Cc1c[nH]c2ccccc12)CN1CCCC(=O)C1",
+        "depth": 1,
+        "n_children": 2,
+        "visit_count": 56,
+        "log_flow_consensus": 54.0897,
+        "log_flow_terminating": 55.9171,
+        "uncertainty": 3.2415,
+        "effective_n": 2,
+        "best_reward": 0.9918,
+        "log_visitation": 55.6202
+      },
+      {
+        "hub_key": "COc1ccccc1CCNCCCNCCCCN",
+        "depth": 2,
+        "n_children": 2,
+        "visit_count": 7,
+        "log_flow_consensus": 54.0565,
+        "log_flow_terminating": 54.9723,
+        "uncertainty": 0.4794,
+        "effective_n": 2,
+        "best_reward": 0.9964,
+        "log_visitation": 53.5408
+      },
+      {
+        "hub_key": "Brc1ccccc1CCNCC1CCCN1",
+        "depth": 1,
+        "n_children": 4,
+        "visit_count": 63,
+        "log_flow_consensus": 53.9607,
+        "log_flow_terminating": 56.4339,
+        "uncertainty": 8.2887,
+        "effective_n": 4,
+        "best_reward": 0.9973,
+        "log_visitation": 55.738
+      }
+    ],
+    "most_modes": [
+      {
+        "hub_key": "O=Cc1c[nH]c2ccc(Br)cc12",
+        "depth": 0,
+        "n_children": 6,
+        "visit_count": 386,
+        "log_flow_consensus": 56.2318,
+        "log_flow_terminating": 58.7157,
+        "uncertainty": 101.635,
+        "effective_n": 6,
+        "best_reward": 1.0,
+        "log_visitation": 57.5507
+      },
+      {
+        "hub_key": "COc1ccccc1CCNCC1CCCN1CC(C)N",
+        "depth": 2,
+        "n_children": 6,
+        "visit_count": 12,
+        "log_flow_consensus": 48.6456,
+        "log_flow_terminating": 52.0899,
+        "uncertainty": 2.5192,
+        "effective_n": 6,
+        "best_reward": 1.0,
+        "log_visitation": 54.0798
+      },
+      {
+        "hub_key": "NC(CCNCCc1c[nH]c2ccccc12)CN1CCCC1CO",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 7,
+        "log_flow_consensus": 51.6533,
+        "log_flow_terminating": 53.0565,
+        "uncertainty": 0.2623,
+        "effective_n": 4,
+        "best_reward": 0.9927,
+        "log_visitation": 53.5408
+      },
+      {
+        "hub_key": "c1ccc2c(CCN(CC3CCCN3)CC3CCCN3)c[nH]c2c1",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 6,
+        "log_flow_consensus": 53.6815,
+        "log_flow_terminating": 55.0526,
+        "uncertainty": 0.9482,
+        "effective_n": 4,
+        "best_reward": 0.9895,
+        "log_visitation": 53.3866
+      },
+      {
+        "hub_key": "c1ccc2c(CCNCC3CCN3CC3CCCN3)c[nH]c2c1",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 5,
+        "log_flow_consensus": 52.3413,
+        "log_flow_terminating": 53.7838,
+        "uncertainty": 0.5188,
+        "effective_n": 4,
+        "best_reward": 1.0,
+        "log_visitation": 53.2043
+      },
+      {
+        "hub_key": "c1ccc2c(CCN(CC3CCCN3)C3CCCNC3)c[nH]c2c1",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 9,
+        "log_flow_consensus": 52.294,
+        "log_flow_terminating": 53.8412,
+        "uncertainty": 0.4566,
+        "effective_n": 4,
+        "best_reward": 0.9953,
+        "log_visitation": 53.7921
+      },
+      {
+        "hub_key": "c1ccc2c(CCN(CC3CCN3)C3CCNC3)c[nH]c2c1",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 6,
+        "log_flow_consensus": 52.6368,
+        "log_flow_terminating": 54.1584,
+        "uncertainty": 0.5248,
+        "effective_n": 4,
+        "best_reward": 1.0,
+        "log_visitation": 53.3866
+      },
+      {
+        "hub_key": "COc1ccccc1CCNCCCC(N)CN1CCC(=O)C1",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 4,
+        "log_flow_consensus": 52.6032,
+        "log_flow_terminating": 54.2842,
+        "uncertainty": 2.0596,
+        "effective_n": 4,
+        "best_reward": 0.9962,
+        "log_visitation": 52.9812
+      },
+      {
+        "hub_key": "COc1ccccc1CCN(CCCN)C1CCNC1",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 7,
+        "log_flow_consensus": 51.8319,
+        "log_flow_terminating": 53.2123,
+        "uncertainty": 0.3446,
+        "effective_n": 4,
+        "best_reward": 1.0,
+        "log_visitation": 53.5408
+      },
+      {
+        "hub_key": "Brc1ccccc1CCNCC1CCCN1",
+        "depth": 1,
+        "n_children": 4,
+        "visit_count": 63,
+        "log_flow_consensus": 53.9607,
+        "log_flow_terminating": 56.4339,
+        "uncertainty": 8.2887,
+        "effective_n": 4,
+        "best_reward": 0.9973,
+        "log_visitation": 55.738
+      }
+    ],
+    "highest_visitation": [
+      {
+        "hub_key": "CC(N)C(=O)O",
+        "depth": 0,
+        "n_children": 3,
+        "visit_count": 1176,
+        "log_flow_consensus": 57.3328,
+        "log_flow_terminating": 58.64,
+        "uncertainty": 0.0895,
+        "effective_n": 3,
+        "best_reward": 1.0,
+        "log_visitation": 58.6648
+      },
+      {
+        "hub_key": "NC(Cc1c[nH]c2ccccc12)C(=O)O",
+        "depth": 0,
+        "n_children": 2,
+        "visit_count": 680,
+        "log_flow_consensus": 58.2627,
+        "log_flow_terminating": 59.5467,
+        "uncertainty": 1.4317,
+        "effective_n": 2,
+        "best_reward": 0.9958,
+        "log_visitation": 58.117
+      },
+      {
+        "hub_key": "O=Cc1c[nH]c2ccc(Br)cc12",
+        "depth": 0,
+        "n_children": 6,
+        "visit_count": 386,
+        "log_flow_consensus": 56.2318,
+        "log_flow_terminating": 58.7157,
+        "uncertainty": 101.635,
+        "effective_n": 6,
+        "best_reward": 1.0,
+        "log_visitation": 57.5507
+      },
+      {
+        "hub_key": "Nc1cccc2cc[nH]c12",
+        "depth": 0,
+        "n_children": 2,
+        "visit_count": 316,
+        "log_flow_consensus": 38.1224,
+        "log_flow_terminating": 56.9189,
+        "uncertainty": 353.3082,
+        "effective_n": 2,
+        "best_reward": 0.9854,
+        "log_visitation": 57.3506
+      },
+      {
+        "hub_key": "CC(C)CC(N)C(=O)O",
+        "depth": 0,
+        "n_children": 2,
+        "visit_count": 107,
+        "log_flow_consensus": 36.5205,
+        "log_flow_terminating": 57.867,
+        "uncertainty": 455.6736,
+        "effective_n": 2,
+        "best_reward": 0.9882,
+        "log_visitation": 56.2677
+      },
+      {
+        "hub_key": "CC(N)CN1CCCC1C(=O)O",
+        "depth": 1,
+        "n_children": 2,
+        "visit_count": 79,
+        "log_flow_consensus": 50.736,
+        "log_flow_terminating": 58.1736,
+        "uncertainty": 55.318,
+        "effective_n": 2,
+        "best_reward": 0.9821,
+        "log_visitation": 55.9643
+      },
+      {
+        "hub_key": "c1ccc2c(CCNC3CCNCC3)c[nH]c2c1",
+        "depth": 1,
+        "n_children": 2,
+        "visit_count": 72,
+        "log_flow_consensus": 55.5464,
+        "log_flow_terminating": 56.2937,
+        "uncertainty": 0.1102,
+        "effective_n": 2,
+        "best_reward": 0.9969,
+        "log_visitation": 55.8715
+      },
+      {
+        "hub_key": "NC(Cc1c[nH]c2ccccc12)CN1CCCC1C(=O)O",
+        "depth": 1,
+        "n_children": 2,
+        "visit_count": 69,
+        "log_flow_consensus": 50.4431,
+        "log_flow_terminating": 51.4161,
+        "uncertainty": 0.6139,
+        "effective_n": 2,
+        "best_reward": 0.9932,
+        "log_visitation": 55.829
+      },
+      {
+        "hub_key": "Brc1ccccc1CCNCC1CCCN1",
+        "depth": 1,
+        "n_children": 4,
+        "visit_count": 63,
+        "log_flow_consensus": 53.9607,
+        "log_flow_terminating": 56.4339,
+        "uncertainty": 8.2887,
+        "effective_n": 4,
+        "best_reward": 0.9973,
+        "log_visitation": 55.738
+      },
+      {
+        "hub_key": "NC(Cc1c[nH]c2ccccc12)CN1CCCC(=O)C1",
+        "depth": 1,
+        "n_children": 2,
+        "visit_count": 56,
+        "log_flow_consensus": 54.0897,
+        "log_flow_terminating": 55.9171,
+        "uncertainty": 3.2415,
+        "effective_n": 2,
+        "best_reward": 0.9918,
+        "log_visitation": 55.6202
+      }
+    ],
+    "lowest_uncertainty": [
+      {
+        "hub_key": "CC(N)CN(CC1CCCN1CC1CCN1)c1cccnc1Br",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 48.85,
+        "log_flow_terminating": 49.5431,
+        "uncertainty": 0.0,
+        "effective_n": 2,
+        "best_reward": 0.9882,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "Sc1ccccc1N(Cc1c[nH]c2ccc(Br)cc12)CC1CCCN1C1CCNCC1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 50.5037,
+        "log_flow_terminating": 51.1968,
+        "uncertainty": 0.0,
+        "effective_n": 2,
+        "best_reward": 0.984,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "Oc1ccc(CNCC2CCCN2C2CCNCC2)cc1",
+        "depth": 2,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 51.905,
+        "log_flow_terminating": 52.5982,
+        "uncertainty": 0.0,
+        "effective_n": 2,
+        "best_reward": 0.9835,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "COc1ccc(O)c(N(Cc2c[nH]c3ccc(Br)cc23)C2CCN(CC3CCN3)CC2)c1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 49.8391,
+        "log_flow_terminating": 50.5322,
+        "uncertainty": 0.0,
+        "effective_n": 2,
+        "best_reward": 1.0,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "CC(N)CN1CCCC1CN(CCN)c1ccc(Br)cc1N",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 49.3173,
+        "log_flow_terminating": 50.0104,
+        "uncertainty": 0.0,
+        "effective_n": 2,
+        "best_reward": 0.9912,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "Oc1c(Br)cccc1N(CCNCCc1c[nH]c2ccccc12)CC1CCN1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 50.2764,
+        "log_flow_terminating": 50.9695,
+        "uncertainty": 0.0,
+        "effective_n": 2,
+        "best_reward": 1.0,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "OC1CCN(CC2CCCN2Cc2c[nH]c3ccc(Br)cc23)CC1",
+        "depth": 2,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 51.2141,
+        "log_flow_terminating": 51.9073,
+        "uncertainty": 0.0001,
+        "effective_n": 2,
+        "best_reward": 0.9899,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "NC(CCCNCCc1ccccc1)CN1CCCCC1",
+        "depth": 2,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 50.8903,
+        "log_flow_terminating": 51.5836,
+        "uncertainty": 0.0001,
+        "effective_n": 2,
+        "best_reward": 0.9957,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "NC(CCN1CCC1CNCCc1c[nH]c2ccccc12)CNc1cc(F)ccc1O",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 49.997,
+        "log_flow_terminating": 50.6902,
+        "uncertainty": 0.0002,
+        "effective_n": 2,
+        "best_reward": 0.9891,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "Brc1ncccc1N(C1CNC1)C1CN(CC2CCCN2)C1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 49.0228,
+        "log_flow_terminating": 49.7161,
+        "uncertainty": 0.0003,
+        "effective_n": 2,
+        "best_reward": 0.9868,
+        "log_visitation": 52.288
+      }
+    ],
+    "parent_of_topk": [
+      {
+        "hub_key": "COc1cccc2c1CCNC2CCN(CCN)C1CC1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 49.9589,
+        "log_flow_terminating": 50.6724,
+        "uncertainty": 0.0408,
+        "effective_n": 2,
+        "best_reward": 1.0,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "CCCN1CCCC1CNCCc1ccccc1OC",
+        "depth": 2,
+        "n_children": 2,
+        "visit_count": 3,
+        "log_flow_consensus": 50.8932,
+        "log_flow_terminating": 51.5867,
+        "uncertainty": 0.0007,
+        "effective_n": 2,
+        "best_reward": 1.0,
+        "log_visitation": 52.6935
+      },
+      {
+        "hub_key": "COc1cccc2c1CCN(CC1CCCN1)C2c1c[nH]c2cc(Br)ccc12",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 7,
+        "log_flow_consensus": 49.8776,
+        "log_flow_terminating": 52.0989,
+        "uncertainty": 1.6728,
+        "effective_n": 4,
+        "best_reward": 1.0,
+        "log_visitation": 53.5408
+      },
+      {
+        "hub_key": "COc1ccccc1CCNCC1CCCN1C1CNC1",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 4,
+        "log_flow_consensus": 51.674,
+        "log_flow_terminating": 53.8361,
+        "uncertainty": 1.0943,
+        "effective_n": 4,
+        "best_reward": 1.0,
+        "log_visitation": 52.9812
+      },
+      {
+        "hub_key": "COc1ccccc1CCN(CC1CCN1)C1CNC1",
+        "depth": 2,
+        "n_children": 2,
+        "visit_count": 4,
+        "log_flow_consensus": 50.7733,
+        "log_flow_terminating": 51.467,
+        "uncertainty": 0.001,
+        "effective_n": 2,
+        "best_reward": 1.0,
+        "log_visitation": 52.9812
+      },
+      {
+        "hub_key": "COc1cccc2c1CCN(CC1CCCN1)C2c1c[nH]c2ccc(Br)cc12",
+        "depth": 2,
+        "n_children": 5,
+        "visit_count": 10,
+        "log_flow_consensus": 50.4552,
+        "log_flow_terminating": 52.4791,
+        "uncertainty": 5.3093,
+        "effective_n": 5,
+        "best_reward": 1.0,
+        "log_visitation": 53.8975
+      },
+      {
+        "hub_key": "COc1ccccc1CCNCC1CCN1CC1CCN1",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 7,
+        "log_flow_consensus": 50.9491,
+        "log_flow_terminating": 53.3341,
+        "uncertainty": 0.9924,
+        "effective_n": 4,
+        "best_reward": 1.0,
+        "log_visitation": 53.5408
+      },
+      {
+        "hub_key": "COc1ccccc1CCNCC1CCCN1CCN",
+        "depth": 2,
+        "n_children": 4,
+        "visit_count": 13,
+        "log_flow_consensus": 51.0846,
+        "log_flow_terminating": 52.703,
+        "uncertainty": 0.1109,
+        "effective_n": 4,
+        "best_reward": 1.0,
+        "log_visitation": 54.1598
+      },
+      {
+        "hub_key": "COc1ccccc1CCNCCN(C1CC1)C1CNC1",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 50.2836,
+        "log_flow_terminating": 51.0699,
+        "uncertainty": 0.1922,
+        "effective_n": 2,
+        "best_reward": 1.0,
+        "log_visitation": 52.288
+      },
+      {
+        "hub_key": "CCCN(C)CCN(CC1CCN1)c1ccccc1O",
+        "depth": 3,
+        "n_children": 2,
+        "visit_count": 2,
+        "log_flow_consensus": 49.947,
+        "log_flow_terminating": 51.0586,
+        "uncertainty": 0.9599,
+        "effective_n": 2,
+        "best_reward": 1.0,
+        "log_visitation": 52.288
+      }
+    ]
+  },
+  "acquisitions": [
+    {
+      "hub_strategy": "highest_terminating_flow",
+      "molecule_strategy": "topk_reward",
+      "n_hubs_used": 37,
+      "n_molecules": 96,
+      "n_modes": 0,
+      "n_scaffolds": 86,
+      "batch_reactions": 0.0,
+      "independent_reactions": 0.0,
+      "reaction_savings": 0.0,
+      "reactions_per_mode_hub": null,
+      "reactions_per_mode_independent": null
+    },
+    {
+      "hub_strategy": "highest_terminating_flow",
+      "molecule_strategy": "uniform_random",
+      "n_hubs_used": 37,
+      "n_molecules": 96,
+      "n_modes": 0,
+      "n_scaffolds": 86,
+      "batch_reactions": 0.0,
+      "independent_reactions": 0.0,
+      "reaction_savings": 0.0,
+      "reactions_per_mode_hub": null,
+      "reactions_per_mode_independent": null
+    },
+    {
+      "hub_strategy": "lowest_uncertainty",
+      "molecule_strategy": "prob_weighted",
+      "n_hubs_used": 48,
+      "n_molecules": 96,
+      "n_modes": 0,
+      "n_scaffolds": 78,
+      "batch_reactions": 0.0,
+      "independent_reactions": 0.0,
+      "reaction_savings": 0.0,
+      "reactions_per_mode_hub": null,
+      "reactions_per_mode_independent": null
+    },
+    {
+      "hub_strategy": "parent_of_topk",
+      "molecule_strategy": "topk_reward",
+      "n_hubs_used": 34,
+      "n_molecules": 96,
+      "n_modes": 0,
+      "n_scaffolds": 58,
+      "batch_reactions": 0.0,
+      "independent_reactions": 0.0,
+      "reaction_savings": 0.0,
+      "reactions_per_mode_hub": null,
+      "reactions_per_mode_independent": null
+    }
+  ],
+  "diagnostics": {
+    "n_multichild_hubs": 864,
+    "pearson_flow_vs_visitation": 0.1985,
+    "pearson_consensus_vs_terminating": 0.6991
+  },
+  "enumeration": {
+    "n_hubs_enumerated": 10,
+    "n_enumerated_records": 95791,
+    "enrichment": [
+      {
+        "hub_key": "NC(Cc1c[nH]c2ccccc12)C(=O)O",
+        "depth": 0,
+        "visit_count": 680,
+        "n_sampled_children": 2,
+        "n_enumerated_children": 10135,
+        "children_per_mode": null,
+        "sampled_recovered_by_enum": "2/2",
+        "enum_modes": 0,
+        "enum_best_reward": 1.0,
+        "enum_reactions_per_mode_hub": null,
+        "enum_reactions_per_mode_independent": null
+      },
+      {
+        "hub_key": "O=Cc1c[nH]c2ccc(Br)cc12",
+        "depth": 0,
+        "visit_count": 386,
+        "n_sampled_children": 6,
+        "n_enumerated_children": 4946,
+        "children_per_mode": null,
+        "sampled_recovered_by_enum": "6/6",
+        "enum_modes": 0,
+        "enum_best_reward": 1.0,
+        "enum_reactions_per_mode_hub": null,
+        "enum_reactions_per_mode_independent": null
+      },
+      {
+        "hub_key": "CC(N)C(=O)O",
+        "depth": 0,
+        "visit_count": 1176,
+        "n_sampled_children": 3,
+        "n_enumerated_children": 9216,
+        "children_per_mode": null,
+        "sampled_recovered_by_enum": "3/3",
+        "enum_modes": 0,
+        "enum_best_reward": 1.0,
+        "enum_reactions_per_mode_hub": null,
+        "enum_reactions_per_mode_independent": null
+      },
+      {
+        "hub_key": "CC(N)CN1CCCC1C(=O)O",
+        "depth": 1,
+        "visit_count": 79,
+        "n_sampled_children": 2,
+        "n_enumerated_children": 9201,
+        "children_per_mode": null,
+        "sampled_recovered_by_enum": "2/2",
+        "enum_modes": 0,
+        "enum_best_reward": 1.0,
+        "enum_reactions_per_mode_hub": null,
+        "enum_reactions_per_mode_independent": null
+      },
+      {
+        "hub_key": "c1cc(NC2CCNC2)c2[nH]ccc2c1",
+        "depth": 1,
+        "visit_count": 32,
+        "n_sampled_children": 2,
+        "n_enumerated_children": 8280,
+        "children_per_mode": null,
+        "sampled_recovered_by_enum": "2/2",
+        "enum_modes": 0,
+        "enum_best_reward": 1.0,
+        "enum_reactions_per_mode_hub": null,
+        "enum_reactions_per_mode_independent": null
+      },
+      {
+        "hub_key": "CC(C)CC(N)C(=O)O",
+        "depth": 0,
+        "visit_count": 107,
+        "n_sampled_children": 2,
+        "n_enumerated_children": 9219,
+        "children_per_mode": null,
+        "sampled_recovered_by_enum": "2/2",
+        "enum_modes": 0,
+        "enum_best_reward": 1.0,
+        "enum_reactions_per_mode_hub": null,
+        "enum_reactions_per_mode_independent": null
+      },
+      {
+        "hub_key": "O=C(O)C1CCCN1Cc1c[nH]c2ccc(Br)cc12",
+        "depth": 1,
+        "visit_count": 44,
+        "n_sampled_children": 3,
+        "n_enumerated_children": 7531,
+        "children_per_mode": null,
+        "sampled_recovered_by_enum": "3/3",
+        "enum_modes": 0,
+        "enum_best_reward": 1.0,
+        "enum_reactions_per_mode_hub": null,
+        "enum_reactions_per_mode_independent": null
+      },
+      {
+        "hub_key": "Nc1cccc2cc[nH]c12",
+        "depth": 0,
+        "visit_count": 316,
+        "n_sampled_children": 2,
+        "n_enumerated_children": 4246,
+        "children_per_mode": null,
+        "sampled_recovered_by_enum": "2/2",
+        "enum_modes": 0,
+        "enum_best_reward": 1.0,
+        "enum_reactions_per_mode_hub": null,
+        "enum_reactions_per_mode_independent": null
+      },
+      {
+        "hub_key": "c1ccc2c(CCNC3CCNCC3)c[nH]c2c1",
+        "depth": 1,
+        "visit_count": 72,
+        "n_sampled_children": 2,
+        "n_enumerated_children": 8498,
+        "children_per_mode": null,
+        "sampled_recovered_by_enum": "2/2",
+        "enum_modes": 0,
+        "enum_best_reward": 1.0,
+        "enum_reactions_per_mode_hub": null,
+        "enum_reactions_per_mode_independent": null
+      },
+      {
+        "hub_key": "NC(Cc1c[nH]c2ccccc12)CN1CCCC1C(=O)O",
+        "depth": 1,
+        "visit_count": 69,
+        "n_sampled_children": 2,
+        "n_enumerated_children": 10118,
+        "children_per_mode": null,
+        "sampled_recovered_by_enum": "2/2",
+        "enum_modes": 0,
+        "enum_best_reward": 1.0,
+        "enum_reactions_per_mode_hub": null,
+        "enum_reactions_per_mode_independent": null
+      }
+    ],
+    "per_hub": [
+      {
+        "hub": "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O",
+        "depth": 0,
+        "n_enumerated_paths": 11384,
+        "n_records": 11384
+      },
+      {
+        "hub": "O=Cc1c[nH]c2ccc(Br)cc12",
+        "depth": 0,
+        "n_enumerated_paths": 5205,
+        "n_records": 5205
+      },
+      {
+        "hub": "C[C@@H](N)C(=O)O",
+        "depth": 0,
+        "n_enumerated_paths": 10425,
+        "n_records": 10425
+      },
+      {
+        "hub": "C[C@H](N)CN1CCC[C@H]1C(=O)O",
+        "depth": 1,
+        "n_enumerated_paths": 10405,
+        "n_records": 10405
+      },
+      {
+        "hub": "c1cc(NC2CCNC2)c2[nH]ccc2c1",
+        "depth": 1,
+        "n_enumerated_paths": 11632,
+        "n_records": 11632
+      },
+      {
+        "hub": "CC(C)C[C@@H](N)C(=O)O",
+        "depth": 0,
+        "n_enumerated_paths": 10425,
+        "n_records": 10425
+      },
+      {
+        "hub": "O=C(O)[C@H]1CCCN1Cc1c[nH]c2ccc(Br)cc12",
+        "depth": 1,
+        "n_enumerated_paths": 7902,
+        "n_records": 7902
+      },
+      {
+        "hub": "Nc1cccc2cc[nH]c12",
+        "depth": 0,
+        "n_enumerated_paths": 5197,
+        "n_records": 5197
+      },
+      {
+        "hub": "c1ccc2c(CCNC3CCNCC3)c[nH]c2c1",
+        "depth": 1,
+        "n_enumerated_paths": 11852,
+        "n_records": 11852
+      },
+      {
+        "hub": "N[C@H](Cc1c[nH]c2ccccc12)CN1CCC[C@H]1C(=O)O",
+        "depth": 1,
+        "n_enumerated_paths": 11364,
+        "n_records": 11364
+      }
+    ]
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "per_hub_enumeration": [
+    {
+      "hub": "N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O",
+      "depth": 0,
+      "n_enumerated_paths": 11384,
+      "n_records": 11384
+    },
+    {
+      "hub": "O=Cc1c[nH]c2ccc(Br)cc12",
+      "depth": 0,
+      "n_enumerated_paths": 5205,
+      "n_records": 5205
+    },
+    {
+      "hub": "C[C@@H](N)C(=O)O",
+      "depth": 0,
+      "n_enumerated_paths": 10425,
+      "n_records": 10425
+    },
+    {
+      "hub": "C[C@H](N)CN1CCC[C@H]1C(=O)O",
+      "depth": 1,
+      "n_enumerated_paths": 10405,
+      "n_records": 10405
+    },
+    {
+      "hub": "c1cc(NC2CCNC2)c2[nH]ccc2c1",
+      "depth": 1,
+      "n_enumerated_paths": 11632,
+      "n_records": 11632
+    },
+    {
+      "hub": "CC(C)C[C@@H](N)C(=O)O",
+      "depth": 0,
+      "n_enumerated_paths": 10425,
+      "n_records": 10425
+    },
+    {
+      "hub": "O=C(O)[C@H]1CCCN1Cc1c[nH]c2ccc(Br)cc12",
+      "depth": 1,
+      "n_enumerated_paths": 7902,
+      "n_records": 7902
+    },
+    {
+      "hub": "Nc1cccc2cc[nH]c12",
+      "depth": 0,
+      "n_enumerated_paths": 5197,
+      "n_records": 5197
+    },
+    {
+      "hub": "c1ccc2c(CCNC3CCNCC3)c[nH]c2c1",
+      "depth": 1,
+      "n_enumerated_paths": 11852,
+      "n_records": 11852
+    },
+    {
+      "hub": "N[C@H](Cc1c[nH]c2ccccc12)CN1CCC[C@H]1C(=O)O",
+      "depth": 1,
+      "n_enumerated_paths": 11364,
+      "n_records": 11364
+    }
+  ],
+  "enrichment": [
+    {
+      "hub_key": "NC(Cc1c[nH]c2ccccc12)C(=O)O",
+      "depth": 0,
+      "visit_count": 680,
+      "n_sampled_children": 2,
+      "n_enumerated_children": 10135,
+      "children_per_mode": null,
+      "sampled_recovered_by_enum": "2/2",
+      "enum_modes": 0,
+      "enum_best_reward": 1.0,
+      "enum_reactions_per_mode_hub": null,
+      "enum_reactions_per_mode_independent": null
+    },
+    {
+      "hub_key": "O=Cc1c[nH]c2ccc(Br)cc12",
+      "depth": 0,
+      "visit_count": 386,
+      "n_sampled_children": 6,
+      "n_enumerated_children": 4946,
+      "children_per_mode": null,
+      "sampled_recovered_by_enum": "6/6",
+      "enum_modes": 0,
+      "enum_best_reward": 1.0,
+      "enum_reactions_per_mode_hub": null,
+      "enum_reactions_per_mode_independent": null
+    },
+    {
+      "hub_key": "CC(N)C(=O)O",
+      "depth": 0,
+      "visit_count": 1176,
+      "n_sampled_children": 3,
+      "n_enumerated_children": 9216,
+      "children_per_mode": null,
+      "sampled_recovered_by_enum": "3/3",
+      "enum_modes": 0,
+      "enum_best_reward": 1.0,
+      "enum_reactions_per_mode_hub": null,
+      "enum_reactions_per_mode_independent": null
+    },
+    {
+      "hub_key": "CC(N)CN1CCCC1C(=O)O",
+      "depth": 1,
+      "visit_count": 79,
+      "n_sampled_children": 2,
+      "n_enumerated_children": 9201,
+      "children_per_mode": null,
+      "sampled_recovered_by_enum": "2/2",
+      "enum_modes": 0,
+      "enum_best_reward": 1.0,
+      "enum_reactions_per_mode_hub": null,
+      "enum_reactions_per_mode_independent": null
+    },
+    {
+      "hub_key": "c1cc(NC2CCNC2)c2[nH]ccc2c1",
+      "depth": 1,
+      "visit_count": 32,
+      "n_sampled_children": 2,
+      "n_enumerated_children": 8280,
+      "children_per_mode": null,
+      "sampled_recovered_by_enum": "2/2",
+      "enum_modes": 0,
+      "enum_best_reward": 1.0,
+      "enum_reactions_per_mode_hub": null,
+      "enum_reactions_per_mode_independent": null
+    },
+    {
+      "hub_key": "CC(C)CC(N)C(=O)O",
+      "depth": 0,
+      "visit_count": 107,
+      "n_sampled_children": 2,
+      "n_enumerated_children": 9219,
+      "children_per_mode": null,
+      "sampled_recovered_by_enum": "2/2",
+      "enum_modes": 0,
+      "enum_best_reward": 1.0,
+      "enum_reactions_per_mode_hub": null,
+      "enum_reactions_per_mode_independent": null
+    },
+    {
+      "hub_key": "O=C(O)C1CCCN1Cc1c[nH]c2ccc(Br)cc12",
+      "depth": 1,
+      "visit_count": 44,
+      "n_sampled_children": 3,
+      "n_enumerated_children": 7531,
+      "children_per_mode": null,
+      "sampled_recovered_by_enum": "3/3",
+      "enum_modes": 0,
+      "enum_best_reward": 1.0,
+      "enum_reactions_per_mode_hub": null,
+      "enum_reactions_per_mode_independent": null
+    },
+    {
+      "hub_key": "Nc1cccc2cc[nH]c12",
+      "depth": 0,
+      "visit_count": 316,
+      "n_sampled_children": 2,
+      "n_enumerated_children": 4246,
+      "children_per_mode": null,
+      "sampled_recovered_by_enum": "2/2",
+      "enum_modes": 0,
+      "enum_best_reward": 1.0,
+      "enum_reactions_per_mode_hub": null,
+      "enum_reactions_per_mode_independent": null
+    },
+    {
+      "hub_key": "c1ccc2c(CCNC3CCNCC3)c[nH]c2c1",
+      "depth": 1,
+      "visit_count": 72,
+      "n_sampled_children": 2,
+      "n_enumerated_children": 8498,
+      "children_per_mode": null,
+      "sampled_recovered_by_enum": "2/2",
+      "enum_modes": 0,
+      "enum_best_reward": 1.0,
+      "enum_reactions_per_mode_hub": null,
+      "enum_reactions_per_mode_independent": null
+    },
+    {
+      "hub_key": "NC(Cc1c[nH]c2ccccc12)CN1CCCC1C(=O)O",
+      "depth": 1,
+      "visit_count": 69,
+      "n_sampled_children": 2,
+      "n_enumerated_children": 10118,
+      "children_per_mode": null,
+      "sampled_recovered_by_enum": "2/2",
+      "enum_modes": 0,
+      "enum_best_reward": 1.0,
+      "enum_reactions_per_mode_hub": null,
+      "enum_reactions_per_mode_independent": null
+    }
+  ]
+}

@@ -259,7 +259,8 @@
       "Bash(git checkout *)",
       "Bash(git config *)",
       "Bash(sacct -j 70140 --format=JobID,JobName%20,State,Elapsed,ExitCode -n)",
-      "Bash(ps -o pid,etime,time,%cpu,stat --no-headers -p 2154368)"
+      "Bash(ps -o pid,etime,time,%cpu,stat --no-headers -p 2154368)",
+      "Bash(sacct --user=markymoo --starttime=2026-07-10 --format=JobID,JobName%28,State,Elapsed,End -X)"
     ]
   }
 }

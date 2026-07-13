@@ -1,0 +1,14 @@
+{
+  "model": "scent",
+  "reward": "drd2",
+  "run_id": "scent_drd2_70190",
+  "n_trajectories": 30000,
+  "n_valid_terminals": 29992,
+  "log_z": 61.90383529663086,
+  "higher_is_better": true,
+  "n_hubs": 28865,
+  "n_multichild_hubs": 864,
+  "max_children_per_hub": 7,
+  "mean_multichild_hub_depth": 2.386574074074074,
+  "n_distinct_nodes": 82629
+}

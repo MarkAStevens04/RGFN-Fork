@@ -1,0 +1,14 @@
+{
+  "model": "scent",
+  "reward": "seh",
+  "run_id": "scent_seh_70189",
+  "n_trajectories": 30000,
+  "n_valid_terminals": 29997,
+  "log_z": 74.32586669921875,
+  "higher_is_better": true,
+  "n_hubs": 20519,
+  "n_multichild_hubs": 2709,
+  "max_children_per_hub": 71,
+  "mean_multichild_hub_depth": 1.953857511997047,
+  "n_distinct_nodes": 55704
+}

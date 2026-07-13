@@ -1157,3 +1157,44 @@ committed `funnel_seh_70140_results.csv`/`_summary.json`. Finding (30k sEH): the
 the dominant dropoff (4586 raw → 3% at sEH≥7, 0% at ≥8; Tanimoto dedup gentle 2.3×) — depth-0
 fragment hubs are diverse but hitless, depth-3 hubs carry the hits + amortize ~3.6×. Regenerated
 the committed `seh_rgfn_{enum,pilot}` acquisition/enumeration numbers under the gated definition.
+
+**SCENT cross-env adapter — LSD-Flow phase 3 (Logs/027).** Wired SCENT into the hub-analysis
+harness as the first cross-env target (proposal §4b/§10.3). SCENT can't co-import (its package
+is also named `rgfn`, own `scent` env), so the adapter is a subprocess bridge, NOT one imported
+class: `validation/lsdflow/adapters/workers/scent_worker.py` runs *in the scent env* (rebuilds
+`objective`+pure `valid_sampler` via the `verify_pb_recovery.py` recipe, loads `last_gfn.pt` +
+the `guidance_models.pt` P_B sidecar from Logs/024, samples, and emits the canonical
+`records.csv`+`visit_counts.json`+`meta.json`); `validation/lsdflow/adapters/scent_adapter.py`
+is the in-process client (rgfn env) that shells to the worker under `conda activate scent` with
+the scent env's torch-bundled `nvidia/*/lib` on `LD_LIBRARY_PATH` (the `rgfn-smoke-env.sh`
+trick, cluster-agnostic) and reads the files back into a `FlowSample` — identical downstream
+contract to `RGFNAdapter`, so **the harness itself is unchanged**. The §2 flow-extraction
+algorithm is a self-contained copy of `glue.samplers.lsdflow.rgfn_extract` inside the worker (it
+can't be imported — its `import rgfn` would resolve to *our* rgfn; SCENT's fork is API-compatible
+so the algorithm transfers verbatim). `registry.py` flipped `get_adapter("scent")` from
+`NotImplementedError` to live. `validation/lsdflow/submit_scent_seh.sh` is the compute-node
+submit (activates the `rgfn` harness env; the worker self-activates `scent`). **Validated
+end-to-end** on the 5,000-iter patched sEH checkpoint (logZ 74.33 = trained value; sidecar loads,
+P_B exact): N=2k → 19 multi-child hubs, amortization 2.49 vs 3.92 rxn/mode. **Not built for
+SCENT yet:** phase-2 `enumerate_hub_children` (frozen-dynamic-library enumeration) raises
+`NotImplementedError`; the hub-coincidence analysis (`validation/lsdflow/analysis/`, §8) is the
+next build. Full 30k run = job 70179.
+
+**SCENT frozen-library sampling + enumeration + recipe logging (Logs/027 addendum).** Extended the
+SCENT cross-env adapter for the *faithful full* model. (1) **Freeze:** building SCENT from a
+checkpoint leaves it restricted to the 418 base fragments (`current_fragments=418`); the worker now
+fires `trainer.on_update_fragments_library` from the `fragments_<N>.json` snapshot to grow the env
+reactant set + policy embedding + cost proxy to the full trained vocabulary (418 + ~1,600 promoted),
+for BOTH sampling and enumeration (`SCENTAdapter.freeze=True` default; `--no-freeze` reverts). (2)
+**Enumeration:** `scent_worker.py --mode enumerate` + `SCENTAdapter.enumerate_hub_children` mirror
+`glue.samplers.lsdflow.rgfn_enumerate` worker-side on the frozen library — validated exhaustive
+(depth-0 hub 3,975 paths, 2/2 sampled recovered at cap 12k; neighborhoods ~10x the RGFN 418-lib
+case, so `submit_scent_seh.sh` now runs enumeration with ENUM_MAX=12000). (3) **Recipe logging:**
+`validation/generators/scent/recipe_logging.py` monkeypatches `DynamicLibrary` (clone pristine) to
+record each promoted fragment's min-reaction synthesis route (reaction SMARTS + reactants + product)
+into `fragments_<N>.json`; wired as `run_scent_fixed.py --log-recipes`
+(`experiments/fixed_reward/scent_seh/submit_fixed_scent_seh_recipes.sh`, job 70180). Feeds the LSD-Flow
+cost model's exact nested dynamic-fragment amortization (each distinct promoted fragment charged once
+per costed library; reactions primary + SCENT $-cost secondary) and a future chemist "synthesize
+these intermediates" view. **The nested-amortization cost model itself is not built yet** — it needs
+per-molecule fragment-composition capture from the analysis trajectories (not in `FlowRecord` today).

@@ -20,7 +20,7 @@ ADAPTERS: Dict[str, Dict[str, str]] = {
     "scent": {
         "env": "scent",
         "kind": "subprocess",
-        "status": "phase 3 — needs patched retrain (§9)",
+        "status": "live (§10 step 3 — sampled-flow slice; patched-retrain P_B sidecar, entry 024)",
     },
     "fraggfn": {"env": "fraggfn", "kind": "subprocess", "status": "phase 4 — control (§4b)"},
     "rxnflow": {"env": "rxnflow", "kind": "subprocess", "status": "phase 4 — robustness (§4b)"},
@@ -40,6 +40,10 @@ def get_adapter(name: str, **kwargs) -> GFNAdapter:
         from validation.lsdflow.adapters.rgfn_adapter import RGFNAdapter
 
         return RGFNAdapter(**kwargs)
+    if name == "scent":
+        from validation.lsdflow.adapters.scent_adapter import SCENTAdapter
+
+        return SCENTAdapter(**kwargs)
     raise NotImplementedError(
         f"Adapter {name!r} ({descriptor['status']}) is not wired yet. It runs in the "
         f"'{descriptor['env']}' env over the subprocess bridge; build its worker under "
