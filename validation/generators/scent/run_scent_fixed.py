@@ -48,11 +48,25 @@ def main() -> None:
         help="base run dir (absolute). On Balam set to $SCRATCH/rgfn_runs/experiments.",
     )
     ap.add_argument(
+        "--run-dir",
+        default=None,
+        help="EXACT run dir (stable, no timestamp) to reuse across 3-day auto-requeue chain "
+        "links (campaign Logs/030). If it holds a train/checkpoints/last_gfn.pt, SCENT's Trainer "
+        "resumes from it (forward policy + logZ + optimizer; guidance sidecar recovers P_B). "
+        "Overrides --root-dir + the config-stem run name.",
+    )
+    ap.add_argument(
         "--log-recipes",
         action="store_true",
         help="log each promoted dynamic-library fragment's synthesis route into the "
         "fragments_<N>.json snapshot (for exact nested LSD-Flow cost + chemist routes, entry 027). "
         "Monkeypatches DynamicLibrary; SCENT clone untouched.",
+    )
+    ap.add_argument(
+        "--n-iterations", type=int, default=None, help="override Trainer.n_iterations (smoke)"
+    )
+    ap.add_argument(
+        "--n-samples", type=int, default=None, help="override ScentFixedRewardRun.n_samples (smoke)"
     )
     args = ap.parse_args()
 
@@ -68,12 +82,26 @@ def main() -> None:
         raise SystemExit(f"config not found: {cfg_abs}")
     root_dir = Path(args.root_dir).resolve() if args.root_dir else (_REPO_ROOT / "experiments")
 
-    # Derive the run-dir name from the config stem so sEH vs DRD2 runs don't collide
-    # (scent_seh_fixed.gin -> scent_seh; scent_drd2_fixed.gin -> scent_drd2).
-    variant = cfg_path.stem.replace("_fixed", "")
-    run_name = f"fixed_reward/{variant}/{_timestamp()}"
-    run_dir = (root_dir / run_name).resolve()
+    if args.run_dir:  # stable dir for auto-requeue chain links (resume into the same place)
+        run_dir = Path(args.run_dir).resolve()
+        run_name = (
+            str(run_dir.relative_to(root_dir))
+            if str(run_dir).startswith(str(root_dir))
+            else run_dir.name
+        )
+    else:
+        # Derive the run-dir name from the config stem so sEH vs DRD2 runs don't collide
+        # (scent_seh_fixed.gin -> scent_seh; scent_drd2_fixed.gin -> scent_drd2).
+        variant = cfg_path.stem.replace("_fixed", "")
+        run_name = f"fixed_reward/{variant}/{_timestamp()}"
+        run_dir = (root_dir / run_name).resolve()
     run_dir.mkdir(parents=True, exist_ok=True)
+
+    # Resume: if a prior chain link left a checkpoint, tell SCENT's Trainer to resume from it
+    # (forward policy + logZ + optimizer + replay buffer). The guidance sidecar
+    # (guidance_models.pt) recovers the cost-guided P_B (Logs/024); the adapter loads it.
+    _resume_ckpt = run_dir / "train" / "checkpoints" / "last_gfn.pt"
+    _resume_path = str(_resume_ckpt) if _resume_ckpt.exists() else None
 
     os.chdir(_SCENT_ROOT)
     gin.add_config_file_search_path(str(_SCENT_ROOT))
@@ -110,6 +138,13 @@ def main() -> None:
         f'DockingBridgeProxy.repo_root="{_REPO_ROOT}"',
         f'DockingBridgeProxy.workdir="{run_dir / "reward_bridge"}"',
     ]
+    if _resume_path is not None:
+        bindings.append(f'Trainer.resume_path="{_resume_path}"')
+        print(f"[SCENT-FR] resuming from checkpoint {_resume_path}", flush=True)
+    if args.n_iterations is not None:  # smoke override
+        bindings.append(f"Trainer.n_iterations={args.n_iterations}")
+    if args.n_samples is not None:
+        bindings.append(f"ScentFixedRewardRun.n_samples={args.n_samples}")
     gin.parse_config_files_and_bindings([str(cfg_abs)], bindings=bindings)
     print(
         f"[SCENT-FR] cfg={cfg_abs.name} run_dir={run_dir} seed={args.seed}\n"

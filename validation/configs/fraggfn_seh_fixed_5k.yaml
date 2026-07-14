@@ -1,0 +1,34 @@
+# FragGFN FIXED-REWARD on sEH (surrogate) — publication-scale (campaign Logs/030).
+#
+# Publication-scale variant of fraggfn_seh_fixed.yaml. The surrogate cell already ran 5000
+# steps and FragGFN keeps max_nodes=9, so this cell has NO parameter change vs the base — it is
+# re-run only for uniform campaign provenance (fresh outputs in the _5k namespace, same seed).
+# Frozen Bengio-2021 sEH proxy, beta=8, non-synthesizable (has_route=0).
+#
+# Run (repo root, fraggfn env; candidate emission shells to the rgfn env):
+#   conda run -n fraggfn python validation/generators/fraggfn/run_fraggfn_fixed.py \
+#       --cfg validation/configs/fraggfn_seh_fixed_5k.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+
+run:
+  name: fixed_reward/fraggfn_seh_5k
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  n_train_steps: 5000
+  n_samples: 1000
+  sample_oversample: 4.0
+  top_k: 100
+  beta: 8
+
+reward:
+  clip: 10.0
+  batch_size: 128
+
+gflownet:
+  max_nodes: 9              # native fragment budget (unchanged)
+  num_emb: 128
+  num_layers: 4
+  sampling_tau: 0.9
+  learning_rate: 1.0e-4
+  print_every: 100

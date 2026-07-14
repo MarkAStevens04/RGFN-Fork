@@ -64,6 +64,15 @@ if __name__ == "__main__":
             "hit the SLURM walltime mid-training (Logs/021, RGFN-6TD3 job 69695)."
         ),
     )
+    parser.add_argument(
+        "--gin-binding",
+        action="append",
+        default=[],
+        help=(
+            "Extra gin binding applied AFTER the config (repeatable), e.g. "
+            "'Trainer.n_iterations=30' for a quick smoke test. Overrides the config value."
+        ),
+    )
     args = parser.parse_args()
 
     seed_everything(args.seed)
@@ -80,6 +89,8 @@ if __name__ == "__main__":
         bindings.append(f'user_root_dir="{args.root_dir}"')
     if args.resume_from is not None:
         bindings.append(f'Trainer.resume_path="{args.resume_from}"')
+    # Extra bindings last so they override the config (e.g. a smoke-test n_iterations).
+    bindings.extend(args.gin_binding)
     gin.parse_config_files_and_bindings([args.cfg], bindings=bindings)
 
     pipeline = FixedRewardPipeline()

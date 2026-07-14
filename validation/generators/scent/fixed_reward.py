@@ -25,7 +25,7 @@ import gin
 
 # Plain sibling imports (NOT package-relative), matching al_loop.py — the runner keeps
 # the repo root OFF sys.path so SCENT's installed `rgfn` fork isn't shadowed.
-from guidance_io import save_guidance_models  # noqa: E402
+from guidance_io import load_guidance_models, save_guidance_models  # noqa: E402
 from route import extract_route  # noqa: E402
 
 from rgfn.gfns.reaction_gfn.api.reaction_api import ReactionStateTerminal
@@ -107,12 +107,26 @@ class ScentFixedRewardRun:
             flush=True,
         )
 
-        # 1. train SCENT's generator ONCE against the frozen sEH reward.
+        # 1. train SCENT's generator ONCE against the frozen reward.
+        #    Resume (campaign Logs/030): the Trainer already restored forward policy + logZ +
+        #    optimizer from last_gfn.pt in __init__ (if Trainer.resume_path was set); reload the
+        #    guidance MLPs (P_B) from the sidecar so cost-guidance survives the requeue. And keep
+        #    the sidecar in sync with every periodic checkpoint by saving it alongside each
+        #    make_checkpoint (the Trainer's checkpoint holds only the forward state).
+        self._load_guidance_models()
+        if hasattr(self.trainer, "make_checkpoint"):
+            _orig_make_ckpt = self.trainer.make_checkpoint
+
+            def _make_ckpt_with_guidance(*a, **k):
+                _orig_make_ckpt(*a, **k)
+                self._save_guidance_models()
+
+            self.trainer.make_checkpoint = _make_ckpt_with_guidance
         self.trainer.train()
 
-        # 1b. Persist the backward-policy guidance-model weights (cost + decomposability
-        #     MLPs) that objective.state_dict() -> last_gfn.pt silently drops, so the
-        #     trained P_B is exactly recoverable post-hoc (flow analysis). See guidance_io.
+        # 1b. Final guidance-model save — persists the trained P_B (cost + decomposability MLPs)
+        #     that objective.state_dict() -> last_gfn.pt silently drops, so it stays exactly
+        #     recoverable for flow analysis and for the next chain link. See guidance_io.
         self._save_guidance_models()
 
         # 2. sample a batch (unique valid terminals + routes + state objects).
@@ -197,6 +211,27 @@ class ScentFixedRewardRun:
             )
         except Exception as e:  # noqa: BLE001
             print(f"[SCENT-FR] WARNING guidance-model save failed: {e}", flush=True)
+
+    def _load_guidance_models(self) -> bool:
+        """Reload the backward-policy guidance MLPs from the sidecar on resume (campaign
+        Logs/030). ``Trainer`` resume restores forward policy + logZ + optimizer from
+        ``last_gfn.pt`` but reinitialises the guidance MLPs to RANDOM (they aren't in
+        ``state_dict()``), which would silently erase SCENT's cost-guidance on every requeue.
+        This restores the exact trained ``P_B``. Returns True if a sidecar was loaded."""
+        gpath = Path(self.trainer.run_dir) / "train" / "checkpoints" / "guidance_models.pt"
+        if not gpath.exists():
+            return False
+        try:
+            loaded, unmatched = load_guidance_models(self.trainer.objective, gpath)
+            print(
+                f"[SCENT-FR] resume: reloaded guidance models from {gpath} "
+                f"(loaded={len(loaded)}, unmatched={len(unmatched)})",
+                flush=True,
+            )
+            return True
+        except Exception as e:  # noqa: BLE001
+            print(f"[SCENT-FR] WARNING guidance-model reload failed: {e}", flush=True)
+            return False
 
     def _sample_batch(self) -> Tuple[List[str], List[Dict], List]:
         """Sample unique valid terminals from the trained policy; return

@@ -6,11 +6,20 @@ strategy the active-learning loop can consume. The heavy comparative/analysis ma
 the validation axis under ``validation/lsdflow/`` and imports these primitives (allowed by the
 one-way rule); the pipeline never imports back.
 
-Importing this package registers every ``@gin.configurable`` hub/molecule strategy and the
-``LSDFlowAcquisition`` entry point, so ``glue.registry`` pulls it in.
+Importing this package registers the ``@gin.configurable`` hub strategies and exposes the
+campaign strategies (the AL-facing entry points), so ``glue.registry`` pulls them in.
 """
 
-from glue.samplers.lsdflow import hub, molecule  # noqa: F401
-from glue.samplers.lsdflow.acquisition import LSDFlowAcquisition  # noqa: F401
+from glue.samplers.lsdflow import hub  # noqa: F401
+from glue.samplers.lsdflow.campaign import (  # noqa: F401
+    BestCandidateStrategy,
+    CampaignPoint,
+    CampaignResult,
+    CampaignStrategy,
+    Candidate,
+    EnumChild,
+    EnumeratedHub,
+    HubBatchingStrategy,
+)
 from glue.samplers.lsdflow.dag import ChildEstimate, Hub, LiteHubDAG  # noqa: F401
 from glue.samplers.lsdflow.records import FlowRecord  # noqa: F401

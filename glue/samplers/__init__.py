@@ -10,8 +10,8 @@ Import new sampler modules below so `glue.registry` registers them.
 """
 
 # LSD-Flow post-hoc hub selection (docs/LSD_FLOW_PROPOSAL.md §3a): hub selection IS a
-# batch-selection strategy, so it lives here. Importing registers the @gin.configurable
-# hub/molecule strategies + LSDFlowAcquisition.
+# batch-selection strategy, so it lives here. Importing registers the @gin.configurable hub
+# strategies + exposes the campaign strategies (hub-batching / best-candidate, Logs/028).
 from glue.samplers import lsdflow  # noqa: F401
 
 # from glue.samplers.diversity_sampler import DiversitySampler  # noqa: F401

@@ -52,6 +52,10 @@ class FlowSample:
     # ``{node_key: {"promoted": [fragment_smiles...], "num_reactions": k}}``. Empty for models
     # with no promoted fragments (RGFN — all base blocks free), so the cost model is a no-op there.
     compositions: Dict[str, dict] = field(default_factory=dict)
+    # Full synthesis route per product molecule (for reconstruction / "how to make it" — Logs/032):
+    # ``{smiles: {"seed": <smiles>, "num_reactions": k, "steps": [{reaction, reactants, input,
+    # product}...]}}``. Empty for adapters that don't emit routes yet (e.g. RGFN).
+    routes: Dict[str, dict] = field(default_factory=dict)
 
     @property
     def n_valid_terminals(self) -> int:

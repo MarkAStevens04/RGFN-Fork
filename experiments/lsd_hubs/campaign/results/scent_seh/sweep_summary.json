@@ -1,0 +1,96 @@
+{
+  "tag": "scent_seh",
+  "reward_threshold": 7.0,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "baseline_cutoff": 0.5,
+  "cutoffs": [
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9
+  ],
+  "pareto_modes_at_R": {
+    "hub_batching": [
+      32,
+      33,
+      33,
+      33,
+      33,
+      33,
+      33,
+      33,
+      35,
+      38,
+      39,
+      40,
+      40
+    ],
+    "best_candidate": [
+      17,
+      17,
+      16,
+      17,
+      16,
+      16,
+      17,
+      18,
+      18,
+      17,
+      17,
+      17,
+      17
+    ]
+  },
+  "fixed_modes_reactions_at_M": {
+    "hub_batching": [
+      null,
+      822,
+      814,
+      814,
+      820,
+      824,
+      784,
+      752,
+      706,
+      671,
+      656,
+      648,
+      644
+    ],
+    "best_candidate": [
+      1386,
+      1433,
+      1436,
+      1454,
+      1479,
+      1465,
+      1451,
+      1463,
+      1445,
+      1421,
+      1401,
+      1407,
+      1412
+    ]
+  },
+  "budget_efficiency_endpoint": {
+    "hub_batching": {
+      "reactions": 820,
+      "modes": 300
+    },
+    "best_candidate": {
+      "reactions": 1479,
+      "modes": 300
+    }
+  }
+}

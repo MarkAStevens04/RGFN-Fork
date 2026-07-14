@@ -1,0 +1,40 @@
+# SCENT FIXED-REWARD on the 6TD3 differential — 5,000-iteration variant (campaign Logs/030).
+#
+# One change vs scent_6td3_fixed.gin: Trainer.n_iterations 400 -> 5000 (uniform four-way budget).
+# Reaction cap stays at the clone default of 4 (the +1-reaction idea was dropped for this
+# campaign; Logs/030 Results). Per-step docking-in-the-loop via @DockingBridgeProxy (shells to
+# scripts/score_batch.py under rgfn), SMALL library, beta=4.
+#
+# Run (repo root, scent env; docking libs exported for the rgfn subprocess):
+#   conda run -n scent python validation/generators/scent/run_scent_fixed.py \
+#       --cfg validation/configs/scent_6td3_fixed_5k.gin --root-dir $SCRATCH/rgfn_runs/experiments
+
+include 'configs/scent_base.gin'
+include 'configs/envs/settings/small.gin'
+
+proxy/gin.singleton.constructor = @DockingBridgeProxy
+train_proxy = @proxy/gin.singleton()
+valid_proxy = %train_proxy
+DockingBridgeProxy.oracle = 'docking_6td3_gpu'
+DockingBridgeProxy.norm = 1.0
+
+beta = 4
+WandbLogger.mode = 'offline'
+
+# CRITICAL: drop @TanimotoSimilarityModes — it re-scores %train_proxy (would re-dock).
+train_metrics = [@StandardGFNMetrics(), @FractionEarlyTerminate()]
+
+Trainer.n_iterations = 5000
+Trainer.valid_every_n_iterations = 250   # periodic checkpoint cadence for 3-day auto-requeue (Logs/030)
+trainer/gin.singleton.constructor = @Trainer
+trainer = @trainer/gin.singleton()
+
+ScentFixedRewardRun.trainer = %trainer
+ScentFixedRewardRun.reward_generator = %train_proxy
+ScentFixedRewardRun.n_samples = 200
+ScentFixedRewardRun.sample_oversample = 6.0
+ScentFixedRewardRun.top_k = 100
+ScentFixedRewardRun.system = '6td3'
+ScentFixedRewardRun.generator_name = 'scent'
+ScentFixedRewardRun.reward_name = '6td3_diff'
+ScentFixedRewardRun.score_units = 'clip(-dvina) reward (higher is better; raw dvina in raw_score column)'

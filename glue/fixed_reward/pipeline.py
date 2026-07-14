@@ -31,6 +31,7 @@ synthesis routes, ``PhaseTimer`` for wall-clock accounting, and the standard
 benchmark harness can read next to the baselines.
 """
 
+import json
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -142,8 +143,34 @@ class FixedRewardPipeline:
         top = pairs[: self.top_k]
         self._write_top_k(out_dir / "top_k.csv", top)
         timer.report_total()
+        self._report_dock_timing(out_dir, timer, logger)
         print(f"[FR] done. candidates + Top-{self.top_k} written to {out_dir}", flush=True)
         return top
+
+    def _report_dock_timing(self, out_dir: Path, timer: PhaseTimer, logger) -> None:
+        """If the reward generator docked (has a DockAccountant), report the docking share.
+
+        Writes ``<out_dir>/dock_timing.json`` and logs under the ``dock_timing`` prefix. The
+        docking share (dock wall-clock / train_gfn wall-clock) is the campaign's key number
+        for the seed decision: a low share means a mostly-idle docker with spare capacity for
+        concurrent seeds (Logs/030). No-op for surrogate rewards (no accountant)."""
+        acct = getattr(self.reward_generator, "dock_accountant", None)
+        if acct is None or getattr(acct, "n_calls", 0) == 0:
+            return
+        summary = acct.summary(train_seconds=timer.total_for("train_gfn"))
+        (out_dir / "dock_timing.json").write_text(json.dumps(summary, indent=2))
+        share = summary.get("docking_share")
+        print(
+            f"[FR] docking: {summary['dock_seconds']:.0f}s over {summary['n_mols_docked']} mols "
+            f"in {summary['n_dock_calls']} calls ({summary['s_per_mol']:.2f}s/mol"
+            + (f", {share * 100:.1f}% of train wall-clock)" if share is not None else ")"),
+            flush=True,
+        )
+        if logger is not None:
+            try:
+                logger.log_metrics(metrics=summary, prefix="dock_timing")
+            except Exception:  # noqa: BLE001 - logging must never break the run
+                pass
 
     # ----------------------------------------------------------------- internals
     def _sample_batch(self) -> Tuple[List[str], List[Dict], List]:

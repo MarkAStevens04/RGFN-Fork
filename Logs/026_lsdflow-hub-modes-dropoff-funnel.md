@@ -1,6 +1,11 @@
 # sEH / RGFN — Paper-comparable hub "modes" + the filter-dropoff funnel
 **Date:** 2026-07-10, ~1pm
 
+**[COST METRIC SUPERSEDED → 029]** The reactions/mode *cost* here (`_per_mode_cost`: hub vs
+independent on one fixed set of molecules) is superseded by the budget-campaign framing in entry
+029. The **mode definition** (reward-gated + Tanimoto-dedup, ECFP r=3/0.7) and the **filter-dropoff
+funnel** finding remain current — the mode definition is used verbatim by 029's `mode_select.py`.
+
 ## Question
 
 When we count a hub's diverse "modes" the way the generative-model papers do — distinct

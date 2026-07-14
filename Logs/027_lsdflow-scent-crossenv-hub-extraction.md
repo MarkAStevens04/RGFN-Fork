@@ -1,6 +1,12 @@
 # sEH / SCENT — LSD-Flow: cross-env hub extraction from the cost-aware flow field
 **Date:** 2026-07-10, ~3pm
 
+**[COST DECISIONS SUPERSEDED → 029]** The cost-accounting *decisions* in this entry's addendum
+(the fixed-set "reactions/mode charged once per costed library" framing) are superseded by the
+budget-campaign in entry 029. Everything else here is **current infrastructure that 029 runs on**:
+the SCENT cross-env adapter, the dynamic-library freeze, `enumerate_hub_children`, and the
+recipe logging.
+
 ## Question
 
 Can we run our post-hoc "hub" analysis on SCENT — the cost-aware, synthesizable generator that

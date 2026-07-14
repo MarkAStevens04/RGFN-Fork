@@ -1,0 +1,14 @@
+# 5,000-iteration variant of fixed_reward_6td3.gin (campaign Logs/030).
+#
+# The one change vs the base config: Trainer.n_iterations 400 -> 5000. The docking cells were
+# capped at 400 for compute (entry 021) while the surrogate cells already ran ~5000; lifting
+# docking to 5000 makes the whole 4x4 matrix a single uniform budget (matches SCENT's paper /
+# our surrogate runs). Reaction cap stays at the original 4 (the +1-reaction idea was measured
+# to ~3x the compute + amplify size-drift, so it was dropped for this campaign; Logs/030 Results).
+# Everything else (6TD3 differential oracle, SMALL library, beta=4, lean metrics) inherited.
+#
+# Run:  python scripts/fixed_reward.py --cfg configs/glue/fixed_reward_6td3_5k.gin --seed 42
+# (Balam compute node; multi-day docking-in-the-loop -> launch via scale5k/launch_chain.sh.)
+include 'configs/glue/fixed_reward_6td3.gin'
+
+Trainer.n_iterations = 5000

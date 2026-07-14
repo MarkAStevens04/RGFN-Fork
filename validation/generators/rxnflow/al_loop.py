@@ -40,6 +40,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import torch
 from rdkit import Chem
 
 from validation.generators.rxnflow.proxy import AtomMPNNProxy
@@ -322,10 +323,14 @@ class RxnFlowActiveLearningLoop:
         return top
 
     # ----------------------------------------------------------------- internals
-    def _train_steps(self, n: int) -> None:
+    def _train_steps(self, n: int, checkpoint_every: int = 100) -> None:
         """Drive the RxnFlow trainer for ``n`` minibatches against the current ``M``
         (held by the task). Mirrors the inner loop of the gflownet trainer but under
-        our control so we can refit ``M`` between rounds (cf. the FragGFN loop)."""
+        our control so we can refit ``M`` between rounds (cf. the FragGFN loop).
+
+        Writes a full-state checkpoint every ``checkpoint_every`` steps (and at the end) so a
+        walltime-killed run resumes from the last checkpoint (campaign Logs/030); ``_it`` is
+        updated in-loop so a mid-loop checkpoint records the true step."""
         from gflownet.trainer import cycle
 
         tr = self.trainer
@@ -335,11 +340,70 @@ class RxnFlowActiveLearningLoop:
         start = self._it + 1
         for it, batch in zip(range(start, start + n), cycle(train_dl)):
             info = tr.train_batch(batch.to(tr.device), 0, 0, it)
+            self._it = it
             if it % max(1, tr.print_every) == 0:
                 loss = info.get("loss", float("nan"))
                 print(f"[RXN-AL]   gfn step {it}: loss={loss:.3f}", flush=True)
-        self._it += n
+            if checkpoint_every and it % checkpoint_every == 0:
+                self.save_checkpoint()
+        self.save_checkpoint()
         del train_dl
+
+    # ------------------------------------------------------- checkpoint / resume
+    def _ckpt_path(self) -> Path:
+        # NOT under run_dir/"train": gflownet's trainer does shutil.rmtree(log_dir=run_dir/train)
+        # on construction when overwrite_existing_exp=True (required to re-run into an existing
+        # dir), which would wipe the checkpoint before load_checkpoint() reads it. A sibling dir
+        # survives that wipe (campaign Logs/030 resume bug).
+        return self.run_dir / "checkpoints" / "last_gfn.pt"
+
+    def save_checkpoint(self) -> None:
+        """Persist full training state (model + both optimizers + both LR schedulers + step)
+        for the 3-day auto-requeue chain (campaign Logs/030). gflownet's own ``_save_state``
+        omits the optimizers/schedulers and has no load path. Temp-then-rename so a kill
+        mid-write never leaves a truncated ``last_gfn.pt``."""
+        tr = self.trainer
+        state = {
+            "it": self._it,
+            "model": tr.model.state_dict(),
+            "opt": tr.opt.state_dict(),
+        }
+        for attr in ("opt_Z", "lr_sched", "lr_sched_Z"):
+            obj = getattr(tr, attr, None)
+            if obj is not None:
+                state[attr] = obj.state_dict()
+        if tr.sampling_model is not tr.model:
+            state["sampling_model"] = tr.sampling_model.state_dict()
+        ckpt = self._ckpt_path()
+        ckpt.parent.mkdir(parents=True, exist_ok=True)
+        tmp = ckpt.with_suffix(".pt.tmp")
+        torch.save(state, tmp)
+        tmp.replace(ckpt)
+
+    def load_checkpoint(self) -> bool:
+        """Restore full training state from a prior chain link. Returns True if resumed;
+        sets ``self._it`` so the runner can train only the remaining steps."""
+        ckpt = self._ckpt_path()
+        if not ckpt.exists():
+            return False
+        tr = self.trainer
+        # Move the model to the device BEFORE loading optimizer state: torch's
+        # optimizer.load_state_dict places each state tensor on its param's current device, and
+        # _train_steps only calls model.to(device) later — so loading now with the model still on
+        # CPU would strand the Adam momentum buffers on CPU (device-mismatch crash at opt.step()).
+        tr.model.to(tr.device)
+        tr.sampling_model.to(tr.device)
+        state = torch.load(ckpt, map_location=tr.device)
+        tr.model.load_state_dict(state["model"])
+        tr.opt.load_state_dict(state["opt"])
+        for attr in ("opt_Z", "lr_sched", "lr_sched_Z"):
+            if attr in state and getattr(tr, attr, None) is not None:
+                getattr(tr, attr).load_state_dict(state[attr])
+        if "sampling_model" in state and tr.sampling_model is not tr.model:
+            tr.sampling_model.load_state_dict(state["sampling_model"])
+        self._it = int(state["it"])
+        print(f"[RXN-AL] resumed from checkpoint at step {self._it}", flush=True)
+        return True
 
     def _sample_query_batch(self) -> Tuple[List[str], List[Dict[str, Any]]]:
         """Sample unique valid terminal SMILES from the trained policy, with routes.

@@ -1,9 +1,11 @@
 """LSD-Flow analysis harness — one (model x reward) run end-to-end (proposal §10 steps 1-2).
 
 Pipeline: adapter samples trajectories -> build the rich HubDAG (flow recovery + ``U(h)``) ->
-rank hubs under every registered strategy -> run each (hub x molecule) acquisition combo
-through the amortized cost + Butina-mode metrics -> the flow-vs-visitation TB-integrity
-diagnostic (§2/§8) -> persist DAG + a readable report.
+rank hubs under every registered strategy -> the flow-vs-visitation TB-integrity diagnostic
+(§2/§8) -> optional exhaustive child enumeration -> persist DAG + report. The
+hub-batching-vs-best-candidate cost comparison (Logs/028) lives in
+``experiments/lsd_hubs/campaign/`` and consumes this harness's persisted DAG + enumeration; it is
+deliberately NOT here (the harness only produces the flow field + neighborhoods).
 
 Run (login node, GFN inference only — no docking; prefix with the smoke env per CLAUDE.md):
 
@@ -22,52 +24,13 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import List, Optional, Sequence
 
-from glue.samplers.lsdflow.acquisition import LSDFlowAcquisition
 from glue.samplers.lsdflow.dag import LiteHubDAG
 from glue.samplers.lsdflow.hub.registry import get_hub_strategy
-from glue.samplers.lsdflow.molecule.registry import get_molecule_strategy
 from glue.samplers.lsdflow.records import FlowRecord
 from validation.lsdflow.adapters import get_adapter
 from validation.lsdflow.dag import build_hub_dag
 from validation.lsdflow.harness.config import LSDFlowRunConfig
-from validation.lsdflow.metrics.diversity import (
-    mode_counter,
-    mode_representatives,
-    unique_scaffolds,
-)
-
-
-def _per_mode_cost(items, similarity_threshold, reward_threshold, higher_is_better):
-    """Reactions to synthesize a **diverse library of one representative per (paper-comparable)
-    mode** (§11). Modes follow ``TanimotoSimilarityModes``: reward-gated + greedy ECFP-r3
-    sphere-exclusion at ``similarity_threshold``, best-reward-first (so each mode's
-    representative is its best binder — see :func:`mode_representatives`).
-
-    ``items``: ``(key, reward, hub_id, hub_depth)`` per candidate child. Then:
-
-      * **hub batch**: each *distinct* owner hub built once (``hub_depth`` reactions) + one final
-        reaction per representative — ``Σ_distinct_hub depth + n_modes``.
-      * **independent**: each representative built from scratch — ``Σ_rep (hub_depth + 1)``.
-
-    Costing one representative *per mode* (not all children) keeps the per-mode number bounded by
-    the trajectory length; redundancy (children per mode) is reported separately. Returns
-    ``(n_modes, hub_rx, indep_rx)``.
-    """
-    rep_idx = mode_representatives(
-        [it[0] for it in items],
-        [it[1] for it in items],
-        higher_is_better=higher_is_better,
-        reward_threshold=reward_threshold,
-        similarity_threshold=similarity_threshold,
-    )
-    if not rep_idx:
-        return 0, 0.0, 0.0
-    reps = [items[i] for i in rep_idx]
-    n_modes = len(reps)
-    distinct_hub_depth = {it[2]: it[3] for it in reps}
-    hub_rx = float(sum(distinct_hub_depth.values()) + n_modes)
-    indep_rx = float(sum(it[3] + 1 for it in reps))
-    return n_modes, hub_rx, indep_rx
+from validation.lsdflow.metrics.diversity import count_modes, mode_counter
 
 
 # ------------------------------------------------------------------ small helpers
@@ -117,41 +80,6 @@ def _build_hub_strategy(name: str, cfg: LSDFlowRunConfig):
     if name == "most_modes":
         kwargs["mode_counter"] = mode_counter(cfg.mode_similarity_threshold)
     return get_hub_strategy(name, **kwargs)
-
-
-def _analyze_combo(dag, hub_name: str, mol_name: str, cfg: LSDFlowRunConfig) -> dict:
-    acq = LSDFlowAcquisition(
-        hub_strategy=_build_hub_strategy(hub_name, cfg),
-        molecule_strategy=get_molecule_strategy(mol_name),
-        batch_size=cfg.out_batch_size,
-        per_hub=cfg.per_hub,
-        seed=cfg.seed,
-        higher_is_better=dag.higher_is_better,
-    )
-    groups = acq.select_grouped(dag)
-    # One representative per mode (each child tagged with its owner hub's id + build depth), so
-    # reactions/mode is bounded by trajectory length and not inflated by a redundant batch.
-    items = [(c.key, c.reward, hub.key, hub.depth) for hub, children in groups for c in children]
-    n_modes, batch_rx, indep_rx = _per_mode_cost(
-        items, cfg.mode_similarity_threshold, cfg.mode_reward_threshold, dag.higher_is_better
-    )
-    n_scaffolds = unique_scaffolds([it[0] for it in items])
-    n_mol = len(items)
-    return {
-        "hub_strategy": hub_name,
-        "molecule_strategy": mol_name,
-        "n_hubs_used": len(groups),
-        "n_molecules": n_mol,
-        "n_modes": n_modes,
-        "n_scaffolds": n_scaffolds,
-        "batch_reactions": batch_rx,
-        "independent_reactions": indep_rx,
-        "reaction_savings": indep_rx - batch_rx,
-        "reactions_per_mode_hub": _round((batch_rx / n_modes) if n_modes else float("nan"), 3),
-        "reactions_per_mode_independent": _round(
-            (indep_rx / n_modes) if n_modes else float("nan"), 3
-        ),
-    }
 
 
 def _load_lite_dag(csv_path: str, *, higher_is_better: bool, log_z: float) -> LiteHubDAG:
@@ -224,7 +152,6 @@ def run(cfg: LSDFlowRunConfig) -> dict:
         "config": asdict(cfg),
         "summary": summary,
         "strategies": {},
-        "acquisitions": [],
         "diagnostics": {},
     }
 
@@ -264,18 +191,6 @@ def run(cfg: LSDFlowRunConfig) -> dict:
         f"  Pearson(consensus logF, visitation logF): {report['diagnostics']['pearson_flow_vs_visitation']}"
     )
 
-    print("\n===== Acquisition combos (batch cost / diversity) =====")
-    for hub_name, mol_name in cfg.combos:
-        row = _analyze_combo(dag, hub_name, mol_name, cfg)
-        report["acquisitions"].append(row)
-        print(
-            f"  {hub_name:26s} x {mol_name:14s} -> "
-            f"{row['n_molecules']} mols / {row['n_modes']} modes from "
-            f"{row['n_hubs_used']} hubs | rxn/mode hub={row['reactions_per_mode_hub']} "
-            f"vs indep={row['reactions_per_mode_independent']} "
-            f"(saved {row['reaction_savings']:.0f} rxns)"
-        )
-
     if cfg.enumerate_top_hubs > 0:
         report["enumeration"] = enumerate_and_report(adapter, dag, cfg)
 
@@ -298,7 +213,8 @@ def enumerate_and_report(adapter, dag, cfg: LSDFlowRunConfig) -> dict:
     (a depth-0 fragment costs 0 reactions, so it has diversity but no amortization; and depth-3
     hubs' children hit the max-reaction boundary where P_B can't be recovered). For each,
     enumerates all terminal children, checks the sampled children are recovered (exhaustiveness
-    sanity), and recomputes diversity + amortized cost on the *full* enumerated neighborhood.
+    sanity), and records the neighborhood's descriptive stats (children, modes, best reward). The
+    reactions/mode cost comparison is done downstream in the campaign, not here.
     """
     tf_hubs = _build_hub_strategy("highest_terminating_flow", cfg).rank(dag)[
         : cfg.enumerate_top_hubs
@@ -338,11 +254,15 @@ def enumerate_and_report(adapter, dag, cfg: LSDFlowRunConfig) -> dict:
         rewards = [c.reward for c in enum_children if c.reward == c.reward]
         best = (max(rewards) if dag.higher_is_better else min(rewards)) if rewards else float("nan")
         k = len(enum_children)
-        # One representative per mode from this single hub (all children share its build depth),
-        # so reactions/mode is bounded by trajectory length; redundancy is reported separately.
-        items = [(c.key, c.reward, h.key, h.depth) for c in enum_children]
-        n_modes, batch_rx, indep_rx = _per_mode_cost(
-            items, cfg.mode_similarity_threshold, cfg.mode_reward_threshold, dag.higher_is_better
+        # Descriptive only: how many paper-comparable modes (reward-gated + Tanimoto-dedup) this
+        # hub's full one-reaction neighborhood contains. The reactions/mode COST comparison
+        # (hub-batching vs best-candidate) lives in the campaign, not here.
+        n_modes = count_modes(
+            [c.key for c in enum_children],
+            [c.reward for c in enum_children],
+            higher_is_better=dag.higher_is_better,
+            reward_threshold=cfg.mode_reward_threshold,
+            similarity_threshold=cfg.mode_similarity_threshold,
         )
         row = {
             "hub_key": h.key,
@@ -354,12 +274,6 @@ def enumerate_and_report(adapter, dag, cfg: LSDFlowRunConfig) -> dict:
             "sampled_recovered_by_enum": f"{recovered}/{len(sampled_keys)}",
             "enum_modes": n_modes,
             "enum_best_reward": _round(best, 3),
-            "enum_reactions_per_mode_hub": _round(
-                (batch_rx / n_modes) if n_modes else float("nan"), 3
-            ),
-            "enum_reactions_per_mode_independent": _round(
-                (indep_rx / n_modes) if n_modes else float("nan"), 3
-            ),
         }
         rows.append(row)
         print(
@@ -414,17 +328,9 @@ def _save(cfg: LSDFlowRunConfig, dag, report: dict) -> None:
     out = Path(cfg.out_dir)
     out.mkdir(parents=True, exist_ok=True)
     # The rich DAG was already persisted right after sampling (before enumeration); here we only
-    # write the report + acquisitions table.
+    # write the report (hub rankings + diagnostics + enumeration enrichment).
     with open(out / "report.json", "w") as fh:
         json.dump(report, fh, indent=2)
-    # A small, committed-friendly acquisitions table.
-    import csv
-
-    with open(out / "acquisitions.csv", "w", newline="") as fh:
-        if report["acquisitions"]:
-            w = csv.DictWriter(fh, fieldnames=list(report["acquisitions"][0].keys()))
-            w.writeheader()
-            w.writerows(report["acquisitions"])
     print(f"\n[LSD-Flow] wrote DAG + report to {out}")
 
 
@@ -438,8 +344,6 @@ def _parse_args(argv: Optional[List[str]] = None) -> LSDFlowRunConfig:
     p.add_argument("--n-trajectories", type=int, default=2000)
     p.add_argument("--sample-batch-size", type=int, default=100)
     p.add_argument("--device", default="auto")
-    p.add_argument("--out-batch-size", type=int, default=96)
-    p.add_argument("--per-hub", type=int, default=8)
     p.add_argument(
         "--mode-similarity",
         type=float,
@@ -484,8 +388,6 @@ def _parse_args(argv: Optional[List[str]] = None) -> LSDFlowRunConfig:
         n_trajectories=a.n_trajectories,
         sample_batch_size=a.sample_batch_size,
         device=a.device,
-        out_batch_size=a.out_batch_size,
-        per_hub=a.per_hub,
         mode_similarity_threshold=a.mode_similarity,
         mode_reward_threshold=a.mode_reward_threshold,
         min_children_for_hub=a.min_children,

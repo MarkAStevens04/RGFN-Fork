@@ -36,6 +36,22 @@ from rgfn.gfns.reaction_gfn.api.reaction_api import (
 from rgfn.shared.proxies.cached_proxy import CachedProxyBase
 
 
+def _load_dock_server_client(repo_root):
+    """Path-import the stdlib ``DockingServerClient`` from ``glue/oracles/docking_server.py``
+    and return ``client_from_env()`` (client if ``RGFN_DOCK_SOCKET`` set, else ``None``). Loads
+    the file directly — its client half is stdlib-only, so it never imports the glue package
+    (nor SCENT's own ``rgfn`` fork). Campaign Logs/030."""
+    import importlib.util
+
+    p = Path(repo_root) / "glue" / "oracles" / "docking_server.py"
+    if not p.exists():
+        return None
+    spec = importlib.util.spec_from_file_location("_rgfn_dockserver", str(p))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.client_from_env()
+
+
 @gin.configurable()
 class DockingBridgeProxy(CachedProxyBase[ReactionState]):
     """Dock each batch via the rgfn-env ``score_batch.py`` bridge; expose a GFN reward."""
@@ -60,6 +76,25 @@ class DockingBridgeProxy(CachedProxyBase[ReactionState]):
         self.workdir = Path(workdir) if workdir else (self.repo_root / "reward_bridge_scent")
         self.workdir.mkdir(parents=True, exist_ok=True)
         self._step = 0
+        # Persistent docking server (campaign Logs/030): dock over RGFN_DOCK_SOCKET if set, else
+        # per-step score_batch.py spawn. Client path-imported (stdlib) — no glue import (SCENT's
+        # package is itself named `rgfn`, so importing the glue package here is doubly forbidden).
+        self._client = _load_dock_server_client(self.repo_root)
+        if self._client is not None:
+            if not self._client.wait_until_ready(timeout=900):
+                raise RuntimeError(
+                    "RGFN_DOCK_SOCKET is set but the docking server never became ready "
+                    f"({self._client.socket_path})."
+                )
+            print(
+                f"[dock-bridge-scent] persistent docking server @ {self._client.socket_path}",
+                flush=True,
+            )
+        else:
+            print(
+                "[dock-bridge-scent] no RGFN_DOCK_SOCKET -> per-step score_batch.py subprocess",
+                flush=True,
+            )
         # early-terminal (invalid) -> worst reward; dict form so all cache entries match.
         self.cache = {
             ReactionStateEarlyTerminal(None): {
@@ -103,19 +138,23 @@ class DockingBridgeProxy(CachedProxyBase[ReactionState]):
         if not smiles:
             return []
         self._step += 1
-        smi_path = self.workdir / f"step_{self._step:05d}.smi"
-        lbl_path = self.workdir / f"step_{self._step:05d}_labels.csv"
-        smi_path.write_text("\n".join(smiles) + "\n")
-        cmd = [
-            "conda", "run", "--no-capture-output", "-n", self.conda_env,
-            "python", "scripts/score_batch.py",
-            "--oracle", self.oracle, "--in", str(smi_path), "--out", str(lbl_path),
-        ]  # fmt: skip
-        for k, v in self.oracle_args.items():
-            cmd += ["--oracle-arg", f"{k}={v}"]
-        self._free_gpu_cache()  # let the bridge's QuickVina2-GPU allocate (Logs/014)
-        subprocess.run(cmd, check=True, cwd=str(self.repo_root))
-        labels = self._read_labels(lbl_path, smiles)
+        self._free_gpu_cache()  # free this proc's cache so the docking GPU can allocate (Logs/014)
+        if self._client is not None:
+            lab_raw, _ = self._client.dock(smiles)
+            labels = [float(x) if x is not None else float("nan") for x in lab_raw]
+        else:
+            smi_path = self.workdir / f"step_{self._step:05d}.smi"
+            lbl_path = self.workdir / f"step_{self._step:05d}_labels.csv"
+            smi_path.write_text("\n".join(smiles) + "\n")
+            cmd = [
+                "conda", "run", "--no-capture-output", "-n", self.conda_env,
+                "python", "scripts/score_batch.py",
+                "--oracle", self.oracle, "--in", str(smi_path), "--out", str(lbl_path),
+            ]  # fmt: skip
+            for k, v in self.oracle_args.items():
+                cmd += ["--oracle-arg", f"{k}={v}"]
+            subprocess.run(cmd, check=True, cwd=str(self.repo_root))
+            labels = self._read_labels(lbl_path, smiles)
         if smiles and all(lab != lab for lab in labels):
             print(
                 f"[dock-bridge-scent] WARNING step {self._step}: all {len(smiles)} docks "

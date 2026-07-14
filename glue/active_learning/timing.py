@@ -115,3 +115,56 @@ class PhaseTimer:
         for phase, secs in sorted(self._totals.items(), key=lambda kv: -kv[1]):
             print(f"[AL]   {phase:<13} {_fmt(secs):>12}  {100 * secs / grand:5.1f}%", flush=True)
         print(f"[AL]   {'TOTAL':<13} {_fmt(grand):>12}  100.0%", flush=True)
+
+    def total_for(self, name: str) -> float:
+        """Cumulative seconds recorded for a phase across all rounds (0 if never timed)."""
+        return self._totals.get(name, 0.0)
+
+
+class DockAccountant:
+    """Accumulates wall-clock spent calling the expensive docking oracle during training.
+
+    ``PhaseTimer`` times *phases* (the whole ``train_gfn`` pass); this times the docking that
+    happens *inside* that pass — every step, the reward generator docks the step's molecules.
+    A docking reward generator (:class:`glue.proxies.OracleRewardProxy`, or a baseline's
+    cross-env bridge) wraps each oracle call in :meth:`time`. The fixed-reward pipeline then
+    divides ``dock_seconds`` by the ``train_gfn`` phase wall-clock to report the **docking
+    share** — the number that decides whether extra random seeds are ~free (a mostly-idle
+    docker whose spare capacity a second seed can use) or costly (campaign Logs/030). It is
+    the per-run companion to the persistent docking server's own busy/idle utilization log.
+
+    Deliberately dependency-free (only ``time``/``contextlib``) so the baselines, which run in
+    their own conda envs and cannot import ``glue``, can carry an identical copy.
+    """
+
+    def __init__(self) -> None:
+        self.dock_seconds = 0.0
+        self.n_calls = 0  # number of oracle-score batches (~= training steps that docked)
+        self.n_mols = 0  # molecules actually docked (cache misses)
+
+    def record(self, seconds: float, n_mols: int) -> None:
+        self.dock_seconds += float(seconds)
+        self.n_calls += 1
+        self.n_mols += int(n_mols)
+
+    @contextmanager
+    def time(self, n_mols: int):
+        """Time a docking call over ``n_mols`` molecules; records even if the body raises."""
+        start = time.perf_counter()
+        try:
+            yield
+        finally:
+            self.record(time.perf_counter() - start, n_mols)
+
+    def summary(self, train_seconds: Optional[float] = None) -> Dict[str, float]:
+        """Totals, plus the docking share of ``train_seconds`` when provided."""
+        out: Dict[str, float] = {
+            "dock_seconds": round(self.dock_seconds, 3),
+            "n_dock_calls": self.n_calls,
+            "n_mols_docked": self.n_mols,
+            "s_per_mol": round(self.dock_seconds / self.n_mols, 4) if self.n_mols else 0.0,
+        }
+        if train_seconds is not None and train_seconds > 0:
+            out["train_gfn_seconds"] = round(float(train_seconds), 3)
+            out["docking_share"] = round(self.dock_seconds / float(train_seconds), 4)
+        return out

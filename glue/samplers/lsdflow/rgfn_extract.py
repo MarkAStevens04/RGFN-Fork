@@ -1,8 +1,7 @@
 """RGFN-native flow extraction: a sampled ``Trajectories`` -> ``FlowRecord``s.
 
 This is the one place the ``docs/LSD_FLOW_PROPOSAL.md`` §2 log-terms are read out of the
-real RGFN objects, and it is shared by both project axes: the production AL path
-(:class:`~glue.samplers.lsdflow.acquisition.LSDFlowAcquisition`) calls it on the
+real RGFN objects, and it is shared by both project axes: the production AL path calls it on the
 trajectories the loop already sampled, and the validation RGFN adapter
 (``validation/lsdflow/adapters/rgfn_adapter.py``) calls it to emit canonical records for the
 cross-model DAG. It lives in ``glue/`` because it imports ``rgfn`` (allowed) and must be

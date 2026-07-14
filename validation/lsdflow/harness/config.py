@@ -8,7 +8,7 @@ results. The full model x reward x strategy x metric matrix (``matrix.py``) comp
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 
 def _default_hub_strategies() -> List[str]:
@@ -19,16 +19,6 @@ def _default_hub_strategies() -> List[str]:
         "highest_visitation",
         "lowest_uncertainty",
         "parent_of_topk",
-    ]
-
-
-def _default_combos() -> List[Tuple[str, str]]:
-    # (hub_strategy, molecule_strategy) pairs to run end-to-end through acquisition + cost.
-    return [
-        ("highest_terminating_flow", "topk_reward"),
-        ("highest_terminating_flow", "uniform_random"),
-        ("lowest_uncertainty", "prob_weighted"),
-        ("parent_of_topk", "topk_reward"),  # the control baseline
     ]
 
 
@@ -45,10 +35,7 @@ class LSDFlowRunConfig:
     device: str = "auto"
 
     hub_strategies: List[str] = field(default_factory=_default_hub_strategies)
-    combos: List[Tuple[str, str]] = field(default_factory=_default_combos)
     report_top_hubs: int = 10
-    out_batch_size: int = 96  # molecules a selection should return
-    per_hub: int = 8  # concurrency: products per shared hub
     # Mode definition (paper-comparable, matches TanimotoSimilarityModes / dataset_metrics):
     # greedy ECFP r=3 sphere-exclusion at this Tanimoto threshold, gated by a reward/binding
     # cutoff so a "mode" is a distinct *high-affinity* product (§11). reward_threshold=None

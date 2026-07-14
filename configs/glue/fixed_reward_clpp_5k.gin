@@ -1,0 +1,12 @@
+# 5,000-iteration variant of fixed_reward_clpp.gin (campaign Logs/030).
+#
+# The one change vs the base config: Trainer.n_iterations 400 -> 5000 (docking cell was capped
+# at 400 in entry 021). Reaction cap stays at the original 4 (the +1-reaction idea was dropped
+# for this campaign — ~3x compute + worse size-drift; Logs/030 Results). Everything else (ClpP
+# single-target QuickVina2-GPU docking, SMALL library, beta=4, lean metrics) inherited.
+#
+# Run:  python scripts/fixed_reward.py --cfg configs/glue/fixed_reward_clpp_5k.gin --seed 42
+# (Balam compute node; multi-day docking-in-the-loop -> launch via scale5k/launch_chain.sh.)
+include 'configs/glue/fixed_reward_clpp.gin'
+
+Trainer.n_iterations = 5000

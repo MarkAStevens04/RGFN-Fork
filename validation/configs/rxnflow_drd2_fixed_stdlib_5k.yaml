@@ -1,0 +1,39 @@
+# RxnFlow FIXED-REWARD on DRD2 (surrogate) — publication-scale (campaign Logs/030).
+#
+# Publication-scale variant of rxnflow_drd2_fixed_stdlib.yaml. Surrogate cell already ran 5000
+# steps; only substantive change is max_reactions 4 -> 5 (reaction cap +1). SHARED SMALL
+# library, frozen DRD2 TDC activity oracle, beta=48, routes.
+#
+# Run (repo root, rxnflow env; candidate emission shells to rgfn env):
+#   conda run -n rxnflow python validation/generators/rxnflow/run_rxnflow_fixed.py \
+#       --cfg validation/configs/rxnflow_drd2_fixed_stdlib_5k.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+
+run:
+  name: fixed_reward/rxnflow_drd2_stdlib_5k
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  n_train_steps: 5000
+  n_samples: 1000
+  sample_oversample: 4.0
+  top_k: 100
+  beta: 48
+  system: drd2
+  reward_name: drd2
+  score_units: "drd2_tdc_activity (higher is better; 0-1)"
+
+reward:
+  type: drd2
+  model_path: /home/markymoo/projects/RGFN_Fork/RGFN-Fork/oracle/drd2_current.pkl
+  clip: 10.0
+
+rxnflow:
+  env_dir: data/models/rxnflow_env_stdlib  # SHARED library (glue_standard_v1 baked)
+  max_reactions: 4                          # original cap (matched to RGFN); -> gflownet algo.max_len
+  num_emb: 128
+  num_layers: 4
+  sampling_tau: 0.9
+  learning_rate: 1.0e-4
+  print_every: 100
+  action_sampling_ratio: 0.01

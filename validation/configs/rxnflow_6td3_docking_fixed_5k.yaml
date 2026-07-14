@@ -1,0 +1,41 @@
+# RxnFlow FIXED-REWARD on the 6TD3 differential — publication-scale (campaign Logs/030).
+#
+# Publication-scale variant of rxnflow_6td3_docking_fixed.yaml: n_train_steps 400 -> 5000
+# (uniform four-way budget) and max_reactions 4 -> 5 (reaction cap +1, project lead 2026-07-13;
+# feeds gflownet algo.max_len, matched to RGFN's max_num_reactions=5). Everything else identical
+# (SHARED SMALL library, per-step docking-in-the-loop via DockingBridgeReward, beta=4, routes).
+#
+# Run (repo root, rxnflow env; docking libs exported for the rgfn subprocess):
+#   conda run -n rxnflow python validation/generators/rxnflow/run_rxnflow_fixed.py \
+#       --cfg validation/configs/rxnflow_6td3_docking_fixed_5k.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+
+run:
+  name: fixed_reward/rxnflow_6td3_5k
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  n_train_steps: 5000
+  n_samples: 200
+  sample_oversample: 6.0
+  top_k: 100
+  beta: 4
+  system: 6td3
+  reward_name: 6td3_diff
+  score_units: "clip(-dvina) reward (higher is better; raw dvina in raw_score column)"
+
+reward:
+  type: docking
+  oracle: docking_6td3_gpu
+  norm: 1.0
+  clip: 10.0
+
+rxnflow:
+  env_dir: data/models/rxnflow_env_stdlib  # SHARED library (glue_standard_v1 baked)
+  max_reactions: 4                          # original cap (matched to RGFN); -> gflownet algo.max_len
+  num_emb: 128
+  num_layers: 4
+  sampling_tau: 0.9
+  learning_rate: 1.0e-4
+  print_every: 10
+  action_sampling_ratio: 0.01

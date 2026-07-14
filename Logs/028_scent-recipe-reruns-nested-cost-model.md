@@ -1,6 +1,14 @@
 # SCENT — synthesis-recipe re-runs (all targets) + nested-amortization cost model
 **Date:** 2026-07-10, ~5pm
 
+**[OUTDATED]** (headline cost result only): this entry costed a *fixed* set of molecules (one
+representative per mode from a hub selection) two ways — hub-amortized vs independent — which makes
+the shared-intermediate cost cancel out (an artifact of comparing the *same* molecules). The right
+comparison is between two *selection strategies run from scratch under a budget*; see **entry 029**.
+Still current and carried forward: the recipe re-runs (jobs 70180/70184), the recipe logging, and
+the nested `FragmentCostTable` — 029 builds directly on them; only the fixed-set reactions/mode
+comparison (the Answer/Results tables here) is superseded.
+
 ## Question
 
 When we cost a batchable library of SCENT molecules, how do we charge the synthesis of SCENT's
@@ -89,13 +97,13 @@ Root: `./` (repo root).
   uses), from the sampled trajectories.
 - `./validation/lsdflow/adapters/scent_adapter.py`, `.../adapters/base.py` (`FlowSample.compositions`),
   `.../dag/graph.py` (`HubDAG.save` persists `compositions.json`) — carry it through the harness.
-- `./validation/lsdflow/metrics/cost/dynamic_amortization.py` — **new.** Recursive per-fragment unit
-  cost from the routes (reactions = route step count; $ = marginal, from SCENT's cost tables),
-  memoized; a costed library charges each distinct promoted fragment (closed under routes) exactly
-  once in both plans. Falls back to `min_num_reactions` when no routes.
-- `./experiments/lsd_hubs/amortized_cost/{cost.py,README.md}` — **new.** Reusable analysis: SCENT
-  analysis dir + recipe snapshot → base-vs-augmented reactions-per-mode. Committed results
-  `cost_scent_seh_70189.json`, `cost_scent_drd2_70190.json`.
+- `./validation/lsdflow/metrics/cost/dynamic_amortization.py` — `FragmentCostTable`: recursive
+  per-fragment unit cost from the routes (reactions = route step count; $ = marginal, from SCENT's
+  cost tables), memoized, closed under nesting. Falls back to `min_num_reactions` when no routes.
+  (Its earlier same-molecules `amortized_library_cost` was removed in the addendum reframe.)
+- **Campaign (the addendum's hub-batching-vs-best-candidate comparison, supersedes the initial
+  `experiments/lsd_hubs/amortized_cost/`):** `glue/samplers/lsdflow/{campaign.py,mode_select.py}`
+  (AL-ready strategies) + `experiments/lsd_hubs/campaign/{pick_hubs.py,run_campaign.py,submit_scent_seh_enum.sh,README.md}`.
 
 **Recipe re-run checkpoints (inputs, on $SCRATCH):**
 - `.../fixed_reward/scent_seh/2026-07-10_17-28-06/` (job 70180) + `.../scent_drd2/2026-07-10_17-28-06/`
@@ -188,3 +196,40 @@ RGFN (no promoted) reduces to the entry-025/026 base cost exactly.
 had inherited the sEH hit bar (`MODE_REWARD=7.0`) via the sed that created it, but DRD2's proxy is a
 0–1 probability (p50 0.97). Recomputed post-hoc at the DRD2 "active" bar 0.5 (numbers above); the
 submit default is corrected to 0.5.
+
+## Addendum — hub-batching vs best-candidate budget campaign (2026-07-11)
+
+Reframed the cost model on feedback: instead of costing one fixed molecule set two ways (which made
+the promoted-fragment cost cancel — an artifact), we now compare two **selection strategies** under
+a budget, which is what the eventual AL loop will do.
+
+- **best-candidate** — top-reward modes from the sampled pool, each built independently (promoted
+  fragments shared as reusable stock). Mirrors RGFN's paper "top-k".
+- **hub-batching** — walk pre-ranked hubs (parents of the top-K candidates by single-candidate flow),
+  build each scaffold once, diversify its enumerated children into modes.
+
+Two budget cases off one modes-vs-reactions curve: Case 1 = modes at a reaction budget; Case 2 =
+reactions at a mode budget (≈ oracle calls). Metrics: reactions/mode, reward-gen calls/mode,
+scaffolds, best/median reward, distinct intermediates + hubs used.
+
+**Design honored two hard constraints from the researcher:** (1) the strategies are *independent* —
+`BestCandidateStrategy` needs only the candidate pool (never any hub/enumeration data), so a pure
+best-candidate run can't accidentally depend on hubs (the earlier "same molecules for both" mistake
+can't recur); (2) they're *swappable* — different constructors, **identical** `CampaignResult`
+output, so the AL loop reads `[p.smiles for p in strategy.run(budget).accepted]` for either.
+
+New AL-ready code: `glue/samplers/lsdflow/campaign.py` (the two strategies + `CampaignResult`) +
+`glue/samplers/lsdflow/mode_select.py` (pluggable diverse+threshold mode acceptor). Analysis:
+`experiments/lsd_hubs/campaign/` (`pick_hubs.py` → GPU `submit_scent_seh_enum.sh` → `run_campaign.py`).
+Cleanup (all superseded/dangling; deleted): the same-molecules `amortized_library_cost` +
+`experiments/lsd_hubs/amortized_cost/`, the never-used `cost/{base,reactions_per_mode,registry}.py`
+ABC, `glue/samplers/lsdflow/{acquisition.py,molecule/}` (the old acquisition + molecule strategies),
+and the harness's acquisition-combo cost (`run.py` `_analyze_combo`/`_per_mode_cost` — the harness
+now only produces the flow field + descriptive enumeration; cost lives in the campaign). Worker
+`--mode enumerate` now emits `enum_children.json` (each child + the promoted fragment added in its
+final reaction).
+
+**Preliminary (best-candidate, sEH, validated on real data):** 300 modes cost **1,445 reactions
+(4.82/mode)** spanning **200 distinct promoted intermediates**; 18 modes fit in a 100-reaction
+budget. Hub-batching (should concentrate intermediates → fewer reactions/mode) awaits the
+enumeration job **70295**; `run_campaign.py` fills the comparison + curve once it lands.

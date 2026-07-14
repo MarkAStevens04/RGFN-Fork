@@ -104,7 +104,18 @@ def main() -> None:
     )
     ap.add_argument("--seed", type=int, default=None, help="override RNG seed (else cfg.run.seed)")
     ap.add_argument("--root-dir", default=None, help="base run dir (else cfg.run.root_dir)")
+    ap.add_argument(
+        "--run-dir",
+        default=None,
+        help="EXACT run dir (stable, no timestamp). Set this to reuse a run dir across 3-day "
+        "auto-requeue chain links (campaign Logs/030): the run resumes from its last checkpoint "
+        "and appends. Overrides --root-dir + cfg.run.name.",
+    )
     ap.add_argument("--device", default=None, help="cpu | cuda (else auto)")
+    ap.add_argument(
+        "--n-train-steps", type=int, default=None, help="override n_train_steps (smoke)"
+    )
+    ap.add_argument("--n-samples", type=int, default=None, help="override n_samples (smoke)")
     args = ap.parse_args()
 
     cfg = OmegaConf.load(args.cfg)
@@ -116,17 +127,24 @@ def main() -> None:
     seed = args.seed if args.seed is not None else int(run_c.get("seed", 42))
     device = args.device or gfn_c.get("device") or ("cuda" if torch.cuda.is_available() else "cpu")
     beta = float(fr_c.get("beta", 8))
-    n_train_steps = int(fr_c.get("n_train_steps", 5000))
-    n_samples = int(fr_c.get("n_samples", 1000))
+    n_train_steps = (
+        args.n_train_steps
+        if args.n_train_steps is not None
+        else int(fr_c.get("n_train_steps", 5000))
+    )
+    n_samples = args.n_samples if args.n_samples is not None else int(fr_c.get("n_samples", 1000))
     # Which fixed reward generator: sEH proxy (default) or DRD2 (RGFN paper's proxies).
     reward_type = reward_c.get("type", "seh_proxy")
     system = fr_c.get("system", "seh")
     reward_name = fr_c.get("reward_name", "seh_proxy")
     score_units = fr_c.get("score_units", f"{reward_name} (higher is better)")
 
-    root = Path(args.root_dir or run_c.get("root_dir", "experiments"))
-    run_name = run_c.get("name", "fixed_reward/fraggfn_seh")
-    run_dir = root / run_name / _timestamp()
+    if args.run_dir:  # stable dir for auto-requeue chain links (resume into the same place)
+        run_dir = Path(args.run_dir)
+    else:
+        root = Path(args.root_dir or run_c.get("root_dir", "experiments"))
+        run_name = run_c.get("name", "fixed_reward/fraggfn_seh")
+        run_dir = root / run_name / _timestamp()
     run_dir.mkdir(parents=True, exist_ok=True)
     OmegaConf.save(cfg, run_dir / "run_config.yaml")
     print(
@@ -214,12 +232,23 @@ def main() -> None:
     out_dir = run_dir / "fixed_reward"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. train the fragment-GFN ONCE against the frozen sEH reward.
-    print(
-        f"[FGFN-FR] training {n_train_steps} steps against frozen sEH proxy (beta={beta})",
-        flush=True,
-    )
-    loop._train_steps(n_train_steps)
+    # 1. train the fragment-GFN ONCE. If a prior 3-day auto-requeue chain link left a
+    #    checkpoint (campaign Logs/030), resume from it and train only the REMAINING steps to
+    #    reach n_train_steps total (loop._train_steps adds steps from loop._it+1).
+    loop.load_checkpoint()
+    remaining = n_train_steps - loop._it
+    if remaining > 0:
+        print(
+            f"[FGFN-FR] training {remaining} steps (of {n_train_steps}; resumed at {loop._it}) "
+            f"against frozen {reward_type} reward (beta={beta})",
+            flush=True,
+        )
+        loop._train_steps(remaining)
+    else:
+        print(
+            f"[FGFN-FR] already trained {loop._it} >= {n_train_steps} steps; skipping to sampling.",
+            flush=True,
+        )
 
     # For a uniform-temperature (annealed) run, sample the final batch from the
     # EXPLOITATION policy: condition at a fixed high β via the *uniform* branch

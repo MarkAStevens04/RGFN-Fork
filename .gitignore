@@ -234,3 +234,6 @@ experiments/**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*/
 oracle/drd2_current.pkl
 
 validation/lsdflow/results/seh_rgfn_pilot/graph.gpickle
+
+experiments/lsd_hubs/campaign/results/scent_seh_1kx200/diversity_pairs/gallery.png
+experiments/lsd_hubs/campaign/results/scent_seh_1kx200/diversity_pairs/route_trees.png

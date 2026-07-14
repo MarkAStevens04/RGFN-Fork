@@ -1198,3 +1198,42 @@ cost model's exact nested dynamic-fragment amortization (each distinct promoted 
 per costed library; reactions primary + SCENT $-cost secondary) and a future chemist "synthesize
 these intermediates" view. **The nested-amortization cost model itself is not built yet** — it needs
 per-molecule fragment-composition capture from the analysis trajectories (not in `FlowRecord` today).
+
+---
+
+## 2026-07-14 — Full synthesis-route recording (reconstruction / "how to make it")
+
+**Why:** reconstructing a suggested molecule step-by-step was not fully possible — the reactions
+*after the hub attach* were not recorded, and the hub's own build route was never captured (only
+promoted-fragment recipes existed, in `fragments_<N>.json`). This closes both gaps so the
+chemist-facing `experiments/lsd_hubs/campaign/synthesis_routes.py` (Logs/032) can be a lookup, not an
+inference.
+
+**What changed (all in `validation/`, additive + backward-compatible):**
+- `adapters/workers/scent_worker.py`:
+  - added `_reaction_id` / `_reaction_step` helpers (self-contained copies of the recipe_logging
+    schema — the worker can't import our-rgfn-bound modules).
+  - **enumerate mode:** every `enum_children.json` child now carries `reaction` = the ground-truth
+    final hub→child step(s) `{reaction, reactants, input, product}`, built from the **states**
+    (`hub_state.molecule` in, `x_state.molecule` out) because the action's `output_molecule` may be
+    unpopulated pre-apply in the enumerate path. `enumerate_terminal_children` / `build_child_trajectory`
+    now return a `reaction_by_stereo` map.
+  - **sample mode:** new `routes.json` = every product molecule's full min-reaction route (same
+    schema), keyed by the **stereo-stripped** product SMILES (matching `records.csv`/enum `hub_key`,
+    so the join is exact; steps keep raw SMILES). Gated `routes_out`/`RAC` params on
+    `extract_flow_records` (enumerate path passes none → unchanged).
+- `adapters/base.py`: `FlowSample.routes` field (empty for adapters that don't emit routes, e.g. RGFN).
+- `dag/graph.py`: `HubDAG.save` persists `routes.json` (symmetric to `compositions.json`).
+- `adapters/scent_adapter.py`: reads `routes.json` into `FlowSample.routes`.
+
+**Verified (debug job 70526, ~3 min):** `routes.json` populated (814 entries, real RGFN templates);
+enum child `reaction` field populated with the ground-truth final step; a depth-1 hub's build route
+present in `routes.json` (depth-0 hubs correctly absent — they are stock fragments). Schema/assembly
+logic unit-tested separately (nesting, intermediates-first ordering, count-once).
+
+**Not done / next:** the **current** committed results predate this — `scent_seh_70189` has no
+`routes.json` and `campaign_enum_seh_70363`'s `enum_children.json` has no `reaction` field; populating
+needs a re-run (sample 30k ~3–4 h + enumeration ~5.5 h, both exceed debug's 2 h → `compute`).
+`synthesis_routes.py` still (a) infers the final step via `hub_reaction_name` and (b) treats the hub
+as a "buy" leaf; two backward-compatible edits (prefer the logged `reaction`; merge `routes.json` so
+the hub linearizes) will let it consume the new data — left to the tool's owner.

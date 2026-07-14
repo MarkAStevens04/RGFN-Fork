@@ -1,0 +1,36 @@
+# RxnFlow FIXED-REWARD on sEH (surrogate) — publication-scale (campaign Logs/030).
+#
+# Publication-scale variant of rxnflow_seh_fixed_stdlib.yaml. The surrogate cell already ran
+# 5000 steps, so the only substantive change is max_reactions 4 -> 5 (reaction cap +1); steps
+# stay 5000 for the uniform matrix budget. SHARED SMALL library, frozen Bengio-2021 sEH proxy,
+# beta=8, routes.
+#
+# Run (repo root, rxnflow env; candidate emission shells to rgfn env):
+#   conda run -n rxnflow python validation/generators/rxnflow/run_rxnflow_fixed.py \
+#       --cfg validation/configs/rxnflow_seh_fixed_stdlib_5k.yaml --seed 42 --root-dir $SCRATCH/rgfn_runs/experiments
+
+run:
+  name: fixed_reward/rxnflow_seh_stdlib_5k
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  n_train_steps: 5000
+  n_samples: 1000
+  sample_oversample: 4.0
+  top_k: 100
+  beta: 8
+
+reward:
+  clip: 10.0
+  batch_size: 128
+
+rxnflow:
+  env_dir: data/models/rxnflow_env_stdlib  # SHARED library (glue_standard_v1 baked)
+  max_reactions: 4                          # original cap (matched to RGFN); -> gflownet algo.max_len
+  num_emb: 128
+  num_layers: 4
+  sampling_tau: 0.9
+  learning_rate: 1.0e-4
+  print_every: 100
+  action_sampling_ratio: 0.01

@@ -33,6 +33,7 @@ from typing import Dict, List
 
 import gin
 
+from glue.active_learning.timing import DockAccountant
 from glue.oracles.base import GlueOracle
 from rgfn.api.type_variables import TState
 from rgfn.gfns.reaction_gfn.api.reaction_api import (
@@ -75,6 +76,9 @@ class OracleRewardProxy(CachedProxyBase[ReactionState]):
         self.norm = float(norm)
         self.failed_score = float(failed_score)
         self.free_gpu_cache = free_gpu_cache
+        # Accumulates time spent docking (the oracle call) across training steps, so the
+        # fixed-reward pipeline can report the docking share of the train wall-clock (Logs/030).
+        self.dock_accountant = DockAccountant()
         self._sign = 1.0 if oracle.higher_is_better else -1.0
         # Early-terminal (invalid) states get the worst reward. Stored as a dict so
         # every cache entry has the same shape (CachedProxyBase decides float-vs-dict
@@ -98,7 +102,10 @@ class OracleRewardProxy(CachedProxyBase[ReactionState]):
         smiles = [state.molecule.smiles for state in states]
         if self.free_gpu_cache:
             self._free_gpu_cache()
-        raw_scores = self.oracle.score(smiles)
+        # Time only the oracle (docking) call — this is the expensive part whose share of
+        # training wall-clock we want. ``states`` are the cache misses, so len == mols docked.
+        with self.dock_accountant.time(len(smiles)):
+            raw_scores = self.oracle.score(smiles)
         out: List[Dict[str, float]] = []
         for raw in raw_scores:
             if raw is None or raw != raw:  # None or nan -> oracle failure

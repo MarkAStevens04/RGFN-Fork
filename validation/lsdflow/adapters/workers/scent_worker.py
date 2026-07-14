@@ -8,11 +8,17 @@ the ``scripts/score_batch.py`` bridge shape) and exchanges results over files.
 
 Two modes:
   * ``--mode sample`` — sample trajectories, extract the §2 terminal-transition flow records, and
-    write ``records.csv`` + ``visit_counts.json`` + ``meta.json`` (the canonical
-    :class:`glue.samplers.lsdflow.records.FlowRecord` schema the harness reads back).
+    write ``records.csv`` + ``visit_counts.json`` + ``routes.json`` + ``meta.json`` (the canonical
+    :class:`glue.samplers.lsdflow.records.FlowRecord` schema the harness reads back). ``routes.json``
+    maps every product SMILES -> its full min-reaction synthesis route (ordered steps: reaction id +
+    reactants + input/product), so any hub or terminal is reconstructable step-by-step.
   * ``--mode enumerate`` — for each hub in ``--hubs-file`` (``smiles,depth`` rows), exhaustively
     enumerate its one-reaction terminal children and write ``enumerated_records.csv`` +
-    ``enum_per_hub.json`` (mirrors :class:`RGFNAdapter.enumerate_hub_children`).
+    ``enum_per_hub.json`` + ``enum_children.json`` (mirrors :class:`RGFNAdapter.enumerate_hub_children`).
+    Each child carries ``reaction`` = the full hub->child final step(s), so the diversifying reaction
+    (not just the fragment added) is recorded. Full route of a hub-batching hit = the hub's route
+    (from ``routes.json``) + this final reaction; expand any promoted reactant via its recipe in
+    ``fragments_<N>.json`` (recipe_logging).
 
 **Dynamic-library freeze (§4b, §9).** SCENT promotes high-reward intermediates into its fragment
 vocabulary during training; building from the checkpoint alone leaves the model restricted to the
@@ -106,6 +112,36 @@ def _parse_args():
 
 
 # ----------------------------------------------------------------- flow extraction (vendored)
+def _reaction_id(reaction) -> str:
+    """Readable, stable id for an AnchoredReaction (name/smarts if available, else repr).
+    Mirror of ``validation/generators/scent/recipe_logging.py:_reaction_id`` (kept self-contained —
+    the worker can't import our-rgfn-bound modules)."""
+    if reaction is None:
+        return ""
+    for attr in ("name", "reaction_name", "smarts"):
+        v = getattr(reaction, attr, None)
+        if v:
+            return str(v)
+    inner = getattr(reaction, "reaction", None)
+    if inner is not None:
+        for attr in ("name", "smarts"):
+            v = getattr(inner, attr, None)
+            if v:
+                return str(v)
+    return str(reaction)
+
+
+def _reaction_step(act):
+    """The full synthesis step for a ``ReactionActionC`` (schema shared with recipe_logging +
+    fragments_<N>.json routes): reaction id + reactant fragments + input & product molecule."""
+    return {
+        "reaction": _reaction_id(getattr(act, "input_reaction", None)),
+        "reactants": [f.smiles for f in getattr(act, "input_fragments", ()) or ()],
+        "input": getattr(getattr(act, "input_molecule", None), "smiles", None),
+        "product": getattr(getattr(act, "output_molecule", None), "smiles", None),
+    }
+
+
 def _stripped_key(Chem, molecule):
     stereo_key = molecule.smiles
     if Chem is None:
@@ -120,7 +156,16 @@ def _stripped_key(Chem, molecule):
 
 
 def extract_flow_records(
-    objective, trajectories, RSA, RST, RSC, Chem, strip_stereo, chosen_set=None
+    objective,
+    trajectories,
+    RSA,
+    RST,
+    RSC,
+    Chem,
+    strip_stereo,
+    chosen_set=None,
+    RAC=None,
+    routes_out=None,
 ):
     """§2 terminal-transition flow records from a batch of trajectories -> list of dict rows.
 
@@ -152,6 +197,33 @@ def extract_flow_records(
         traj_fwd = fwd[offset : offset + n_actions]
         traj_bwd = bwd[offset : offset + n_actions]
         offset += n_actions
+
+        # Full synthesis route per product molecule (sample mode only; keyed by product SMILES,
+        # min-reaction — matches the promoted-fragment recipes in fragments_<N>.json). This makes
+        # every hub AND every terminal reconstructable step-by-step for a chemist.
+        if routes_out is not None and RAC is not None:
+            steps = []
+            for act in actions:
+                if not isinstance(act, RAC):
+                    continue
+                steps.append(_reaction_step(act))
+                product = steps[-1]["product"]
+                if not product:
+                    continue
+                # Key by the SAME convention as records.csv/enum (stripped when strip_stereo) so the
+                # hub_key/child_key -> route join is exact; the steps keep raw (stereo) SMILES.
+                key = product
+                if strip_stereo and Chem is not None:
+                    m = Chem.MolFromSmiles(product)
+                    if m is not None:
+                        key = Chem.MolToSmiles(m, isomericSmiles=False)
+                stored = routes_out.get(key)
+                if stored is None or len(steps) < stored["num_reactions"]:
+                    routes_out[key] = {
+                        "seed": steps[0]["input"],
+                        "num_reactions": len(steps),
+                        "steps": list(steps),
+                    }
 
         seen = set()
         for s in states:
@@ -288,24 +360,44 @@ def _make_enumerator(rgfn_api, Trajectories, RSA, RSB, RSC, RST, RAC, Molecule):
         full = path + [(x_state, stop_fas, stop_act, terminal)]
         traj = Trajectories()
         traj.add_source_states([hub_state])
+        added_fragments = []  # the reactant(s) attached in this one diversifying reaction
+        reaction_steps = []  # the full hub->child reaction step(s) (schema shared w/ recipe routes)
         for _s, fas, act, nxt in full:
             bas = env.get_backward_action_spaces([nxt])[0]
             if isinstance(act, RAC):
                 possible = getattr(bas, "possible_actions", None)
                 if possible is None or act not in possible:
                     return None  # P_B not invertible -> never fabricate P_B=1
+                added_fragments = [f.smiles for f in getattr(act, "input_fragments", ())]
+                # Build the step from the STATES (hub in, child out) — in the enumerate path the
+                # action's output_molecule may not be populated pre-apply (unlike the post-hoc
+                # trajectory recipe_logging reads); the states always are. Product == child_stereo_key.
+                reaction_steps.append(
+                    {
+                        "reaction": _reaction_id(getattr(act, "input_reaction", None)),
+                        "reactants": [f.smiles for f in getattr(act, "input_fragments", ()) or ()],
+                        "input": getattr(getattr(hub_state, "molecule", None), "smiles", None),
+                        "product": getattr(getattr(x_state, "molecule", None), "smiles", None),
+                    }
+                )
             traj.add_actions_states([act], [nxt], [fas], [bas], not_terminated_mask=None)
-        return traj
+        return traj, x_state.molecule.smiles, added_fragments, reaction_steps
 
     def enumerate_terminal_children(
         env, objective, reward, hub_state, extract, max_children, chunk_size=64
     ):
+        """Returns ``(records, n_paths, added_by_stereo, reaction_by_stereo)``: ``added_by_stereo``
+        maps each child's stereo SMILES -> the fragment(s) attached in its final reaction (cost /
+        composition), ``reaction_by_stereo`` -> the full final reaction step(s) (reconstruction)."""
         paths = enumerate_product_paths(env, hub_state, max_children)
-        trajs = [
-            t for t in (build_child_trajectory(env, hub_state, p) for p in paths) if t is not None
+        built = [
+            b for b in (build_child_trajectory(env, hub_state, p) for p in paths) if b is not None
         ]
-        if not trajs:
-            return [], len(paths)
+        if not built:
+            return [], len(paths), {}, {}
+        trajs = [b[0] for b in built]
+        added_by_stereo = {b[1]: b[2] for b in built}
+        reaction_by_stereo = {b[1]: b[3] for b in built}
 
         def _extract_batch(chunk):
             big = Trajectories.from_trajectories(chunk) if len(chunk) > 1 else chunk[0]
@@ -325,7 +417,7 @@ def _make_enumerator(rgfn_api, Trajectories, RSA, RSB, RSC, RST, RAC, Molecule):
                         records.extend(_extract_batch([t]))
                     except Exception:
                         continue
-        return records, len(paths)
+        return records, len(paths), added_by_stereo, reaction_by_stereo
 
     def hub_state_from_smiles(smiles, depth):
         mol = Molecule(smiles)
@@ -497,7 +589,7 @@ def main():
         flush=True,
     )
 
-    def _extract(obj, traj):
+    def _extract(obj, traj, routes_out=None):
         return extract_flow_records(
             obj,
             traj,
@@ -507,6 +599,8 @@ def main():
             Chem,
             args.strip_stereo,
             chosen_set,
+            RAC=ReactionActionC,
+            routes_out=routes_out,  # sample mode only; enumerate passes None (final rxn captured separately)
         )
 
     meta = {
@@ -524,8 +618,11 @@ def main():
 
     if args.mode == "sample":
         all_records, visit_counts, compositions, total = [], {}, {}, 0
+        routes: dict = (
+            {}
+        )  # product SMILES -> full min-reaction synthesis route (for reconstruction)
         for traj in sampler.get_trajectories_iterator(args.n_trajectories, args.batch_size):
-            recs, visits, comps, n = _extract(objective, traj)
+            recs, visits, comps, n = _extract(objective, traj, routes_out=routes)
             all_records.extend(recs)
             for k, c in visits.items():
                 visit_counts[k] = visit_counts.get(k, 0) + c
@@ -541,16 +638,18 @@ def main():
         _write_records(out_dir / "records.csv", all_records)
         json.dump(visit_counts, open(out_dir / "visit_counts.json", "w"))
         json.dump(compositions, open(out_dir / "compositions.json", "w"))
+        json.dump(routes, open(out_dir / "routes.json", "w"))
         meta.update(
             {
                 "n_trajectories": total,
                 "n_records": len(all_records),
                 "n_compositions": len(compositions),
+                "n_routes": len(routes),
             }
         )
         json.dump(meta, open(out_dir / "meta.json", "w"), indent=2)
         print(
-            f"[scent_worker] wrote records.csv + visit_counts.json + compositions.json + meta.json -> {out_dir}",
+            f"[scent_worker] wrote records.csv + visit_counts.json + compositions.json + routes.json + meta.json -> {out_dir}",
             flush=True,
         )
 
@@ -571,7 +670,7 @@ def main():
             Molecule,
         )
         hubs = _read_hubs(args.hubs_file)
-        all_records, per_hub = [], []
+        all_records, per_hub, enum_hubs = [], [], []
         for smiles, depth in hubs:
             hub_state = hub_state_from_smiles(smiles, depth)
             if hub_state is None:
@@ -585,10 +684,37 @@ def main():
                     }
                 )
                 continue
-            recs, n_paths = enumerate_terminal_children(
+            recs, n_paths, added_by_stereo, reaction_by_stereo = enumerate_terminal_children(
                 env, objective, reward, hub_state, _extract, args.enum_max_children
             )
             all_records.extend(recs)
+            # Per-hub children with the promoted fragment(s) added in the final reaction — the
+            # campaign's EnumeratedHub.children (its EnumChild.added_promoted). The hub's own
+            # promoted composition is joined from the sampled compositions.json downstream.
+            # ``reaction`` = the full hub->child final reaction step(s) (reaction id + reactants +
+            # input/product SMILES) so the diversifying step is reconstructable, not just the fragment.
+            children = [
+                {
+                    "smiles": r["child_key"],
+                    "reward": r["reward"],
+                    "added_promoted": [
+                        f for f in added_by_stereo.get(r["child_stereo_key"], []) if f in chosen_set
+                    ],
+                    "reaction": reaction_by_stereo.get(r["child_stereo_key"], []),
+                }
+                for r in recs
+            ]
+            u_h, n_eff = _hub_uncertainty(recs)
+            enum_hubs.append(
+                {
+                    "hub_input": smiles,
+                    "hub_key": recs[0]["hub_key"] if recs else smiles,  # cross-model key (join key)
+                    "depth": int(depth),
+                    "uncertainty": None if u_h != u_h else u_h,  # U(h); NaN -> null in JSON
+                    "n_effective": n_eff,
+                    "children": children,
+                }
+            )
             per_hub.append(
                 {
                     "hub": smiles,
@@ -603,10 +729,18 @@ def main():
             )
         _write_records(out_dir / "enumerated_records.csv", all_records)
         json.dump({"per_hub": per_hub}, open(out_dir / "enum_per_hub.json", "w"), indent=2)
-        meta.update({"n_hubs": len(hubs), "n_enumerated_records": len(all_records)})
+        json.dump({"hubs": enum_hubs}, open(out_dir / "enum_children.json", "w"))
+        meta.update(
+            {
+                "n_hubs": len(hubs),
+                "n_enumerated_records": len(all_records),
+                "n_enum_children": sum(len(h["children"]) for h in enum_hubs),
+            }
+        )
         json.dump(meta, open(out_dir / "meta.json", "w"), indent=2)
         print(
-            f"[scent_worker] enumerated {len(hubs)} hubs -> {len(all_records)} records -> {out_dir}",
+            f"[scent_worker] enumerated {len(hubs)} hubs -> {len(all_records)} records "
+            f"+ enum_children.json -> {out_dir}",
             flush=True,
         )
 
@@ -624,6 +758,25 @@ def _read_hubs(path):
         for r in csv.DictReader(fh):
             hubs.append((r["smiles"], int(r["depth"])))
     return hubs
+
+
+def _hub_uncertainty(recs):
+    """U(h) = population variance of the enumerated children's log F_hat (§2 flow-matching
+    residual), computed from the flow log-terms the enumeration already produced. Not used as a
+    signal yet — carried so it's trivially extractable later. Returns (U(h), n_effective); U is
+    NaN for < 2 finite estimates (undefined variance)."""
+    import math
+
+    xs = []
+    for r in recs:
+        lf = r["log_reward"] + r["log_pb_move"] - r["log_pf_move"] - r["log_pf_stop"]
+        if math.isfinite(lf):
+            xs.append(lf)
+    n = len(xs)
+    if n < 2:
+        return float("nan"), n
+    mean = sum(xs) / n
+    return sum((x - mean) ** 2 for x in xs) / n, n
 
 
 if __name__ == "__main__":

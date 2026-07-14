@@ -106,59 +106,6 @@ class FragmentCostTable:
         return reactions, dollars
 
 
-def amortized_library_cost(
-    reps: List[Tuple[str, str, int]],
-    compositions: Dict[str, dict],
-    cost_table: FragmentCostTable,
-) -> dict:
-    """Cost a diverse library (one representative per mode), charging shared intermediates once.
-
-    ``reps``: ``(rep_key, owner_hub_key, hub_depth)`` per mode representative. ``compositions``:
-    ``{mol_key: {"promoted": [smiles...], "num_reactions": k}}`` from the worker (a molecule absent
-    here or with empty ``promoted`` is all-base → no promoted build cost, i.e. RGFN behavior).
-
-    Base assembly (the reactions that snap fragments together, a promoted attach = 1 step):
-      * hub plan: each *distinct* owner hub assembled once + one final reaction per rep;
-      * independent plan: each rep assembled from scratch.
-    Shared promoted-fragment build (reactions + $) is identical in both plans (charged once), so it
-    lifts both absolute totals but cancels out of the *saving*.
-    """
-    if not reps:
-        return {"n_modes": 0}
-    n_modes = len(reps)
-
-    # Base assembly (unchanged from the RGFN metric; promoted attaches already count as 1 step).
-    distinct_hub_depth: Dict[str, int] = {}
-    for _rep, hub_key, hub_depth in reps:
-        distinct_hub_depth[hub_key] = hub_depth
-    hub_assembly = sum(distinct_hub_depth.values()) + n_modes
-    indep_assembly = sum(hub_depth + 1 for _rep, _hub, hub_depth in reps)
-
-    # Every distinct promoted fragment used by the reps AND their owner hubs, built once.
-    used: Set[str] = set()
-    for rep_key, hub_key, _d in reps:
-        used.update((compositions.get(rep_key, {}) or {}).get("promoted", []))
-        used.update((compositions.get(hub_key, {}) or {}).get("promoted", []))
-    shared_reactions, shared_dollars = cost_table.shared_build_cost(used)
-    n_promoted = len(cost_table.closure(used))
-
-    hub_total = hub_assembly + shared_reactions
-    indep_total = indep_assembly + shared_reactions
-    return {
-        "n_modes": n_modes,
-        "n_distinct_promoted_fragments": n_promoted,
-        "hub_assembly_reactions": float(hub_assembly),
-        "independent_assembly_reactions": float(indep_assembly),
-        "shared_promoted_build_reactions": float(shared_reactions),
-        "shared_promoted_build_dollars": round(shared_dollars, 3),
-        "hub_total_reactions": float(hub_total),
-        "independent_total_reactions": float(indep_total),
-        "reaction_savings": float(indep_total - hub_total),  # == indep_assembly - hub_assembly
-        "reactions_per_mode_hub": round(hub_total / n_modes, 3),
-        "reactions_per_mode_independent": round(indep_total / n_modes, 3),
-    }
-
-
 def load_cost_table_from_snapshot(
     snapshot: dict, promoted: Optional[List[str]] = None
 ) -> FragmentCostTable:

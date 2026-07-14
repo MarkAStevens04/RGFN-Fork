@@ -136,6 +136,7 @@ class SCENTAdapter(GFNAdapter):
         records = _read_records(out_dir / "records.csv")
         visit_counts = _read_json(out_dir / "visit_counts.json", default={})
         compositions = _read_json(out_dir / "compositions.json", default={})
+        routes = _read_json(out_dir / "routes.json", default={})
         meta = _read_json(out_dir / "meta.json", default={})
         self.log_z = float(meta.get("log_z", 0.0))
         self.higher_is_better = bool(meta.get("higher_is_better", self.higher_is_better))
@@ -158,6 +159,7 @@ class SCENTAdapter(GFNAdapter):
             model=self.model_name,
             reward_name=self.reward_name,
             compositions=compositions,
+            routes=routes,
         )
 
     # ---------------------------------------------------------------- phase 2 enumeration

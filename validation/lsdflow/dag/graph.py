@@ -225,6 +225,10 @@ class HubDAG:
             with open(out / "compositions.json", "w") as fh:
                 json.dump(self.sample.compositions, fh)
 
+        if getattr(self.sample, "routes", None):  # per-molecule synthesis routes (reconstruction)
+            with open(out / "routes.json", "w") as fh:
+                json.dump(self.sample.routes, fh)
+
         g = self.to_networkx()
         if g is not None:
             try:
