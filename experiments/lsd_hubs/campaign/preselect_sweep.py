@@ -60,36 +60,72 @@ def _plot(path: Path, rows, tag: str) -> None:
     except Exception as exc:  # noqa: BLE001
         print(f"[preselect] plot skipped ({exc})")
         return
-    fig, ax = plt.subplots(figsize=(6.2, 4.4))
     pk = [r for r in rows if r["k"] is not None]
-    xs = [r["reward_gen_calls"] for r in pk]
-    ys = [r["reactions_per_mode"] for r in pk]
-    ax.plot(xs, ys, "-o", ms=5, lw=1.5, color="#2a6f97", label="pre-select-K")
+    # annotate only a sparse set of K on the Pareto so dense sweeps stay legible
+    ann_ks = {pk[0]["k"], pk[-1]["k"]} | {
+        r["k"] for i, r in enumerate(pk) if i % max(1, len(pk) // 8) == 0
+    }
+    fig, (axp, axk) = plt.subplots(1, 2, figsize=(11.5, 4.4))
+
+    # Panel A — the canonical reactions↔calls Pareto (pre-select curve + reference points).
+    axp.plot(
+        [r["reward_gen_calls"] for r in pk],
+        [r["reactions_per_mode"] for r in pk],
+        "-o",
+        ms=4,
+        lw=1.4,
+        color="#2a6f97",
+        label="pre-select-K",
+    )
     for r in pk:
-        ax.annotate(
-            f"K={r['k']}",
-            (r["reward_gen_calls"], r["reactions_per_mode"]),
-            textcoords="offset points",
-            xytext=(5, 4),
-            fontsize=8,
-            color="#2a6f97",
-        )
-    for r in rows:  # reference points (naive / best-candidate)
+        if r["k"] in ann_ks:
+            axp.annotate(
+                f"K={r['k']}",
+                (r["reward_gen_calls"], r["reactions_per_mode"]),
+                textcoords="offset points",
+                xytext=(5, 4),
+                fontsize=8,
+                color="#2a6f97",
+            )
+    for r in rows:  # naive / best-candidate references
         if r["k"] is None:
-            ax.scatter(
+            axp.scatter(
                 [r["reward_gen_calls"]], [r["reactions_per_mode"]], marker="s", s=45, zorder=5
             )
-            ax.annotate(
+            axp.annotate(
                 r["label"],
                 (r["reward_gen_calls"], r["reactions_per_mode"]),
                 textcoords="offset points",
                 xytext=(5, -10),
                 fontsize=8,
             )
-    ax.set_xlabel("reward-gen (≈ oracle) calls to reach the mode budget")
-    ax.set_ylabel("reactions / mode")
-    ax.set_title(f"SCENT {tag}: pre-select-K reactions↔calls Pareto")
-    ax.legend()
+    axp.set_xlabel("reward-gen (≈ oracle) calls to the mode budget")
+    axp.set_ylabel("reactions / mode")
+    axp.set_title("reactions↔calls Pareto")
+    axp.legend()
+
+    # Panel B — total reactions vs K (the small-K dip below free-frag is visible here).
+    ks = [r["k"] for r in pk]
+    rx = [r["reactions"] for r in pk]
+    axk.plot(ks, rx, "-o", ms=4, lw=1.4, color="#8a4fbf")
+    k0 = next((r["reactions"] for r in pk if r["k"] == 0), None)
+    if k0 is not None:
+        axk.axhline(k0, ls="--", lw=1, color="0.55")
+        axk.text(ks[-1], k0, " free-frag (K=0)", va="bottom", ha="right", fontsize=8, color="0.4")
+        kmin = min(pk, key=lambda r: r["reactions"])
+        axk.scatter([kmin["k"]], [kmin["reactions"]], marker="v", s=60, color="#8a4fbf", zorder=5)
+        axk.annotate(
+            f"min K={kmin['k']} ({kmin['reactions']})",
+            (kmin["k"], kmin["reactions"]),
+            textcoords="offset points",
+            xytext=(6, -12),
+            fontsize=8,
+        )
+    axk.set_xlabel("K (fragments pre-synthesized)")
+    axk.set_ylabel("total reactions for the mode budget")
+    axk.set_title("total reactions vs K")
+
+    fig.suptitle(f"SCENT {tag}: pre-select-K")
     fig.tight_layout()
     fig.savefig(path, dpi=130)
     print(f"[preselect] wrote {path}")

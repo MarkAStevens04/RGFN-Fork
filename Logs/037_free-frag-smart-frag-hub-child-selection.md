@@ -39,10 +39,14 @@ negatives; their code was deleted.
 
 ## Answer
 
-**Pre-select-K dominates free-frag on the enumeration axis at essentially no synthesis cost.**
-Stocking just the top **K≈20** universal blocks is a *free lunch* — same 1.22 rxn/mode as free-frag,
-but **24% fewer oracle calls** (241k → vs 315k). Past that, K is a clean dial: **K=100 → 1.41 rxn/mode
-at 85k calls (−73%)**, K=200 → 1.85 at 53k (−83%); median reward even drifts *up* (7.30 → 7.51),
+**Pre-select-K dominates free-frag on the enumeration axis at essentially no synthesis cost — in a
+small-K window it dominates on *both* axes at once.** Stocking the top ~16 universal blocks is not just
+a free lunch, it's a small *net win*: total reactions actually dip slightly **below** free-frag
+(364 vs 367 at K=16) *and* oracle calls fall ~21% (248k vs 315k) — because each pre-built high-fan-out
+block (~2 reactions) lets us skip hubs whose scaffold builds cost more than that. So there is no reason
+to run plain free-frag (K=0); a small stock strictly beats it. Past that, K is a clean dial:
+**K=100 → 1.41 rxn/mode at 85k calls (−73%)**, K=200 → 1.85 at 53k (−83%); median reward even drifts
+*up* (7.30 → 7.51),
 because the high-build-score blocks are high-reward. The pre-selected fragments are chemically sensible
 **universal building blocks** — bromo-aryl amides/amines with small saturated N-heterocycles
 (azetidine/pyrrolidine), each usable in 130–175 of the 200 hubs. The knob is exactly "how many good
@@ -97,12 +101,14 @@ Root: `./` (repo root).
 **Analysis drivers (ours — `experiments/lsd_hubs/campaign/`):**
 - `run_campaign.py` / `sweep_campaign.py` — `--child-policy {reward,free_frag}`, `--prebuild-k`,
   `--rank-by {build_score,fanout,reward}`.
-- `preselect_sweep.py` — **NEW**, reusable: sweeps K, writes `preselect.csv` + `preselect_summary.json`
-  + `preselect_pareto.png` (reactions/mode vs reward-gen calls, annotated by K) next to the naive and
+- `preselect_sweep.py` — **NEW**, reusable: sweeps K (default coarse K = {0,5,10,20,50,100,200}),
+  writes `preselect.csv` + `preselect_summary.json` + a 2-panel `preselect_pareto.png` (reactions↔calls
+  Pareto **and** total-reactions-vs-K, the latter showing the small-K dip) next to the naive /
   best-candidate reference points.
 
 **Results (committed):**
-- `results/scent_seh_1kx200_preselect/` — the pre-select-K Pareto (200-hub, enum `70363`).
+- `results/scent_seh_1kx200_preselect/` — the default coarse pre-select-K Pareto (200-hub, enum `70363`).
+- `results/scent_seh_1kx200_preselect_0to50/` — the dense K=0…50 sweep (the small-K dip).
 - `results/{scent_seh,scent_seh_1kx200}_freefrag/` — free-frag (K=0) baselines + cutoff sweeps.
 - `results/{scent_seh,scent_seh_1kx200}/` — naive-hub-batching vs best-candidate baselines (`033`/`035`).
 
@@ -156,6 +162,28 @@ Library), `[bengio2021gflownet]` (modes / top-k / oracle efficiency).
 
 K≤20 cuts calls at no reaction cost (free lunch); higher K trades a little synthesis for large call
 savings. Best/median sEH stay 8.3–8.4 / 7.3–7.5 throughout.
+
+**Small-K dip — pre-select strictly beats free-frag on both axes (dense sweep K=0…50).** Resolving K at
+integer resolution (`preselect_sweep.py --k-list 0,1,…,50`) shows total reactions *dip below* free-frag
+(K=0 = 367) across a broad shallow basin **K≈12–31**, minimum **K=16 → 364 (−3)** (also 364 at K=18/19/23):
+
+| K | reactions (Δ vs K0) | hubs | oracle calls | median |
+|---|---|---|---|---|
+| 0 (free-frag) | 367 | 57 | 315,539 | 7.302 |
+| **16** | **364 (−3)** | 45 | **248,356** | 7.290 |
+| 23 | 364 (−3) | 41 | 237,739 | 7.294 |
+| 31 | 365 (−2) | 35 | 189,108 | 7.317 |
+| 50 | 378 (+11) | 29 | 158,660 | 7.343 |
+
+The mechanism is the one predicted: a pre-built block costs ~2 reactions but, being high-fan-out, unlocks
+free children across many hubs, letting us skip hubs (57 → 45 at K=16) whose scaffold builds cost more
+than the block. The dip is small (~0.8%) and a little noisy (dropping a hub is discrete, so reactions
+wiggle ±1–3), but consistent; calls fall monotonically the whole way. Net: a small stock (K≈16–20) is
+**Pareto-dominant over free-frag** — fewer reactions *and* ~21–25% fewer oracle calls. **K=0 is verified
+byte-identical to the naive free-frag baseline** (367 rxns / 315,539 calls / 57 hubs / 26 frags — a
+built-in control that `--prebuild-k 0` is the same code path). Dense curve + 2-panel figure (Pareto +
+reactions-vs-K) in `results/scent_seh_1kx200_preselect_0to50/`; the committed default sweep
+(`results/scent_seh_1kx200_preselect/`) keeps the coarse K = {0,5,10,20,50,100,200} range.
 
 **Ranking ablation (`--rank-by`, K=50, 200-hub):** build_score → 1.26 rxn/mode, 159k calls, med 7.34;
 **fanout** → 1.26, **142k** calls (fewest — widest reuse), med 7.35; **reward** → 1.32, 172k calls, med
