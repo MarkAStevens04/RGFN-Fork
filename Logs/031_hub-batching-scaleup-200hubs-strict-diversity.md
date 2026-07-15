@@ -1,6 +1,13 @@
 # SCENT — hub-batching vs best-candidate at scale (200 hubs, diversity to 0.10)
 **Date:** 2026-07-14, ~7am
 
+> **[COST NUMBERS SUPERSEDED → Logs/033, same day].** The reactions-per-mode figures here inherit
+> `029`'s cost bug (SCENT's nested `num_reactions` + a second fragment charge = double-count) and
+> give best-candidate no credit for accidentally shared hubs. Entry `033` recomputes both strategies
+> on the fair count-once model; the `results/scent_seh_1kx200/` artifacts have been regenerated. The
+> ceiling-moves-with-hub-count and hard-chemistry-floor-below-0.30 findings are cost-independent and
+> stand. Use `033` for the current reactions/mode numbers.
+
 ## Question
 
 When the hub strategy is allowed to draw on far more scaffolds, and we demand hits that are far more

@@ -1231,9 +1231,59 @@ enum child `reaction` field populated with the ground-truth final step; a depth-
 present in `routes.json` (depth-0 hubs correctly absent — they are stock fragments). Schema/assembly
 logic unit-tested separately (nesting, intermediates-first ordering, count-once).
 
-**Not done / next:** the **current** committed results predate this — `scent_seh_70189` has no
-`routes.json` and `campaign_enum_seh_70363`'s `enum_children.json` has no `reaction` field; populating
-needs a re-run (sample 30k ~3–4 h + enumeration ~5.5 h, both exceed debug's 2 h → `compute`).
-`synthesis_routes.py` still (a) infers the final step via `hub_reaction_name` and (b) treats the hub
-as a "buy" leaf; two backward-compatible edits (prefer the logged `reaction`; merge `routes.json` so
-the hub linearizes) will let it consume the new data — left to the tool's owner.
+**`synthesis_routes.py` wired to consume it (backward-compatible):** `full_route` now builds the hub
+(linearizes `routes` which merges `smiles_to_route` + the optional `--routes routes.json`) and uses
+the child's logged `reaction` for the final step, preferring ground truth over `hub_reaction_name`.
+Both inputs are optional — with neither present it falls back to the old behavior. Verified: a
+backward-compat run on the current (un-repopulated) data runs clean (hub still a "buy" leaf, final
+step inferred), and a synthetic test confirms the upgrade path (hub + promoted intermediate built,
+then the logged final step) and the fallback path.
+
+**Not done / next:** the **current** committed results predate the recording — `scent_seh_70189` has
+no `routes.json` and `campaign_enum_seh_70363`'s `enum_children.json` has no `reaction` field; a
+re-run (sample 30k ~3–4 h + enumeration ~5.5 h, both exceed debug's 2 h → `compute`) will populate
+them, at which point `synthesis_routes.py --routes routes.json` yields fully-grounded protocols with
+the hub built.
+
+---
+
+## 2026-07-14 — Fair count-once cost model for the hub-batching campaign (Logs/033)
+
+**Why.** The campaign's reactions/mode double-counted SCENT's promoted dynamic-library fragments.
+SCENT's per-molecule `num_reactions` is **fully nested** — it already includes building every
+attached promoted fragment (`external/scent/rgfn/gfns/reaction_gfn/reaction_env.py`: seed carries
+`fragment.num_reactions`; each attached reactant adds `fragment.num_reactions`; each coupling +1) —
+yet `BestCandidateStrategy`/`HubBatchingStrategy` then *added* the fragment builds again via
+`_charge_promoted`. Confirmed empirically: for all 245 promoted fragments present as intermediates,
+`compositions.json`'s `num_reactions` equals the nested closure cost exactly. Net: the per-molecule
+assembly term was ~2× inflated. Separately, best-candidate got no credit for parent scaffolds its
+top-N picks share (user request: "count shared hubs once, like intermediates").
+
+**What changed (all in ours; both concerns fixed on ONE model applied to both strategies):**
+- `glue/samplers/lsdflow/campaign.py`:
+  - new `shallow_couplings(num_reactions, promoted, cost_table)` = `num_reactions − Σ(nested build
+    cost of each attached promoted fragment)` → the true assembly-coupling count (verified 1–4, no
+    negatives on top-1000). Both strategies now charge couplings, not the nested `num_reactions`.
+  - new `HubAssignmentPolicy` ABC + `MostSharedAssignment` (default) + `NoHubSharing` — swappable;
+    assigns each best-candidate mode to the parent hub most reused among accepted modes.
+  - `BestCandidateStrategy` is now three-pass (select → assign shared hubs → count-once cost) and
+    takes `hub_compositions` (to cost parent hubs) + `assignment_policy`. A **prefix-validity filter**
+    (`couplings(hub) < couplings(mode)`) keeps a cross-trajectory parent from ever *raising* a mode's
+    cost — sharing is provably ≤ no-sharing (asserted in the isolation test). Fragments are charged
+    via each mode's full `promoted` (count-once), so a shared hub's fragments are never double-charged.
+  - `HubBatchingStrategy` charges `shallow_couplings(hub)` instead of the nested `depth`.
+  - The old "disjoint inputs — best-candidate never touches hub data" contract is dropped: for a fair
+    cost comparison best-candidate now reads `records.csv` parent hubs + `compositions`.
+- `experiments/lsd_hubs/campaign/run_campaign.py`: `_load_candidates` also collects each terminal's
+  observed parent hub keys; new shared `build_strategy()` (used by both drivers) wires the model.
+- `experiments/lsd_hubs/campaign/sweep_campaign.py`: threads `compositions` through `build_strategy`.
+
+**Verified (login CPU).** `py_compile` clean; isolation test asserts sharing ≤ no-sharing.
+Regenerated `results/scent_seh/` (50-hub, ~42 s) + `results/scent_seh_1kx200/` (200-hub, ~73 s).
+sEH cutoff 0.5, 300 modes: best-candidate **1,479 → 949** (double-count fix, −530) **→ 929**
+(accidental hubs, −20); hub-batching **819** (≈unchanged; its used hubs are depth-0 base fragments,
+0 couplings). Hub-batching's edge **1.81× → 1.13×**. At loose cutoffs (≥0.75, 200-hub)
+best-candidate beats hub-batching on reactions.
+
+**Not changed.** `hub_stats.py`, the diversity-pairs/route-trees/synthesis-routes tools, and the
+scaffold-concentration ceiling / chemistry-floor findings are cost-model-independent and untouched.

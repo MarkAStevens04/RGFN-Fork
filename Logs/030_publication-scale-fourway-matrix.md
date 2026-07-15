@@ -55,6 +55,12 @@ requirement (Objective 4) by telling us the true marginal cost of a seed.
 **Next steps in project**
 - Fold the auto-requeue + docking-server infrastructure back into the standard launch layer so
   any future long docking run inherits it.
+- **Apply the exp-036 docking-batch-size fix to future docking runs** (NOT this live campaign):
+  raise `docking_batch_size` ≥ the per-step sample count (e.g. 200) on the single-target oracle
+  (`glue/oracles/docking_seh_oracle.py`, TODO in place) for a **3.3× faster** ClpP/sEH dock at
+  identical scores. It was deliberately not applied here — a mid-campaign change would split a
+  cell across two settings, and the finish line is gated by `rgfn_6td3` (a 6TD3 *differential*
+  cell whose oracle already docks in one process), which the fix doesn't touch. See Logs/036.
 
 ---
 

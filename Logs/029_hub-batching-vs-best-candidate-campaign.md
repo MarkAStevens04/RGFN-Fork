@@ -1,6 +1,16 @@
 # SCENT — hub-batching vs best-candidate: a budget campaign (reactions per mode)
 **Date:** 2026-07-11, ~1pm
 
+> **[COST NUMBERS SUPERSEDED → Logs/033, 2026-07-14].** The reactions-per-mode figures below
+> (best-candidate 1,479; hub-batching "halves" it) double-counted SCENT's promoted dynamic-library
+> fragments — its `num_reactions` is already fully nested, and the campaign added the fragment builds
+> again. Entry `033` fixes that (charging shallow assembly couplings + each fragment once) *and*
+> credits best-candidate for the hubs its top picks share by accident. On the corrected model
+> best-candidate needs **929** reactions (not 1,479) for 300 sEH modes at cutoff 0.5 and
+> hub-batching's edge is **~1.13×, not ~1.8×**. The hub statistics, U(h) table, and the
+> scaffold-concentration ceiling here are cost-model-independent and still hold. Read `033` for the
+> current numbers; the results below are kept as the original record.
+
 ## Question
 
 To build a diverse library of hits from a trained cost-aware generator, is it cheaper — in total

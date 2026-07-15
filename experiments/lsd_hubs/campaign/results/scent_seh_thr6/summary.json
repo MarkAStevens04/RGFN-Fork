@@ -1,0 +1,38 @@
+{
+  "tag": "scent_seh_thr6",
+  "reward_threshold": 6.0,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "best_candidate": {
+    "strategy": "best_candidate",
+    "total_modes": 300,
+    "total_reactions": 929,
+    "reactions_per_mode": 3.097,
+    "total_reward_gen_calls": 0,
+    "reward_gen_calls_per_mode": 0.0,
+    "distinct_promoted_fragments": 205,
+    "distinct_hubs_used": 254,
+    "n_scaffolds": 300,
+    "best_reward": 8.404,
+    "median_reward": 8.103,
+    "case1_modes_at_100rxn": 29,
+    "case2_reactions_at_300modes": 929,
+    "stop_reason": "modes"
+  },
+  "hub_batching": {
+    "strategy": "hub_batching",
+    "total_modes": 300,
+    "total_reactions": 825,
+    "reactions_per_mode": 2.75,
+    "total_reward_gen_calls": 9428,
+    "reward_gen_calls_per_mode": 31.43,
+    "distinct_promoted_fragments": 328,
+    "distinct_hubs_used": 1,
+    "n_scaffolds": 300,
+    "best_reward": 8.379,
+    "median_reward": 7.353,
+    "case1_modes_at_100rxn": 33,
+    "case2_reactions_at_300modes": 825,
+    "stop_reason": "modes"
+  }
+}

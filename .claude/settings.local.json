@@ -263,7 +263,11 @@
       "Bash(sacct --user=markymoo --starttime=2026-07-10 --format=JobID,JobName%28,State,Elapsed,End -X)",
       "Bash(command -v pdftotext)",
       "Bash(pdftotext Logs/references/pdfs/koziarski2024rgfn.pdf /tmp/rgfn_paper.txt)",
-      "Bash(grep -niE \"max.{0,3}reaction|number of reaction|reaction step|maximum.{0,10}reaction|trajectory length|max.{0,3}depth|at most|up to [0-9]+ reaction\" /tmp/rgfn_paper.txt)"
+      "Bash(grep -niE \"max.{0,3}reaction|number of reaction|reaction step|maximum.{0,10}reaction|trajectory length|max.{0,3}depth|at most|up to [0-9]+ reaction\" /tmp/rgfn_paper.txt)",
+      "Bash(grep -rniE \"accidental|not.{0,3}fair|unfair|share.{0,6}hub|shared.{0,6}scaffold|full number of reactions|double.?count\" Logs/ docs/)",
+      "Bash(grep -niA6 \"bengio2021\\\\|koziarski2024\\\\|epoxide\\\\|seh\" Logs/references/references.bib)",
+      "Bash(awk -F, '{if\\($8!=\"\"\\)c++} END{print c\" of \"NR\" modes charged against a shared hub\"}')",
+      "WebFetch(domain:www.biorxiv.org)"
     ]
   }
 }

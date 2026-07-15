@@ -21,5 +21,17 @@ from glue.samplers.lsdflow.campaign import (  # noqa: F401
     EnumeratedHub,
     HubBatchingStrategy,
 )
+from glue.samplers.lsdflow.child_select import (  # noqa: F401
+    ChildSelectionPolicy,
+    DynamicChildPolicy,
+    FreeFragChildPolicy,
+    MarginalReactionPolicy,
+    RewardChildPolicy,
+    RewardPerReactionPolicy,
+    SmartFragChildPolicy,
+    SmartFragDynamicPolicy,
+    available_child_policies,
+    make_child_policy,
+)
 from glue.samplers.lsdflow.dag import ChildEstimate, Hub, LiteHubDAG  # noqa: F401
 from glue.samplers.lsdflow.records import FlowRecord  # noqa: F401

@@ -31,11 +31,16 @@ import csv
 import json
 from pathlib import Path
 
-from run_campaign import _load_candidates, _load_enumerated_hubs  # same-dir helpers
+from run_campaign import (  # same-dir helpers
+    _load_candidates,
+    _load_enumerated_hubs,
+    build_strategy,
+)
 
-from glue.samplers.lsdflow.campaign import BestCandidateStrategy, HubBatchingStrategy
+from glue.samplers.lsdflow.child_select import make_child_policy
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
+    scaled_fragment_utilities,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -55,9 +60,16 @@ def _reactions_at_modes(result, m_budget: int):
     return next((p.cum_reactions for p in result.accepted if p.cum_modes >= m_budget), None)
 
 
-def _run(strategy_name, pool, cost_table, similarity, common, m_budget):
-    cls = HubBatchingStrategy if strategy_name == "hub_batching" else BestCandidateStrategy
-    return cls(pool, cost_table, similarity=similarity, **common).run(budget=("modes", m_budget))
+def _run(strategy_name, pool, cost_table, comps, similarity, common, m_budget, child_policy=None):
+    return build_strategy(
+        strategy_name,
+        pool,
+        cost_table,
+        comps,
+        similarity=similarity,
+        child_policy=child_policy,
+        **common,
+    ).run(budget=("modes", m_budget))
 
 
 def _plot(path, series, xlabel, ylabel, title, vline=None):
@@ -112,13 +124,34 @@ def main() -> None:
         default=0.50,
         help="the default diversity cutoff — Plot 3's fixed cutoff + the marker on Plots 1/2",
     )
+    ap.add_argument(
+        "--child-policy",
+        default="reward",
+        choices=["reward", "free_frag", "smart_frag", "marginal", "smart_dyn", "ratio"],
+        help="within-hub child selection for the hub_batching line (Logs/037)",
+    )
+    ap.add_argument(
+        "--beta",
+        type=float,
+        default=1.0,
+        help="penalty weight (smart_frag/marginal/smart_dyn/ratio)",
+    )
+    ap.add_argument("--utility-scale", default="logbeta", choices=["logbeta", "log", "raw"])
+    ap.add_argument("--beta-train", type=float, default=8.0)
     ap.add_argument("--tag", required=True)
     a = ap.parse_args()
 
     adir = Path(a.analysis_dir)
     cands, comps = _load_candidates(adir, a.higher_is_better)
     enum_hubs = _load_enumerated_hubs(Path(a.enum_children), comps)
-    cost_table = load_cost_table_from_snapshot(json.load(open(a.snapshot)))
+    snapshot = json.load(open(a.snapshot))
+    cost_table = load_cost_table_from_snapshot(snapshot)
+    utilities = (
+        scaled_fragment_utilities(snapshot, beta_train=a.beta_train, scale=a.utility_scale)
+        if a.child_policy in ("smart_frag", "smart_dyn")
+        else None
+    )
+    child_policy = make_child_policy(a.child_policy, beta=a.beta, utilities=utilities)
     pools = {"best_candidate": cands, "hub_batching": enum_hubs}
     common = dict(
         target=a.tag, reward_threshold=a.reward_threshold, higher_is_better=a.higher_is_better
@@ -138,7 +171,9 @@ def main() -> None:
     results = {}  # (strategy, cutoff) -> CampaignResult
     for cut in cutoffs:
         for s in STRATS:
-            results[(s, cut)] = _run(s, pools[s], cost_table, cut, common, a.budget_modes)
+            results[(s, cut)] = _run(
+                s, pools[s], cost_table, comps, cut, common, a.budget_modes, child_policy
+            )
         hb, bc = results[("hub_batching", cut)], results[("best_candidate", cut)]
         print(
             f"  cutoff {cut:.2f}: hub modes@{a.budget_reactions}rxn={_modes_at_reactions(hb, a.budget_reactions)} "
@@ -194,7 +229,9 @@ def main() -> None:
     # ---- Plot 3: budget vs efficiency (modes vs reaction budget) at the default cutoff ----
     if base not in cutoffs:  # ensure the baseline exists even if off-grid
         for s in STRATS:
-            results[(s, base)] = _run(s, pools[s], cost_table, base, common, a.budget_modes)
+            results[(s, base)] = _run(
+                s, pools[s], cost_table, comps, base, common, a.budget_modes, child_policy
+            )
     with open(out / "budget_efficiency.csv", "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["strategy", "cutoff", "cum_reactions", "cum_modes"])
@@ -222,6 +259,8 @@ def main() -> None:
         "budget_reactions": a.budget_reactions,
         "budget_modes": a.budget_modes,
         "baseline_cutoff": base,
+        "child_policy": a.child_policy,
+        "beta": a.beta if a.child_policy == "smart_frag" else None,
         "cutoffs": cutoffs,
         "pareto_modes_at_R": {
             s: [_modes_at_reactions(results[(s, c)], a.budget_reactions) for c in cutoffs]

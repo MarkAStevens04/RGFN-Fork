@@ -1,0 +1,96 @@
+{
+  "tag": "scent_seh_1kx200_thr5",
+  "reward_threshold": 5.0,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "baseline_cutoff": 0.5,
+  "cutoffs": [
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9
+  ],
+  "pareto_modes_at_R": {
+    "hub_batching": [
+      34,
+      34,
+      33,
+      34,
+      34,
+      33,
+      34,
+      34,
+      34,
+      35,
+      35,
+      35,
+      36
+    ],
+    "best_candidate": [
+      25,
+      26,
+      26,
+      28,
+      29,
+      30,
+      32,
+      32,
+      33,
+      34,
+      34,
+      34,
+      34
+    ]
+  },
+  "fixed_modes_reactions_at_M": {
+    "hub_batching": [
+      823,
+      809,
+      815,
+      822,
+      819,
+      815,
+      789,
+      796,
+      770,
+      798,
+      828,
+      826,
+      822
+    ],
+    "best_candidate": [
+      1123,
+      1080,
+      1018,
+      955,
+      929,
+      866,
+      835,
+      823,
+      793,
+      751,
+      722,
+      730,
+      728
+    ]
+  },
+  "budget_efficiency_endpoint": {
+    "hub_batching": {
+      "reactions": 819,
+      "modes": 300
+    },
+    "best_candidate": {
+      "reactions": 929,
+      "modes": 300
+    }
+  }
+}

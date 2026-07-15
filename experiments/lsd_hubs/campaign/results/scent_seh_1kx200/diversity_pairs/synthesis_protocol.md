@@ -1,6 +1,6 @@
 # Synthesis protocols — closest diversity pairs (SCENT sEH hub-batching, scent_seh_1kx200)
 
-Step-by-step routes for the two most-similar-yet-distinct molecules at each cutoff. Reactions are the SCENT dynamic-library assembly steps we logged (named from their reaction templates); **buy** = a base building block, **make** = an intermediate built in an earlier step. The final step attaches the hub building block (its reaction is named from the structural change, not a logged template). This is the logged assembly route, not a claim of an optimal retrosynthesis.
+Step-by-step routes for the two most-similar-yet-distinct molecules at each cutoff. Reactions are the SCENT dynamic-library assembly steps we logged (named from their reaction templates); **buy** = a base building block, **make** = an intermediate built in an earlier step. The final step attaches the hub building block — its reaction is the **logged** template when available (else inferred from the structural change), and the hub's own build steps are included when a sampled route (`routes.json`) is supplied. This is the logged assembly route, not a claim of an optimal retrosynthesis.
 
 ## Cutoff 0.30 — closest pair (Tanimoto 0.3)
 Same hub reagent (`ClCC1CC1`) and the same reaction *sequence* from mostly-shared building blocks, but they **diverge at the first reaction** — no reusable built intermediate (they share purchases, not an intermediate; see the buy list).
@@ -87,10 +87,9 @@ Same hub reagent (`ClCC1CC1`) and the same reaction *sequence* from mostly-share
 
 | SMILES | for | note |
 |---|---|---|
-| `ClCC1CC1` | A | diverging |
+| `ClCC1CC1` | A/B | shared |
+| `NCCc1c[nH]c2ccccc12` | A/B | shared |
 | `NC1CC1` | A | diverging |
-| `NCCc1c[nH]c2ccccc12` | A | diverging |
-| `NCCc1cn(CC2CC2)c2ccccc12` | B | diverging |
 | `Nc1ccc(Br)cc1` | B | diverging |
 | `O=C(O)c1cccc(B(O)O)c1` | B | diverging |
 | `O=C=Nc1cccc2ccccc12` | B | diverging |
@@ -104,9 +103,10 @@ Same hub reagent (`ClCC1CC1`) and the same reaction *sequence* from mostly-share
 
 **Molecule B (sEH 7.713)**
 
-1. **reaction (RGFN template 80) [t80]** — `Nc1ccc(Br)cc1` (buy) + `O=C=Nc1cccc2ccccc12` (buy) → `O=C(Nc1ccc(Br)cc1)Nc1cccc2ccccc12`
-2. **Suzuki coupling (biaryl bond) [t87]** — `O=C(Nc1ccc(Br)cc1)Nc1cccc2ccccc12` (make) + `O=C(O)c1cccc(B(O)O)c1` (buy) → `O=C(Nc1ccc(-c2cccc(C(=O)O)c2)cc1)Nc1cccc2ccccc12`
-3. **Final assembly (attach hub building block)** — `O=C(Nc1ccc(-c2cccc(C(=O)O)c2)cc1)Nc1cccc2ccccc12` (make) + `NCCc1cn(CC2CC2)c2ccccc12` (buy) → `O=C(Nc1ccc(-c2cccc(CNCCc3cn(CC4CC4)c4ccccc34)c2)cc1)Nc1cccc2ccccc12`
+1. **N-alkylation (ring N–H + alkyl halide) [t200]** — `NCCc1c[nH]c2ccccc12` (buy) + `ClCC1CC1` (buy) → `NCCc1cn(CC2CC2)c2ccccc12`
+2. **reaction (RGFN template 80) [t80]** — `Nc1ccc(Br)cc1` (buy) + `O=C=Nc1cccc2ccccc12` (buy) → `O=C(Nc1ccc(Br)cc1)Nc1cccc2ccccc12`
+3. **Suzuki coupling (biaryl bond) [t87]** — `O=C(Nc1ccc(Br)cc1)Nc1cccc2ccccc12` (make) + `O=C(O)c1cccc(B(O)O)c1` (buy) → `O=C(Nc1ccc(-c2cccc(C(=O)O)c2)cc1)Nc1cccc2ccccc12`
+4. **Final assembly (attach hub building block)** — `O=C(Nc1ccc(-c2cccc(C(=O)O)c2)cc1)Nc1cccc2ccccc12` (make) + `NCCc1cn(CC2CC2)c2ccccc12` (make) → `O=C(Nc1ccc(-c2cccc(CNCCc3cn(CC4CC4)c4ccccc34)c2)cc1)Nc1cccc2ccccc12`
 
 ## Cutoff 0.50 — closest pair (Tanimoto 0.5)
 Same hub reagent (`ClCC1CC1`) and the same reaction *sequence* from mostly-shared building blocks, but they **diverge at the first reaction** — no reusable built intermediate (they share purchases, not an intermediate; see the buy list).

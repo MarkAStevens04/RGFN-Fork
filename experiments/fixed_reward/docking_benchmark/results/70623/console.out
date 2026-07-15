@@ -1,0 +1,84 @@
+host=balam001  out=/scratch/markymoo/rgfn_runs/docking_benchmark/70623
+GPU 0: NVIDIA A100-SXM4-40GB (UUID: GPU-774a482e-203a-d8f2-2ec3-1feca1d69110)
+OpenCL health OK on balam001
+[bench] 200 SMILES from experiments/active_learning/6td3/seed_6td3.csv; targets=['clpp', '6td3']; batch_sizes=[25, 50, 100, 200]; concurrency_n=96
+
+########## Part A: batch-size sweep -- clpp ##########
+[A:clpp] warming up (proxy build + GPU/OpenCL init)...
+[A:clpp] batch= 25 (8 proc)   262.4s  1.312s/mol   0.76mol/s  ok=199/200  gpu_util~16.4%(max100.0) mem19953.0MiB
+[A:clpp] batch= 50 (4 proc)   155.8s  0.779s/mol   1.28mol/s  ok=199/200  gpu_util~26.4%(max100.0) mem19953.0MiB
+[A:clpp] batch=100 (2 proc)   106.7s  0.534s/mol   1.87mol/s  ok=199/200  gpu_util~37.1%(max100.0) mem19953.0MiB
+[A:clpp] batch=200 (1 proc)    79.5s  0.398s/mol   2.51mol/s  ok=199/200  gpu_util~49.2%(max100.0) mem19953.0MiB
+
+########## Part B: concurrency (raw QV2) -- clpp ##########
+[B:clpp] QV2 thread=8000 num_modes=1 box=[17, 17, 17] receptor=ClpP.pdbqt
+[B:clpp] prepared 96/96 ligands -> /scratch/markymoo/rgfn_runs/docking_benchmark/70623/prep_clpp
+[B:clpp] warm-up run (populate OpenCL kernel cache)...
+[B:clpp] single rep=0 1proc 96lig   51.56s   1.86lig/s  poses=96/96  gpu_util~39.8%(max100.0) mem19953.0MiB
+[B:clpp] single rep=1 1proc 96lig   51.80s   1.85lig/s  poses=96/96  gpu_util~38.9%(max100.0) mem19953.0MiB
+[B:clpp]   dual rep=0 2proc 96lig   51.38s   1.87lig/s  poses=96/96  gpu_util~45.6%(max100.0) mem39901.0MiB
+[B:clpp]   dual rep=1 2proc 96lig   51.45s   1.87lig/s  poses=96/96  gpu_util~44.5%(max100.0) mem39901.0MiB
+[B:clpp] best single=1.86 lig/s  dual=1.87 lig/s  speedup=1.01x -> saturated (no gain)
+
+########## Part A: batch-size sweep -- 6td3 ##########
+[A:6td3] warming up (proxy build + GPU/OpenCL init)...
+[A:6td3] batch= 25 (8 proc)   349.9s  1.750s/mol   0.57mol/s  ok=199/200  gpu_util~14.7%(max100.0) mem19953.0MiB
+[A:6td3] batch= 50 (4 proc)   221.4s  1.107s/mol   0.90mol/s  ok=199/200  gpu_util~22.8%(max100.0) mem19953.0MiB
+[A:6td3] batch=100 (2 proc)   157.1s  0.785s/mol   1.27mol/s  ok=199/200  gpu_util~30.7%(max100.0) mem19953.0MiB
+[A:6td3] batch=200 (1 proc)   126.4s  0.632s/mol   1.58mol/s  ok=199/200  gpu_util~36.7%(max100.0) mem19953.0MiB
+
+########## Part B: concurrency (raw QV2) -- 6td3 ##########
+[B:6td3] QV2 thread=8000 num_modes=9 box=[19.445000000000007, 14.535999999999998, 21.942] receptor=6TD3_tier2.pdbqt
+[B:6td3] prepared 96/96 ligands -> /scratch/markymoo/rgfn_runs/docking_benchmark/70623/prep_6td3
+[B:6td3] warm-up run (populate OpenCL kernel cache)...
+[B:6td3] single rep=0 1proc 96lig   58.30s   1.65lig/s  poses=96/96  gpu_util~36.1%(max100.0) mem19953.0MiB
+[B:6td3] single rep=1 1proc 96lig   58.31s   1.65lig/s  poses=96/96  gpu_util~36.3%(max100.0) mem19953.0MiB
+[B:6td3]   dual rep=0 2proc 96lig   54.57s   1.76lig/s  poses=96/96  gpu_util~44.1%(max100.0) mem39901.0MiB
+[B:6td3]   dual rep=1 2proc 96lig   54.51s   1.76lig/s  poses=96/96  gpu_util~45.3%(max100.0) mem39901.0MiB
+[B:6td3] best single=1.65 lig/s  dual=1.76 lig/s  speedup=1.07x -> saturated (no gain)
+
+[bench] wrote /scratch/markymoo/rgfn_runs/docking_benchmark/70623/benchmark_results.json
+[submit_batch_concurrency] done -> /scratch/markymoo/rgfn_runs/docking_benchmark/70623
+
+scontrol show job 70623
+JobId=70623 JobName=fr_batch_bench
+   UserId=markymoo(3160042) GroupId=markymoo(3160042) MCS_label=N/A
+   Priority=13067480 Nice=0 Account=ac-sdl QOS=normal
+   JobState=COMPLETING Reason=None Dependency=(null)
+   Requeue=0 Restarts=0 BatchFlag=1 Reboot=0 ExitCode=0:0
+   RunTime=00:34:02 TimeLimit=02:00:00 TimeMin=N/A
+   SubmitTime=2026-07-14T17:57:12 EligibleTime=2026-07-14T17:57:12
+   AccrueTime=2026-07-14T17:57:12
+   StartTime=2026-07-14T17:57:12 EndTime=2026-07-14T18:31:14 Deadline=N/A
+   SuspendTime=None SecsPreSuspend=0 LastSchedEval=2026-07-14T17:57:12 Scheduler=Main
+   Partition=debug AllocNode:Sid=balam-login01:1129538
+   ReqNodeList=(null) ExcNodeList=balam008
+   NodeList=balam001
+   BatchHost=balam001
+   NumNodes=1 NumCPUs=32 NumTasks=1 CPUs/Task=1 ReqB:S:C:T=0:0:*:*
+   ReqTRES=cpu=1,mem=253750M,node=1,billing=1,gres/gpu=1
+   AllocTRES=cpu=32,mem=253750M,node=1,billing=1,gres/gpu=1
+   Socks/Node=* NtasksPerN:B:S:C=0:0:*:* CoreSpec=*
+   MinCPUsNode=1 MinMemoryNode=253750M MinTmpDiskNode=0
+   Features=(null) DelayBoot=00:00:00
+   OverSubscribe=OK Contiguous=0 Licenses=(null) LicensesAlloc=(null) Network=(null)
+   Command=/home/markymoo/projects/RGFN_Fork/RGFN-Fork/experiments/fixed_reward/docking_benchmark/submit_batch_concurrency.sh
+   SubmitLine=SBATCH --comment /opt/slurm/bin/sbatch --parsable experiments/fixed_reward/docking_benchmark/submit_batch_concurrency.sh --parsable experiments/fixed_reward/docking_benchmark/submit_batch_concurrency.sh
+   WorkDir=/home/markymoo/projects/RGFN_Fork/RGFN-Fork
+   Comment=/opt/slurm/bin/sbatch --parsable experiments/fixed_reward/docking_benchmark/submit_batch_concurrency.sh
+   StdErr=/scratch/markymoo/rgfn_runs/fr_batch_bench-70623.err
+   StdIn=/dev/null
+   StdOut=/scratch/markymoo/rgfn_runs/fr_batch_bench-70623.out
+   CpusPerTres=gpu:32
+   TresPerNode=gres/gpu:1
+
+sacct -j 70623
+JobID           JobName    Account    Elapsed  MaxVMSize     MaxRSS  SystemCPU    UserCPU ExitCode
+------------ ---------- ---------- ---------- ---------- ---------- ---------- ---------- --------
+70623        fr_batch_+     ac-sdl   00:34:02                         00:00:00   00:00:00      0:0
+70623.batch       batch     ac-sdl   00:34:02                         00:00:00   00:00:00      0:0
+70623.extern     extern     ac-sdl   00:34:02                         00:00:00   00:00:00      0:0
+
+
+kernel messages produced during job executions:
+[Jul14 18:12] process '/markymoo/gnina/gnina' started with executable stack

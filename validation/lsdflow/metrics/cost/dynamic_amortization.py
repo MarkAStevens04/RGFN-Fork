@@ -43,6 +43,11 @@ class FragmentCostTable:
     recipes: Optional[Dict[str, dict]] = None
     min_num_reactions: Optional[Dict[str, int]] = None
     dollar_costs: Optional[Dict[str, float]] = None
+    # SCENT's Dynamic-Library utility (Eq. 13, ``smiles_to_mean_reward``): mean SHAPED reward
+    # ``exp(beta_train * proxy)`` over trajectories through a fragment. Raw as stored (huge, ~1e27);
+    # rescale to the reward scale via :func:`scaled_fragment_utilities` before using it in a
+    # ``cost/utility`` term (smart-frag). Optional — only the smart-frag child policy consumes it.
+    utilities: Optional[Dict[str, float]] = None
 
     def _route(self, f: str) -> Optional[dict]:
         return (self.recipes or {}).get(f)
@@ -105,6 +110,14 @@ class FragmentCostTable:
         dollars = sum(self.unit_dollars(f) for f in clo)
         return reactions, dollars
 
+    def utility(self, f: str) -> float:
+        """``f``'s RAW SCENT utility (``smiles_to_mean_reward``); 0.0 if untracked (base fragments
+        are never tracked). Rescale with :func:`scaled_fragment_utilities` before dividing cost by
+        it — the raw value is on the ``exp(beta*proxy)`` scale."""
+        if not self.utilities:
+            return 0.0
+        return float(self.utilities.get(f, 0.0))
+
 
 def load_cost_table_from_snapshot(
     snapshot: dict, promoted: Optional[List[str]] = None
@@ -118,4 +131,43 @@ def load_cost_table_from_snapshot(
         recipes=snapshot.get("smiles_to_route") or None,
         min_num_reactions=snapshot.get("smiles_to_min_num_reactions") or None,
         dollar_costs=dollar or None,
+        utilities=snapshot.get("smiles_to_mean_reward") or None,
     )
+
+
+def scaled_fragment_utilities(
+    snapshot: dict, beta_train: float = 8.0, scale: str = "logbeta"
+) -> Dict[str, float]:
+    """Per-fragment utility on the **reward/proxy scale**, ready for a ``cost/utility`` term.
+
+    SCENT's ``smiles_to_mean_reward`` is the mean SHAPED reward ``exp(beta_train * proxy)`` through a
+    fragment (~1e27 for ``beta_train=8``), so a reaction count divided by it is ~0. We put it back on
+    the proxy scale:
+
+    - ``"logbeta"`` (default): ``log(mean_reward) / beta_train`` ≈ the log-sum-exp / soft-max proxy
+      through the fragment — an "expected reward through ``f``" on the same 0–8 scale as the child
+      reward. This is what makes ``reward − beta * cost/utility`` well-posed.
+    - ``"log"``: ``log(mean_reward)`` (no ``/beta_train``) — same ranking, larger magnitude.
+    - ``"raw"``: as stored (degenerate for smart-frag; kept for diagnostics).
+
+    Returns a plain ``{smiles: float}`` dict over every tracked fragment. Non-positive / missing raw
+    values are dropped (a fragment with no utility gets the policy's ``utility_floor`` fallback).
+    """
+    import math
+
+    raw = snapshot.get("smiles_to_mean_reward") or {}
+    out: Dict[str, float] = {}
+    for smi, v in raw.items():
+        try:
+            v = float(v)
+        except (TypeError, ValueError):
+            continue
+        if v <= 0.0:
+            continue
+        if scale == "raw":
+            out[smi] = v
+        elif scale == "log":
+            out[smi] = math.log(v)
+        else:  # "logbeta"
+            out[smi] = math.log(v) / beta_train
+    return out

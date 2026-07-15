@@ -1,0 +1,330 @@
+{
+  "clpp": {
+    "part_a": [
+      {
+        "target": "clpp",
+        "batch": 25,
+        "n_mols": 200,
+        "n_processes": 8,
+        "seconds": 262.43,
+        "s_per_mol": 1.312,
+        "mols_per_s": 0.76,
+        "n_ok": 199,
+        "gpu": {
+          "util_mean": 16.4,
+          "util_median": 0.0,
+          "util_max": 100.0,
+          "mem_max_mib": 19953.0,
+          "n_samples": 983
+        }
+      },
+      {
+        "target": "clpp",
+        "batch": 50,
+        "n_mols": 200,
+        "n_processes": 4,
+        "seconds": 155.77,
+        "s_per_mol": 0.779,
+        "mols_per_s": 1.28,
+        "n_ok": 199,
+        "gpu": {
+          "util_mean": 26.4,
+          "util_median": 0.0,
+          "util_max": 100.0,
+          "mem_max_mib": 19953.0,
+          "n_samples": 589
+        }
+      },
+      {
+        "target": "clpp",
+        "batch": 100,
+        "n_mols": 200,
+        "n_processes": 2,
+        "seconds": 106.74,
+        "s_per_mol": 0.534,
+        "mols_per_s": 1.87,
+        "n_ok": 199,
+        "gpu": {
+          "util_mean": 37.1,
+          "util_median": 0.0,
+          "util_max": 100.0,
+          "mem_max_mib": 19953.0,
+          "n_samples": 399
+        }
+      },
+      {
+        "target": "clpp",
+        "batch": 200,
+        "n_mols": 200,
+        "n_processes": 1,
+        "seconds": 79.54,
+        "s_per_mol": 0.398,
+        "mols_per_s": 2.51,
+        "n_ok": 199,
+        "gpu": {
+          "util_mean": 49.2,
+          "util_median": 83.0,
+          "util_max": 100.0,
+          "mem_max_mib": 19953.0,
+          "n_samples": 302
+        }
+      }
+    ],
+    "part_b": {
+      "target": "clpp",
+      "settings": {
+        "center": [
+          -38.127,
+          45.671,
+          -20.898
+        ],
+        "size": [
+          17,
+          17,
+          17
+        ],
+        "extra": {
+          "thread": 8000,
+          "opencl_binary_path": "/scratch/markymoo/vina_gpu/Vina-GPU-2.1/QuickVina2-GPU-2.1",
+          "num_modes": 1
+        },
+        "receptor": "/home/markymoo/projects/RGFN_Fork/RGFN-Fork/data/targets/ClpP.pdbqt"
+      },
+      "n_ligands_prepared": 96,
+      "results": {
+        "single": [
+          {
+            "n_processes": 1,
+            "n_ligands": 96,
+            "seconds": 51.56,
+            "ligands_per_s": 1.86,
+            "n_out_poses": 96,
+            "complete": true,
+            "gpu": {
+              "util_mean": 39.8,
+              "util_median": 0.0,
+              "util_max": 100.0,
+              "mem_max_mib": 19953.0,
+              "n_samples": 196
+            }
+          },
+          {
+            "n_processes": 1,
+            "n_ligands": 96,
+            "seconds": 51.8,
+            "ligands_per_s": 1.85,
+            "n_out_poses": 96,
+            "complete": true,
+            "gpu": {
+              "util_mean": 38.9,
+              "util_median": 0.0,
+              "util_max": 100.0,
+              "mem_max_mib": 19953.0,
+              "n_samples": 197
+            }
+          }
+        ],
+        "dual": [
+          {
+            "n_processes": 2,
+            "n_ligands": 96,
+            "seconds": 51.38,
+            "ligands_per_s": 1.87,
+            "n_out_poses": 96,
+            "complete": true,
+            "gpu": {
+              "util_mean": 45.6,
+              "util_median": 0.0,
+              "util_max": 100.0,
+              "mem_max_mib": 39901.0,
+              "n_samples": 189
+            }
+          },
+          {
+            "n_processes": 2,
+            "n_ligands": 96,
+            "seconds": 51.45,
+            "ligands_per_s": 1.87,
+            "n_out_poses": 96,
+            "complete": true,
+            "gpu": {
+              "util_mean": 44.5,
+              "util_median": 0.0,
+              "util_max": 100.0,
+              "mem_max_mib": 39901.0,
+              "n_samples": 195
+            }
+          }
+        ]
+      },
+      "best_single_lig_s": 1.86,
+      "best_dual_lig_s": 1.87,
+      "dual_vs_single_speedup": 1.01,
+      "verdict": "saturated (no gain)"
+    }
+  },
+  "6td3": {
+    "part_a": [
+      {
+        "target": "6td3",
+        "batch": 25,
+        "n_mols": 200,
+        "n_processes": 8,
+        "seconds": 349.91,
+        "s_per_mol": 1.75,
+        "mols_per_s": 0.57,
+        "n_ok": 199,
+        "gpu": {
+          "util_mean": 14.7,
+          "util_median": 0.0,
+          "util_max": 100.0,
+          "mem_max_mib": 19953.0,
+          "n_samples": 1308
+        }
+      },
+      {
+        "target": "6td3",
+        "batch": 50,
+        "n_mols": 200,
+        "n_processes": 4,
+        "seconds": 221.42,
+        "s_per_mol": 1.107,
+        "mols_per_s": 0.9,
+        "n_ok": 199,
+        "gpu": {
+          "util_mean": 22.8,
+          "util_median": 0.0,
+          "util_max": 100.0,
+          "mem_max_mib": 19953.0,
+          "n_samples": 825
+        }
+      },
+      {
+        "target": "6td3",
+        "batch": 100,
+        "n_mols": 200,
+        "n_processes": 2,
+        "seconds": 157.05,
+        "s_per_mol": 0.785,
+        "mols_per_s": 1.27,
+        "n_ok": 199,
+        "gpu": {
+          "util_mean": 30.7,
+          "util_median": 0.0,
+          "util_max": 100.0,
+          "mem_max_mib": 19953.0,
+          "n_samples": 595
+        }
+      },
+      {
+        "target": "6td3",
+        "batch": 200,
+        "n_mols": 200,
+        "n_processes": 1,
+        "seconds": 126.37,
+        "s_per_mol": 0.632,
+        "mols_per_s": 1.58,
+        "n_ok": 199,
+        "gpu": {
+          "util_mean": 36.7,
+          "util_median": 0.0,
+          "util_max": 100.0,
+          "mem_max_mib": 19953.0,
+          "n_samples": 472
+        }
+      }
+    ],
+    "part_b": {
+      "target": "6td3",
+      "settings": {
+        "center": [
+          -62.3265,
+          24.356,
+          -3.84
+        ],
+        "size": [
+          19.445000000000007,
+          14.535999999999998,
+          21.942
+        ],
+        "extra": {
+          "thread": 8000,
+          "opencl_binary_path": "/scratch/markymoo/vina_gpu/Vina-GPU-2.1/QuickVina2-GPU-2.1",
+          "num_modes": 9
+        },
+        "receptor": "/home/markymoo/projects/RGFN_Fork/RGFN-Fork/experiments/oracle_validation/docking_6td3/6TD3_tier2.pdbqt"
+      },
+      "n_ligands_prepared": 96,
+      "results": {
+        "single": [
+          {
+            "n_processes": 1,
+            "n_ligands": 96,
+            "seconds": 58.3,
+            "ligands_per_s": 1.65,
+            "n_out_poses": 96,
+            "complete": true,
+            "gpu": {
+              "util_mean": 36.1,
+              "util_median": 0.0,
+              "util_max": 100.0,
+              "mem_max_mib": 19953.0,
+              "n_samples": 222
+            }
+          },
+          {
+            "n_processes": 1,
+            "n_ligands": 96,
+            "seconds": 58.31,
+            "ligands_per_s": 1.65,
+            "n_out_poses": 96,
+            "complete": true,
+            "gpu": {
+              "util_mean": 36.3,
+              "util_median": 0.0,
+              "util_max": 100.0,
+              "mem_max_mib": 19953.0,
+              "n_samples": 222
+            }
+          }
+        ],
+        "dual": [
+          {
+            "n_processes": 2,
+            "n_ligands": 96,
+            "seconds": 54.57,
+            "ligands_per_s": 1.76,
+            "n_out_poses": 96,
+            "complete": true,
+            "gpu": {
+              "util_mean": 44.1,
+              "util_median": 0.0,
+              "util_max": 100.0,
+              "mem_max_mib": 39901.0,
+              "n_samples": 207
+            }
+          },
+          {
+            "n_processes": 2,
+            "n_ligands": 96,
+            "seconds": 54.51,
+            "ligands_per_s": 1.76,
+            "n_out_poses": 96,
+            "complete": true,
+            "gpu": {
+              "util_mean": 45.3,
+              "util_median": 0.0,
+              "util_max": 100.0,
+              "mem_max_mib": 39901.0,
+              "n_samples": 201
+            }
+          }
+        ]
+      },
+      "best_single_lig_s": 1.65,
+      "best_dual_lig_s": 1.76,
+      "dual_vs_single_speedup": 1.07,
+      "verdict": "saturated (no gain)"
+    }
+  }
+}

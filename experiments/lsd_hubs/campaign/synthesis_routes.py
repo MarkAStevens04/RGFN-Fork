@@ -135,10 +135,17 @@ def linearize(target, routes, built, out):
     built.add(target)
 
 
-def full_route(frag, hub, terminal, routes):
-    """Fragment's logged route + the final hub-attach step → the whole molecule, as ordered steps."""
-    steps = []
-    linearize(frag, routes, set(), steps)
+def full_route(frag, hub, terminal, routes, logged_reaction=None):
+    """The whole molecule as ordered steps: build the hub scaffold, build the added fragment, then the
+    final hub-attach. ``routes`` should include both the promoted-fragment recipes (``smiles_to_route``)
+    and the sampled ``routes.json`` (so the hub linearizes instead of showing as a bought leaf); a hub
+    absent from ``routes`` (a stock building block) contributes no steps and stays a "buy". The final
+    step prefers the **logged** ground-truth reaction (``enum_children.json`` ``reaction`` field);
+    absent that, it falls back to the inferred ``hub_reaction_name`` (backward compatible)."""
+    raw = []
+    built = set()  # shared across hub + fragment builds -> each intermediate emitted once
+    linearize(hub, routes, built, raw)
+    linearize(frag, routes, built, raw)
     steps = [
         {
             "reaction": reaction_name(s["reaction"]),
@@ -146,16 +153,27 @@ def full_route(frag, hub, terminal, routes):
             "reactants": list(s["reactants"]),
             "product": s["product"],
         }
-        for s in steps
+        for s in raw
     ]
-    steps.append(
-        {
-            "reaction": hub_reaction_name(frag, hub, terminal),
-            "input": frag,
-            "reactants": [hub],
-            "product": terminal,
-        }
-    )
+    if logged_reaction:  # ground-truth final hub->child step(s), named from the real template
+        for s in logged_reaction:
+            steps.append(
+                {
+                    "reaction": reaction_name(s.get("reaction", "")),
+                    "input": s.get("input") or hub,
+                    "reactants": list(s.get("reactants") or [frag]),
+                    "product": s.get("product") or terminal,
+                }
+            )
+    else:  # no logged template -> infer the final hub-attach from the structural change
+        steps.append(
+            {
+                "reaction": hub_reaction_name(frag, hub, terminal),
+                "input": frag,
+                "reactants": [hub],
+                "product": terminal,
+            }
+        )
     return steps
 
 
@@ -273,6 +291,12 @@ def main() -> None:
     ap.add_argument("--pairs", required=True)
     ap.add_argument("--enum-children", required=True)
     ap.add_argument("--snapshot", required=True)
+    ap.add_argument(
+        "--routes",
+        default="",
+        help="routes.json (sample mode): hub/terminal build routes; merged with the snapshot recipes "
+        "so the hub linearizes instead of showing as a bought leaf. Optional (falls back gracefully).",
+    )
     ap.add_argument("--tag", required=True)
     ap.add_argument("--no-schemes", action="store_true", help="skip the per-pair scheme PNGs")
     a = ap.parse_args()
@@ -280,7 +304,14 @@ def main() -> None:
     rows = list(csv.DictReader(open(a.pairs)))
     want = set(r["smiles_a"] for r in rows) | set(r["smiles_b"] for r in rows)
     snap = json.load(open(a.snapshot))
-    routes = snap["smiles_to_route"]
+    routes = dict(snap["smiles_to_route"])  # promoted-fragment recipes (keyed by product SMILES)
+    if (
+        a.routes and Path(a.routes).exists()
+    ):  # + sampled hub/terminal routes (recipes win on overlap)
+        routes = {**json.load(open(a.routes)), **routes}
+        print(
+            f"[synthesis_routes] merged routes.json -> {len(routes)} total routes (hubs now build)"
+        )
 
     enum = json.load(open(a.enum_children))
     final = {}
@@ -289,7 +320,8 @@ def main() -> None:
             s = c["smiles"]
             if s in want and s not in final:
                 added = c.get("added_promoted", ())
-                final[s] = (h["hub_key"], added[0] if added else None)
+                # (hub_key, added fragment, logged final hub->child reaction step(s) or [])
+                final[s] = (h["hub_key"], added[0] if added else None, c.get("reaction") or [])
 
     colors = {
         "buy": "#0d7d6f",
@@ -308,19 +340,20 @@ def main() -> None:
         "Step-by-step routes for the two most-similar-yet-distinct molecules at each cutoff. "
         "Reactions are the SCENT dynamic-library assembly steps we logged (named from their reaction "
         "templates); **buy** = a base building block, **make** = an intermediate built in an earlier "
-        "step. The final step attaches the hub building block (its reaction is named from the "
-        "structural change, not a logged template). This is the logged assembly route, not a claim of "
-        "an optimal retrosynthesis.",
+        "step. The final step attaches the hub building block — its reaction is the **logged** template "
+        "when available (else inferred from the structural change), and the hub's own build steps are "
+        "included when a sampled route (`routes.json`) is supplied. This is the logged assembly route, "
+        "not a claim of an optimal retrosynthesis.",
         "",
     ]
     csv_rows = []
 
     for r in rows:
         cut = f"{float(r['cutoff']):.2f}"
-        hub_a, frag_a = final[r["smiles_a"]]
-        hub_b, frag_b = final[r["smiles_b"]]
-        A = full_route(frag_a, hub_a, r["smiles_a"], routes)
-        B = full_route(frag_b, hub_b, r["smiles_b"], routes)
+        hub_a, frag_a, rxn_a = final[r["smiles_a"]]
+        hub_b, frag_b, rxn_b = final[r["smiles_b"]]
+        A = full_route(frag_a, hub_a, r["smiles_a"], routes, rxn_a)
+        B = full_route(frag_b, hub_b, r["smiles_b"], routes, rxn_b)
         prod_a = {s["product"] for s in A}
         prod_b = {s["product"] for s in B}
         # route-aware buy/make: anything produced by a step is "make" (an intermediate we build);

@@ -1,18 +1,35 @@
 # `campaign/` — hub-batching vs best-candidate under a budget (Logs/028)
 
-Compares two **independent, swappable** selection strategies for building a diverse library of hits
+Compares two **swappable** selection strategies for building a diverse library of hits
 (modes) from a trained SCENT model, on reactions/mode (+ reward-gen calls, scaffolds, distinct
 intermediates). The strategy logic is AL-ready in `glue.samplers.lsdflow.campaign`
-(`BestCandidateStrategy` / `HubBatchingStrategy`, identical `CampaignResult` output, **disjoint
-inputs** — best-candidate never touches hub/enumeration data). This dir is the offline analysis.
+(`BestCandidateStrategy` / `HubBatchingStrategy`, identical `CampaignResult` output). This dir is the
+offline analysis.
 
-- **best-candidate** — top-reward modes from the generator's *sampled* pool; each built
-  independently (promoted fragments shared as reusable stock). Mirrors RGFN's paper "top-k".
-- **hub-batching** — walk pre-ranked hubs; build each scaffold once, diversify into modes.
+- **best-candidate** — top-reward modes from the generator's *sampled* pool. Mirrors RGFN's paper
+  "top-k". Each mode is charged its own assembly, **but** parent scaffolds that several picks happen
+  to share ("accidental hub-batching") are built once — a swappable `HubAssignmentPolicy` (default
+  `MostSharedAssignment`; immediate-parent hubs from `records.csv`).
+- **hub-batching** — walk pre-ranked hubs; build each scaffold once, diversify into modes. The
+  **within-hub child policy** (Logs/037, `--child-policy`, `glue.samplers.lsdflow.child_select`)
+  decides which of a hub's children get offered to the mode selector:
+  - `reward` (default) — reward-first, keep all. Byte-identical to the historical behaviour.
+  - `free_frag` — keep only children whose final reaction attaches an *already-available* fragment
+    (base stock / already built / part of this hub) → each kept child costs exactly **1** marginal
+    reaction. ~1.2 rxn/mode with enough hubs (2.2–2.5× cheaper than reward/best), but pays a large
+    enumeration bill (walks many hubs) and hits the strict-diversity ceiling sooner.
+  - `smart_frag` — soft version: order by `reward − β·Σ cost(f)/utility(f)` over attached promoted
+    fragments (`--beta`, default 1; `cost` = nested reactions, `utility` = SCENT's
+    `smiles_to_mean_reward` rescaled to the reward scale via `--utility-scale`). β=0 recovers
+    `reward`; a mild, always-reaches-300 improvement (~6–13% cheaper on lean hub pools).
 
-**Cost** = true nested reactions, count-once (each distinct promoted fragment built once via its
-logged route; hub scaffolds shared only in hub-batching). Two budget cases read off one curve:
-Case 1 = modes at a reaction budget; Case 2 = reactions at a mode budget (≈ oracle calls).
+**Cost = ONE count-once model for both strategies (Logs/033):** a molecule's cost = *assembly
+couplings* (`num_reactions − Σ nested build cost of each attached promoted fragment` — SCENT's
+`num_reactions` is fully nested, so this recovers the shallow join steps) **+** each distinct
+promoted fragment built once (closure). Shared hubs (scaffolds) have their couplings charged once —
+by design for hub-batching, accidentally for best-candidate. Both strategies amortize identically;
+only the SELECTION differs. Two budget cases read off one curve: Case 1 = modes at a reaction budget;
+Case 2 = reactions at a mode budget (≈ oracle calls).
 
 ## Layout
 
@@ -62,7 +79,10 @@ campaign/
 8. **`synthesis_routes.py`** (CPU) — the chemist-actionable step-by-step protocol: names each reaction
    from its RGFN template, tags reactants buy/make, and emits per-molecule instructions + shopping
    lists (`synthesis_protocol.md`), a step table (`synthesis_steps.csv`), and one reaction-scheme PNG
-   per pair (`schemes/`). Same inputs as `route_trees.py`. See Logs/032.
+   per pair (`schemes/`). Same inputs as `route_trees.py`, **plus** the ground-truth reconstruction
+   data: the final hub→child step uses the logged `reaction` field in `enum_children.json` (not an
+   inference), and `--routes routes.json` (sample mode) makes the **hub build itself** instead of
+   showing as a bought leaf. Both are optional — it falls back gracefully if absent. See Logs/032.
 
 ```bash
 sbatch experiments/lsd_hubs/campaign/submit_scent_seh_enum.sh   # -> $SCRATCH/.../campaign_enum_seh_<jobid>/enum_children.json
@@ -82,35 +102,75 @@ python experiments/lsd_hubs/campaign/hub_stats.py \
 `--budget-modes` (M*=300), `--baseline-cutoff` (**0.50** — the default diversity cutoff; also the
 dashed marker on the Pareto/cost plots). All outputs land in `results/<tag>/`.
 
-## Result (sEH, job 70295 = 50 hubs enumerated; default diversity cutoff 0.5)
+## Result (sEH, job 70295 = 50 hubs enumerated; default diversity cutoff 0.5; **fair cost model, Logs/033**)
 
 | metric | best-candidate | hub-batching |
 |---|---|---|
-| reactions to generate 300 modes | 1,479 rxns (4.93 rxns/mode) | **820 rxns (2.73 rxns/mode)** |
-| modes at a 100-reaction budget | 16 | **33** |
+| reactions to generate 300 modes | 929 rxns (3.10 rxns/mode) | **819 rxns (2.73 rxns/mode)** |
+| modes at a 100-reaction budget | 29 | **33** |
 | reward-gen calls / mode | 0 | 62.9 (18,856 total) |
-| distinct intermediates / hubs (300-mode budget) | 205 / 0 | 328 / **2** |
+| distinct intermediates / shared hubs | 205 / 254 (accidental) | 328 / **2** (by design) |
 | scaffolds (of 300) · best sEH | 300 · 8.40 | 300 · 8.40 |
 
-Hub-batching roughly halves reactions/mode — the win is **scaffold amortization** (300 modes from
-just two flow-ranked hubs built once + cheap one-reaction diversifications), *not* intermediate
-concentration (it uses more distinct intermediates). The 2.73 (not ~1) is because each final
-reaction attaches a *promoted* dynamic-library fragment with its own nested route (242/298 marginal
-modes cost 3 rxns = final + a fresh 2-rxn intermediate; only 26 reuse a built one). The cost is
-enumeration scoring (63 reward-gen calls/mode). Per-hub stats: `results/scent_seh/hub_stats.csv`
-(50 hubs; preliminary set 64 hubs, depth-1/2/3 = 22/29/13). Full enumeration (24 MB + 42 MB) on
-`$SCRATCH` `lsdflow/campaign_enum_seh_70295/`. See Logs/029. All committed artifacts live under
-`results/scent_seh/`. *(At the looser 0.7 cutoff: 706 vs 1,445, all from one hub — but 0.7 counts
-near-identical molecules as distinct.)*
+Hub-batching still wins, but by **~1.13×, not ~2×** — most of the old "halving" was a fragment
+double-count (SCENT's `num_reactions` already nests the promoted-fragment builds; the campaign used
+to add them again). Of best-candidate's drop from the old 1,479 → 929: the **double-count fix is
+−530**, crediting accidental hub-sharing only **−20** (254 shared hubs across 300 modes — diverse
+modes have diverse scaffolds, so little accidental sharing at cutoff 0.5). The remaining hub-batching
+win is **scaffold amortization** (300 modes from two flow-ranked hubs built once + cheap one-reaction
+diversifications), paid for with **enumeration scoring** (63 reward-gen calls/mode vs 0). Per-hub
+stats: `results/scent_seh/hub_stats.csv` (50 hubs; preliminary set 64 hubs, depth-1/2/3 = 22/29/13,
+cost-independent). Full enumeration (24 MB + 42 MB) on `$SCRATCH` `lsdflow/campaign_enum_seh_70295/`.
+See Logs/033 (correction) + Logs/029. Committed artifacts under `results/scent_seh/`. *(Looser
+cutoffs credit more accidental sharing: at 0.90 best-candidate falls to 728 rxns.)*
 
-## Sweep results (sEH, `sweep_campaign.py`, similarity 0.30→0.90)
+## Sweep results (sEH, `sweep_campaign.py`, similarity 0.30→0.90; **fair cost model**)
 
-- **Hub-batching dominates efficiency across the whole diversity range it can serve** — ~2× more
-  modes per 100 reactions (32–40 vs 16–18) and ~2× fewer reactions for 300 modes (644–824 vs
-  1,386–1,479). best-candidate is flat in the cutoff; hub-batching's edge grows as diversity loosens
-  (one hub serves everything) and erodes as it tightens (it must recruit more hubs: 1 at 0.70 → 28 at
-  0.30).
-- **Scaffold-concentration ceiling:** at the strictest cutoff (0.30) hub-batching **can't reach 300
-  modes** (maxes at 135, 28/50 hubs exhausted) — its hubs' children are decorations of a few cores;
-  best-candidate reaches 300 from the broad sampled pool. Partly an artifact of enumerating only 50
-  hubs → more hubs raise the ceiling (ties into the `--no-flow` speedup).
+Reactions to reach 300 modes, corrected model:
+
+| cutoff | best-candidate | hub (50) | hub (200) |
+|---|---|---|---|
+| 0.30 (strict) | 1,123 | can't (135 max) | 882 |
+| 0.50 | 929 | 819 | 816 |
+| 0.70 | 793 | 706 | 770 |
+| 0.80 | 722 | 656 | 828 |
+| 0.90 (loose) | 728 | 644 | 822 |
+
+- **Hub-batching's edge shrank to ~1.1–1.3× at strict-to-mid cutoffs** (was ~2×). best-candidate's
+  cost now *falls* as diversity loosens (near-identical modes share more parent hubs → more
+  accidental batching); at loose cutoffs (≥0.75, 200-hub enum) best-candidate **beats** hub-batching
+  on reactions — hub-batching's residual cost there is its 7k–19k reward-gen (enumeration) calls, not
+  synthesis. best-candidate is identical across the two enumerations (it never uses hub data).
+- **Scaffold-concentration ceiling (cost-independent):** at cutoff 0.30 the 50-hub run **can't reach
+  300 modes** (135 max); scaling to 200 hubs breaks it (882 rxns). Below ~0.30 *neither* strategy
+  reaches 300 — a chemistry floor (see Logs/031).
+
+## Threshold variants (Logs/035) — the "mode"/hit bar is a CLI knob
+
+The `--reward-threshold` (what counts as a hit before the diversity filter) was **7.0** in Logs/029/033,
+but Logs/034 showed 7.0 is mis-calibrated for the sEH proxy (real inhibitors top out ~7.7; empirically
+useful bar ~5–6). Re-running at **5 and 6** is a pure-CPU re-selection over the *same cached* enumeration
+(no GPU, no re-scoring) — just a different `--tag` so nothing overwrites. Result-dir map:
+
+| bar | 50-hub tag | 200-hub tag |
+|---|---|---|
+| **7.0** (baseline; `029`/`031`/`033`) | `results/scent_seh/` | `results/scent_seh_1kx200/` |
+| 6.0 (`035`) | `results/scent_seh_thr6/` | `results/scent_seh_1kx200_thr6/` |
+| 5.0 (`035`) | `results/scent_seh_thr5/` | `results/scent_seh_1kx200_thr5/` |
+
+Each dir's `summary.json`/`sweep_summary.json` records its own `"reward_threshold"`. `compare_thresholds.py`
+reads the three bars' committed `{pareto,fixed_modes}.csv` and overlays them (strategy = colour, threshold =
+linestyle) → `results/threshold_comparison/{cost,pareto}_{50hub,200hub}.png`. **Finding:** the cost/Pareto
+comparison is threshold-robust — best-candidate is identical across bars (its top-300 modes are all
+high-reward), hub-batching matches the bar-7 curve from cutoff ~0.55 up and only gets cheaper at strict
+diversity; the real change is hub-batching's enumeration bill halving (one hub, not two, serves 300 modes
+at cutoff 0.5). See Logs/035.
+
+```bash
+# thresholds 5 and 6 (50-hub shown; swap $ENUM50 -> $ENUM200 + tag *_1kx200_thr* for 200-hub)
+for T in 5.0 6.0; do
+  python experiments/lsd_hubs/campaign/run_campaign.py   $ANALYSIS_ARGS --reward-threshold $T --tag scent_seh_thr${T%.0}
+  python experiments/lsd_hubs/campaign/sweep_campaign.py $ANALYSIS_ARGS --reward-threshold $T --tag scent_seh_thr${T%.0}
+done
+python experiments/lsd_hubs/campaign/compare_thresholds.py   # overlay figures
+```

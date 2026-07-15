@@ -26,21 +26,30 @@ from glue.samplers.lsdflow.campaign import (
     EnumeratedHub,
     HubBatchingStrategy,
 )
+from glue.samplers.lsdflow.child_select import make_child_policy
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
+    scaled_fragment_utilities,
 )
 
 HERE = Path(__file__).resolve().parent
 
 
 def _load_candidates(analysis_dir: Path, higher_is_better: bool):
+    """Candidate pool from ``records.csv`` + ``compositions.json``. Each candidate also carries its
+    observed immediate-parent hub keys (all distinct ``hub_key`` it was seen under) so best-candidate
+    can credit "accidental" hub-batching (Logs/033)."""
     comps = json.load(open(analysis_dir / "compositions.json"))
     best: dict = {}  # child_key -> reward (best)
+    parents: dict = {}  # child_key -> set of observed parent hub keys
     with open(analysis_dir / "records.csv") as fh:
         for r in csv.DictReader(fh):
             c, reward = r["child_key"], float(r["reward"])
             if c not in best or (reward > best[c]) == higher_is_better:
                 best[c] = reward
+            hk = r.get("hub_key")
+            if hk:
+                parents.setdefault(c, set()).add(hk)
     cands = []
     for c, reward in best.items():
         comp = comps.get(c, {}) or {}
@@ -50,9 +59,44 @@ def _load_candidates(analysis_dir: Path, higher_is_better: bool):
                 reward=reward,
                 num_reactions=int(comp.get("num_reactions", 1)),
                 promoted=tuple(comp.get("promoted", ())),
+                parents=tuple(sorted(parents.get(c, ()))),
             )
         )
     return cands, comps
+
+
+def build_strategy(
+    name: str,
+    pool,
+    cost_table,
+    comps: dict,
+    *,
+    similarity: float,
+    target: str,
+    reward_threshold: float,
+    higher_is_better: bool,
+    assignment_policy=None,
+    child_policy=None,
+):
+    """Construct either strategy on the ONE count-once cost model (Logs/033). Best-candidate gets the
+    compositions (to cost shared parent hubs) + a swappable hub-assignment policy; hub-batching needs
+    only its enumerated hubs + an optional within-hub ``child_policy`` (Logs/036: reward / free_frag /
+    smart_frag). Shared by ``run_campaign`` and ``sweep_campaign``."""
+    common = dict(
+        target=target,
+        reward_threshold=reward_threshold,
+        similarity=similarity,
+        higher_is_better=higher_is_better,
+    )
+    if name == "hub_batching":
+        return HubBatchingStrategy(pool, cost_table, child_policy=child_policy, **common)
+    return BestCandidateStrategy(
+        pool,
+        cost_table,
+        hub_compositions=comps,
+        assignment_policy=assignment_policy,
+        **common,
+    )
 
 
 def _load_enumerated_hubs(enum_children_path: Path, comps: dict):
@@ -182,17 +226,53 @@ def main() -> None:
     ap.add_argument("--higher-is-better", type=lambda s: s.lower() != "false", default=True)
     ap.add_argument("--budget-reactions", type=int, default=100, help="Case 1 reaction budget")
     ap.add_argument("--budget-modes", type=int, default=300, help="Case 2 mode budget")
+    ap.add_argument(
+        "--child-policy",
+        default="reward",
+        choices=["reward", "free_frag", "smart_frag", "marginal", "smart_dyn", "ratio"],
+        help="within-hub child selection for hub-batching (Logs/037); best-candidate is unaffected. "
+        "static: reward/free_frag/smart_frag; dynamic (amortization-aware): marginal/smart_dyn/ratio",
+    )
+    ap.add_argument(
+        "--beta",
+        type=float,
+        default=1.0,
+        help="penalty weight for smart_frag/marginal/smart_dyn/ratio",
+    )
+    ap.add_argument(
+        "--utility-scale",
+        default="logbeta",
+        choices=["logbeta", "log", "raw"],
+        help="how to put SCENT's smiles_to_mean_reward on the reward scale for smart_frag",
+    )
+    ap.add_argument(
+        "--beta-train", type=float, default=8.0, help="training beta (for --utility-scale logbeta)"
+    )
     ap.add_argument("--tag", required=True)
     a = ap.parse_args()
 
     adir = Path(a.analysis_dir)
     cands, comps = _load_candidates(adir, a.higher_is_better)
     enum_hubs = _load_enumerated_hubs(Path(a.enum_children), comps)
-    cost_table = load_cost_table_from_snapshot(json.load(open(a.snapshot)))
+    snapshot = json.load(open(a.snapshot))
+    cost_table = load_cost_table_from_snapshot(snapshot)
     print(
         f"[campaign] {len(cands)} candidates, {len(enum_hubs)} enumerated hubs, "
         f"{len(cost_table.promoted_set)} promoted fragments (recipes={bool(cost_table.recipes)})"
     )
+
+    # Within-hub child policy for hub-batching (Logs/036). smart_frag needs per-fragment utilities
+    # rescaled from SCENT's exp(beta*proxy) mean-reward onto the proxy scale (see scaled_fragment_utilities).
+    utilities = None
+    if a.child_policy in ("smart_frag", "smart_dyn"):
+        utilities = scaled_fragment_utilities(
+            snapshot, beta_train=a.beta_train, scale=a.utility_scale
+        )
+        print(
+            f"[campaign] {a.child_policy}: beta={a.beta} utility-scale={a.utility_scale} "
+            f"(beta_train={a.beta_train}); {len(utilities)} fragment utilities on the reward scale"
+        )
+    child_policy = make_child_policy(a.child_policy, beta=a.beta, utilities=utilities)
 
     common = dict(
         target=a.tag,
@@ -203,8 +283,12 @@ def main() -> None:
     # Run to the mode budget (greedy diversity is O(modes^2); Case 1's reaction point is reached
     # well before Case 2's mode budget, so this single curve covers both readouts).
     curve_budget = ("modes", a.budget_modes)
-    bc = BestCandidateStrategy(cands, cost_table, **common).run(budget=curve_budget)
-    hb = HubBatchingStrategy(enum_hubs, cost_table, **common).run(budget=curve_budget)
+    bc = build_strategy("best_candidate", cands, cost_table, comps, **common).run(
+        budget=curve_budget
+    )
+    hb = build_strategy(
+        "hub_batching", enum_hubs, cost_table, comps, child_policy=child_policy, **common
+    ).run(budget=curve_budget)
     if bc.total_reactions < a.budget_reactions or hb.total_reactions < a.budget_reactions:
         print(
             f"[campaign] WARNING a curve stopped below the Case-1 reaction budget "
@@ -218,8 +302,12 @@ def main() -> None:
     summary = {
         "tag": a.tag,
         "reward_threshold": a.reward_threshold,
+        "similarity": a.similarity,
         "budget_reactions": a.budget_reactions,
         "budget_modes": a.budget_modes,
+        "child_policy": a.child_policy,
+        "beta": a.beta if a.child_policy == "smart_frag" else None,
+        "utility_scale": a.utility_scale if a.child_policy == "smart_frag" else None,
         "best_candidate": _readouts(bc, a.budget_reactions, a.budget_modes),
         "hub_batching": _readouts(hb, a.budget_reactions, a.budget_modes),
     }
