@@ -37,10 +37,7 @@ from run_campaign import (  # same-dir helpers
     build_strategy,
 )
 
-from glue.samplers.lsdflow.campaign import (
-    fragment_fanout,
-    rank_fragments_by_build_score,
-)
+from glue.samplers.lsdflow.campaign import RANK_METHODS, rank_fragments
 from glue.samplers.lsdflow.child_select import make_child_policy
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
@@ -73,7 +70,6 @@ def _run(
     m_budget,
     child_policy=None,
     prebuilt_fragments=None,
-    value_threshold=None,
 ):
     return build_strategy(
         strategy_name,
@@ -83,7 +79,6 @@ def _run(
         similarity=similarity,
         child_policy=child_policy,
         prebuilt_fragments=prebuilt_fragments,
-        value_threshold=value_threshold,
         **common,
     ).run(budget=("modes", m_budget))
 
@@ -143,19 +138,13 @@ def main() -> None:
     ap.add_argument(
         "--child-policy",
         default="reward",
-        choices=["reward", "free_frag", "fanout"],
-        help="within-hub child selection for the hub_batching line (Logs/037)",
-    )
-    ap.add_argument("--beta", type=float, default=1.0, help="fanout penalty weight (cost/fanout)")
-    ap.add_argument(
-        "--value-threshold",
-        type=float,
-        default=None,
-        help="move-on rule (fanout policy); default = the reward bar",
+        choices=["reward", "free_frag"],
+        help="within-hub child selection for the hub_batching line (Logs/037): reward = naive / free_frag",
     )
     ap.add_argument(
         "--prebuild-k", type=int, default=0, help="pre-select-K: pre-synthesize top-K fragments"
     )
+    ap.add_argument("--rank-by", default="build_score", choices=list(RANK_METHODS))
     ap.add_argument("--tag", required=True)
     a = ap.parse_args()
 
@@ -164,16 +153,15 @@ def main() -> None:
     enum_hubs = _load_enumerated_hubs(Path(a.enum_children), comps)
     snapshot = json.load(open(a.snapshot))
     cost_table = load_cost_table_from_snapshot(snapshot)
-    fanout = None
-    value_threshold = None
-    if a.child_policy == "fanout":
-        fanout = fragment_fanout(enum_hubs, reward_threshold=a.reward_threshold)
-        value_threshold = a.value_threshold if a.value_threshold is not None else a.reward_threshold
-    child_policy = make_child_policy(a.child_policy, beta=a.beta, fanout=fanout)
+    child_policy = make_child_policy(a.child_policy)
     prebuilt = None
     if a.prebuild_k > 0:
-        ranked = rank_fragments_by_build_score(
-            enum_hubs, cost_table, a.reward_threshold, higher_is_better=a.higher_is_better
+        ranked = rank_fragments(
+            enum_hubs,
+            cost_table,
+            a.reward_threshold,
+            method=a.rank_by,
+            higher_is_better=a.higher_is_better,
         )
         prebuilt = {f for f, _ in ranked[: a.prebuild_k]}
     pools = {"best_candidate": cands, "hub_batching": enum_hubs}
@@ -205,7 +193,6 @@ def main() -> None:
                 a.budget_modes,
                 child_policy,
                 prebuilt_fragments=prebuilt,
-                value_threshold=value_threshold,
             )
         hb, bc = results[("hub_batching", cut)], results[("best_candidate", cut)]
         print(
@@ -272,7 +259,6 @@ def main() -> None:
                 a.budget_modes,
                 child_policy,
                 prebuilt_fragments=prebuilt,
-                value_threshold=value_threshold,
             )
     with open(out / "budget_efficiency.csv", "w", newline="") as fh:
         w = csv.writer(fh)
@@ -302,9 +288,8 @@ def main() -> None:
         "budget_modes": a.budget_modes,
         "baseline_cutoff": base,
         "child_policy": a.child_policy,
-        "beta": a.beta if a.child_policy == "fanout" else None,
-        "value_threshold": value_threshold,
         "prebuild_k": a.prebuild_k,
+        "rank_by": a.rank_by if a.prebuild_k > 0 else None,
         "cutoffs": cutoffs,
         "pareto_modes_at_R": {
             s: [_modes_at_reactions(results[(s, c)], a.budget_reactions) for c in cutoffs]

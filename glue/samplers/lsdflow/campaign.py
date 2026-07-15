@@ -383,20 +383,16 @@ class HubBatchingStrategy(CampaignStrategy):
     first accepted child), diversify into modes. Needs ONLY the enumerated hubs.
 
     ``child_policy`` (Logs/037) decides which of a hub's children get offered to the mode selector and
-    in what order — default :class:`RewardChildPolicy` (reward-first, keep all) is byte-identical to
-    the historical behaviour; swap in ``FreeFragChildPolicy`` or ``FanoutMarginalPolicy`` to make
-    selection fragment-aware. It is orthogonal to the cost accounting, which is unchanged.
+    in what order — default :class:`RewardChildPolicy` (**naive** hub-batching: reward-first, keep all,
+    no fragment-cost awareness) is byte-identical to the historical behaviour; swap in
+    ``FreeFragChildPolicy`` to make selection fragment-aware. It is orthogonal to the cost accounting,
+    which is unchanged.
 
-    Two extra controls realise the Logs/037 fan-out strategies:
-
-    - ``prebuilt_fragments`` — a set of promoted fragments synthesised **up front** (their build cost
-      charged once, before any hub). They enter the ``built`` set, so hubs never re-charge them (no
-      double-count) and any child that attaches them is free. With ``FreeFragChildPolicy`` this is the
-      **pre-select-K** strategy: pre-synthesize K widely-reusable fragments, then free-fill.
-    - ``value_threshold`` (τ, dynamic policies only) — the **move-on rule**: once a hub's best
-      remaining child scores below τ (only expensive, low-fan-out fragment children left), advance to
-      the next hub instead of building them. This is what turns "penalise fragments" into "visit more
-      hubs" (Logs/037). None → no move-on (take children until the budget).
+    ``prebuilt_fragments`` — a set of promoted fragments synthesised **up front** (their build cost
+    charged once, before any hub). They enter the ``built`` set, so hubs never re-charge them (no
+    double-count) and any child that attaches them is free. With ``FreeFragChildPolicy`` this is the
+    **pre-select-K** strategy (Logs/037): pre-synthesize K widely-reusable fragments (ranked by
+    :func:`rank_fragments`), then free-fill — trading a few upfront builds for fewer hubs walked.
     """
 
     def __init__(
@@ -411,7 +407,6 @@ class HubBatchingStrategy(CampaignStrategy):
         mode_selector_factory: Optional[Callable[[], ModeSelector]] = None,
         child_policy: Optional[ChildSelectionPolicy] = None,
         prebuilt_fragments: Optional[Set[str]] = None,
-        value_threshold: Optional[float] = None,
     ):
         self.hubs = list(enumerated_hubs)  # already in rank order (hub strategy applied upstream)
         self.cost_table = cost_table
@@ -422,7 +417,6 @@ class HubBatchingStrategy(CampaignStrategy):
         )
         self.child_policy = child_policy or RewardChildPolicy()
         self.prebuilt_fragments = set(prebuilt_fragments or ())
-        self.value_threshold = value_threshold
 
     def run(self, budget: Budget = None) -> CampaignResult:
         selector = self._make_selector()
@@ -431,7 +425,6 @@ class HubBatchingStrategy(CampaignStrategy):
         result = CampaignResult(strategy="hub_batching", target=self.target)
         cum_rx = 0
         cum_calls = 0
-        dynamic = getattr(self.child_policy, "is_dynamic", False)
 
         # Pre-synthesize the stock fragments up front, once (closure), and put them in ``built`` so no
         # hub re-charges them (the count-once model — no double-count). Charged before any mode, so
@@ -439,22 +432,16 @@ class HubBatchingStrategy(CampaignStrategy):
         if self.prebuilt_fragments:
             cum_rx += _charge_promoted(self.prebuilt_fragments, built_promoted, self.cost_table)
 
-        def _accept(hub, child, hub_coup) -> Tuple[bool, bool]:
-            """Charge count-once cost for an accepted child, record the mode. Returns
-            ``(budget_stopped, new_fragment_built)``; the latter tells the dynamic loop to re-rank.
-            """
+        def _accept(hub, child, hub_coup) -> bool:
+            """Charge count-once cost for an accepted child, record the mode; return whether the
+            budget stopped the campaign."""
             nonlocal cum_rx
             rx = 0
-            new_frag = False
             if hub.hub_key not in built_hubs:  # build the shared scaffold once, lazily
                 built_hubs.add(hub.hub_key)
-                before = len(built_promoted)
                 rx += hub_coup + _charge_promoted(hub.promoted, built_promoted, self.cost_table)
-                new_frag = new_frag or len(built_promoted) > before
             rx += 1  # the final diversifying reaction (one coupling)
-            before = len(built_promoted)
             rx += _charge_promoted(child.added_promoted, built_promoted, self.cost_table)
-            new_frag = new_frag or len(built_promoted) > before
             cum_rx += rx
             step = len(result.accepted) + 1
             result.accepted.append(
@@ -473,7 +460,7 @@ class HubBatchingStrategy(CampaignStrategy):
             stopped = _budget_hit(budget, cum_rx, step)
             if stopped:
                 result.stop_reason = budget[0]
-            return stopped, new_frag
+            return stopped
 
         stopped = False
         for hub in self.hubs:
@@ -483,30 +470,22 @@ class HubBatchingStrategy(CampaignStrategy):
             cum_calls += len(hub.children)
             hub_coup = shallow_couplings(hub.depth, hub.promoted, self.cost_table)
             # This hub's own scaffold fragments are built with the hub (charged once), so they are
-            # free to its children — fold them into the "available" view for scoring/filtering.
-            hub_closure = (
-                self.cost_table.closure(hub.promoted)
-                if (self.cost_table is not None and hub.promoted)
-                else set()
+            # free to its children — fold them into the "available" view for filtering (free-frag).
+            available = set(built_promoted)
+            if self.cost_table is not None and hub.promoted:
+                available |= self.cost_table.closure(hub.promoted)
+            children = self.child_policy.order(
+                hub.children,
+                higher_is_better=self.higher_is_better,
+                cost_table=self.cost_table,
+                available=available,
             )
-            if dynamic:
-                stopped = self._process_hub_dynamic(
-                    hub, hub_coup, hub_closure, selector, built_promoted, _accept
-                )
-            else:
-                available = set(built_promoted) | hub_closure
-                children = self.child_policy.order(
-                    hub.children,
-                    higher_is_better=self.higher_is_better,
-                    cost_table=self.cost_table,
-                    available=available,
-                )
-                for child in children:
-                    if not selector.accept(child.smiles, child.reward):
-                        continue
-                    stopped, _ = _accept(hub, child, hub_coup)
-                    if stopped:
-                        break
+            for child in children:
+                if not selector.accept(child.smiles, child.reward):
+                    continue
+                stopped = _accept(hub, child, hub_coup)
+                if stopped:
+                    break
         # backfill reward_gen_calls_added (per-point delta) for readability
         prev = 0
         for p in result.accepted:
@@ -514,57 +493,15 @@ class HubBatchingStrategy(CampaignStrategy):
             prev = p.cum_reward_gen_calls
         return _finalize(result, built_promoted, built_hubs)
 
-    def _process_hub_dynamic(
-        self, hub, hub_coup, hub_closure, selector, built_promoted, accept
-    ) -> bool:
-        """Greedy amortization-aware selection (Logs/037): score children against the *running* built
-        set, offer best-first, and re-rank the not-yet-offered tail whenever a new fragment is built
-        (its siblings' marginal cost just dropped). Returns True if the budget stopped the campaign.
 
-        Move-on rule: if ``value_threshold`` (τ) is set, stop pulling from this hub once its best
-        remaining child scores below τ — only expensive, low-fan-out fragment children are left, so
-        advance to the next hub (where cheaper children may live) instead of building them. This is
-        what converts "penalise fragments" into "visit more hubs".
-
-        Scores treat this hub's own fragments (``hub_closure``) as free — they are built with the hub,
-        charged once by ``accept`` — so ``built_promoted | hub_closure`` is the effective built set.
-        """
-
-        def _key(child):
-            return self.child_policy.score(
-                child,
-                built_promoted | hub_closure,
-                self.cost_table,
-                higher_is_better=self.higher_is_better,
-            )
-
-        tau = self.value_threshold
-        remaining = sorted(hub.children, key=_key, reverse=True)
-        i = 0
-        while i < len(remaining):
-            child = remaining[i]
-            # Best remaining child (its score is re-evaluated under the current built set). Below τ →
-            # every remaining child is too expensive; advance to the next hub.
-            if tau is not None and _key(child) < tau:
-                break
-            i += 1
-            if not selector.accept(child.smiles, child.reward):
-                continue
-            stopped, new_frag = accept(hub, child, hub_coup)
-            if stopped:
-                return True
-            if new_frag and i < len(remaining):  # a fragment just went free → re-rank the tail
-                remaining[i:] = sorted(remaining[i:], key=_key, reverse=True)
-        return False
-
-
-# ----------------------------------------------------------------- fan-out helpers (Logs/037)
+# ----------------------------------------------------------------- fan-out / pre-select helpers (Logs/037)
 def fragment_fanout(
     hubs: Sequence[EnumeratedHub], reward_threshold: Optional[float] = None
 ) -> Dict[str, int]:
     """Per-fragment fan-out = number of DISTINCT hubs whose children attach the fragment (optionally
     gated to children with ``reward >= reward_threshold`` — only those can become modes). This is the
-    "how widely is this fragment reused" signal :class:`FanoutMarginalPolicy` divides cost by."""
+    "how widely is this fragment reused" signal — a fragment reused across many hubs pays for its one
+    build many times over."""
     seen: Dict[str, Set[str]] = defaultdict(set)
     for h in hubs:
         for c in h.children:
@@ -575,18 +512,36 @@ def fragment_fanout(
     return {f: len(v) for f, v in seen.items()}
 
 
-def rank_fragments_by_build_score(
+# Pre-select ranking methods (Logs/037). Each maps (fanout, reward_advantage, build_reactions) → a
+# scalar (higher = pre-select first). Add a key here to introduce a new ablation ranking — nothing
+# else needs to change. ``build_score`` is the default (fan-out per build reaction, reward-weighted).
+RANK_METHODS: Dict[str, Callable[[int, float, int], float]] = {
+    "build_score": lambda fanout, adv, build_rx: adv * fanout / build_rx,
+    "fanout": lambda fanout, adv, build_rx: float(fanout),  # widest reuse only
+    "reward": lambda fanout, adv, build_rx: adv,  # best-child reward only
+}
+
+
+def rank_fragments(
     hubs: Sequence[EnumeratedHub],
     cost_table,
     reward_threshold: float,
     *,
+    method: str = "build_score",
     higher_is_better: bool = True,
 ) -> List[Tuple[str, float]]:
-    """Rank promoted fragments for pre-selection (Logs/037) by
-    ``build_score = (best_child_reward − reward_threshold) · fanout / build_reactions`` — widely
-    reusable (high fan-out), high-reward, cheap-to-build fragments first. Fan-out counts only
-    reward-gated (hit) children; a fragment with no hit child is excluded (it can't yield a mode).
-    Returns ``[(fragment, score), ...]`` best-first; take the top-K for ``prebuilt_fragments``."""
+    """Rank promoted fragments for pre-selection (Logs/037), best-first; take the top-K for
+    ``prebuilt_fragments``. ``method`` (see :data:`RANK_METHODS`) chooses the score from three
+    per-fragment signals — its fan-out (# hit-hubs it appears in), its reward advantage over the bar
+    (``best_child_reward − reward_threshold``), and its build cost in reactions:
+
+    - ``"build_score"`` (default): ``advantage · fanout / build_reactions`` — widely reusable,
+      high-reward, cheap-to-build blocks first.
+    - ``"fanout"`` / ``"reward"``: ablations isolating one signal.
+
+    Fan-out counts only reward-gated (hit) children; a fragment with no hit child is excluded (it can't
+    yield a mode)."""
+    score_fn = RANK_METHODS[method]
     fanout: Dict[str, Set[str]] = defaultdict(set)
     best_reward: Dict[str, float] = {}
     for h in hubs:
@@ -606,6 +561,6 @@ def rank_fragments_by_build_score(
         )
         build_rx = cost_table.shared_build_cost([f])[0] if cost_table is not None else 1
         build_rx = max(int(build_rx), 1)
-        scored.append((f, adv * len(hubset) / build_rx))
+        scored.append((f, score_fn(len(hubset), adv, build_rx)))
     scored.sort(key=lambda x: x[1], reverse=True)
     return scored

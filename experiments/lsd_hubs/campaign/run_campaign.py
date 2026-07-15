@@ -20,13 +20,13 @@ import json
 from pathlib import Path
 
 from glue.samplers.lsdflow.campaign import (
+    RANK_METHODS,
     BestCandidateStrategy,
     Candidate,
     EnumChild,
     EnumeratedHub,
     HubBatchingStrategy,
-    fragment_fanout,
-    rank_fragments_by_build_score,
+    rank_fragments,
 )
 from glue.samplers.lsdflow.child_select import make_child_policy
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
@@ -79,13 +79,12 @@ def build_strategy(
     assignment_policy=None,
     child_policy=None,
     prebuilt_fragments=None,
-    value_threshold=None,
 ):
     """Construct either strategy on the ONE count-once cost model (Logs/033). Best-candidate gets the
     compositions (to cost shared parent hubs) + a swappable hub-assignment policy; hub-batching needs
-    only its enumerated hubs + an optional within-hub ``child_policy`` (Logs/037: reward / free_frag /
-    fanout), plus the fan-out controls ``prebuilt_fragments`` (pre-select-K) and ``value_threshold``
-    (the move-on rule). Shared by ``run_campaign`` and ``sweep_campaign``."""
+    only its enumerated hubs + an optional within-hub ``child_policy`` (Logs/037: reward = naive /
+    free_frag) and ``prebuilt_fragments`` (pre-select-K). Shared by ``run_campaign`` and
+    ``sweep_campaign``."""
     common = dict(
         target=target,
         reward_threshold=reward_threshold,
@@ -98,7 +97,6 @@ def build_strategy(
             cost_table,
             child_policy=child_policy,
             prebuilt_fragments=prebuilt_fragments,
-            value_threshold=value_threshold,
             **common,
         )
     return BestCandidateStrategy(
@@ -240,26 +238,24 @@ def main() -> None:
     ap.add_argument(
         "--child-policy",
         default="reward",
-        choices=["reward", "free_frag", "fanout"],
+        choices=["reward", "free_frag"],
         help="within-hub child selection for hub-batching (Logs/037); best-candidate is unaffected. "
-        "reward (control) / free_frag (low-reaction extreme, base + prebuilt stock) / fanout "
-        "(dynamic reward - beta*cost/fanout, with the --value-threshold move-on rule)",
-    )
-    ap.add_argument("--beta", type=float, default=1.0, help="fanout penalty weight (cost/fanout)")
-    ap.add_argument(
-        "--value-threshold",
-        type=float,
-        default=None,
-        help="move-on rule (fanout policy): advance to the next hub once its best child scores below "
-        "this. Default: the reward bar.",
+        "reward = naive hub-batching (no fragment-cost awareness); free_frag = keep only "
+        "already-available-fragment children (base + prebuilt stock).",
     )
     ap.add_argument(
         "--prebuild-k",
         type=int,
         default=0,
-        help="pre-select-K (Logs/037): pre-synthesize the top-K fragments by build-score "
-        "((reward-bar)*fanout/build_reactions), charge them upfront, then run the child policy "
-        "(use with free_frag).",
+        help="pre-select-K (Logs/037): pre-synthesize the top-K fragments (by --rank-by), charge them "
+        "upfront, then run the child policy (use with free_frag).",
+    )
+    ap.add_argument(
+        "--rank-by",
+        default="build_score",
+        choices=list(RANK_METHODS),
+        help="pre-select ranking: build_score = (reward-bar)*fanout/build_reactions (default); "
+        "fanout / reward isolate one signal (ablations).",
     )
     ap.add_argument("--tag", required=True)
     a = ap.parse_args()
@@ -274,30 +270,23 @@ def main() -> None:
         f"{len(cost_table.promoted_set)} promoted fragments (recipes={bool(cost_table.recipes)})"
     )
 
-    # Fan-out controls (Logs/037). The fanout policy divides each fragment's cost by how many hubs
-    # reuse it; the move-on threshold defaults to the reward bar. Pre-select-K synthesizes the top-K
-    # fragments by build-score up front.
-    fanout = None
-    value_threshold = None
-    if a.child_policy == "fanout":
-        fanout = fragment_fanout(enum_hubs, reward_threshold=a.reward_threshold)
-        value_threshold = a.value_threshold if a.value_threshold is not None else a.reward_threshold
-        print(
-            f"[campaign] fanout: beta={a.beta} value-threshold={value_threshold}; "
-            f"fan-out over {len(fanout)} fragments (max {max(fanout.values()) if fanout else 0} hubs)"
-        )
-    child_policy = make_child_policy(a.child_policy, beta=a.beta, fanout=fanout)
+    child_policy = make_child_policy(a.child_policy)
 
+    # Pre-select-K (Logs/037): synthesize the top-K fragments by --rank-by up front, charge once.
     prebuilt = None
     if a.prebuild_k > 0:
-        ranked = rank_fragments_by_build_score(
-            enum_hubs, cost_table, a.reward_threshold, higher_is_better=a.higher_is_better
+        ranked = rank_fragments(
+            enum_hubs,
+            cost_table,
+            a.reward_threshold,
+            method=a.rank_by,
+            higher_is_better=a.higher_is_better,
         )
         prebuilt = {f for f, _ in ranked[: a.prebuild_k]}
         upfront = cost_table.shared_build_cost(prebuilt)[0] if cost_table else 0
         print(
             f"[campaign] pre-select-K: {len(prebuilt)} fragments pre-synthesized "
-            f"(top build-score), {upfront} reactions charged upfront"
+            f"(top {a.rank_by}), {upfront} reactions charged upfront"
         )
 
     common = dict(
@@ -319,7 +308,6 @@ def main() -> None:
         comps,
         child_policy=child_policy,
         prebuilt_fragments=prebuilt,
-        value_threshold=value_threshold,
         **common,
     ).run(budget=curve_budget)
     if bc.total_reactions < a.budget_reactions or hb.total_reactions < a.budget_reactions:
@@ -339,9 +327,8 @@ def main() -> None:
         "budget_reactions": a.budget_reactions,
         "budget_modes": a.budget_modes,
         "child_policy": a.child_policy,
-        "beta": a.beta if a.child_policy == "fanout" else None,
-        "value_threshold": value_threshold,
         "prebuild_k": a.prebuild_k,
+        "rank_by": a.rank_by if a.prebuild_k > 0 else None,
         "best_candidate": _readouts(bc, a.budget_reactions, a.budget_modes),
         "hub_batching": _readouts(hb, a.budget_reactions, a.budget_modes),
     }

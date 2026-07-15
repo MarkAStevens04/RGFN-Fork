@@ -13,15 +13,19 @@ offline analysis.
 - **hub-batching** — walk pre-ranked hubs; build each scaffold once, diversify into modes. The
   **within-hub child policy** (Logs/037, `--child-policy`, `glue.samplers.lsdflow.child_select`)
   decides which of a hub's children get offered to the mode selector:
-  - `reward` (default) — reward-first, keep all. Byte-identical to the historical behaviour.
+  - `reward` (default) — **naive hub-batching**: reward-first, keep all, no fragment-cost awareness.
+    Byte-identical to the original approach (Logs/029); the no-cost-awareness baseline/control.
   - `free_frag` — keep only children whose final reaction attaches an *already-available* fragment
-    (base stock / already built / part of this hub) → each kept child costs exactly **1** marginal
-    reaction. ~1.2 rxn/mode with enough hubs (2.2–2.5× cheaper than reward/best), but pays a large
-    enumeration bill (walks many hubs) and hits the strict-diversity ceiling sooner.
-  - `smart_frag` — soft version: order by `reward − β·Σ cost(f)/utility(f)` over attached promoted
-    fragments (`--beta`, default 1; `cost` = nested reactions, `utility` = SCENT's
-    `smiles_to_mean_reward` rescaled to the reward scale via `--utility-scale`). β=0 recovers
-    `reward`; a mild, always-reaches-300 improvement (~6–13% cheaper on lean hub pools).
+    (base stock / already built / part of this hub / **pre-select stock**) → each kept child costs
+    exactly **1** marginal reaction. ~1.2 rxn/mode with enough hubs (2.2–2.5× cheaper than reward/best),
+    but pays a large enumeration bill (walks many hubs) and hits the strict-diversity ceiling sooner.
+
+  **pre-select-K** (Logs/037, `--prebuild-k K --rank-by build_score`) sits on top of `free_frag`:
+  pre-synthesize the top-K fragments (ranked by `campaign.rank_fragments`; `build_score` =
+  `(reward−bar)·fanout / build_reactions`, or `fanout` / `reward` ablations), charge them **once** up
+  front (no hub double-count), then free-fill. Because a stocked fragment is reused across many hubs,
+  each hub yields more free children → fewer hubs walked → **far fewer reward-gen (≈ oracle) calls** at
+  ~constant reactions/mode. K is the reactions↔calls dial. Sweep it with `preselect_sweep.py`.
 
 **Cost = ONE count-once model for both strategies (Logs/033):** a molecule's cost = *assembly
 couplings* (`num_reactions − Σ nested build cost of each attached promoted fragment` — SCENT's
@@ -39,7 +43,7 @@ enumeration is NOT here — it stays on `$SCRATCH` (`campaign_enum_<tag>_<jobid>
 
 ```
 campaign/
-  pick_hubs.py  run_campaign.py  sweep_campaign.py  hub_stats.py
+  pick_hubs.py  run_campaign.py  sweep_campaign.py  preselect_sweep.py  hub_stats.py
   diversity_pairs.py  route_trees.py  synthesis_routes.py  submit_scent_seh_enum.sh
   results/<tag>/  summary.json curve*.csv curve.png  sweep_summary.json
                   pareto.{csv,png} fixed_modes.{csv,png} budget_efficiency.{csv,png}  hub_stats.csv

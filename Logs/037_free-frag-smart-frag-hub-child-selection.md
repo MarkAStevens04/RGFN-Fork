@@ -1,74 +1,79 @@
-# SCENT — free-frag & smart-frag: fragment-aware within-hub child selection
-**Date:** 2026-07-14, ~5pm
+# SCENT — fragment-aware hub-batching: free-frag, and pre-select-K for cheap enumeration
+**Date:** 2026-07-14 → 07-15
 
 ## Question
 
-When we batch a diverse library of hits from a shared scaffold ("hub"), does refusing to build new
-chemical building blocks — or gently down-weighting expensive ones — cut the total synthesis cost per
-hit, and what do we give up for it?
+The synthesis-cheapest way to batch a diverse hit library from hubs (free-frag) has to walk *many*
+hubs, which means enumerating and scoring a huge number of candidate molecules — an expensive bill
+that in the active-learning loop is paid in **oracle calls**. Can we cut that bill — without giving up
+the cheap synthesis — by pre-committing to a few widely-reusable building blocks up front?
 
 ## Context & Summary
 
-Entries `029`/`033`/`035` compared two ways to pick a diverse library from a trained SCENT model:
-**best-candidate** (take the top-reward molecules the generator sampled) vs **hub-batching** (build a
-shared scaffold once, then diversify it with one final reaction each). On the fair count-once cost
-model (`033`), hub-batching was only modestly cheaper — **2.73 vs 3.10 reactions per hit** (~1.13×).
-The reason it wasn't cheaper is specific: the fragment attached in that "one final reaction" is
-usually a *promoted* dynamic-library fragment that itself takes 2–3 reactions to synthesize, so each
-diversification really costs ~3 reactions, not 1.
+Earlier entries (`029`/`033`/`035`) compared **best-candidate** (top-reward sampled molecules) vs
+**naive hub-batching** (build a shared scaffold once, diversify it by attaching one fragment per hit).
+Naive hub-batching costs ~2.7 reactions/hit because the attached fragment is usually a *promoted*
+dynamic-library block that itself takes 2–3 reactions to make. This entry makes hub-batching
+fragment-aware and chases a second cost axis — the enumeration/oracle bill — that the AL loop actually
+cares about.
 
-This entry adds two new **within-hub child-selection** strategies that exploit exactly that structure
-— they change *which* of a hub's children we keep as hits, leaving best-candidate (the control) and
-the cost accounting untouched. **free-frag** keeps only children whose final reaction attaches an
-*already-available* fragment (a purchasable base block, or one already built for another hit) — so
-every kept hit costs exactly **one** marginal reaction. **smart-frag** is the soft version: instead of
-filtering, it ranks children by `reward − β·(cost of fragment / utility of fragment)`, where cost is
-the fragment's build cost in reactions and utility is SCENT's own per-fragment goodness score
-(`smiles_to_mean_reward`, their Eq. 13) — so a cheap, high-utility fragment barely hurts a child's
-ranking while an expensive, low-utility one sinks it. Both were run on the cached sEH enumerations at
-two hub-pool sizes (50 and 200 hubs).
+- **free-frag** keeps only children whose final reaction attaches an *already-available* fragment
+  (base stock, or one already built) → each hit costs exactly **1** marginal reaction → **1.22
+  rxn/hit** (2.5× cheaper than best-candidate). But diversity *within* a hub requires *distinct*
+  fragments (measured: 241/270 fragments serve exactly one diverse mode), so free-frag gets its
+  diversity from **base** fragments and must walk **57 hubs** to find 300 diverse base-decorated hits
+  → **315k reward-gen (≈ oracle) calls**, 45× the naive 7k. That enumeration bill is the real cost.
+- **Structural key:** promoted fragments are massively **cross-hub** — each of the 1,600 appears (as a
+  hit child) in a *median of ~50* of the 200 hubs. So a *few* widely-reused blocks could serve diverse
+  hits across many hubs, if we commit to building them.
+- **pre-select-K** (the winner): compute each fragment's fan-out; pre-synthesize the **top-K by
+  build-score** `(reward − bar)·fanout / build_reactions`; charge them **once** up front; then run
+  free-frag. Now each hub yields more free children (base **+** the K stock), so we walk fewer hubs →
+  fewer calls, for the price of K upfront builds. K is a clean reactions↔calls dial.
+
+**Explored and removed** (kept lean per the researcher's call): a *static* **smart-frag**
+(`reward − β·cost/utility` with SCENT's `smiles_to_mean_reward` utility) — the utility is compressed
+into a ±4% band so it can't discriminate fragments; and a *dynamic* **fan-out move-on** policy — it
+kept building fragments and never reached the low-reaction regime. Both are documented here as
+negatives; their code was deleted.
 
 ## Answer
 
-**free-frag roughly halves the synthesis cost again — but you pay for it in enumeration.** Given a
-large enough hub pool (200 hubs) it builds 300 diverse sEH hits at **1.22 reactions per hit** — 2.5×
-cheaper than best-candidate (3.10) and 2.2× cheaper than plain hub-batching (2.72) — at the same
-reward and diversity. The catch is that "only reuse what you've already built" forces it to spread
-across many more hubs (57 vs 2), so it enumerates and scores ~45× more candidate molecules (316k vs
-7k) to find those already-cheap children; with only 50 hubs it runs out and caps at 232 of 300 hits.
-**smart-frag is a gentler, safer lever:** it always reaches the full 300 hits and shaves ~6–13% off
-the reaction cost when cheap children are scarce (50-hub pool, β=4), but is roughly neutral when the
-pool is rich enough that plain reward-ranking already finds them. Neither hurts hit quality (best sEH
-8.3–8.4, median 7.3–7.5 across all policies). Net: free-frag is the aggressive synthesis-cost lever,
-smart-frag the mild one, and together they map the trade between *cheaper chemistry* and *more
-scoring calls* — the exact axis the active-learning loop will have to price.
+**Pre-select-K dominates free-frag on the enumeration axis at essentially no synthesis cost.**
+Stocking just the top **K≈20** universal blocks is a *free lunch* — same 1.22 rxn/mode as free-frag,
+but **24% fewer oracle calls** (241k → vs 315k). Past that, K is a clean dial: **K=100 → 1.41 rxn/mode
+at 85k calls (−73%)**, K=200 → 1.85 at 53k (−83%); median reward even drifts *up* (7.30 → 7.51),
+because the high-build-score blocks are high-reward. The pre-selected fragments are chemically sensible
+**universal building blocks** — bromo-aryl amides/amines with small saturated N-heterocycles
+(azetidine/pyrrolidine), each usable in 130–175 of the 200 hubs. The knob is exactly "how many good
+reusable blocks to stock," which a chemist reads directly. Fan-out is the load-bearing signal (spans
+5–187 hubs); per-fragment max reward is compressed near the top (a knife-edge), and SCENT's mean-reward
+utility is compressed further still (why smart-frag failed).
 
 ## Relevance to our Publication
 
-This sharpens the "why batch from a hub" story into a concrete, chemist-legible lever: the way to make
-late-stage diversification cheap is to reuse building blocks you've already made, and free-frag shows
-that pushes hub-batching from a 1.13× edge to ~2.5× over the paper-style top-k. It also puts a number
-on the tradeoff the active-learning oracle-efficiency curve (`[bengio2021gflownet]` Fig. 7 analogue,
-Objective 1) has to balance — synthesis reactions saved vs. reward-generator (≈ oracle) calls spent
-— which is the reviewer question these selection strategies exist to answer. Both policies are written
-as production `glue/` code (importable by a future in-loop `LSDFlowAcquisition`), so the same objects
-drive the offline campaign and the AL loop.
+This is the **oracle-efficiency** axis of the "why batch from a hub" story. In the AL loop the scarce
+budget is oracle calls, and pre-select-K cuts them **~2–6×** at ~constant synthesis cost by
+front-loading a handful of reusable blocks — the exact trade the oracle-efficiency curve
+(`[bengio2021gflownet]` Fig. 7 analogue, Objective 1) has to make. It is chemist-legible ("stock these
+20 blocks, then diversify"), the code is production `glue/` (AL-importable), and the pieces are
+swappable for ablations (child policy + pre-select ranking are registries).
 
 ## Next Experiments
 
 **Refining for publication**
-- **Second target (DRD2)** through the same three policies + best-candidate, to show the free-frag win
-  isn't sEH-specific (the DRD2 analysis DAG + enumeration already exist).
-- **Free-frag ceiling vs hub count** — we have two points (50 hubs → caps at 232/300; 200 hubs →
-  full 300 at cutoff ≥0.40). A cleaner hub-count sweep would pin where "enough hubs" is, and pairs
-  with the deferred faster `--no-flow` enumeration (Logs/029) that would make many-hub pools cheap.
-- **Report the enumeration bill as an explicit second cost axis** in the head-to-head figure, not a
-  footnote — free-frag's 316k reward-gen calls is the honest price of its 1.22 rxn/mode.
+- **Second target (DRD2)** — repeat the pre-select-K sweep (analysis DAG + enumeration already exist)
+  to show the win isn't sEH-specific.
+- **Ranking ablation** — the `--rank-by` flag (build_score / fanout / reward) is one switch; report how
+  much the reward-weighting and cost-division each buy (measured start: fanout-only gives slightly
+  fewer calls, reward-only gives higher median reward but more reactions).
+- **Cutoff sweep for pre-select-K** — trace the reactions↔calls Pareto across diversity cutoffs.
 
 **Next steps in project**
-- Wire the three child policies into the active-learning loop (`LSDFlowAcquisition`) and measure the
-  oracle-efficiency curve for each — the capstone the campaign was built to feed.
-- The RGFN-vs-SCENT hub-coincidence study (proposal §8) on the same machinery.
+- Wire naive/free-frag/pre-select-K into the active-learning loop (`LSDFlowAcquisition`) and measure
+  the oracle-efficiency curve — the capstone the campaign was built to feed.
+- The RGFN-vs-SCENT hub-coincidence study (proposal §8): are the pre-selected universal blocks the same
+  intermediates SCENT promoted?
 
 # Re-creation
 
@@ -76,122 +81,91 @@ drive the offline campaign and the AL loop.
 
 Root: `./` (repo root).
 
-**New / changed strategy code (ours — `glue/`, AL-importable):**
-- `./glue/samplers/lsdflow/child_select.py` — **NEW.** `ChildSelectionPolicy` ABC + `RewardChildPolicy`
-  (default, reward-first, keep all — byte-identical to the old inline sort), `FreeFragChildPolicy`
-  (keep only children needing no new fragment build), `SmartFragChildPolicy`
-  (`reward − β·Σ cost(f)/utility(f)`); `make_child_policy` factory. Pure/duck-typed (takes a duck-typed
-  `cost_table` + a plain `utilities` dict), so the campaign and a future AL loop share it.
-- `./glue/samplers/lsdflow/campaign.py` — `HubBatchingStrategy` gains a `child_policy` param and
-  computes each hub's `available` fragment set (`built_promoted ∪ closure(hub.promoted)`) before
-  offering children to the policy. Default = `RewardChildPolicy` → unchanged cost/behaviour.
-- `./glue/samplers/lsdflow/__init__.py` — re-exports the policies.
-- `./validation/lsdflow/metrics/cost/dynamic_amortization.py` — `FragmentCostTable.utilities` +
-  `.utility(f)`; new `scaled_fragment_utilities(snapshot, beta_train, scale)` puts SCENT's
-  `smiles_to_mean_reward` onto the reward scale (see the utility-scale note below).
+**Strategy code (ours — `glue/`, AL-importable). Lean set after the rework:**
+- `./glue/samplers/lsdflow/child_select.py` — `ChildSelectionPolicy` ABC + two policies:
+  `RewardChildPolicy` (**naive** hub-batching — reward-first, keep all, no fragment-cost awareness;
+  byte-identical to the historical sort) and `FreeFragChildPolicy` (keep only already-available-fragment
+  children). `make_child_policy` factory. To add an ablation policy: subclass + register in `_POLICIES`.
+- `./glue/samplers/lsdflow/campaign.py` — `HubBatchingStrategy` gains `prebuilt_fragments` (pre-select-K
+  stock, charged once via `_charge_promoted` → **no hub double-count**) + the fan-out/pre-select helpers
+  `fragment_fanout()` and `rank_fragments(..., method=...)` with the swappable `RANK_METHODS`
+  (`build_score` default / `fanout` / `reward`).
+- `./glue/samplers/lsdflow/__init__.py` — re-exports the lean set + `fragment_fanout` / `rank_fragments`.
+- `./validation/lsdflow/metrics/cost/dynamic_amortization.py` — SCENT mean-reward utility machinery
+  removed (the compressed-utility dead end); `$`-cost machinery retained.
 
 **Analysis drivers (ours — `experiments/lsd_hubs/campaign/`):**
-- `run_campaign.py` / `sweep_campaign.py` — new `--child-policy {reward,free_frag,smart_frag}`,
-  `--beta`, `--utility-scale {logbeta,log,raw}`, `--beta-train`. The child policy is applied to the
-  hub-batching line only; best-candidate is unaffected. `README.md` documents the flag.
+- `run_campaign.py` / `sweep_campaign.py` — `--child-policy {reward,free_frag}`, `--prebuild-k`,
+  `--rank-by {build_score,fanout,reward}`.
+- `preselect_sweep.py` — **NEW**, reusable: sweeps K, writes `preselect.csv` + `preselect_summary.json`
+  + `preselect_pareto.png` (reactions/mode vs reward-gen calls, annotated by K) next to the naive and
+  best-candidate reference points.
 
-**Results (committed, per `results/<tag>/` — `summary.json` + `curve_*.csv` + sweep `pareto/`,
-`fixed_modes/`, `budget_efficiency/` + `sweep_summary.json`):**
-- `results/scent_seh_freefrag/`, `results/scent_seh_smart_b4/` (50-hub, enum `70295`).
-- `results/scent_seh_1kx200_freefrag/`, `results/scent_seh_1kx200_smart_b4/` (200-hub, enum `70363`).
-- Reward-sort / best-candidate baselines are the untouched committed `results/scent_seh/` (50-hub) and
-  `results/scent_seh_1kx200/` (200-hub) from `033`/`035`.
+**Results (committed):**
+- `results/scent_seh_1kx200_preselect/` — the pre-select-K Pareto (200-hub, enum `70363`).
+- `results/{scent_seh,scent_seh_1kx200}_freefrag/` — free-frag (K=0) baselines + cutoff sweeps.
+- `results/{scent_seh,scent_seh_1kx200}/` — naive-hub-batching vs best-candidate baselines (`033`/`035`).
 
 **Inputs (on `$SCRATCH`, `/scratch/markymoo/rgfn_runs/`):**
 - `lsdflow/scent_seh_70189/` — SCENT sEH analysis DAG (`records.csv`, `compositions.json`).
-- `lsdflow/campaign_enum_seh_70295/enum_children.json` (50-hub) + `…_70363/enum_children.json`
-  (200-hub) — each hub's children + `added_promoted` (the promoted fragment attached in the final
-  reaction). **This is the field free-frag / smart-frag key on.**
+- `lsdflow/campaign_enum_seh_{70295 (50-hub),70363 (200-hub)}/enum_children.json` — each hub's children
+  + `added_promoted` (the promoted fragment attached in the final reaction) — the field everything keys on.
 - `experiments/fixed_reward/scent_seh/2026-07-10_17-28-06/additional_fragments/fragments_4000.json` —
-  recipe re-run snapshot (`033`); supplies nested build costs (`smiles_to_route`) **and** the utility
-  (`smiles_to_mean_reward`, 386,643 tracked / 1,600 promoted with a value each).
+  recipe snapshot (`033`); nested build costs (`smiles_to_route`).
 
 ## Relevant Versions
 
-Branch `Hub-Analysis`. New `child_select.py` + edits to `campaign.py` / `__init__.py` /
-`dynamic_amortization.py` / `run_campaign.py` / `sweep_campaign.py` / campaign `README.md` + the four
-new `results/` dirs. **Not yet committed.** [TODO — add commit hash after committing.]
+Branch `Hub-Analysis`. `child_select.py` / `campaign.py` / `__init__.py` / `dynamic_amortization.py` /
+`run_campaign.py` / `sweep_campaign.py` edited; `preselect_sweep.py` new; `results/scent_seh_1kx200_preselect/`
+new. **Not yet committed.** [TODO — add commit hash after committing.]
 
 ## Relevant Resources
 
-**Sources** — entries `029` (the head-to-head this extends + the 3-reactions-per-diversification
-decomposition), `033` (the fair count-once cost model), `035` (threshold robustness), `027`/`028`
-(SCENT cross-env adapter + nested cost engine). `[gainski2025scent]` — the Dynamic Library and its
-utility metric (Eq. 13 = mean reward through a state = `smiles_to_mean_reward`). `[bengio2021gflownet]`
-— modes / top-k / oracle-efficiency.
+**Sources** — entries `029` (naive hub-batching + the 3-reactions-per-diversification decomposition),
+`033` (fair count-once cost model), `035` (threshold robustness). `[gainski2025scent]` (Dynamic
+Library), `[bengio2021gflownet]` (modes / top-k / oracle efficiency).
 
-**Packages** — `rgfn` env (campaign + analysis, pure CPU); SCENT clone `external/scent`
-(`…/dynamic_library/reaction_dynamic_library.py` — where `smiles_to_mean_reward` is defined/saved).
-
-**Utility-scale note (load-bearing).** SCENT stores `smiles_to_mean_reward` as the mean of the
-*shaped* reward `R(x) = exp(β_train · proxy)`, so the values are astronomically large (~1e27 for
-β_train = 8; confirmed via `records.csv` where `log_reward = 8 · reward`). Used literally, a reaction
-count divided by ~1e27 is 0 and smart-frag collapses to plain reward-ranking. `scaled_fragment_utilities`
-therefore rescales to the proxy scale via `log(mean_reward)/β_train` (≈ the expected reward through the
-fragment, ~7.7–8.3 for chosen fragments) — the default; `--utility-scale {log,raw}` and `--beta-train`
-expose the choice. This is a deliberate interpretation of "utility," flagged so it can be revisited.
+**Packages** — `rgfn` env (campaign + analysis, pure CPU).
 
 ## Method
 
-1. Added `ChildSelectionPolicy` (+ 3 policies) and wired `child_policy` into `HubBatchingStrategy`,
-   computing each hub's `available` set so free-frag counts a child free iff it builds no promoted
-   fragment beyond what building the hub already provides. Unit-tested the ordering/filtering + cost
-   accounting on a synthetic hub; **verified the default `reward` policy reproduces the committed
-   `033` numbers byte-identically** (hub-batching 819 rxns / 300 modes / 2.73 per mode; best-candidate
-   929) as a regression guard.
-2. Added utility support to the cost table + `scaled_fragment_utilities` (log/β rescale, β_train = 8).
-3. Ran `run_campaign.py` at diversity cutoff 0.5, hit bar 7.0, for `reward` / `free_frag` /
-   `smart_frag` (β ∈ {1,2,4,8}) / `best_candidate`, on the 50-hub (`70295`) and 200-hub (`70363`)
-   enumerations. Ran `sweep_campaign.py` (cutoff 0.30→0.90) for `free_frag` (both pools) and
-   `smart_frag` β=4 (50-hub). All pure-CPU on the Balam login node (~11 s/point, ~44 s/sweep).
+1. **Lean rework of the child-selection code:** kept `reward` (naive) + `free_frag`; added
+   `prebuilt_fragments` to the strategy (pre-select-K) with the `fragment_fanout` / `rank_fragments`
+   helpers; deleted the static smart-frag, the SCENT-utility machinery, and the fan-out move-on policy.
+   Unit-tested: naive `reward` unchanged, the pre-select **double-count guard** (a stock fragment a hub
+   scaffold also uses is charged once), pre-select unlock, and the three ranking methods. **Regression:
+   naive `reward` reproduces the committed `033` numbers byte-identically (819 / 929).**
+2. **Fan-out measurement** (read the cached 200-hub enumeration, no re-run): fan-out per fragment
+   (median ~50 hit-hubs; 795/1,600 in ≥50 hubs) and per-fragment max reward (compressed near 8).
+3. **Pre-select-K sweep** (`preselect_sweep.py`) K ∈ {0,5,10,20,50,100,200} on the 200-hub enumeration,
+   cutoff 0.5, bar 7.0; + the `--rank-by` ablation at K=50. Pure-CPU on the Balam login node.
 
 ## Results
 
-**Head-to-head, diversity cutoff 0.5, hit bar ≥ 7.0 (hub-batching line under each child policy;
-best-candidate is the same control everywhere).**
+**Pre-select-K Pareto (200-hub enum `70363`, cutoff 0.5, bar 7.0). K=0 is plain free-frag.**
 
-50-hub enumeration (`70295`):
-
-| policy | modes | reactions | rxns/mode | hubs used | distinct frags | reward-gen calls | modes @100rxn | best / median sEH |
-|---|---|---|---|---|---|---|---|---|
-| reward (β=0) | 300 | 819 | 2.73 | 2 | 328 | 18,856 | 33 | 8.40 / 7.48 |
-| **free_frag** | 232 | 308 | **1.33** | 47 | 39 | 148,153 | **82** | 8.40 / 7.41 |
-| smart_frag β=4 | 300 | 769 | **2.56** | 2 | 310 | 18,856 | 42 | 8.40 / 7.44 |
-| best-candidate | 300 | 929 | 3.10 | 254 | 205 | 0 | 29 | 8.40 / 8.10 |
-
-200-hub enumeration (`70363`):
-
-| policy | modes | reactions | rxns/mode | hubs used | distinct frags | reward-gen calls | best / median sEH |
-|---|---|---|---|---|---|---|---|
-| reward (β=0) | 300 | 816 | 2.72 | 2 | 321 | 7,086 | 8.32 / 7.49 |
-| **free_frag** | 300 | 367 | **1.22** | 57 | 26 | **315,539** | 8.40 / 7.30 |
-| smart_frag β=4 | 300 | 821 | 2.74 | 3 | 324 | 9,635 | 8.32 / 7.48 |
-| best-candidate | 300 | 929 | 3.10 | 254 | 205 | 0 | 8.40 / 8.10 |
-
-free_frag reaches full diversity (300 modes) only with the larger pool; on 50 hubs it exhausts the
-"free" children at 232. Its 1.22 rxns/mode approaches the ~1 floor (hub built once + 1 coupling per
-child), bought with a **45× enumeration bill** (315,539 vs 7,086 reward-gen calls).
-
-**smart-frag β-scan (50-hub, cutoff 0.5):** 2.73 (β0) → 2.70 (β1) → 2.65 (β2) → **2.56 (β4)** → 2.58
-(β8). β=4 is the sweet spot → fixed for the reported runs.
-
-**Diversity-cutoff sweep — reactions to reach 300 modes (`None` = pool can't reach 300 at that
-cutoff).**
-
-| cutoff | free_frag (200-hub) | reward (200-hub) | best-candidate | free_frag (50-hub) | smart_frag β4 (50-hub) | reward (50-hub) |
+| strategy | rxns/mode | reactions | hubs used | distinct frags | reward-gen calls | median sEH |
 |---|---|---|---|---|---|---|
-| 0.30 (strict) | None | 898* | 1,123 | None | None | None |
-| 0.40 | 489 | — | 1,018 | None | 787 | 810 |
-| 0.50 | **367** | 816 | 929 | None (232 max) | 769 | 819 |
-| 0.70 | 319 | — | 793 | 317 | 629 | 706 |
-| 0.90 (loose) | 306 | — | 728 | 307 | 565 | 644 |
+| naive hub-batching (reward) | 2.72 | 816 | 2 | 321 | 7,086 | 7.49 |
+| free-frag (K=0) | 1.22 | 367 | 57 | 26 | 315,539 | 7.30 |
+| **pre-select K=20** | 1.22 | 365 | 43 | 37 | 241,158 | 7.30 |
+| **pre-select K=50** | 1.26 | 378 | 29 | 61 | 158,660 | 7.34 |
+| **pre-select K=100** | 1.41 | 422 | 19 | 108 | 85,165 | 7.44 |
+| pre-select K=200 | 1.85 | 556 | 10 | 202 | 52,865 | 7.51 |
+| best-candidate (control) | 3.10 | 929 | 254 | 205 | 0 | 8.10 |
 
-\*from `031`/`033`. free-frag beats best-candidate ~2.2–2.5× wherever it reaches 300, and hits the
-same strict-cutoff chemical-space ceiling as before (`031`); the ceiling lifts with hub count (50 hubs
-→ only cutoffs ≥ 0.70 reach 300; 200 hubs → down to 0.40). smart-frag β=4 beats reward-sort by ~6–13%
-at every cutoff on the lean 50-hub pool and always reaches 300.
+K≤20 cuts calls at no reaction cost (free lunch); higher K trades a little synthesis for large call
+savings. Best/median sEH stay 8.3–8.4 / 7.3–7.5 throughout.
+
+**Ranking ablation (`--rank-by`, K=50, 200-hub):** build_score → 1.26 rxn/mode, 159k calls, med 7.34;
+**fanout** → 1.26, **142k** calls (fewest — widest reuse), med 7.35; **reward** → 1.32, 172k calls, med
+**7.42** (highest reward, but pricier). One flag; isolates each signal.
+
+**Fan-out distribution (the reason pre-select works):** all 1,600 promoted fragments appear in ≥5 hubs;
+median 50 hit-hubs; 795 in ≥50 hubs. The top-K by build-score are bromo-aryl amide/amine blocks with
+azetidine/pyrrolidine, fan-out 130–175, max reward ~8.3 — genuine universal building blocks.
+
+**Removed negatives (documented, code deleted):** static smart-frag reduced reactions only ~6–13% on a
+lean 50-hub pool and was ~neutral on 200 hubs (SCENT utility too compressed, ±4% band); the dynamic
+fan-out move-on stayed at 2.1–2.6 rxn/mode (kept building fragments) and, pushed to more hubs via a
+higher move-on threshold, exploded to 828k calls without reaching 300 modes.
