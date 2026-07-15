@@ -45,7 +45,7 @@ def _cutoffs(d):
     return sorted({c for (_, c) in d})
 
 
-def _plot(fname, group, value_col, csv_name, ylabel, title):
+def _plot(fname, group, value_col, csv_name, ylabel, title, invert_y=False):
     import matplotlib
 
     matplotlib.use("Agg")
@@ -73,6 +73,11 @@ def _plot(fname, group, value_col, csv_name, ylabel, title):
     ax.set_xlabel("diversity cutoff (Tanimoto similarity; lower = stricter)")
     ax.set_ylabel(ylabel)
     ax.set_title(title)
+    # Match sweep_campaign: flip so the desired corner is top-right — more-diverse (stricter, low
+    # cutoff) on the right, and for the cost plot fewer reactions at the top.
+    ax.invert_xaxis()
+    if invert_y:
+        ax.invert_yaxis()
     ax.legend(fontsize=7, ncol=2)
     fig.tight_layout()
     OUT.mkdir(parents=True, exist_ok=True)
@@ -91,6 +96,7 @@ def main():
             "fixed_modes.csv",
             "reactions to generate 300 modes",
             f"sEH {glabel}: cost to reach 300 modes vs threshold (hit bar 5/6/7)",
+            invert_y=True,  # cost plot: fewer reactions (cheaper) -> up; desired = top-right
         )
         _plot(
             f"pareto_{gslug}.png",

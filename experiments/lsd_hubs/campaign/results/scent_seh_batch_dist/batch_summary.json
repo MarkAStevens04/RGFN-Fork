@@ -1,0 +1,128 @@
+{
+  "tag": "scent_seh_batch_dist",
+  "analysis_dir": "/scratch/markymoo/rgfn_runs/lsdflow/scent_seh_70189",
+  "enum_children": "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_70363/enum_children.json",
+  "snapshot": "/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh/2026-07-10_17-28-06/additional_fragments/fragments_4000.json",
+  "reward_threshold": 7.0,
+  "similarity": 0.5,
+  "budget_modes": 300,
+  "rank_by": "build_score",
+  "child_policy": "free_frag",
+  "per_k": [
+    {
+      "k": 0,
+      "stats": {
+        "n_hubs_used": 57,
+        "total_modes": 300,
+        "min": 1,
+        "p25": 1,
+        "median": 4,
+        "mean": 5.263,
+        "p75": 7,
+        "max": 17,
+        "max_over_min": 17.0,
+        "max_over_median": 4.25,
+        "cv": 0.813,
+        "gini": 0.443,
+        "top1_share": 0.057,
+        "top5_share": 0.24,
+        "total_reactions": 367,
+        "reactions_per_mode": 1.223,
+        "reward_gen_calls": 315539,
+        "stop_reason": "modes"
+      }
+    },
+    {
+      "k": 16,
+      "stats": {
+        "n_hubs_used": 45,
+        "total_modes": 300,
+        "min": 1,
+        "p25": 3,
+        "median": 5,
+        "mean": 6.667,
+        "p75": 10,
+        "max": 21,
+        "max_over_min": 21.0,
+        "max_over_median": 4.2,
+        "cv": 0.72,
+        "gini": 0.385,
+        "top1_share": 0.07,
+        "top5_share": 0.28,
+        "total_reactions": 364,
+        "reactions_per_mode": 1.213,
+        "reward_gen_calls": 248356,
+        "stop_reason": "modes"
+      }
+    },
+    {
+      "k": 50,
+      "stats": {
+        "n_hubs_used": 29,
+        "total_modes": 300,
+        "min": 1,
+        "p25": 5,
+        "median": 10,
+        "mean": 10.345,
+        "p75": 13,
+        "max": 28,
+        "max_over_min": 28.0,
+        "max_over_median": 2.8,
+        "cv": 0.68,
+        "gini": 0.369,
+        "top1_share": 0.093,
+        "top5_share": 0.38,
+        "total_reactions": 378,
+        "reactions_per_mode": 1.26,
+        "reward_gen_calls": 158660,
+        "stop_reason": "modes"
+      }
+    },
+    {
+      "k": 100,
+      "stats": {
+        "n_hubs_used": 19,
+        "total_modes": 300,
+        "min": 2,
+        "p25": 6,
+        "median": 13,
+        "mean": 15.789,
+        "p75": 24,
+        "max": 37,
+        "max_over_min": 18.5,
+        "max_over_median": 2.85,
+        "cv": 0.65,
+        "gini": 0.366,
+        "top1_share": 0.123,
+        "top5_share": 0.503,
+        "total_reactions": 422,
+        "reactions_per_mode": 1.407,
+        "reward_gen_calls": 85165,
+        "stop_reason": "modes"
+      }
+    },
+    {
+      "k": 200,
+      "stats": {
+        "n_hubs_used": 10,
+        "total_modes": 300,
+        "min": 7,
+        "p25": 11,
+        "median": 26.5,
+        "mean": 30.0,
+        "p75": 44,
+        "max": 65,
+        "max_over_min": 9.29,
+        "max_over_median": 2.45,
+        "cv": 0.673,
+        "gini": 0.373,
+        "top1_share": 0.217,
+        "top5_share": 0.813,
+        "total_reactions": 556,
+        "reactions_per_mode": 1.853,
+        "reward_gen_calls": 52865,
+        "stop_reason": "modes"
+      }
+    }
+  ]
+}

@@ -83,7 +83,7 @@ def _run(
     ).run(budget=("modes", m_budget))
 
 
-def _plot(path, series, xlabel, ylabel, title, vline=None):
+def _plot(path, series, xlabel, ylabel, title, vline=None, invert_x=False, invert_y=False):
     try:
         import matplotlib
 
@@ -111,6 +111,12 @@ def _plot(path, series, xlabel, ylabel, title, vline=None):
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_title(title)
+    # Flip axes so the "desired" corner is top-right (Pareto convention): more-diverse (stricter,
+    # lower-Tanimoto) cutoffs on the right, and for the cost plot fewer reactions at the top.
+    if invert_x:
+        ax.invert_xaxis()
+    if invert_y:
+        ax.invert_yaxis()
     ax.legend()
     fig.tight_layout()
     fig.savefig(path, dpi=130)
@@ -223,6 +229,7 @@ def main() -> None:
         f"modes at {a.budget_reactions}-reaction budget",
         f"SCENT {a.tag}: Pareto (fixed {a.budget_reactions} reactions)",
         vline=base,
+        invert_x=True,  # stricter/more-diverse (low cutoff) -> right; more modes -> up; desired = top-right
     )
 
     # ---- Plot 2: reactions to reach fixed mode target vs diversity cutoff ----
@@ -244,6 +251,8 @@ def main() -> None:
         f"reactions to generate {a.budget_modes} modes",
         f"SCENT {a.tag}: cost to reach {a.budget_modes} modes",
         vline=base,
+        invert_x=True,  # stricter/more-diverse (low cutoff) -> right
+        invert_y=True,  # fewer reactions (cheaper) -> up; desired = top-right
     )
 
     # ---- Plot 3: budget vs efficiency (modes vs reaction budget) at the default cutoff ----
