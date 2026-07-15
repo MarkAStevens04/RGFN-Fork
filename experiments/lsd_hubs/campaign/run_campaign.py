@@ -25,11 +25,12 @@ from glue.samplers.lsdflow.campaign import (
     EnumChild,
     EnumeratedHub,
     HubBatchingStrategy,
+    fragment_fanout,
+    rank_fragments_by_build_score,
 )
 from glue.samplers.lsdflow.child_select import make_child_policy
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
-    scaled_fragment_utilities,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -77,11 +78,14 @@ def build_strategy(
     higher_is_better: bool,
     assignment_policy=None,
     child_policy=None,
+    prebuilt_fragments=None,
+    value_threshold=None,
 ):
     """Construct either strategy on the ONE count-once cost model (Logs/033). Best-candidate gets the
     compositions (to cost shared parent hubs) + a swappable hub-assignment policy; hub-batching needs
-    only its enumerated hubs + an optional within-hub ``child_policy`` (Logs/036: reward / free_frag /
-    smart_frag). Shared by ``run_campaign`` and ``sweep_campaign``."""
+    only its enumerated hubs + an optional within-hub ``child_policy`` (Logs/037: reward / free_frag /
+    fanout), plus the fan-out controls ``prebuilt_fragments`` (pre-select-K) and ``value_threshold``
+    (the move-on rule). Shared by ``run_campaign`` and ``sweep_campaign``."""
     common = dict(
         target=target,
         reward_threshold=reward_threshold,
@@ -89,7 +93,14 @@ def build_strategy(
         higher_is_better=higher_is_better,
     )
     if name == "hub_batching":
-        return HubBatchingStrategy(pool, cost_table, child_policy=child_policy, **common)
+        return HubBatchingStrategy(
+            pool,
+            cost_table,
+            child_policy=child_policy,
+            prebuilt_fragments=prebuilt_fragments,
+            value_threshold=value_threshold,
+            **common,
+        )
     return BestCandidateStrategy(
         pool,
         cost_table,
@@ -229,24 +240,26 @@ def main() -> None:
     ap.add_argument(
         "--child-policy",
         default="reward",
-        choices=["reward", "free_frag", "smart_frag", "marginal", "smart_dyn", "ratio"],
+        choices=["reward", "free_frag", "fanout"],
         help="within-hub child selection for hub-batching (Logs/037); best-candidate is unaffected. "
-        "static: reward/free_frag/smart_frag; dynamic (amortization-aware): marginal/smart_dyn/ratio",
+        "reward (control) / free_frag (low-reaction extreme, base + prebuilt stock) / fanout "
+        "(dynamic reward - beta*cost/fanout, with the --value-threshold move-on rule)",
     )
+    ap.add_argument("--beta", type=float, default=1.0, help="fanout penalty weight (cost/fanout)")
     ap.add_argument(
-        "--beta",
+        "--value-threshold",
         type=float,
-        default=1.0,
-        help="penalty weight for smart_frag/marginal/smart_dyn/ratio",
+        default=None,
+        help="move-on rule (fanout policy): advance to the next hub once its best child scores below "
+        "this. Default: the reward bar.",
     )
     ap.add_argument(
-        "--utility-scale",
-        default="logbeta",
-        choices=["logbeta", "log", "raw"],
-        help="how to put SCENT's smiles_to_mean_reward on the reward scale for smart_frag",
-    )
-    ap.add_argument(
-        "--beta-train", type=float, default=8.0, help="training beta (for --utility-scale logbeta)"
+        "--prebuild-k",
+        type=int,
+        default=0,
+        help="pre-select-K (Logs/037): pre-synthesize the top-K fragments by build-score "
+        "((reward-bar)*fanout/build_reactions), charge them upfront, then run the child policy "
+        "(use with free_frag).",
     )
     ap.add_argument("--tag", required=True)
     a = ap.parse_args()
@@ -261,18 +274,31 @@ def main() -> None:
         f"{len(cost_table.promoted_set)} promoted fragments (recipes={bool(cost_table.recipes)})"
     )
 
-    # Within-hub child policy for hub-batching (Logs/036). smart_frag needs per-fragment utilities
-    # rescaled from SCENT's exp(beta*proxy) mean-reward onto the proxy scale (see scaled_fragment_utilities).
-    utilities = None
-    if a.child_policy in ("smart_frag", "smart_dyn"):
-        utilities = scaled_fragment_utilities(
-            snapshot, beta_train=a.beta_train, scale=a.utility_scale
-        )
+    # Fan-out controls (Logs/037). The fanout policy divides each fragment's cost by how many hubs
+    # reuse it; the move-on threshold defaults to the reward bar. Pre-select-K synthesizes the top-K
+    # fragments by build-score up front.
+    fanout = None
+    value_threshold = None
+    if a.child_policy == "fanout":
+        fanout = fragment_fanout(enum_hubs, reward_threshold=a.reward_threshold)
+        value_threshold = a.value_threshold if a.value_threshold is not None else a.reward_threshold
         print(
-            f"[campaign] {a.child_policy}: beta={a.beta} utility-scale={a.utility_scale} "
-            f"(beta_train={a.beta_train}); {len(utilities)} fragment utilities on the reward scale"
+            f"[campaign] fanout: beta={a.beta} value-threshold={value_threshold}; "
+            f"fan-out over {len(fanout)} fragments (max {max(fanout.values()) if fanout else 0} hubs)"
         )
-    child_policy = make_child_policy(a.child_policy, beta=a.beta, utilities=utilities)
+    child_policy = make_child_policy(a.child_policy, beta=a.beta, fanout=fanout)
+
+    prebuilt = None
+    if a.prebuild_k > 0:
+        ranked = rank_fragments_by_build_score(
+            enum_hubs, cost_table, a.reward_threshold, higher_is_better=a.higher_is_better
+        )
+        prebuilt = {f for f, _ in ranked[: a.prebuild_k]}
+        upfront = cost_table.shared_build_cost(prebuilt)[0] if cost_table else 0
+        print(
+            f"[campaign] pre-select-K: {len(prebuilt)} fragments pre-synthesized "
+            f"(top build-score), {upfront} reactions charged upfront"
+        )
 
     common = dict(
         target=a.tag,
@@ -287,7 +313,14 @@ def main() -> None:
         budget=curve_budget
     )
     hb = build_strategy(
-        "hub_batching", enum_hubs, cost_table, comps, child_policy=child_policy, **common
+        "hub_batching",
+        enum_hubs,
+        cost_table,
+        comps,
+        child_policy=child_policy,
+        prebuilt_fragments=prebuilt,
+        value_threshold=value_threshold,
+        **common,
     ).run(budget=curve_budget)
     if bc.total_reactions < a.budget_reactions or hb.total_reactions < a.budget_reactions:
         print(
@@ -306,8 +339,9 @@ def main() -> None:
         "budget_reactions": a.budget_reactions,
         "budget_modes": a.budget_modes,
         "child_policy": a.child_policy,
-        "beta": a.beta if a.child_policy == "smart_frag" else None,
-        "utility_scale": a.utility_scale if a.child_policy == "smart_frag" else None,
+        "beta": a.beta if a.child_policy == "fanout" else None,
+        "value_threshold": value_threshold,
+        "prebuild_k": a.prebuild_k,
         "best_candidate": _readouts(bc, a.budget_reactions, a.budget_modes),
         "hub_batching": _readouts(hb, a.budget_reactions, a.budget_modes),
     }
