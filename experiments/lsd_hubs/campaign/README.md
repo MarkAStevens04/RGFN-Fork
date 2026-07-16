@@ -35,6 +35,15 @@ by design for hub-batching, accidentally for best-candidate. Both strategies amo
 only the SELECTION differs. Two budget cases read off one curve: Case 1 = modes at a reaction budget;
 Case 2 = reactions at a mode budget (≈ oracle calls).
 
+**Three accounting axes.** (1) `reactions/mode` — the *synthesis* (bench) cost above. (2)
+`reward_gen_calls` — a *count* of reward-generator invocations (enumerated children scored;
+best-candidate reuses sampled scores → 0). (3) **measured compute time** (Logs/039) — real wall-clock,
+differentiated by component, so we can say *how much longer the computer actually works* to do
+hub-batching vs best-candidate, and *where* that time goes. Axis 3 is measured, not modelled: the GPU
+enumeration worker records per-hub `enumeration_s` / `reward_gen_s` / `flow_extract_s` (+ one-time
+`setup_s`) into `enum_timings.json`; each driver times its CPU mode-selection live and attributes the
+measured per-hub times over the exact hubs the strategy walks (`validation.lsdflow.metrics.cost.compute_time`).
+
 ## Layout
 
 Scripts + this README live at the top; every generated artifact lands under **`results/<tag>/`**
@@ -43,10 +52,12 @@ enumeration is NOT here — it stays on `$SCRATCH` (`campaign_enum_<tag>_<jobid>
 
 ```
 campaign/
-  pick_hubs.py  run_campaign.py  sweep_campaign.py  preselect_sweep.py  hub_stats.py
-  diversity_pairs.py  route_trees.py  synthesis_routes.py  submit_scent_seh_enum.sh
+  pick_hubs.py  run_campaign.py  sweep_campaign.py  preselect_sweep.py  batch_size_distribution.py
+  hub_stats.py  diversity_pairs.py  route_trees.py  synthesis_routes.py
+  submit_scent_seh_enum.sh  submit_scent_seh_enum_timed.sh  merge_enum_timings.py
   results/<tag>/  summary.json curve*.csv curve.png  sweep_summary.json
                   pareto.{csv,png} fixed_modes.{csv,png} budget_efficiency.{csv,png}  hub_stats.csv
+                  compute_time.{csv,png} compute_time_by_cutoff.{csv,png} preselect_compute.png  (Logs/039)
                   diversity_pairs/  gallery.png pairs.csv  route_trees.png route_trees.csv
                                     synthesis_protocol.md synthesis_steps.csv  schemes/scheme_cut*.png
 ```
@@ -178,3 +189,46 @@ for T in 5.0 6.0; do
 done
 python experiments/lsd_hubs/campaign/compare_thresholds.py   # overlay figures
 ```
+
+## Compute-time accounting (Logs/039) — measured wall-clock, differentiated by component
+
+The third axis: **how much longer the computer actually works** for hub-batching vs best-candidate,
+and *where* the time goes. Measured live during a re-run, never inferred. Components:
+
+| component | best-candidate | hub-batching |
+|---|---|---|
+| `setup_s` (model load + library freeze) | 0 | once (if it walks ≥1 hub) |
+| `hub_pick_s` (Stage-2 ranking) | 0 | `pick_hubs.py` |
+| `enumeration_s` (RDKit children) | 0 | Σ over walked hubs (measured) |
+| `reward_gen_s` (proxy/docking scoring) | 0 marginal¹ | Σ over walked hubs (measured) |
+| `flow_extract_s` (P_F/P_B for U(h)) | 0 | Σ over walked hubs (measured) |
+| `mode_selection_s` (diversity filter) | measured live | measured live |
+
+¹ best-candidate reuses rewards computed during Stage-1 sampling (the shared pool). Stage-1 sampling
+time is tracked separately (`sample_timings.json`) and cancels in the head-to-head.
+
+**Pipeline.** The worker (`scent_worker.py`) is instrumented to write per-hub `enum_timings.json`. To
+get real numbers, re-run the enumeration **with timers on** — split into slices for the 2h `debug`
+limit, then merge:
+
+```bash
+# 1) time the exact 200-hub enumeration in 6 parallel debug slices (writes slice*/enum_timings.json)
+for s in 0 1 2 3 4 5; do sbatch experiments/lsd_hubs/campaign/submit_scent_seh_enum_timed.sh $s; done
+# 2) merge into one enum_timings.json beside the canonical enum_children.json (+ integrity check)
+python experiments/lsd_hubs/campaign/merge_enum_timings.py \
+    --timed-dir   /scratch/.../lsdflow/campaign_enum_seh_timed \
+    --canonical   /scratch/.../lsdflow/campaign_enum_seh_70363 \
+    --out         /scratch/.../lsdflow/campaign_enum_seh_70363/enum_timings.json \
+    --pick-hubs-timing /scratch/.../lsdflow/campaign_enum_seh_timed/pick_hubs_timing.json
+```
+
+**Reading it out.** All four drivers auto-detect `enum_timings.json` (and `pick_hubs_timing.json`)
+beside `--enum-children` (override with `--enum-timings` / `--hub-pick-timing`); with no file they
+skip the compute-time section (backward-compatible). Each adds:
+- `run_campaign.py` → `compute_time.{csv,png}` (per-component stacked bar + head-to-head) + a
+  `compute_time` block in `summary.json`.
+- `sweep_campaign.py` → `compute_time_by_cutoff.csv` + `compute_time_by_cutoff.png` (total compute vs diversity
+  cutoff) + a `compute_time` block in `sweep_summary.json`.
+- `preselect_sweep.py` → `ct_*`/`compute_total_s` columns in `preselect.csv` + `preselect_compute.png`
+  (the measured-time companion to the reactions↔calls Pareto — pre-select-K cutting real seconds).
+- `batch_size_distribution.py` → `ct_*`/`compute_total_s` columns per K in `batch_stats.csv`.

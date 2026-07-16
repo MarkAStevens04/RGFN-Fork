@@ -29,7 +29,14 @@
         "total_reactions": 367,
         "reactions_per_mode": 1.223,
         "reward_gen_calls": 315539,
-        "stop_reason": "modes"
+        "stop_reason": "modes",
+        "ct_setup_s": 26.689,
+        "ct_hub_pick_s": 0.159,
+        "ct_enumeration_s": 5941.2978,
+        "ct_reward_gen_s": 366.2061,
+        "ct_flow_extract_s": 1135.6883,
+        "ct_mode_selection_s": 1.7486,
+        "compute_total_s": 7471.7888
       }
     },
     {
@@ -52,7 +59,14 @@
         "total_reactions": 364,
         "reactions_per_mode": 1.213,
         "reward_gen_calls": 248356,
-        "stop_reason": "modes"
+        "stop_reason": "modes",
+        "ct_setup_s": 26.689,
+        "ct_hub_pick_s": 0.159,
+        "ct_enumeration_s": 4646.2078,
+        "ct_reward_gen_s": 283.4156,
+        "ct_flow_extract_s": 884.4181,
+        "ct_mode_selection_s": 1.0889,
+        "compute_total_s": 5841.9784
       }
     },
     {
@@ -75,7 +89,14 @@
         "total_reactions": 378,
         "reactions_per_mode": 1.26,
         "reward_gen_calls": 158660,
-        "stop_reason": "modes"
+        "stop_reason": "modes",
+        "ct_setup_s": 26.689,
+        "ct_hub_pick_s": 0.159,
+        "ct_enumeration_s": 2950.9393,
+        "ct_reward_gen_s": 186.2244,
+        "ct_flow_extract_s": 567.3001,
+        "ct_mode_selection_s": 0.9701,
+        "compute_total_s": 3732.2819
       }
     },
     {
@@ -98,7 +119,14 @@
         "total_reactions": 422,
         "reactions_per_mode": 1.407,
         "reward_gen_calls": 85165,
-        "stop_reason": "modes"
+        "stop_reason": "modes",
+        "ct_setup_s": 26.689,
+        "ct_hub_pick_s": 0.159,
+        "ct_enumeration_s": 1578.5404,
+        "ct_reward_gen_s": 101.5897,
+        "ct_flow_extract_s": 296.4384,
+        "ct_mode_selection_s": 1.0677,
+        "compute_total_s": 2004.4843
       }
     },
     {
@@ -121,7 +149,14 @@
         "total_reactions": 556,
         "reactions_per_mode": 1.853,
         "reward_gen_calls": 52865,
-        "stop_reason": "modes"
+        "stop_reason": "modes",
+        "ct_setup_s": 26.689,
+        "ct_hub_pick_s": 0.159,
+        "ct_enumeration_s": 945.0363,
+        "ct_reward_gen_s": 63.3874,
+        "ct_flow_extract_s": 182.6563,
+        "ct_mode_selection_s": 1.0368,
+        "compute_total_s": 1218.9649
       }
     }
   ]

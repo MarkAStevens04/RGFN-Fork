@@ -47,6 +47,7 @@ import csv
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -384,26 +385,51 @@ def _make_enumerator(rgfn_api, Trajectories, RSA, RSB, RSC, RST, RAC, Molecule):
         return traj, x_state.molecule.smiles, added_fragments, reaction_steps
 
     def enumerate_terminal_children(
-        env, objective, reward, hub_state, extract, max_children, chunk_size=64
+        env, objective, reward, hub_state, extract, max_children, chunk_size=64, sync=None
     ):
-        """Returns ``(records, n_paths, added_by_stereo, reaction_by_stereo)``: ``added_by_stereo``
-        maps each child's stereo SMILES -> the fragment(s) attached in its final reaction (cost /
-        composition), ``reaction_by_stereo`` -> the full final reaction step(s) (reconstruction)."""
+        """Returns ``(records, n_paths, added_by_stereo, reaction_by_stereo, timing)``.
+
+        ``added_by_stereo`` maps each child's stereo SMILES -> the fragment(s) attached in its final
+        reaction (cost / composition), ``reaction_by_stereo`` -> the full final reaction step(s)
+        (reconstruction). ``timing`` is the measured per-hub compute-time breakdown (Logs/039):
+        ``{enumeration_s, reward_gen_s, flow_extract_s}`` in seconds — the RDKit child construction,
+        the reward-generator call, and the P_F/P_B flow-extraction, timed separately so the campaign
+        can attribute each strategy's compute to where it actually went. ``sync`` (a no-arg callable,
+        e.g. ``torch.cuda.synchronize``) is called at each GPU-timing boundary so async CUDA work is
+        charged to the right component; pass ``None`` on CPU."""
+        _sync = sync or (lambda: None)
+        timing = {"enumeration_s": 0.0, "reward_gen_s": 0.0, "flow_extract_s": 0.0}
+        _sync()
+        _t0 = time.perf_counter()
         paths = enumerate_product_paths(env, hub_state, max_children)
         built = [
             b for b in (build_child_trajectory(env, hub_state, p) for p in paths) if b is not None
         ]
+        timing["enumeration_s"] += time.perf_counter() - _t0
         if not built:
-            return [], len(paths), {}, {}
+            return [], len(paths), {}, {}, timing
         trajs = [b[0] for b in built]
         added_by_stereo = {b[1]: b[2] for b in built}
         reaction_by_stereo = {b[1]: b[3] for b in built}
 
         def _extract_batch(chunk):
+            # batch prep (Trajectories assembly) is CPU book-keeping -> charge to enumeration
+            _p0 = time.perf_counter()
             big = Trajectories.from_trajectories(chunk) if len(chunk) > 1 else chunk[0]
             terminals = big.get_last_states_flat()
-            big.set_reward_outputs(reward.compute_reward_output(terminals))
+            timing["enumeration_s"] += time.perf_counter() - _p0
+            # reward generation (proxy / docking oracle) — the axis that gets big for docking
+            _sync()
+            _r0 = time.perf_counter()
+            reward_output = reward.compute_reward_output(terminals)
+            _sync()
+            timing["reward_gen_s"] += time.perf_counter() - _r0
+            big.set_reward_outputs(reward_output)
+            # flow extraction: assign_log_probs -> P_F / P_B (the hub-ranking / U(h) signal)
+            _r1 = time.perf_counter()
             recs, _v, _c, _n = extract(objective, big)
+            _sync()
+            timing["flow_extract_s"] += time.perf_counter() - _r1
             return recs
 
         records = []
@@ -417,7 +443,7 @@ def _make_enumerator(rgfn_api, Trajectories, RSA, RSB, RSC, RST, RAC, Molecule):
                         records.extend(_extract_batch([t]))
                     except Exception:
                         continue
-        return records, len(paths), added_by_stereo, reaction_by_stereo
+        return records, len(paths), added_by_stereo, reaction_by_stereo, timing
 
     def hub_state_from_smiles(smiles, depth):
         mol = Molecule(smiles)
@@ -457,6 +483,7 @@ def _freeze_library(trainer, env, snapshot_path: str, Molecule):
 
 # --------------------------------------------------------------------------------- build + run
 def main():
+    _worker_start = time.perf_counter()  # for setup_s (model load + library freeze) in enumerate
     args = _parse_args()
     os.environ.setdefault("WANDB_MODE", "offline")
 
@@ -616,13 +643,42 @@ def main():
         "n_promoted_fragments": n_promoted,
     }
 
+    # Compute-time accounting (Logs/039), shared by both modes: charge the one-time setup (import +
+    # gin build + ckpt load + library freeze) once, and synchronize CUDA at timing boundaries so the
+    # async GPU work (reward-gen vs flow-extract) is charged to the right component.
+    _use_cuda = torch.cuda.is_available() and str(device).startswith("cuda")
+
+    def _sync():
+        if _use_cuda:
+            torch.cuda.synchronize()
+
+    _sync()
+    setup_s = time.perf_counter() - _worker_start
+
     if args.mode == "sample":
         all_records, visit_counts, compositions, total = [], {}, {}, 0
         routes: dict = (
             {}
         )  # product SMILES -> full min-reaction synthesis route (for reconstruction)
-        for traj in sampler.get_trajectories_iterator(args.n_trajectories, args.batch_size):
+        # Stage-1 compute-time (Logs/039): sampling (trajectory generation incl. the reward the
+        # sampler computes) vs flow-extraction (assign_log_probs -> P_F/P_B). This is the shared pool
+        # best-candidate reuses; it cancels in the hub-vs-best head-to-head but is tracked for the
+        # whole-pipeline "where did time go" view.
+        sample_timing = {"sampling_s": 0.0, "flow_extract_s": 0.0}
+        _it = sampler.get_trajectories_iterator(args.n_trajectories, args.batch_size)
+        while True:
+            _sync()
+            _s0 = time.perf_counter()
+            try:
+                traj = next(_it)
+            except StopIteration:
+                break
+            _sync()
+            sample_timing["sampling_s"] += time.perf_counter() - _s0
+            _e0 = time.perf_counter()
             recs, visits, comps, n = _extract(objective, traj, routes_out=routes)
+            _sync()
+            sample_timing["flow_extract_s"] += time.perf_counter() - _e0
             all_records.extend(recs)
             for k, c in visits.items():
                 visit_counts[k] = visit_counts.get(k, 0) + c
@@ -639,6 +695,27 @@ def main():
         json.dump(visit_counts, open(out_dir / "visit_counts.json", "w"))
         json.dump(compositions, open(out_dir / "compositions.json", "w"))
         json.dump(routes, open(out_dir / "routes.json", "w"))
+        json.dump(
+            {
+                "meta": {
+                    "setup_s": round(setup_s, 3),
+                    "device": str(device),
+                    "cuda_synchronized": _use_cuda,
+                    "reward_name": args.reward_name,
+                    "model": args.model_name,
+                    "n_trajectories": total,
+                    "totals_s": {k: round(v, 3) for k, v in sample_timing.items()},
+                },
+            },
+            open(out_dir / "sample_timings.json", "w"),
+            indent=2,
+        )
+        print(
+            f"[scent_worker] compute-time: setup {setup_s:.1f}s | "
+            f"sampling {sample_timing['sampling_s']:.1f}s flow {sample_timing['flow_extract_s']:.1f}s "
+            f"over {total} trajectories -> sample_timings.json",
+            flush=True,
+        )
         meta.update(
             {
                 "n_trajectories": total,
@@ -671,6 +748,9 @@ def main():
         )
         hubs = _read_hubs(args.hubs_file)
         all_records, per_hub, enum_hubs = [], [], []
+        # Per-hub enumeration / reward-gen / flow-extract wall-clock (Logs/039); setup_s + _sync are
+        # defined once above (shared with sample mode).
+        hub_timings = []
         for smiles, depth in hubs:
             hub_state = hub_state_from_smiles(smiles, depth)
             if hub_state is None:
@@ -684,10 +764,25 @@ def main():
                     }
                 )
                 continue
-            recs, n_paths, added_by_stereo, reaction_by_stereo = enumerate_terminal_children(
-                env, objective, reward, hub_state, _extract, args.enum_max_children
+            (
+                recs,
+                n_paths,
+                added_by_stereo,
+                reaction_by_stereo,
+                hub_timing,
+            ) = enumerate_terminal_children(
+                env, objective, reward, hub_state, _extract, args.enum_max_children, sync=_sync
             )
             all_records.extend(recs)
+            hub_timings.append(
+                {
+                    "hub_key": recs[0]["hub_key"] if recs else smiles,  # join key vs enum_children
+                    "hub_input": smiles,
+                    "depth": int(depth),
+                    "n_children": len(recs),
+                    **{k: round(v, 6) for k, v in hub_timing.items()},
+                }
+            )
             # Per-hub children with the promoted fragment(s) added in the final reaction — the
             # campaign's EnumeratedHub.children (its EnumChild.added_promoted). The hub's own
             # promoted composition is joined from the sampled compositions.json downstream.
@@ -730,6 +825,34 @@ def main():
         _write_records(out_dir / "enumerated_records.csv", all_records)
         json.dump({"per_hub": per_hub}, open(out_dir / "enum_per_hub.json", "w"), indent=2)
         json.dump({"hubs": enum_hubs}, open(out_dir / "enum_children.json", "w"))
+        # Measured compute-time sidecar (Logs/039): per-hub enumeration / reward-gen / flow-extract
+        # wall-clock + the one-time setup, joined to enum_children by hub_key. When the 200-hub run is
+        # split into hub slices, merge these per-hub (union) and take setup_s once.
+        _tt_keys = ("enumeration_s", "reward_gen_s", "flow_extract_s")
+        totals = {k: sum(h.get(k, 0.0) for h in hub_timings) for k in _tt_keys}
+        json.dump(
+            {
+                "meta": {
+                    "setup_s": round(setup_s, 3),
+                    "device": str(device),
+                    "cuda_synchronized": _use_cuda,
+                    "reward_name": args.reward_name,
+                    "model": args.model_name,
+                    "n_hubs": len(hub_timings),
+                    "n_children": sum(h["n_children"] for h in hub_timings),
+                    "totals_s": {k: round(v, 3) for k, v in totals.items()},
+                },
+                "per_hub": hub_timings,
+            },
+            open(out_dir / "enum_timings.json", "w"),
+            indent=2,
+        )
+        print(
+            f"[scent_worker] compute-time: setup {setup_s:.1f}s | enum {totals['enumeration_s']:.1f}s "
+            f"reward {totals['reward_gen_s']:.1f}s flow {totals['flow_extract_s']:.1f}s "
+            f"over {len(hub_timings)} hubs -> enum_timings.json",
+            flush=True,
+        )
         meta.update(
             {
                 "n_hubs": len(hubs),

@@ -30,10 +30,18 @@ import statistics
 from collections import Counter
 from pathlib import Path
 
-from run_campaign import _load_candidates, _load_enumerated_hubs, build_strategy
+from run_campaign import (
+    _load_candidates,
+    _load_enumerated_hubs,
+    build_strategy,
+    load_enum_timings,
+    load_hub_pick_s,
+    run_timed,
+)
 
 from glue.samplers.lsdflow.campaign import RANK_METHODS, rank_fragments
 from glue.samplers.lsdflow.child_select import FreeFragChildPolicy
+from validation.lsdflow.metrics.cost.compute_time import account_strategy
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
 )
@@ -196,12 +204,23 @@ def main() -> None:
     ap.add_argument("--budget-modes", type=int, default=300)
     ap.add_argument("--k-list", default="0,16,50,100,200", help="comma-separated K values")
     ap.add_argument("--rank-by", default="build_score", choices=list(RANK_METHODS))
+    ap.add_argument(
+        "--enum-timings",
+        default=None,
+        help="measured per-hub compute timings (Logs/039); default = enum_timings.json beside "
+        "--enum-children. Absent → compute-time columns skipped.",
+    )
+    ap.add_argument(
+        "--hub-pick-timing", default=None, help="pick_hubs_timing.json (default: beside)"
+    )
     ap.add_argument("--tag", required=True)
     a = ap.parse_args()
 
     cands, comps = _load_candidates(Path(a.analysis_dir), a.higher_is_better)
     enum_hubs = _load_enumerated_hubs(Path(a.enum_children), comps)
     cost_table = load_cost_table_from_snapshot(json.load(open(a.snapshot)))
+    enum_timings = load_enum_timings(a.enum_children, a.enum_timings)
+    hub_pick_s = load_hub_pick_s(a.enum_children, a.hub_pick_timing)
     raw_children = {h.hub_key: len(h.children) for h in enum_hubs}
     depth_of = {h.hub_key: h.depth for h in enum_hubs}
     ks = [int(x) for x in a.k_list.split(",")]
@@ -225,15 +244,18 @@ def main() -> None:
     per_hub_rows = []
     for k in ks:
         prebuilt = {f for f, _ in ranked[:k]} if k > 0 else None
-        res = build_strategy(
-            "hub_batching",
-            enum_hubs,
-            cost_table,
-            comps,
-            child_policy=FreeFragChildPolicy(),
-            prebuilt_fragments=prebuilt,
-            **common,
-        ).run(budget=budget)
+        res, sel = run_timed(
+            build_strategy(
+                "hub_batching",
+                enum_hubs,
+                cost_table,
+                comps,
+                child_policy=FreeFragChildPolicy(),
+                prebuilt_fragments=prebuilt,
+                **common,
+            ),
+            budget,
+        )
         # Batch size = accepted modes charged to each hub (source_hub stamped per mode).
         counts = Counter(p.source_hub for p in res.accepted if p.source_hub is not None)
         batch_sizes = list(counts.values())
@@ -244,6 +266,12 @@ def main() -> None:
         )
         stats["reward_gen_calls"] = res.total_reward_gen_calls
         stats["stop_reason"] = res.stop_reason
+        # Measured compute time for this K (Logs/039) — the operational-cost companion to batch size.
+        if enum_timings is not None:
+            bd = account_strategy(res, enum_timings, selection_s=sel, hub_pick_s=hub_pick_s)
+            for c in bd._COMPONENTS:
+                stats[f"ct_{c}"] = round(getattr(bd, c), 4)
+            stats["compute_total_s"] = round(bd.total_s, 4)
         per_k.append({"k": k, "batch_sizes": batch_sizes, "stats": stats})
         # rank hubs largest-batch-first for the per-hub CSV
         for rank, (hub_key, bsize) in enumerate(counts.most_common(), start=1):

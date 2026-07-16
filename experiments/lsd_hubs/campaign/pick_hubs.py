@@ -11,10 +11,14 @@ Pure stdlib (CSV only), so it runs anywhere before the GPU enumeration step.
 """
 import argparse
 import csv
+import json
 import math
+import time
+from pathlib import Path
 
 
 def main() -> None:
+    _t0 = time.perf_counter()  # Stage-2 hub-pick wall-clock (Logs/039 compute-time accounting)
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--records", required=True, help="a SCENT analysis records.csv")
     ap.add_argument("--out", required=True, help="hubs.csv to write (smiles,depth in rank order)")
@@ -68,9 +72,24 @@ def main() -> None:
         w.writerow(["smiles", "depth"])
         for hub_stereo, hub_depth in ranked:
             w.writerow([hub_stereo, hub_depth])
+    elapsed = time.perf_counter() - _t0
+    # Stage-2 timing sidecar (Logs/039): the drivers add this to hub-batching's compute-time (it is
+    # work best-candidate never does). Written next to hubs.csv so the enum dir carries it.
+    timing_path = Path(a.out).parent / "pick_hubs_timing.json"
+    json.dump(
+        {
+            "hub_pick_s": round(elapsed, 3),
+            "n_hubs": len(ranked),
+            "n_candidates": len(best_reward),
+            "top_k_candidates": a.top_k_candidates,
+        },
+        open(timing_path, "w"),
+        indent=2,
+    )
     print(
         f"[pick_hubs] {len(best_reward)} candidates -> top-{a.top_k_candidates} -> "
-        f"{len(hub_flow)} distinct hubs -> wrote {len(ranked)} (ranked by single-candidate F_hat) to {a.out}"
+        f"{len(hub_flow)} distinct hubs -> wrote {len(ranked)} (ranked by single-candidate F_hat) to {a.out} "
+        f"(hub-pick {elapsed:.2f}s -> {timing_path.name})"
     )
 
 

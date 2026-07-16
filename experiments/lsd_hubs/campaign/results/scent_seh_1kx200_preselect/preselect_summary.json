@@ -14,7 +14,14 @@
       "reward_gen_calls": 7086,
       "median_reward": 7.491,
       "best_reward": 8.325,
-      "stop_reason": "modes"
+      "stop_reason": "modes",
+      "ct_setup_s": 26.689,
+      "ct_hub_pick_s": 0.159,
+      "ct_enumeration_s": 108.7665,
+      "ct_reward_gen_s": 9.1983,
+      "ct_flow_extract_s": 23.4524,
+      "ct_mode_selection_s": 1.4936,
+      "compute_total_s": 169.7587
     },
     {
       "label": "best_candidate",
@@ -27,7 +34,14 @@
       "reward_gen_calls": 0,
       "median_reward": 8.103,
       "best_reward": 8.404,
-      "stop_reason": "modes"
+      "stop_reason": "modes",
+      "ct_setup_s": 0.0,
+      "ct_hub_pick_s": 0.0,
+      "ct_enumeration_s": 0.0,
+      "ct_reward_gen_s": 0.0,
+      "ct_flow_extract_s": 0.0,
+      "ct_mode_selection_s": 1.1254,
+      "compute_total_s": 1.1254
     },
     {
       "label": "pre-select K=0",
@@ -40,7 +54,14 @@
       "reward_gen_calls": 315539,
       "median_reward": 7.302,
       "best_reward": 8.404,
-      "stop_reason": "modes"
+      "stop_reason": "modes",
+      "ct_setup_s": 26.689,
+      "ct_hub_pick_s": 0.159,
+      "ct_enumeration_s": 5941.2978,
+      "ct_reward_gen_s": 366.2061,
+      "ct_flow_extract_s": 1135.6883,
+      "ct_mode_selection_s": 1.6731,
+      "compute_total_s": 7471.7133
     },
     {
       "label": "pre-select K=5",
@@ -53,7 +74,14 @@
       "reward_gen_calls": 288860,
       "median_reward": 7.289,
       "best_reward": 8.404,
-      "stop_reason": "modes"
+      "stop_reason": "modes",
+      "ct_setup_s": 26.689,
+      "ct_hub_pick_s": 0.159,
+      "ct_enumeration_s": 5424.7708,
+      "ct_reward_gen_s": 332.4414,
+      "ct_flow_extract_s": 1032.3339,
+      "ct_mode_selection_s": 1.1336,
+      "compute_total_s": 6817.5277
     },
     {
       "label": "pre-select K=10",
@@ -66,7 +94,14 @@
       "reward_gen_calls": 274271,
       "median_reward": 7.29,
       "best_reward": 8.404,
-      "stop_reason": "modes"
+      "stop_reason": "modes",
+      "ct_setup_s": 26.689,
+      "ct_hub_pick_s": 0.159,
+      "ct_enumeration_s": 5162.9884,
+      "ct_reward_gen_s": 315.4435,
+      "ct_flow_extract_s": 979.1442,
+      "ct_mode_selection_s": 1.0148,
+      "compute_total_s": 6485.4389
     },
     {
       "label": "pre-select K=20",
@@ -79,7 +114,14 @@
       "reward_gen_calls": 241158,
       "median_reward": 7.3,
       "best_reward": 8.404,
-      "stop_reason": "modes"
+      "stop_reason": "modes",
+      "ct_setup_s": 26.689,
+      "ct_hub_pick_s": 0.159,
+      "ct_enumeration_s": 4524.0842,
+      "ct_reward_gen_s": 275.4125,
+      "ct_flow_extract_s": 857.2096,
+      "ct_mode_selection_s": 0.9973,
+      "compute_total_s": 5684.5516
     },
     {
       "label": "pre-select K=50",
@@ -92,7 +134,14 @@
       "reward_gen_calls": 158660,
       "median_reward": 7.343,
       "best_reward": 8.404,
-      "stop_reason": "modes"
+      "stop_reason": "modes",
+      "ct_setup_s": 26.689,
+      "ct_hub_pick_s": 0.159,
+      "ct_enumeration_s": 2950.9393,
+      "ct_reward_gen_s": 186.2244,
+      "ct_flow_extract_s": 567.3001,
+      "ct_mode_selection_s": 0.9389,
+      "compute_total_s": 3732.2506
     },
     {
       "label": "pre-select K=100",
@@ -105,7 +154,14 @@
       "reward_gen_calls": 85165,
       "median_reward": 7.436,
       "best_reward": 8.385,
-      "stop_reason": "modes"
+      "stop_reason": "modes",
+      "ct_setup_s": 26.689,
+      "ct_hub_pick_s": 0.159,
+      "ct_enumeration_s": 1578.5404,
+      "ct_reward_gen_s": 101.5897,
+      "ct_flow_extract_s": 296.4384,
+      "ct_mode_selection_s": 1.035,
+      "compute_total_s": 2004.4515
     },
     {
       "label": "pre-select K=200",
@@ -118,7 +174,14 @@
       "reward_gen_calls": 52865,
       "median_reward": 7.511,
       "best_reward": 8.379,
-      "stop_reason": "modes"
+      "stop_reason": "modes",
+      "ct_setup_s": 26.689,
+      "ct_hub_pick_s": 0.159,
+      "ct_enumeration_s": 945.0363,
+      "ct_reward_gen_s": 63.3874,
+      "ct_flow_extract_s": 182.6563,
+      "ct_mode_selection_s": 0.9503,
+      "compute_total_s": 1218.8783
     }
   ]
 }

@@ -4,6 +4,9 @@
   "budget_reactions": 100,
   "budget_modes": 300,
   "baseline_cutoff": 0.5,
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "rank_by": null,
   "cutoffs": [
     0.3,
     0.35,
@@ -92,5 +95,157 @@
       "reactions": 929,
       "modes": 300
     }
+  },
+  "compute_time": {
+    "enum_timings_meta": {
+      "merged_from": [
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice0/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice1/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice2/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice3/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice4/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice5/enum_timings.json"
+      ],
+      "n_slices": 6,
+      "n_hubs": 200,
+      "n_children": 828448,
+      "setup_s": 26.689,
+      "slice_setups_s": [
+        26.739,
+        26.339,
+        26.752,
+        26.809,
+        26.638,
+        26.479
+      ],
+      "totals_s": {
+        "enumeration_s": 15612.231,
+        "reward_gen_s": 960.321,
+        "flow_extract_s": 2997.706
+      },
+      "device": "cuda",
+      "reward_name": "seh",
+      "cuda_synchronized": true
+    },
+    "hub_pick_s": 0.159,
+    "baseline_cutoff": 0.5,
+    "at_baseline": {
+      "enum_timings_meta": {
+        "merged_from": [
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice0/enum_timings.json",
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice1/enum_timings.json",
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice2/enum_timings.json",
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice3/enum_timings.json",
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice4/enum_timings.json",
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice5/enum_timings.json"
+        ],
+        "n_slices": 6,
+        "n_hubs": 200,
+        "n_children": 828448,
+        "setup_s": 26.689,
+        "slice_setups_s": [
+          26.739,
+          26.339,
+          26.752,
+          26.809,
+          26.638,
+          26.479
+        ],
+        "totals_s": {
+          "enumeration_s": 15612.231,
+          "reward_gen_s": 960.321,
+          "flow_extract_s": 2997.706
+        },
+        "device": "cuda",
+        "reward_name": "seh",
+        "cuda_synchronized": true
+      },
+      "hub_batching": {
+        "strategy": "hub_batching",
+        "setup_s": 26.689,
+        "hub_pick_s": 0.159,
+        "enumeration_s": 108.7665,
+        "reward_gen_s": 9.1983,
+        "flow_extract_s": 23.4524,
+        "mode_selection_s": 0.6613,
+        "n_hubs_walked": 2,
+        "n_children_scored": 7086,
+        "missing_hub_keys": [],
+        "total_s": 168.9264
+      },
+      "best_candidate": {
+        "strategy": "best_candidate",
+        "setup_s": 0.0,
+        "hub_pick_s": 0.0,
+        "enumeration_s": 0.0,
+        "reward_gen_s": 0.0,
+        "flow_extract_s": 0.0,
+        "mode_selection_s": 0.3716,
+        "n_hubs_walked": 0,
+        "n_children_scored": 0,
+        "missing_hub_keys": [],
+        "total_s": 0.3716
+      },
+      "head_to_head": {
+        "hub_total_s": 168.9264,
+        "best_total_s": 0.3716,
+        "extra_compute_s": 168.5548,
+        "ratio_hub_over_best": 454.589,
+        "per_component_delta_s": {
+          "setup_s": 26.689,
+          "hub_pick_s": 0.159,
+          "enumeration_s": 108.7665,
+          "reward_gen_s": 9.1983,
+          "flow_extract_s": 23.4524,
+          "mode_selection_s": 0.2897
+        },
+        "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+      }
+    },
+    "hub_total_s_by_cutoff": [
+      13484.798,
+      2169.5095,
+      920.1172,
+      464.3261,
+      168.9264,
+      168.6342,
+      73.4937,
+      73.4448,
+      73.4287,
+      73.4167,
+      73.4042,
+      73.3982,
+      73.3994
+    ],
+    "best_total_s_by_cutoff": [
+      6.6283,
+      0.6347,
+      0.5366,
+      0.4568,
+      0.3716,
+      0.3159,
+      0.2763,
+      0.2618,
+      0.2419,
+      0.2289,
+      0.2108,
+      0.2062,
+      0.2067
+    ],
+    "extra_compute_s_by_cutoff": [
+      13478.1698,
+      2168.8748,
+      919.5806,
+      463.8693,
+      168.5548,
+      168.3184,
+      73.2174,
+      73.183,
+      73.1868,
+      73.1877,
+      73.1934,
+      73.192,
+      73.1927
+    ]
   }
 }

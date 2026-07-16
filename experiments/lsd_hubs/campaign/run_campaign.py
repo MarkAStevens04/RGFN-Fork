@@ -17,6 +17,7 @@ off Case 1 (modes at a reaction budget) + Case 2 (reactions at a mode budget). P
 import argparse
 import csv
 import json
+import time
 from pathlib import Path
 
 from glue.samplers.lsdflow.campaign import (
@@ -29,11 +30,60 @@ from glue.samplers.lsdflow.campaign import (
     rank_fragments,
 )
 from glue.samplers.lsdflow.child_select import make_child_policy
+from validation.lsdflow.metrics.cost.compute_time import EnumTimings as _EnumTimings
+from validation.lsdflow.metrics.cost.compute_time import account_strategy, head_to_head
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
 )
 
 HERE = Path(__file__).resolve().parent
+
+# ----------------------------------------------------------------- compute-time helpers (Logs/039)
+# Shared by all four campaign drivers: measure each strategy's live CPU selection wall-clock, load
+# the worker's MEASURED per-hub enum timings, and attribute them over the strategy's actual walk.
+
+
+def run_timed(strategy, budget):
+    """Run a strategy and measure its live CPU wall-clock — the real Stage-4 mode-selection +
+    book-keeping over the cached rewards. Returns ``(CampaignResult, selection_seconds)``."""
+    t0 = time.perf_counter()
+    res = strategy.run(budget=budget)
+    return res, time.perf_counter() - t0
+
+
+def load_enum_timings(enum_children_path, explicit=None):
+    """Measured per-hub enum timings (Logs/039), defaulting to ``enum_timings.json`` beside
+    ``enum_children.json``. Returns ``None`` if absent → the compute-time section is skipped
+    (backward-compatible with pre-Logs/039 enumerations)."""
+    p = Path(explicit) if explicit else Path(enum_children_path).parent / "enum_timings.json"
+    return _EnumTimings.load(p) if p.exists() else None
+
+
+def load_hub_pick_s(enum_children_path, explicit=None):
+    """Stage-2 hub-pick wall-clock from ``pick_hubs_timing.json`` beside ``enum_children.json``
+    (0.0 if absent). Charged to hub-batching only (best-candidate never picks hubs)."""
+    p = Path(explicit) if explicit else Path(enum_children_path).parent / "pick_hubs_timing.json"
+    if not p.exists():
+        return 0.0
+    try:
+        return float(json.load(open(p)).get("hub_pick_s", 0.0))
+    except Exception:  # noqa: BLE001
+        return 0.0
+
+
+def compute_time_section(hb, hb_sel, bc, bc_sel, enum_timings, hub_pick_s):
+    """Differentiated compute-time breakdown for a hub-batching / best-candidate pair + the
+    head-to-head. Returns ``None`` when no measured timings are available."""
+    if enum_timings is None:
+        return None
+    hb_bd = account_strategy(hb, enum_timings, selection_s=hb_sel, hub_pick_s=hub_pick_s)
+    bc_bd = account_strategy(bc, enum_timings, selection_s=bc_sel)
+    return {
+        "enum_timings_meta": enum_timings.meta,
+        "hub_batching": hb_bd.to_dict(),
+        "best_candidate": bc_bd.to_dict(),
+        "head_to_head": head_to_head(hb_bd, bc_bd),
+    }
 
 
 def _load_candidates(analysis_dir: Path, higher_is_better: bool):
@@ -116,6 +166,9 @@ def _load_enumerated_hubs(enum_children_path: Path, comps: dict):
         hubs.append(
             EnumeratedHub(
                 hub_key=h["hub_key"],
+                hub_input=h.get(
+                    "hub_input", h["hub_key"]
+                ),  # unique id for compute-time join (Logs/039)
                 depth=int(h["depth"]),
                 promoted=tuple(hub_comp.get("promoted", ())),
                 children=[
@@ -221,6 +274,84 @@ def _plot(path: Path, results, tag: str) -> None:
     print(f"[campaign] wrote {path}")
 
 
+# The differentiated compute-time components, in display order (matches ComputeTimeBreakdown).
+COMPUTE_COMPONENTS = [
+    ("setup_s", "setup (load+freeze)", "#8a4fbf"),
+    ("hub_pick_s", "hub pick", "#577590"),
+    ("enumeration_s", "enumeration", "#2a9d8f"),
+    ("reward_gen_s", "reward-gen", "#b23a48"),
+    ("flow_extract_s", "flow-extract", "#e9a20c"),
+    ("mode_selection_s", "mode-select", "#2a6f97"),
+]
+
+
+def plot_compute_time(path: Path, section: dict, tag: str) -> None:
+    """Stacked horizontal bar of the differentiated compute-time per strategy (Logs/039). Shows where
+    the wall-clock goes and how much longer hub-batching runs than best-candidate."""
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except Exception as exc:  # noqa: BLE001
+        print(f"[campaign] compute-time plot skipped ({exc})")
+        return
+    strategies = [("hub_batching", "Hub Batching"), ("best_candidate", "Best Candidate")]
+    fig, ax = plt.subplots(figsize=(9.0, 3.2))
+    for row, (skey, slabel) in enumerate(strategies):
+        bd = section.get(skey, {})
+        left = 0.0
+        for comp, clabel, color in COMPUTE_COMPONENTS:
+            val = float(bd.get(comp, 0.0) or 0.0)
+            if val <= 0:
+                continue
+            ax.barh(
+                row,
+                val,
+                left=left,
+                color=color,
+                edgecolor="white",
+                height=0.62,
+                label=clabel if row == 0 else None,
+            )
+            left += val
+        ax.text(left, row, f" {left:.1f}s", va="center", ha="left", fontsize=9)
+    ax.set_yticks(range(len(strategies)))
+    ax.set_yticklabels([s[1] for s in strategies])
+    ax.set_xlabel("measured compute time (seconds)")
+    h2h = section.get("head_to_head", {})
+    extra = h2h.get("extra_compute_s")
+    ratio = h2h.get("ratio_hub_over_best")
+    sub = ""
+    if extra is not None:
+        sub = f"  (+{extra:.0f}s"
+        sub += f", {ratio:g}× vs best-candidate)" if ratio else ")"
+    ax.set_title(f"{tag}: measured compute time by component{sub}", fontsize=10)
+    ax.legend(fontsize=7, ncol=6, loc="upper center", bbox_to_anchor=(0.5, -0.22), framealpha=0.9)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130)
+    print(f"[campaign] wrote {path}")
+
+
+def write_compute_time_csv(path: Path, section: dict) -> None:
+    """One row per strategy: each component (s) + total_s + the counts, for the paper table."""
+    comps = [c[0] for c in COMPUTE_COMPONENTS]
+    with open(path, "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["strategy", *comps, "total_s", "n_hubs_walked", "n_children_scored"])
+        for skey in ("hub_batching", "best_candidate"):
+            bd = section.get(skey, {})
+            w.writerow(
+                [skey]
+                + [bd.get(c, 0.0) for c in comps]
+                + [
+                    bd.get("total_s", 0.0),
+                    bd.get("n_hubs_walked", 0),
+                    bd.get("n_children_scored", 0),
+                ]
+            )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--analysis-dir", required=True)
@@ -256,6 +387,17 @@ def main() -> None:
         choices=list(RANK_METHODS),
         help="pre-select ranking: build_score = (reward-bar)*fanout/build_reactions (default); "
         "fanout / reward isolate one signal (ablations).",
+    )
+    ap.add_argument(
+        "--enum-timings",
+        default=None,
+        help="measured per-hub compute timings (Logs/039); default = enum_timings.json beside "
+        "--enum-children. Absent → compute-time section skipped.",
+    )
+    ap.add_argument(
+        "--hub-pick-timing",
+        default=None,
+        help="pick_hubs_timing.json (Stage-2 hub-pick wall-clock); default = beside --enum-children.",
     )
     ap.add_argument("--tag", required=True)
     a = ap.parse_args()
@@ -298,18 +440,25 @@ def main() -> None:
     # Run to the mode budget (greedy diversity is O(modes^2); Case 1's reaction point is reached
     # well before Case 2's mode budget, so this single curve covers both readouts).
     curve_budget = ("modes", a.budget_modes)
-    bc = build_strategy("best_candidate", cands, cost_table, comps, **common).run(
-        budget=curve_budget
+    # Time each run live (selection wall-clock) for the compute-time accounting (Logs/039).
+    bc, bc_sel = run_timed(
+        build_strategy("best_candidate", cands, cost_table, comps, **common), curve_budget
     )
-    hb = build_strategy(
-        "hub_batching",
-        enum_hubs,
-        cost_table,
-        comps,
-        child_policy=child_policy,
-        prebuilt_fragments=prebuilt,
-        **common,
-    ).run(budget=curve_budget)
+    hb, hb_sel = run_timed(
+        build_strategy(
+            "hub_batching",
+            enum_hubs,
+            cost_table,
+            comps,
+            child_policy=child_policy,
+            prebuilt_fragments=prebuilt,
+            **common,
+        ),
+        curve_budget,
+    )
+    enum_timings = load_enum_timings(a.enum_children, a.enum_timings)
+    hub_pick_s = load_hub_pick_s(a.enum_children, a.hub_pick_timing)
+    ct_section = compute_time_section(hb, hb_sel, bc, bc_sel, enum_timings, hub_pick_s)
     if bc.total_reactions < a.budget_reactions or hb.total_reactions < a.budget_reactions:
         print(
             f"[campaign] WARNING a curve stopped below the Case-1 reaction budget "
@@ -331,9 +480,21 @@ def main() -> None:
         "rank_by": a.rank_by if a.prebuild_k > 0 else None,
         "best_candidate": _readouts(bc, a.budget_reactions, a.budget_modes),
         "hub_batching": _readouts(hb, a.budget_reactions, a.budget_modes),
+        "compute_time": ct_section,  # None if no measured enum_timings.json found
     }
     (out / "summary.json").write_text(json.dumps(summary, indent=2))
     _plot(out / "curve.png", [bc, hb], a.tag)
+    if ct_section is not None:
+        write_compute_time_csv(out / "compute_time.csv", ct_section)
+        plot_compute_time(out / "compute_time.png", ct_section, a.tag)
+        h2h = ct_section["head_to_head"]
+        print(
+            f"[campaign] compute-time: hub-batching {h2h['hub_total_s']:.1f}s vs best-candidate "
+            f"{h2h['best_total_s']:.1f}s → +{h2h['extra_compute_s']:.1f}s extra "
+            f"({h2h['ratio_hub_over_best']}× )"
+        )
+    else:
+        print("[campaign] compute-time: no enum_timings.json found → section skipped")
     print(json.dumps(summary, indent=2))
     print(f"\n[campaign] wrote summary.json + curve_*.csv to {out}")
 

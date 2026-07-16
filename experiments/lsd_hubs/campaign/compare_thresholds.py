@@ -27,7 +27,9 @@ GROUPS = {
 STRATS = ("hub_batching", "best_candidate")
 COLOR = {"hub_batching": "#1f77b4", "best_candidate": "#d62728"}
 STYLE = {7: "-", 6: "--", 5: ":"}
-STRATS_LABEL = {"hub_batching": "hub-batching", "best_candidate": "best-candidate"}
+STRATS_LABEL = {"hub_batching": "Hub Batching", "best_candidate": "Previous"}
+XLABEL = "Diversity (Tanimoto similarity)"
+XSUB = "similar modes → diverse modes"  # reads left->right after the axis flip
 
 
 def _read(tag: str, fname: str, value_col: str):
@@ -70,7 +72,10 @@ def _plot(fname, group, value_col, csv_name, ylabel, title, invert_y=False):
                 alpha=0.9,
                 label=f"{STRATS_LABEL[strat]} · thr {thr}",
             )
-    ax.set_xlabel("diversity cutoff (Tanimoto similarity; lower = stricter)")
+    ax.set_xlabel(XLABEL)
+    ax.text(
+        0.5, -0.17, XSUB, transform=ax.transAxes, ha="center", va="top", fontsize=8, color="0.5"
+    )
     ax.set_ylabel(ylabel)
     ax.set_title(title)
     # Match sweep_campaign: flip so the desired corner is top-right — more-diverse (stricter, low
@@ -81,7 +86,7 @@ def _plot(fname, group, value_col, csv_name, ylabel, title, invert_y=False):
     ax.legend(fontsize=7, ncol=2)
     fig.tight_layout()
     OUT.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT / fname, dpi=140)
+    fig.savefig(OUT / fname, dpi=140, bbox_inches="tight")
     plt.close(fig)
     print(f"[compare] wrote {OUT / fname}")
 
@@ -94,7 +99,7 @@ def main():
             group,
             "reactions_for_300modes",
             "fixed_modes.csv",
-            "reactions to generate 300 modes",
+            "Reactions required to synthesize 300 modes",
             f"sEH {glabel}: cost to reach 300 modes vs threshold (hit bar 5/6/7)",
             invert_y=True,  # cost plot: fewer reactions (cheaper) -> up; desired = top-right
         )
@@ -103,7 +108,7 @@ def main():
             group,
             "modes_at_100rxn",
             "pareto.csv",
-            "modes at 100-reaction budget",
+            "modes discovered",
             f"sEH {glabel}: Pareto (modes @ 100 rxns) vs threshold (hit bar 5/6/7)",
         )
     print(f"[compare] all overlays in {OUT}")

@@ -32,9 +32,14 @@ import json
 from pathlib import Path
 
 from run_campaign import (  # same-dir helpers
+    COMPUTE_COMPONENTS,
     _load_candidates,
     _load_enumerated_hubs,
     build_strategy,
+    compute_time_section,
+    load_enum_timings,
+    load_hub_pick_s,
+    run_timed,
 )
 
 from glue.samplers.lsdflow.campaign import RANK_METHODS, rank_fragments
@@ -45,6 +50,21 @@ from validation.lsdflow.metrics.cost.dynamic_amortization import (
 
 HERE = Path(__file__).resolve().parent
 STRATS = ("hub_batching", "best_candidate")
+STRAT_LABEL = {"hub_batching": "Hub Batching", "best_candidate": "Previous"}
+POLICY_LABEL = {"reward": "naive", "free_frag": "free frag"}
+XLABEL = "Diversity (Tanimoto similarity)"
+# Reads left->right after the axis flip: loose (high-Tanimoto, 0.9) on the left, strict (0.3) on the right.
+XSUB = "similar modes → diverse modes"
+
+
+def _title(system, metric_phrase, policy_label, n_hubs, thr):
+    """Human-readable title, e.g. 'SCENT sEH proxy - 100 rxn budget - free frag - 200-hub'."""
+    parts = [f"SCENT {system}", metric_phrase, policy_label]
+    if n_hubs:
+        parts.append(f"{n_hubs}-hub")
+    if thr != 7.0:  # 7.0 is the default hit bar; only annotate when it differs
+        parts.append(f"hit bar {thr:g}")
+    return " - ".join(parts)
 
 
 def _cutoff_grid(lo: float, hi: float, step: float):
@@ -71,7 +91,9 @@ def _run(
     child_policy=None,
     prebuilt_fragments=None,
 ):
-    return build_strategy(
+    """Returns ``(CampaignResult, selection_seconds)`` — the live-measured run wall-clock feeds the
+    compute-time accounting (Logs/039)."""
+    strat = build_strategy(
         strategy_name,
         pool,
         cost_table,
@@ -80,10 +102,13 @@ def _run(
         child_policy=child_policy,
         prebuilt_fragments=prebuilt_fragments,
         **common,
-    ).run(budget=("modes", m_budget))
+    )
+    return run_timed(strat, ("modes", m_budget))
 
 
-def _plot(path, series, xlabel, ylabel, title, vline=None, invert_x=False, invert_y=False):
+def _plot(
+    path, series, xlabel, ylabel, title, vline=None, invert_x=False, invert_y=False, xsub=None
+):
     try:
         import matplotlib
 
@@ -99,7 +124,7 @@ def _plot(path, series, xlabel, ylabel, title, vline=None, invert_x=False, inver
         ax.axvline(vline, ls="--", lw=1, color="0.55", zorder=0)
         ax.text(
             vline,
-            0.98,
+            0.94,
             f"default {vline:g}",
             transform=ax.get_xaxis_transform(),
             ha="right",
@@ -109,6 +134,17 @@ def _plot(path, series, xlabel, ylabel, title, vline=None, invert_x=False, inver
             rotation=90,
         )
     ax.set_xlabel(xlabel)
+    if xsub:  # small grey second line under the x-axis label (direction hint)
+        ax.text(
+            0.5,
+            -0.185,
+            xsub,
+            transform=ax.transAxes,
+            ha="center",
+            va="top",
+            fontsize=8,
+            color="0.5",
+        )
     ax.set_ylabel(ylabel)
     ax.set_title(title)
     # Flip axes so the "desired" corner is top-right (Pareto convention): more-diverse (stricter,
@@ -119,7 +155,7 @@ def _plot(path, series, xlabel, ylabel, title, vline=None, invert_x=False, inver
         ax.invert_yaxis()
     ax.legend()
     fig.tight_layout()
-    fig.savefig(path, dpi=130)
+    fig.savefig(path, dpi=130, bbox_inches="tight" if xsub else None)
     print(f"[sweep] wrote {path}")
 
 
@@ -152,7 +188,24 @@ def main() -> None:
     )
     ap.add_argument("--rank-by", default="build_score", choices=list(RANK_METHODS))
     ap.add_argument("--tag", required=True)
+    ap.add_argument("--system-label", default="sEH proxy", help="system name shown in plot titles")
+    ap.add_argument(
+        "--n-hubs",
+        type=int,
+        default=0,
+        help="enumeration size shown in titles as '<N>-hub' (0 = omit)",
+    )
+    ap.add_argument(
+        "--enum-timings",
+        default=None,
+        help="measured per-hub compute timings (Logs/039); default = enum_timings.json beside "
+        "--enum-children. Absent → compute-time outputs skipped.",
+    )
+    ap.add_argument(
+        "--hub-pick-timing", default=None, help="pick_hubs_timing.json (default: beside)"
+    )
     a = ap.parse_args()
+    policy_label = POLICY_LABEL[a.child_policy]
 
     adir = Path(a.analysis_dir)
     cands, comps = _load_candidates(adir, a.higher_is_better)
@@ -187,9 +240,10 @@ def main() -> None:
 
     # One run per (strategy, cutoff) to the mode budget -> all three plots read off the prefixes.
     results = {}  # (strategy, cutoff) -> CampaignResult
+    sels = {}  # (strategy, cutoff) -> live selection wall-clock (compute-time accounting, Logs/039)
     for cut in cutoffs:
         for s in STRATS:
-            results[(s, cut)] = _run(
+            results[(s, cut)], sels[(s, cut)] = _run(
                 s,
                 pools[s],
                 cost_table,
@@ -219,17 +273,24 @@ def main() -> None:
         out / "pareto.png",
         [
             (
-                s,
+                STRAT_LABEL[s],
                 cutoffs,
                 [_modes_at_reactions(results[(s, c)], a.budget_reactions) for c in cutoffs],
             )
             for s in STRATS
         ],
-        "diversity cutoff (Tanimoto similarity; lower = stricter)",
-        f"modes at {a.budget_reactions}-reaction budget",
-        f"SCENT {a.tag}: Pareto (fixed {a.budget_reactions} reactions)",
+        XLABEL,
+        "modes discovered",
+        _title(
+            a.system_label,
+            f"{a.budget_reactions} rxn budget",
+            policy_label,
+            a.n_hubs,
+            a.reward_threshold,
+        ),
         vline=base,
         invert_x=True,  # stricter/more-diverse (low cutoff) -> right; more modes -> up; desired = top-right
+        xsub=XSUB,
     )
 
     # ---- Plot 2: reactions to reach fixed mode target vs diversity cutoff ----
@@ -243,22 +304,29 @@ def main() -> None:
     for s in STRATS:
         pts = [(c, _reactions_at_modes(results[(s, c)], a.budget_modes)) for c in cutoffs]
         pts = [(c, r) for c, r in pts if r is not None]  # drop cutoffs that can't reach M*
-        fm_series.append((s, [c for c, _ in pts], [r for _, r in pts]))
+        fm_series.append((STRAT_LABEL[s], [c for c, _ in pts], [r for _, r in pts]))
     _plot(
         out / "fixed_modes.png",
         fm_series,
-        "diversity cutoff (Tanimoto similarity; lower = stricter)",
-        f"reactions to generate {a.budget_modes} modes",
-        f"SCENT {a.tag}: cost to reach {a.budget_modes} modes",
+        XLABEL,
+        f"Reactions required to synthesize {a.budget_modes} modes",
+        _title(
+            a.system_label,
+            f"{a.budget_modes} candidate synthesis",
+            policy_label,
+            a.n_hubs,
+            a.reward_threshold,
+        ),
         vline=base,
         invert_x=True,  # stricter/more-diverse (low cutoff) -> right
         invert_y=True,  # fewer reactions (cheaper) -> up; desired = top-right
+        xsub=XSUB,
     )
 
     # ---- Plot 3: budget vs efficiency (modes vs reaction budget) at the default cutoff ----
     if base not in cutoffs:  # ensure the baseline exists even if off-grid
         for s in STRATS:
-            results[(s, base)] = _run(
+            results[(s, base)], sels[(s, base)] = _run(
                 s,
                 pools[s],
                 cost_table,
@@ -290,6 +358,63 @@ def main() -> None:
         f"SCENT {a.tag}: budget vs efficiency (cutoff {base})",
     )
 
+    # ---- Compute-time vs diversity cutoff (Logs/039) — how much longer the computer works ----
+    enum_timings = load_enum_timings(a.enum_children, a.enum_timings)
+    hub_pick_s = load_hub_pick_s(a.enum_children, a.hub_pick_timing)
+    compute_time = None
+    if enum_timings is not None:
+        sections = {
+            cut: compute_time_section(
+                results[("hub_batching", cut)],
+                sels[("hub_batching", cut)],
+                results[("best_candidate", cut)],
+                sels[("best_candidate", cut)],
+                enum_timings,
+                hub_pick_s,
+            )
+            for cut in cutoffs
+        }
+        comp_keys = [c[0] for c in COMPUTE_COMPONENTS]
+        with open(out / "compute_time_by_cutoff.csv", "w", newline="") as fh:
+            w = csv.writer(fh)
+            w.writerow(["cutoff", "strategy", *comp_keys, "total_s", "extra_compute_s"])
+            for cut in cutoffs:
+                sec = sections[cut]
+                extra = sec["head_to_head"]["extra_compute_s"]
+                for s in STRATS:
+                    bd = sec[s]
+                    w.writerow([cut, s, *[bd.get(k, 0.0) for k in comp_keys], bd["total_s"], extra])
+        # Plot: total measured compute for each strategy vs cutoff (the extra is the vertical gap).
+        # Distinct name from run_campaign's per-component stacked bar (compute_time.png) — same tag dir.
+        _plot(
+            out / "compute_time_by_cutoff.png",
+            [
+                (
+                    STRAT_LABEL[s],
+                    cutoffs,
+                    [sections[c][s]["total_s"] for c in cutoffs],
+                )
+                for s in STRATS
+            ],
+            XLABEL,
+            "measured compute time (s)",
+            _title(a.system_label, "compute time", policy_label, a.n_hubs, a.reward_threshold),
+            vline=base,
+            invert_x=True,  # stricter/more-diverse (low cutoff) -> right
+            xsub=XSUB,
+        )
+        compute_time = {
+            "enum_timings_meta": enum_timings.meta,
+            "hub_pick_s": hub_pick_s,
+            "baseline_cutoff": base,
+            "at_baseline": sections.get(base),
+            "hub_total_s_by_cutoff": [sections[c]["hub_batching"]["total_s"] for c in cutoffs],
+            "best_total_s_by_cutoff": [sections[c]["best_candidate"]["total_s"] for c in cutoffs],
+            "extra_compute_s_by_cutoff": [
+                sections[c]["head_to_head"]["extra_compute_s"] for c in cutoffs
+            ],
+        }
+
     summary = {
         "tag": a.tag,
         "reward_threshold": a.reward_threshold,
@@ -315,8 +440,15 @@ def main() -> None:
             }
             for s in STRATS
         },
+        "compute_time": compute_time,  # None if no measured enum_timings.json
     }
     (out / "sweep_summary.json").write_text(json.dumps(summary, indent=2))
+    if compute_time is not None and compute_time["at_baseline"]:
+        h2h = compute_time["at_baseline"]["head_to_head"]
+        print(
+            f"[sweep] compute-time @cutoff {base}: hub {h2h['hub_total_s']:.1f}s vs best "
+            f"{h2h['best_total_s']:.1f}s → +{h2h['extra_compute_s']:.1f}s ({h2h['ratio_hub_over_best']}×)"
+        )
     print(
         f"\n[sweep] wrote sweep_summary.json + pareto/fixed_modes/budget_efficiency CSV+PNG to {out}"
     )

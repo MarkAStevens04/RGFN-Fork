@@ -82,6 +82,10 @@ class EnumeratedHub:
     depth: int
     promoted: Tuple[str, ...]  # promoted fragments in the hub scaffold itself
     children: List[EnumChild]
+    # Raw (stereo-aware) hub SMILES — a UNIQUE per-hub identity. ``hub_key`` is stereo-stripped, so
+    # stereoisomeric hubs collide on it (shared scaffold for the reactions model, but separately
+    # enumerated for compute); ``hub_input`` disambiguates them for compute-time attribution (Logs/039).
+    hub_input: str = ""
     # U(h) = Var_i[log F_hat(h;x_i)] over the enumerated children (§2 flow-matching residual).
     # Carried for later use (an epistemic-uncertainty / acquisition signal in the AL phase);
     # NOT used by the campaign selection yet — just kept easy to extract.
@@ -123,6 +127,13 @@ class CampaignResult:
     best_reward: float = float("nan")
     median_reward: float = float("nan")
     stop_reason: str = "pool_exhausted"  # "reactions" | "modes" | "pool_exhausted"
+    # Hubs *iterated* (enumerated + scored) during the run, in walk order — hub-batching only; the
+    # last hub is included even when the budget stops it mid-way (its whole child set was scored, so
+    # it is counted in reward_gen_calls). Best-candidate leaves this empty (it walks no enum hubs).
+    # Each entry is the hub's UNIQUE identity (``hub_input``, falling back to ``hub_key``) — the join
+    # key for attributing MEASURED per-hub compute time (Logs/039) over the walk. Stereoisomeric hubs
+    # share a ``hub_key`` but are distinct here, so their separate enumeration compute is not merged.
+    walked_hub_ids: List[str] = field(default_factory=list)
     meta: dict = field(default_factory=dict)
 
 
@@ -466,8 +477,12 @@ class HubBatchingStrategy(CampaignStrategy):
         for hub in self.hubs:
             if stopped:
                 break
-            # Enumerating + scoring this hub's children is the reward-gen (oracle) cost.
+            # Enumerating + scoring this hub's children is the reward-gen (oracle) cost. Record the
+            # hub in the walk (same place cum_calls is charged) so measured per-hub compute time
+            # (Logs/039) attributes over exactly the hubs whose children were scored. Use the unique
+            # hub_input identity (stereoisomers share hub_key but were enumerated separately).
             cum_calls += len(hub.children)
+            result.walked_hub_ids.append(hub.hub_input or hub.hub_key)
             hub_coup = shallow_couplings(hub.depth, hub.promoted, self.cost_table)
             # This hub's own scaffold fragments are built with the hub (charged once), so they are
             # free to its children — fold them into the "available" view for filtering (free-frag).
