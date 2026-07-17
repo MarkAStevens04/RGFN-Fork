@@ -1287,3 +1287,36 @@ best-candidate beats hub-batching on reactions.
 
 **Not changed.** `hub_stats.py`, the diversity-pairs/route-trees/synthesis-routes tools, and the
 scaffold-concentration ceiling / chemistry-floor findings are cost-model-independent and untouched.
+
+---
+
+## 2026-07-17 — LSD-Flow documentation reconciliation (docs match the code)
+
+**Why.** The LSD-Flow docs described an earlier design that the code had moved past: several READMEs
++ the proposal + auto-memories listed modules that were removed on 2026-07-11 when the count-once
+**campaign** superseded the original per-hub acquisition design — `glue/samplers/lsdflow/acquisition.py`
+(`LSDFlowAcquisition`), `glue/samplers/lsdflow/molecule/` (the molecule-selection strategy registry),
+and `validation/lsdflow/metrics/cost/{base,reactions_per_mode,registry}.py` (the cost-model ABC +
+the simple reactions-per-mode metric). That removal was recorded only in Logs/028's addendum, so the
+higher-level docs still read as if the deleted pieces existed — which misled an agent into planning
+against phantom modules.
+
+**What the pipeline actually is (single, current design).** Two stages joined by a persisted
+flow-record DAG: (1) **sampling / flow extraction** — `validation/lsdflow/harness/run.py` drives a
+per-model adapter (`rgfn_adapter` in-process; `scent_adapter` → `scent_worker` cross-env), recovers
+the §2 flow (`glue/metrics/lsdflow_flow.py` + `uncertainty.py`), builds the DAG
+(`validation/lsdflow/dag/` rich; `glue/samplers/lsdflow/dag.py` `LiteHubDAG`), and persists
+`records.csv` + `compositions.json` (+ optional `enumerated_records.csv`); (2) **the count-once
+library-cost campaign** — `experiments/lsd_hubs/campaign/*.py` run `campaign.py`'s
+`BestCandidateStrategy` vs `HubBatchingStrategy` (with `child_select` / `mode_select`) and score them
+on the count-once cost (`validation/lsdflow/metrics/cost/{dynamic_amortization,compute_time}.py`).
+The hub-selection strategies (`glue/samplers/lsdflow/hub/`) + flow/uncertainty metrics are retained
+as the foundation for the deferred AL acquisition + multi-generator benchmark.
+
+**What changed (docs only; no code touched).** Rewrote `validation/lsdflow/README.md` (current
+two-stage pipeline + accurate layout + status), `experiments/lsd_hubs/README.md` (added `campaign/`
+to the analyses; fixed the primitive routing), the `glue/samplers/lsdflow/__init__.py` docstring
+(campaign strategies are AL-*ready*, not AL-wired), the proposal's §3 layout note + §11 cost
+definition (count-once, not the `depth(h)+k` sketch), and the `docs/RESEARCH_CONTEXT.md` Logs/025
+row. Added the `verify-state-not-docs` auto-memory. No source files were deleted or moved; the
+`.pyc` for the removed modules are gitignored (not tracked).

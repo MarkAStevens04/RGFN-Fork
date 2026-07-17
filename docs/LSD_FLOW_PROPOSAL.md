@@ -105,6 +105,17 @@ hub-selection strategy.
 
 ## 3. Repository layout (split across the two axes)
 
+> **Current state vs. this design.** The authoritative map of what exists today is
+> `validation/lsdflow/README.md` + `experiments/lsd_hubs/campaign/README.md`; where the layout below
+> differs, the READMEs win. Two things shipped differently from the sketch: (1) the batch-selection
+> logic is the **campaign strategies** — `glue/samplers/lsdflow/campaign.py`
+> (`BestCandidateStrategy` / `HubBatchingStrategy`) with within-hub `child_select.py` policies and a
+> `mode_select.py` diversity selector — not a separate `molecule/` strategy registry; (2) the
+> implemented cost model is **count-once** (`validation/lsdflow/metrics/cost/dynamic_amortization.py`,
+> §11). The AL-facing acquisition entry point (§4a), the severe-test / hub-coincidence suite (§7/§8),
+> and the multi-generator library-efficiency benchmark (`docs/LSD_FLOW_BENCHMARK_PLAN.md`) are
+> planned, not built.
+
 ### 3a. Production side -- the acquisition primitives (`glue/`)
 
 These are the only files the AL loop imports. Small, pure, no comparative machinery.
@@ -126,13 +137,14 @@ glue/
         highest_visitation.py         # reward-free
         lowest_uncertainty.py         # gate/rank by U(h)
         registry.py
-      molecule/
-        base.py          # MoleculeSelectionStrategy ABC: hub -> selected products
-        topk_reward.py
-        prob_weighted.py              # sample by P (trajectory balance)
-        uniform_random.py             # equal-weight all children (diversity)
-        registry.py
-      acquisition.py     # LSDFlowAcquisition: the AL-facing entry point (section 4a) -> returns molecules
+      campaign.py        # the batch-selection strategies: BestCandidateStrategy | HubBatchingStrategy
+      child_select.py    # within-hub child policies (reward | free_frag)
+      mode_select.py     # diversity mode-acceptance
+      records.py         # FlowRecord + the HubDAG-shaped duck type
+      dag.py             # LiteHubDAG (lightweight in-env aggregation)
+      rgfn_extract.py    # rgfn-native trajectory -> FlowRecord
+      rgfn_enumerate.py  # exhaustive one-reaction child enumeration
+      # (planned, §4a) acquisition.py — AL-facing hub acquisition sampler
 ```
 
 `glue.registry` must import `glue.samplers.lsdflow` and the two `glue.metrics` modules so gin sees
@@ -165,13 +177,10 @@ validation/lsdflow/
     pareto.py            # diversity vs concurrency front
   metrics/
     cost/
-      base.py            # CostModel ABC
-      reactions_per_mode.py         # PRIMARY: total_rxns / n_modes
-      amortization_ratio.py         # SECONDARY: SCENT-comparable
-      registry.py
-    diversity.py         # modes = Butina clusters (primary); scaffolds, #Circles
-    information.py        # proxy-error-reduction per oracle call (phase 2)
-    registry.py
+      dynamic_amortization.py       # count-once synthesis cost (FragmentCostTable, nesting closure)
+      compute_time.py               # measured per-hub compute-time accounting
+    diversity.py         # paper-comparable modes (Morgan r=3/2048, Tanimoto 0.7) + scaffolds
+    # (planned) information.py — proxy-error-reduction per oracle call (AL phase)
   harness/
     matrix.py            # model x reward x strategy x metric sweep driver
     config.py            # dataclass configs, gin/YAML-loaded
@@ -195,7 +204,7 @@ in section 6. This keeps the one-way rule intact.
 
 ---
 
-## 4a. The AL-facing acquisition interface (production side)
+## 4a. The AL-facing acquisition interface (production side) — PLANNED (not yet built)
 
 **Decision: the AL loop consumes molecules, not hubs.** Hubs are an internal detail of *how* the
 batch is chosen. This keeps the production-side change to a single new sampler plugin -- `loop.py`
@@ -401,9 +410,14 @@ change when it goes live.
   0.65, config knob). "One mode = one representative you'd actually synthesize." Secondary: unique
   Bemis-Murcko scaffolds; #Circles.
 - **Cost -- reactions per mode** (PRIMARY): `total_reactions_to_build_batch / n_modes`, lower better.
-  Hub batch: `total_reactions = depth(h) + k` (parent built once, amortized across `k`). Independent
-  top-k: `sum depth(x_j)`. Encodes the LSD value proposition and reads to a chemist. State that the
-  real saving is reaction *time*, not reactant cost.
+  The implemented model is **count-once** (`validation/lsdflow/metrics/cost/dynamic_amortization.py`
+  + `campaign.py`): every synthesis step is charged **exactly once** — a shared hub's assembly
+  couplings once (`shallow_couplings = num_reactions − Σ nested build cost of each attached SCENT
+  promoted fragment`), each distinct promoted dynamic-library fragment built once (closure under
+  nesting), applied identically to both strategies so only the *selection* differs. (The earlier
+  `depth(h) + k` sketch double-counted SCENT's fully-nested `num_reactions`; see Logs/028/033.)
+  Encodes the LSD value proposition and reads to a chemist. State that the real saving is reaction
+  *time*, not reactant cost.
 - **Cost -- amortization ratio** (SECONDARY, SCENT-comparable): `(depth(h) + k*C_step)` vs
   `sum_j C_full(x_j)`, using SCENT's own yield/reactant-cost tables so it's reviewer-proof.
 - **Information** (phase 2): proxy-error reduction per oracle call on held-out known hits + property-

@@ -1,24 +1,31 @@
 # `experiments/lsd_hubs/` — LSD-Flow hub analyses
 
 Post-hoc studies of the **hub** structure and quality latent in a trained reaction-GFlowNet's
-flow field — the analysis layer of LSD-Flow (`docs/LSD_FLOW_PROPOSAL.md`; built in Logs/025).
+flow field — the analysis layer of LSD-Flow (`docs/LSD_FLOW_PROPOSAL.md`). The headline is the
+**library-cost campaign** (`campaign/`): hub-batching vs best-candidate on the count-once synthesis
+cost.
 
-**Modular by design: one sub-directory per analysis type.** Each is self-contained (its script +
-`README` + small committed `*_results.csv` / `*_summary.json`), and **reuses** the canonical
-primitives rather than reimplementing them:
+**Modular by design: one sub-directory per analysis type.** Each is self-contained (its scripts +
+`README` + small committed `*_results.csv` / `*.json`), and **reuses** the canonical primitives
+rather than reimplementing them:
 
-- flow recovery / `U(h)` / hub + molecule strategies / acquisition → `glue/samplers/lsdflow/`
-- adapters / DAG / **mode + diversity + cost metrics** / harness → `validation/lsdflow/`
+- flow recovery / `U(h)` / hub-selection strategies / the campaign selection strategies
+  (`BestCandidateStrategy` / `HubBatchingStrategy` + within-hub `child_select` + `mode_select`)
+  → `glue/samplers/lsdflow/` + `glue/metrics/`
+- adapters / rich DAG / diversity (paper-comparable modes) / the **count-once** synthesis-cost model
+  + measured compute-time accounting / sampling harness → `validation/lsdflow/`
 
 Reusable logic graduates into those packages; only the one-off analysis harness lives here. The
-inputs are the persisted DAGs a harness run leaves on `$SCRATCH`
-(`.../lsdflow/<run>/{records,enumerated_records}.csv`), so these analyses re-run cheaply without
+inputs are the persisted flow-record DAGs a sampling run leaves on `$SCRATCH`
+(`.../lsdflow/<run>/{records,enumerated_records}.csv` + `compositions.json`) plus the campaign's own
+cross-env enumeration (`enum_children.json`), so these analyses re-run cheaply on CPU without
 re-sampling or re-enumerating.
 
 ## Analyses
 
 | sub-dir | question |
 |---|---|
+| [`campaign/`](campaign/) | **Hub-batching vs best-candidate under a budget** — two swappable selection strategies for building a diverse library of hits (modes), scored on the count-once synthesis cost (reactions/mode), reward-gen (≈ oracle) calls, and measured compute time. The main comparison; Logs 028–039. |
 | [`dropoff/`](dropoff/) | Per-hub **filter funnel**: how many one-reaction children survive each stage — raw → binding gate → Tanimoto-dissimilar modes — and which filter dominates per hub. |
 
-(More to come as we address the hub-quality question — expect additional sub-dirs here.)
+(More sub-dirs as we address further hub-quality questions.)

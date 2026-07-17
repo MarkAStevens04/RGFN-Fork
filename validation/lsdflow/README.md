@@ -1,83 +1,106 @@
 # `validation/lsdflow/` — LSD-Flow analysis world
 
-The validation-axis half of **LSD-Flow** (post-hoc hub selection for batched late-stage
-diversification). The design spec is `docs/LSD_FLOW_PROPOSAL.md` — read it first. This README
-is the map of what lives here and how the two axes split.
+The validation-axis half of **LSD-Flow** (post-hoc hub extraction for batched late-stage
+diversification). The scientific framing lives in `docs/LSD_FLOW_PROPOSAL.md`; **this README is the
+authoritative map of what the code actually does today.**
+
+The work runs as **two stages** joined by a persisted, on-disk flow-record DAG:
+
+1. **Sampling / flow extraction** — a per-model adapter samples a trained reaction GFN, recovers the
+   §2 flow (`log F_hat` + `U(h)`), and persists the flow-record DAG (`records.csv`,
+   `compositions.json`, optional exhaustive `enumerated_records.csv`). Driver:
+   `harness/run.py`.
+2. **The library-cost campaign** (the current headline) — consumes that persisted DAG and compares
+   two selection strategies (**hub-batching** vs **best-candidate**) on the **count-once** synthesis
+   cost. This lives on the experiments axis in `experiments/lsd_hubs/campaign/` and imports the
+   `glue/` primitives; see its README.
 
 ## The split (proposal §3)
 
 LSD-Flow is deliberately spread across the repo's two axes:
 
-- **Production side — `glue/`** holds the acquisition *primitives* (the same category as
-  `glue/samplers/` + `glue/metrics/`), which the active-learning loop imports directly:
-  - `glue/metrics/lsdflow_flow.py` — the §2 flow recovery `F_hat(h;x)` + visitation estimate,
-    log-space.
-  - `glue/metrics/uncertainty.py` — `U(h)`, the flow-matching residual.
-  - `glue/samplers/lsdflow/` — hub + molecule selection strategies (+ registries),
-    `LiteHubDAG` (the lightweight in-loop DAG), `rgfn_extract` (rgfn-native flow extraction,
-    shared with the RGFN adapter here), and `LSDFlowAcquisition` (the AL-facing entry point).
-- **Validation side — `validation/lsdflow/` (here)** holds everything analytical/comparative.
-  It imports the primitives from `glue/` (allowed by the one-way rule) and is **never**
-  imported back by the pipeline.
+- **Production side — `glue/`** holds the reusable primitives (same category as `glue/samplers/` +
+  `glue/metrics/`); `validation/` and the campaign import these, never the reverse:
+  - `glue/metrics/lsdflow_flow.py` — §2 flow recovery `log F_hat(h;x)` + the reward-free visitation
+    estimate, in log space.
+  - `glue/metrics/uncertainty.py` — `U(h)`, the flow-matching residual (variance of per-child
+    log-flow estimates).
+  - `glue/samplers/lsdflow/` — the flow-record schema (`records.py::FlowRecord`), the lightweight
+    in-env aggregation (`dag.py::LiteHubDAG`), the rgfn-native extraction/enumeration
+    (`rgfn_extract.py` / `rgfn_enumerate.py`, shared with the RGFN adapter here), the hub-selection
+    strategies + registry (`hub/`), and the **campaign selection strategies** the cost comparison
+    runs (`campaign.py::BestCandidateStrategy` / `HubBatchingStrategy`, with `child_select.py`
+    within-hub policies + `mode_select.py` diversity acceptance).
+- **Validation side — `validation/lsdflow/` (here)** holds the analysis machinery. It imports the
+  primitives from `glue/` and is **never** imported back by the pipeline.
 
 ## Layout
 
 ```
 validation/lsdflow/
-  adapters/        # the §4b per-model contract
+  adapters/        # the §4b per-model sampling contract
     base.py          GFNAdapter ABC + FlowSample (canonical schema)
-    rgfn_adapter.py  in-process RGFN anchor (the only one wired in v1)
-    registry.py      name -> adapter; declares the cross-env targets + build status
-    workers/         per-env subprocess workers (SCENT/FragGFN/RxnFlow) — phase 3-4
+    rgfn_adapter.py  in-process RGFN sampler (uses glue rgfn_extract/enumerate)
+    scent_adapter.py in-process client that shells to the scent-env worker
+    registry.py      name -> adapter (rgfn + scent live)
+    workers/
+      scent_worker.py  runs in the `scent` env; emits records.csv/compositions.json/enum_children.json
   dag/             # the §6 canonical DAG
     node.py          canonical node identity (stereo-stripped cross-model key)
-    graph.py         HubDAG: rich, networkx-backed, persisted; conforms to the §6 duck type
+    graph.py         HubDAG: rich, networkx-backed, persisted (records.csv/graph.gpickle)
     build.py         FlowSample -> HubDAG
   metrics/
-    diversity.py     Butina modes (ECFP4, cutoff 0.65) + Bemis-Murcko scaffolds (§11)
-    cost/            reactions-per-mode (PRIMARY, §11); amortization-ratio declared for phase 2
-  analysis/        # severe tests, hub-coincidence, pareto — phases 5 & 3 (not yet built)
+    diversity.py     paper-comparable modes (Morgan r=3/2048, Tanimoto 0.7) + Bemis-Murcko scaffolds
+    cost/
+      dynamic_amortization.py  the count-once synthesis cost: FragmentCostTable (each distinct
+                               promoted fragment built once, closure under nesting) + snapshot loader
+      compute_time.py          measured per-hub wall-clock accounting (EnumTimings, account_strategy)
   harness/
     config.py        LSDFlowRunConfig (one model x reward run spec)
-    run.py           the vertical-slice driver (sample -> DAG -> rank -> acquire -> persist)
-    matrix.py        the full model x reward x strategy sweep — phase 2 (not yet built)
-  results/         # committed small artifacts (DAG summaries, acquisition tables, plots)
+    run.py           the sampling driver (sample -> build DAG -> persist -> optional enumeration)
+  results/         # committed small artifacts (DAG summaries, enumeration stats)
 ```
 
-## Running the RGFN anchor (phase-1 vertical slice)
+The heavy count-once **campaign** that consumes this DAG (hub-batching vs best-candidate,
+reactions/mode, compute-time) lives in `experiments/lsd_hubs/campaign/`, not here — the harness only
+produces the flow field + neighborhoods; the cost comparison is downstream.
 
-GFN **inference only** — no docking — so it runs on a Balam/Trillium login node. Prefix with
-the smoke env (per `CLAUDE.md`) so dgl's CUDA libs are on `LD_LIBRARY_PATH`:
+## Running the sampling stage
+
+GFN **inference only** — no docking — so it runs on a Balam/Trillium login node (a large sample or
+enumeration wants a compute node; see the submit scripts). Prefix with the smoke env (per
+`CLAUDE.md`) so dgl's CUDA libs are on `LD_LIBRARY_PATH`:
 
 ```bash
 source ~/bin/rgfn-smoke-env.sh
+# RGFN (in-process)
 python -m validation.lsdflow.harness.run \
     --checkpoint /scratch/markymoo/rgfn_runs/experiments/fixed_reward/seh_proxy_stdlib/2026-07-02_14-59-53/train/checkpoints/last_gfn.pt \
     --config-path configs/glue/fixed_reward_seh_proxy_stdlib.gin \
     --n-trajectories 10000
+# SCENT (cross-env; the scent-env worker is spawned by the adapter) — compute node:
+sbatch validation/lsdflow/submit_scent_seh.sh
 ```
 
-> **Anchor checkpoint provenance (verify before using any checkpoint).** `seh_proxy_stdlib/`
-> holds three timestamped dirs; only **`2026-07-02_14-59-53`** is the completed 5,001-iter run
-> (job 69616, Logs/020 — `candidates.csv` median sEH 7.263 / max 8.354). `2026-07-02_13-45-03`
-> (epoch 30) and `2026-07-02_14-18-34` (epoch 40) are cancelled early attempts (69613/69615) —
-> do **not** run flow analysis on them (unconverged flow field). Check
-> `torch.load(ckpt)['metrics']['epoch']` before trusting a checkpoint.
+> **Checkpoint-provenance caution (verify before using any checkpoint).** Scratch run dirs hold
+> cancelled early-iteration stubs next to the completed run — e.g. `seh_proxy_stdlib/` holds three
+> timestamped dirs but only **`2026-07-02_14-59-53`** is the completed 5,001-iter model. Check
+> `torch.load(ckpt)['metrics']['epoch']` (and that `candidates.csv` exists) before trusting a
+> checkpoint — flow analysis on an unconverged field is meaningless. See the `verify-checkpoint-trained`
+> memory.
 
-Writes the persisted DAG (`records.csv`, `hub_summary.csv`, `meta.json`, `graph.gpickle`) plus
-`report.json` + `acquisitions.csv` to `--out-dir`.
+Writes the persisted DAG (`records.csv`, `compositions.json`, `hub_summary.csv`, `meta.json`,
+`graph.gpickle`) plus `report.json` and — with `--enumerate-top-hubs N` — `enumeration.json` +
+`enumerated_records.csv` to `--out-dir`.
 
-## Build status (proposal §10)
+## Status
 
-- **Done (phase 1-2 code):** RGFN adapter, canonical DAG, flow recovery + `U(h)`, all hub +
-  molecule strategy registries, reactions-per-mode cost + Butina diversity, the harness driver,
-  `LSDFlowAcquisition` wired for the AL path, and the exhaustive **`enumerate_children`** path
-  (`rgfn_enumerate.py` + `--enumerate-top-hubs` / `--from-records`) — validated: a depth-0 hub
-  enumerates to 498 one-reaction children (sampling saw 8), 100% sampled-child recovery
-  (Logs/025 addendum). Enumeration is exact for fragment hubs; stereo-bearing hubs need a fresh
-  stereo-keyed DAG (now persisted).
-- **Next:** the matrix driver over RGFN's four fixed rewards; loop integration of
-  `LSDFlowAcquisition` (a small, tracked `glue/active_learning/loop.py` change — the current
-  loop has no pluggable-sampler hook, contrary to the proposal §4a note); SCENT adapter +
-  hub-coincidence study once the ModuleList-patched retrain lands (§9); FragGFN + RxnFlow
-  workers; the severe-test suite + Pareto front.
+- **Live:** RGFN (in-process) and SCENT (cross-env) sampling + flow extraction; exhaustive
+  `enumerate_children` for both; the count-once cost model + measured compute-time accounting; the
+  hub-batching-vs-best-candidate campaign on SCENT sEH (`experiments/lsd_hubs/campaign/`, Logs
+  028–039). The SCENT sampling run that anchors the current campaign is `scent_seh_70189`.
+- **Planned (not built):** an AL-facing acquisition entry point that consumes hubs as a
+  batch-selection sampler (needs a small `glue/active_learning/loop.py` change — the loop has no
+  pluggable-sampler hook yet); FragGFN + RxnFlow adapters; the severe-test suite and the
+  RGFN-vs-SCENT hub-coincidence study (`docs/LSD_FLOW_PROPOSAL.md` §7/§8); the library-efficiency
+  benchmark in `docs/LSD_FLOW_BENCHMARK_PLAN.md`.

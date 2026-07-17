@@ -1,8 +1,7 @@
 """Run-spec dataclass for the LSD-Flow analysis harness (``docs/LSD_FLOW_PROPOSAL.md`` §3b).
 
 One config = one (model x reward) analysis: where the trained checkpoint + gin config live,
-how many trajectories to sample, which hub/molecule strategies to report, and where to write
-results. The full model x reward x strategy x metric matrix (``matrix.py``) composes these.
+how many trajectories to sample, which hub strategies to report, and where to write results.
 """
 
 from __future__ import annotations

@@ -1,13 +1,19 @@
-"""LSD-Flow acquisition primitives (production side) — ``docs/LSD_FLOW_PROPOSAL.md`` §3a.
+"""LSD-Flow primitives (production side) — ``docs/LSD_FLOW_PROPOSAL.md`` §3a.
 
-Post-hoc hub selection over a trained reaction GFlowNet, exposed as a batch-selection
-strategy the active-learning loop can consume. The heavy comparative/analysis machinery
-(cross-env adapters, the persisted rich DAG, severe tests, the RGFN-vs-SCENT study) lives on
-the validation axis under ``validation/lsdflow/`` and imports these primitives (allowed by the
-one-way rule); the pipeline never imports back.
+Post-hoc hub selection over a trained reaction GFlowNet. These are the reusable pieces the
+library-cost campaign (``experiments/lsd_hubs/campaign/``) and the validation-axis analysis
+(``validation/lsdflow/``) build on: the flow-record schema, the lightweight in-env DAG, the
+hub-selection strategies, and the two campaign selection strategies (``BestCandidateStrategy`` /
+``HubBatchingStrategy``) with their within-hub child policies and mode selector. The heavy
+comparative/analysis machinery lives under ``validation/lsdflow/`` and imports these primitives
+(allowed by the one-way rule); the pipeline never imports back.
 
-Importing this package registers the ``@gin.configurable`` hub strategies and exposes the
-campaign strategies (the AL-facing entry points), so ``glue.registry`` pulls them in.
+The campaign strategies emit a uniform ``CampaignResult`` and are written to be AL-ready — an
+active-learning acquisition that consumes hubs as a batch-selection sampler is planned but not yet
+wired (the loop has no pluggable-sampler hook yet).
+
+Importing this package registers the ``@gin.configurable`` hub strategies and exposes the campaign
+strategies, so ``glue.registry`` pulls them in.
 """
 
 from glue.samplers.lsdflow import hub  # noqa: F401
