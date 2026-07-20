@@ -113,6 +113,23 @@ synthesizable (`has_route=1`, `routes.jsonl`). Heavy upstream code installed via
 `external/setup_scent.sh` (not vendored); thin adapter in
 `validation/generators/scent/`. &nbsp;`pdfs/gainski2025scent.pdf` · arXiv:2506.19865
 
+### `[kim2026s3gfn]` — S3-GFN: Synthesizable Molecular Generation via Soft-constrained GFlowNets (2026)
+The **marquee foil** for the LSD-Flow *library-efficiency* benchmark (`docs/LSD_FLOW_BENCHMARK_PLAN.md`
+T3.1–T3.2). Unlike every other baseline here, S3-GFN is **not reaction-grounded**: it is a
+**sequence (SMILES) GFlowNet** that induces synthesizability **softly** — off-policy replay training
+with a **contrastive signal** from separate buffers of synthesizable vs. unsynthesizable samples,
+plus rich priors from large SMILES corpora — rather than by construction from reaction templates. It
+reports **>95% per-molecule synthesizability** with higher rewards, and argues you therefore *don't
+need* a reaction-based decision process. Our benchmark concedes the per-molecule point and targets the
+part it misses: **library** economics. S3-GFN's molecules carry **no shared-route structure**, so
+assembling a *library* from them requires recovering shared intermediates **post-hoc** (AiZynth →
+SPARROW, `has_route=0`, routes found not by-construction). The headline figure shows S3-GFN + the best
+batch planner still loses to a reaction-GFN + hub-batching on **reactions-per-mode** — the
+"MDP-necessary-for-library-economics" result. Mila/Bengio lineage (same as `[bengio2021gflownet]`).
+Runs in its own conda env (`external/setup_s3gfn.sh`); pool ingested via
+`scripts/ingest_candidates.py` (`has_route=0`) and routed by T1.3. &nbsp;`pdfs/kim2026s3gfn.pdf` ·
+arXiv:2602.04119
+
 ---
 
 ## Evaluation — synthesizability metrics

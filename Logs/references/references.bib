@@ -107,6 +107,24 @@
   note    = {SA score (1=easy..10=hard). Cheap RDKit-native companion to AiZynth, computed in the same synthesizability evaluator. RDKit ships the implementation as the contrib `sascorer`.}
 }
 
+@article{kim2026s3gfn,
+  title   = {Synthesizable Molecular Generation via Soft-constrained {GFlowNets} with Rich Chemical Priors},
+  author  = {Kim, Hyeonah and Kim, Minsu and Roget, Celine and Biton, Dionessa and Vaillancourt, Louis and Brun, Yves V. and Bengio, Yoshua and Hernandez-Garcia, Alex},
+  journal = {arXiv preprint arXiv:2602.04119},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2602.04119},
+  note    = {S3-GFN: a SEQUENCE (SMILES) GFlowNet that induces synthesizability by SOFT
+             regularization -- off-policy replay with a contrastive signal from separate buffers of
+             synthesizable vs unsynthesizable samples, plus priors from large SMILES corpora -- NOT
+             reaction templates. Claims >95% per-molecule synthesizability with higher rewards.
+             THE marquee foil for the LSD-Flow library-efficiency benchmark (docs/
+             LSD_FLOW_BENCHMARK_PLAN.md T3.1-T3.2): its molecules are per-molecule synthesizable but
+             carry NO shared-route structure, so a library must recover shared intermediates post-hoc
+             (AiZynth+SPARROW) -- the headline shows S3-GFN + best planner still loses to a
+             reaction-GFN + hub-batching on reactions-per-mode. Mila/Bengio lineage (same as
+             [bengio2021gflownet]). PDF: pdfs/kim2026s3gfn.pdf.}
+}
+
 @article{bengeoffrey2025molde,
   title   = {Molecular Glue-Design-Evaluator ({MOLDE}): An Advanced Method for In-Silico Molecular Glue Design},
   author  = {Ben Geoffrey, A. S. and Agrawal, Deepak and Kulkarni, Nagaraj M. and Gunasekaran, Manonmani},
