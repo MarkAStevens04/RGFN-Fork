@@ -29,7 +29,13 @@ from typing import Optional
 
 from .base import EvaluationResult, LibrarySet
 from .network import build_network, canonical
-from .route_recovery import DEFAULT_CONFIG, REPO_ROOT, RouteCache, recover_routes
+from .route_recovery import (
+    DEFAULT_CONFIG,
+    REPO_ROOT,
+    RouteCache,
+    env_python,
+    recover_routes,
+)
 
 SPARROW_WORKER = "validation/lsdflow/adapters/workers/sparrow_worker.py"
 
@@ -133,11 +139,7 @@ class SparrowEvaluator:
         tree, targets = net.write(snap_dir)
         out = snap_dir / "milp.json"
         cmd = [
-            "conda",
-            "run",
-            "-n",
-            self.sparrow_env,
-            "python",
+            *env_python(self.sparrow_env),
             str(Path(self.repo_root) / SPARROW_WORKER),
             "--tree",
             str(tree),

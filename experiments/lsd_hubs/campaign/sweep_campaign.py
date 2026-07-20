@@ -176,7 +176,13 @@ def evaluate_ordering(
     Each snapshot is the first-``size`` accepted modes as a :class:`LibrarySet`, carrying (a) the
     strategy's own count-once estimate at that prefix (``accepted[size-1].cum_reactions`` — CHECK 2)
     and (b) native routes when available (for the native-route/from-scratch SPARROW pricers).
-    ``reactions`` is whatever the evaluator returns (``None`` ⇒ dropped by the read-time slicers).
+
+    Curve point = ``(priced_modes, reactions)``. The mode axis is the evaluator's ``n_priced``, NOT
+    the raw selection count: the from-scratch pricer EXCLUDES modes it can't route (plan T1.3), so a
+    snapshot of 60 selected modes at 70% solve-rate is a 42-mode library priced over 42 modes — using
+    the raw 60 would put the x and y on different sets. For count-once ``n_priced == n_modes`` (every
+    mode has a DAG estimate), so this is a no-op there (curves stay bit-for-bit). ``reactions``/
+    ``priced_modes`` may be ``None``/``0`` (unpriced) ⇒ dropped by the read-time slicers.
     """
     accepted = result.accepted
     curve = []
@@ -190,7 +196,9 @@ def evaluate_ordering(
             provenance=provenance or {},
             count_once_reactions=sub[-1].cum_reactions,
         )
-        curve.append((sub[-1].cum_modes, evaluator.score(lib).total_reactions))
+        res = evaluator.score(lib)
+        modes = res.n_priced if res.n_priced is not None else sub[-1].cum_modes
+        curve.append((modes, res.total_reactions))
     return curve
 
 

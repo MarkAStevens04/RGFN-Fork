@@ -1,0 +1,253 @@
+{
+  "tag": "scent_seh_sparrow_headline",
+  "reward_threshold": 7.0,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "baseline_cutoff": 0.5,
+  "child_policy": "free_frag",
+  "prebuild_k": 100,
+  "rank_by": "build_score",
+  "evaluator": "sparrow",
+  "snapshot_schedule": "geometric",
+  "cutoffs": [
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9
+  ],
+  "pareto_modes_at_R": {
+    "hub_batching": [
+      26,
+      25,
+      23,
+      24,
+      21,
+      20,
+      20,
+      25,
+      26,
+      28,
+      27,
+      27,
+      27
+    ],
+    "best_candidate": [
+      14,
+      17,
+      20,
+      22,
+      21,
+      24,
+      23,
+      25,
+      26,
+      26,
+      26,
+      26,
+      26
+    ]
+  },
+  "fixed_modes_reactions_at_M": {
+    "hub_batching": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "best_candidate": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  },
+  "budget_efficiency_endpoint": {
+    "hub_batching": {
+      "reactions": 501,
+      "modes": 182
+    },
+    "best_candidate": {
+      "reactions": 563,
+      "modes": 154
+    }
+  },
+  "compute_time": {
+    "enum_timings_meta": {
+      "merged_from": [
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice0/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice1/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice2/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice3/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice4/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice5/enum_timings.json"
+      ],
+      "n_slices": 6,
+      "n_hubs": 200,
+      "n_children": 828448,
+      "setup_s": 26.689,
+      "slice_setups_s": [
+        26.739,
+        26.339,
+        26.752,
+        26.809,
+        26.638,
+        26.479
+      ],
+      "totals_s": {
+        "enumeration_s": 15612.231,
+        "reward_gen_s": 960.321,
+        "flow_extract_s": 2997.706
+      },
+      "device": "cuda",
+      "reward_name": "seh",
+      "cuda_synchronized": true
+    },
+    "hub_pick_s": 0.159,
+    "baseline_cutoff": 0.5,
+    "at_baseline": {
+      "enum_timings_meta": {
+        "merged_from": [
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice0/enum_timings.json",
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice1/enum_timings.json",
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice2/enum_timings.json",
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice3/enum_timings.json",
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice4/enum_timings.json",
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_timed/slice5/enum_timings.json"
+        ],
+        "n_slices": 6,
+        "n_hubs": 200,
+        "n_children": 828448,
+        "setup_s": 26.689,
+        "slice_setups_s": [
+          26.739,
+          26.339,
+          26.752,
+          26.809,
+          26.638,
+          26.479
+        ],
+        "totals_s": {
+          "enumeration_s": 15612.231,
+          "reward_gen_s": 960.321,
+          "flow_extract_s": 2997.706
+        },
+        "device": "cuda",
+        "reward_name": "seh",
+        "cuda_synchronized": true
+      },
+      "hub_batching": {
+        "strategy": "hub_batching",
+        "setup_s": 26.689,
+        "hub_pick_s": 0.159,
+        "enumeration_s": 1578.5404,
+        "reward_gen_s": 101.5897,
+        "flow_extract_s": 296.4384,
+        "mode_selection_s": 0.8046,
+        "n_hubs_walked": 19,
+        "n_children_scored": 85165,
+        "missing_hub_keys": [],
+        "total_s": 2004.2211
+      },
+      "best_candidate": {
+        "strategy": "best_candidate",
+        "setup_s": 0.0,
+        "hub_pick_s": 0.0,
+        "enumeration_s": 0.0,
+        "reward_gen_s": 0.0,
+        "flow_extract_s": 0.0,
+        "mode_selection_s": 0.3748,
+        "n_hubs_walked": 0,
+        "n_children_scored": 0,
+        "missing_hub_keys": [],
+        "total_s": 0.3748
+      },
+      "head_to_head": {
+        "hub_total_s": 2004.2211,
+        "best_total_s": 0.3748,
+        "extra_compute_s": 2003.8463,
+        "ratio_hub_over_best": 5347.093,
+        "per_component_delta_s": {
+          "setup_s": 26.689,
+          "hub_pick_s": 0.159,
+          "enumeration_s": 1578.5404,
+          "reward_gen_s": 101.5897,
+          "flow_extract_s": 296.4384,
+          "mode_selection_s": 0.4298
+        },
+        "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+      }
+    },
+    "hub_total_s_by_cutoff": [
+      19607.6575,
+      19601.1584,
+      9987.8258,
+      4474.6124,
+      2004.2211,
+      1346.5339,
+      995.7501,
+      919.0024,
+      668.0825,
+      463.3639,
+      463.3516,
+      463.3466,
+      463.3446
+    ],
+    "best_total_s_by_cutoff": [
+      7.2703,
+      0.6357,
+      0.5393,
+      0.4611,
+      0.3748,
+      0.32,
+      0.2819,
+      0.2623,
+      0.2404,
+      0.2303,
+      0.2125,
+      0.2089,
+      0.2082
+    ],
+    "extra_compute_s_by_cutoff": [
+      19600.3871,
+      19600.5227,
+      9987.2865,
+      4474.1512,
+      2003.8463,
+      1346.2138,
+      995.4682,
+      918.74,
+      667.842,
+      463.1336,
+      463.1391,
+      463.1378,
+      463.1364
+    ]
+  }
+}

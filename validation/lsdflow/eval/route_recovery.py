@@ -37,6 +37,27 @@ DEFAULT_CONFIG = "data/models/aizynthfinder/config.yml"
 SYNTH_SCRIPT = "validation/harness/synthesizability.py"
 
 
+def env_python(env_name: str):
+    """Command prefix to run python in conda env ``env_name``. Prefers the env's python DIRECTLY
+    (``.../envs/<env>/bin/python``) over ``conda run -n <env> python`` — the latter re-resolves the
+    env on every call (~2.5-3s), which dominates when the evaluator spawns hundreds of MILP/AiZynth
+    subprocesses; direct invocation is ~0.9s. Falls back to ``conda run`` if the path isn't found.
+    Both benchmark envs (sparrow, aizynth) are pure-python/CPU, so they need no ``conda run`` env-var
+    setup (verified). Returns a list to prepend to the python args."""
+    import sys
+
+    cur = Path(sys.executable)
+    candidates = []
+    for up in (2, 1):  # current interp is <base>/envs/<cur>/bin/python or <base>/bin/python
+        if len(cur.parents) > up:
+            candidates.append(cur.parents[up] / "envs" / env_name / "bin" / "python")
+    candidates.append(Path.home() / "miniconda3" / "envs" / env_name / "bin" / "python")
+    for c in candidates:
+        if c.exists():
+            return [str(c)]
+    return ["conda", "run", "-n", env_name, "python"]
+
+
 @dataclass
 class RouteCache:
     """Persistent ``{canonical_smiles: {"solved": 0|1, "route": route|None}}`` memo (JSON).
@@ -132,11 +153,7 @@ def recover_routes(
         jsonl_out = work / "recover_out.jsonl"
         smi_in.write_text("\n".join(misses) + "\n")
         cmd = [
-            "conda",
-            "run",
-            "-n",
-            aizynth_env,
-            "python",
+            *env_python(aizynth_env),
             str(Path(repo_root) / SYNTH_SCRIPT),
             "--recover-routes",
             str(smi_in),
