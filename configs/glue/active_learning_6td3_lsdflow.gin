@@ -1,0 +1,99 @@
+# LSD-Flow active-learning run (Balam) — RGFN in-env anchor for the acquisition MVP.
+#
+# Wires the new LSD-Flow acquisition (glue/samplers/lsdflow/acquisition.py) into the
+# RGFN active-learning loop (glue/active_learning/loop.py) on the real 6TD3 GPU
+# differential-docking oracle. Three arms share this config, selected with
+# --acquisition:
+#
+#   --acquisition hub_batching    UCB-rank hubs by z(reward)+λ·U(h) (LSDFlowAcquisition),
+#                                  enumerate + diversify each into modes.
+#   --acquisition best_candidate  top-M sampled terminals under the SAME hit-bar +
+#                                  diversity filter (the "policy" control).
+#   --acquisition random          uniform policy over the same blocks, no filters
+#                                  (the forgiving Fig.7 floor).
+#
+# The oracle (docking) is the expensive lab-affinity analogue; the reward-generator M
+# (@LearnedGlueProxy, refit each round on docking labels) scores the enumerated hub
+# children (unlimited "reward-gen calls"). Only the ~100 chosen modes are docked/round
+# ("oracle calls"). Both axes are written to active_learning/oracle_calls.csv.
+#
+# pre-select-K=20 is wired (LSDFlowAcquisition.prebuild_k) but INERT here: RGFN has no
+# dynamic library, so free_frag keeps every child (reward order) and no fragments are
+# stocked. pre-select-K becomes load-bearing on the SCENT cross-env path (Phase 2).
+#
+# Run (one arm per invocation; --seed sets the RNG + run-dir tag):
+#   python scripts/active_learning.py --cfg configs/glue/active_learning_6td3_lsdflow.gin \
+#       --acquisition hub_batching --seed 42
+#
+# Smoke (fast end-to-end check) — shrink via CLI bindings, e.g.:
+#   ... --acquisition hub_batching --seed 0 \
+#   (then in the config or via a smoke variant: n_rounds=1, query_batch_size=16,
+#    LSDFlowAcquisition.n_sample_trajectories=200, Trainer.n_iterations=50)
+
+include 'configs/rgfn_base.gin'
+include 'configs/envs/reaction.gin'
+
+beta = 8
+
+# --- Proxy M: trainable atom-graph MPNN (the reward-generator we train). ------
+proxy/gin.singleton.constructor = @LearnedGlueProxy
+train_proxy = @proxy/gin.singleton()
+valid_proxy = %train_proxy
+LearnedGlueProxy.higher_is_better = False   # 6TD3 ddb1_dvina: more negative = better glue
+LearnedGlueProxy.max_epochs = 100
+LearnedGlueProxy.patience = 10
+LearnedGlueProxy.batch_size = 128
+LearnedGlueProxy.lr = 5e-4
+
+# --- Metrics (identical to the GPU baseline). --------------------------------
+SafeNumScaffoldsFound.proxy_value_threshold_list = [-2.0, -2.5, -3.0, -3.5]
+SafeNumScaffoldsFound.proxy_component_name = None
+SafeNumScaffoldsFound.proxy_higher_better = False
+train_metrics = [@StandardGFNMetrics(), @SafeNumScaffoldsFound(), @UniqueMolecules(), @AllMolecules(), @FractionEarlyTerminate(), @QED(), @TanimotoSimilarityModes()]
+Trainer.train_metrics = %train_metrics
+
+# --- Inner GFN budget per round (warm-started across rounds). ----------------
+Trainer.n_iterations = 300
+Trainer.valid_every_n_iterations = 100000   # skip mid-run validation
+trainer/gin.singleton.constructor = @Trainer
+trainer = @trainer/gin.singleton()
+
+# --- Oracle O: GPU two-tier 6TD3 differential (QuickVina2-GPU search). --------
+Docking6TD3GpuOracle.exhaustiveness = 8000
+Docking6TD3GpuOracle.num_modes = 9
+Docking6TD3GpuOracle.docking_batch_size = 100   # dock the whole 100-mode batch in one process
+Docking6TD3GpuOracle.n_gpu = 1
+oracle/gin.singleton.constructor = @Docking6TD3GpuOracle
+oracle = @oracle/gin.singleton()
+
+# --- Seed dataset D_0: 408 validated 6TD3 docking labels. --------------------
+OracleLabeledDataset.seed_csv = 'experiments/active_learning/6td3/seed_6td3.csv'
+OracleLabeledDataset.label_column = 'label'
+dataset/gin.singleton.constructor = @OracleLabeledDataset
+dataset = @dataset/gin.singleton()
+
+# --- LSD-Flow acquisition knobs (the science; arm + budget + orientation are
+#     set by the loop). The 6TD3 hit bar is the glue/decoy discrimination cut
+#     −1.5 (Logs/002; Youden −1.58, Logs/006). ----------------------------------
+LSDFlowAcquisition.lam = 1.0                 # λ: exploration weight on z(U(h))
+LSDFlowAcquisition.reward_threshold = -1.5   # mode iff M(x) <= −1.5 (minimize)
+LSDFlowAcquisition.similarity = 0.5          # Tanimoto (ECFP r=3/2048) diversity cutoff
+LSDFlowAcquisition.hub_min_children = 2      # U(h) undefined below 2 children
+LSDFlowAcquisition.hub_reward_fn = 'best_child'
+LSDFlowAcquisition.hub_uncertainty_fn = 'flow_variance'
+LSDFlowAcquisition.child_policy = 'free_frag'
+LSDFlowAcquisition.prebuild_k = 20           # pre-select-K (inert on RGFN; SCENT seam)
+LSDFlowAcquisition.n_sample_trajectories = 2000
+LSDFlowAcquisition.sample_batch_size = 100
+LSDFlowAcquisition.max_children_per_hub = 2000
+
+# --- Outer active-learning loop. ---------------------------------------------
+ActiveLearningLoop.trainer = %trainer
+ActiveLearningLoop.proxy = %train_proxy
+ActiveLearningLoop.oracle = %oracle
+ActiveLearningLoop.dataset = %dataset
+ActiveLearningLoop.n_rounds = 10
+ActiveLearningLoop.query_batch_size = 100   # dock 100 modes/round (the oracle budget)
+ActiveLearningLoop.top_k = 100
+ActiveLearningLoop.acquisition = 'hub_batching'   # default arm; --acquisition overrides
+ActiveLearningLoop.system = '6td3'

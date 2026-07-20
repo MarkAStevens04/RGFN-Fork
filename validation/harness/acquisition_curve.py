@@ -33,11 +33,18 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 # Okabe-Ito colourblind-safe palette, keyed by arm.
 _ARM_COLOR = {
-    "policy": "#0072B2",  # blue  — the learned RGFN acquisition
-    "random": "#D55E00",  # vermillion — the uniform-policy baseline
+    "hub_batching": "#009E73",  # green — the LSD-Flow UCB hub-batching arm
+    "best_candidate": "#0072B2",  # blue — top-M sampled terminals (the control)
+    "policy": "#56B4E9",  # sky blue — the learned-policy sample arm
+    "random": "#D55E00",  # vermillion — the uniform-policy floor
 }
-_ARM_LABEL = {"policy": "RGFN (learned)", "random": "random acquisition"}
-_FALLBACK_COLORS = ["#009E73", "#CC79A7", "#E69F00", "#56B4E9", "#000000"]
+_ARM_LABEL = {
+    "hub_batching": "LSD-Flow hub-batching (UCB)",
+    "best_candidate": "best-candidate",
+    "policy": "learned policy",
+    "random": "random acquisition",
+}
+_FALLBACK_COLORS = ["#CC79A7", "#E69F00", "#F0E442", "#000000"]
 
 
 def find_trace_files(paths: Sequence[str]) -> List[Path]:

@@ -470,6 +470,12 @@ def main() -> None:
     )
     ap.add_argument("--rank-by", default="build_score", choices=list(RANK_METHODS))
     ap.add_argument("--tag", required=True)
+    ap.add_argument(
+        "--out-dir",
+        default=None,
+        help="output root for results/<tag>/ (default: <script dir>/results). Set to a $SCRATCH path "
+        "when running on a Balam compute node ($HOME is read-only there); sync back afterward.",
+    )
     ap.add_argument("--system-label", default="sEH proxy", help="system name shown in plot titles")
     ap.add_argument(
         "--n-hubs",
@@ -582,7 +588,10 @@ def main() -> None:
         f"[sweep] {len(cands)} candidates, {len(enum_hubs)} hubs, {len(cost_table.promoted_set)} "
         f"promoted; cutoffs={cutoffs}"
     )
-    out = HERE / "results" / a.tag  # results/<target>/ — untagged names (the dir carries the tag)
+    # results/<target>/ — untagged names (the dir carries the tag). Default is the in-repo results
+    # dir; --out-dir redirects it (e.g. to $SCRATCH when running on a Balam compute node, where $HOME
+    # is read-only — then sync back to the repo from a login node).
+    out = (Path(a.out_dir) if a.out_dir else HERE / "results") / a.tag
     out.mkdir(parents=True, exist_ok=True)
     base = round(
         a.baseline_cutoff, 4

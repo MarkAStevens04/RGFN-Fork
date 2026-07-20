@@ -18,3 +18,4 @@ from glue.samplers.lsdflow.hub.registry import (  # noqa: F401
     get_hub_strategy,
     register,
 )
+from glue.samplers.lsdflow.hub.ucb import UcbHubStrategy  # noqa: F401

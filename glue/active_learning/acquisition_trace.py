@@ -38,11 +38,15 @@ class AcquisitionTrace:
 
     COLUMNS = [
         "round",
-        "acquisition",  # "policy" (learned GFN) or "random" (uniform baseline)
+        "acquisition",  # "policy"/"random"/"hub_batching"/"best_candidate" — the arm
         "seed",
         "oracle_calls_round",  # molecules submitted to O this round
         "oracle_calls_cumulative",  # ... summed over all rounds so far (the x-axis)
-        "n_labelled_round",  # of those, how many O actually scored (finite label)
+        "reward_gen_calls_round",  # proxy-M evaluations spent choosing the batch (hub arms; 2nd axis)
+        "reward_gen_calls_cumulative",  # ... summed over all rounds so far
+        "n_hubs_used",  # distinct hubs contributing >=1 docked mode (hub_batching arm)
+        "avg_mols_per_hub",  # docked modes / hubs used this round (hub_batching arm)
+        "n_labelled_round",  # of the oracle calls, how many O actually scored (finite label)
         "dataset_size",  # |D| after this round's accumulation
         "top_k",  # k actually available (<= requested when |D| is small)
         "topk_mean",  # mean oracle label over the current Top-K (the y-axis)
@@ -75,6 +79,7 @@ class AcquisitionTrace:
         self.top_k = top_k
         self.seed = seed
         self._cumulative = 0
+        self._rewardgen_cumulative = 0
         # Write the header up front so a run that dies mid-round-1 still leaves a
         # readable (if empty) trace.
         with open(self.csv_path, "w", newline="") as fh:
@@ -92,6 +97,9 @@ class AcquisitionTrace:
         n_labelled_round: int,
         smiles: Sequence[str],
         labels: Sequence[float],
+        reward_gen_calls_round: int = 0,
+        n_hubs_used: Optional[int] = None,
+        avg_mols_per_hub: Optional[float] = None,
     ) -> Dict[str, object]:
         """Record one round and return the written row.
 
@@ -102,8 +110,16 @@ class AcquisitionTrace:
             n_labelled_round: how many of those got a finite label.
             smiles / labels: the *full* accumulated dataset ``D`` after this round
                 (parallel lists), used to compute the running Top-K.
+            reward_gen_calls_round: proxy-``M`` evaluations spent *choosing* this
+                round's batch (hub-batching enumerates + scores children before
+                docking). 0 for the policy/random arms (they don't enumerate). The
+                second cost axis pre-select-K attacks; unbounded, unlike oracle calls.
+            n_hubs_used / avg_mols_per_hub: hub-batching operational stats (blank for
+                the other arms) — recoverable retroactively from the per-hub log too,
+                logged here for convenience per the researcher's ask.
         """
         self._cumulative += oracle_calls_round
+        self._rewardgen_cumulative += reward_gen_calls_round
         top = self._top_k(smiles, labels)
         topk_mean = sum(l for _, l in top) / len(top) if top else float("nan")
         topk_best, topk_best_smiles = (top[0][1], top[0][0]) if top else (float("nan"), "")
@@ -113,6 +129,12 @@ class AcquisitionTrace:
             "seed": self.seed if self.seed is not None else "",
             "oracle_calls_round": oracle_calls_round,
             "oracle_calls_cumulative": self._cumulative,
+            "reward_gen_calls_round": reward_gen_calls_round,
+            "reward_gen_calls_cumulative": self._rewardgen_cumulative,
+            "n_hubs_used": "" if n_hubs_used is None else n_hubs_used,
+            "avg_mols_per_hub": ""
+            if avg_mols_per_hub is None or avg_mols_per_hub != avg_mols_per_hub
+            else round(avg_mols_per_hub, 3),
             "n_labelled_round": n_labelled_round,
             "dataset_size": len(smiles),
             "top_k": len(top),

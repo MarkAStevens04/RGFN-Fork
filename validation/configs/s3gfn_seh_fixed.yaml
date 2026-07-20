@@ -1,0 +1,73 @@
+# S3-GFN FIXED-REWARD baseline on sEH — the MARQUEE NON-reaction baseline (`[kim2026s3gfn]`)
+# for the LSD-Flow library-efficiency benchmark (docs/LSD_FLOW_BENCHMARK_PLAN.md T3.1).
+#
+# S3-GFN is a SMILES/sequence GFlowNet that post-trains GP-MolFormer with SOFT synthesizability
+# (retro-solvability contrastive buffers) — NOT reaction templates. It produces per-molecule
+# synthesizable molecules that carry NO shared-route structure, so a *library* must recover shared
+# intermediates POST-HOC (AiZynth->SPARROW). It is the foil for the "reaction MDP is necessary for
+# library economics" headline: emitted with has_route=0 (unlike RGFN/RxnFlow/SCENT).
+#
+# FAIRNESS: S3-GFN must optimize the SAME reward the reaction-GFN entrants do. We inject a frozen
+# reward provider (validation/generators/s3gfn/fixed_reward.py) in place of S3-GFN's native
+# get_scores (custom modular wiring). For sEH the provider IS the Bengio-2021 MPNN our benchmark +
+# S3-GFN both use -> this run is the VERIFICATION case (should reproduce S3-GFN's published sEH
+# result). The training-reward column matches native mol2seh exactly: clip(raw/8, 1e-4, 100).
+#
+# Run (from repo root, s3gfn env; candidate emission shells to the rgfn env):
+#   conda run -n s3gfn python validation/generators/s3gfn/run_s3gfn_fixed.py \
+#       --cfg validation/configs/s3gfn_seh_fixed.yaml \
+#       --root-dir $SCRATCH/rgfn_runs/experiments
+
+run:
+  name: fixed_reward/s3gfn_seh          # run dir: <root>/fixed_reward/s3gfn_seh/<timestamp>
+  root_dir: experiments                 # overridden by --root-dir on Balam ($SCRATCH)
+  seed: 42
+
+fixed_reward:
+  system: seh                           # target system (provenance + mode gate)
+  reward_name: seh_proxy                # fixed reward generator name (manifest 'oracle' field)
+  n_train_steps: 5000                   # ~matched to the reaction-GFN entrants (single-shot)
+  n_samples: 2000                       # unique valid molecules to emit as candidates
+  sample_oversample: 6.0                # oversample factor for the final pool sampling
+  max_sample_batches: 4000              # hard cap on generate() batches (degeneration guard)
+  score_units: "seh_mpnn_reward (higher is better)"
+
+# Frozen reward provider. type: seh_proxy | drd2 | docking (only seh_proxy implemented; the others
+# are the modular seam — same interface, injected identically). See fixed_reward.py.
+reward:
+  type: seh_proxy
+  clip: 10.0
+  batch_size: 128
+  # drd2:    model_path: oracle/drd2_current.pkl
+  # docking: oracle: docking_6td3_gpu   norm: 1.0   failed_score: 0.0   oracle_args: {}
+
+# S3-GFN generator hyperparams (defaults mirror src/s3gfn/train.py argparse; the paper's sEH run).
+s3gfn:
+  device: null                          # auto: cuda:0 if available
+  batch_size: 64                        # on-policy samples per step
+  replay_batch_size: 64
+  buffer_size: 6400
+  num_warmup_steps: 100
+  learning_rate: 1.0e-4
+  log_z_learning_rate: 1.0e-3
+  beta: 50.0                            # RTB reward coefficient (train.py default)
+  sampling_temperature: 1.0
+  eval_sampling_temperature: 1.0
+  training_mode: s3gfn                  # s3gfn | reward_shaping | rtb
+  use_retrosynthesis: true             # the SOFT-synthesizability signal (retro-solvability)
+  # retro_env: the training-time synthesizability library (data/envs/<env>/{building_block.smi,
+  # template.txt}). WE USE zincfrag_hb105 = ZINCFrag blocks (~178k, public) + hb.txt (105 templates).
+  # WHY NOT the paper's stock_hb (Enamine stock + 71-template hb_edited)? Enamine is vendor-gated
+  # (not in repo); ZINCFrag is S3-GFN's public alternative AND is in AiZynth's ZINC stock (aligns
+  # with our post-hoc referee). ZINCFrag fragments are small, so the paper's 71 templates give only
+  # 0.8% starting synth_ratio (won't bootstrap); the fuller 105-template set gives 4.7% -> climbs to
+  # 90%+. Full rationale + build: experiments/lsd_hubs/campaign/build_s3gfn_retro_env.sh + Logs/.
+  retro_env: zincfrag_hb105
+  retro_steps: 3
+  sa_threshold: 4.0
+  aux_coefficient: 0.0001               # contrastive auxiliary-loss coefficient
+  eval_samples: 1000                    # built-in final eval sample count
+  eval_every: 100000                    # >n_train_steps => no periodic eval (we sample our own pool)
+  save_periodic_every: 0
+  catalog: ""                           # optional chemical-filter catalog (off)
+  property_rule: none

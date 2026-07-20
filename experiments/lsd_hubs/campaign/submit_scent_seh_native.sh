@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=scent_seh_native
-#SBATCH --time=24:00:00                         # 30k-traj sample (~3-4h) + 200-hub enum on the frozen 2,018-frag library (~5h); generous headroom. Sample persists FIRST, so a timeout still leaves routes.json.
+#SBATCH --time=02:00:00                         # RESUMABLE: skips sample/pick if present, so a re-run on an existing OUT_DIR is enum-only (~40 min). Fresh full run (30k sample + enum) needs ~9h — raise --time then. Sized to fit before the 2026-07-21 04:00 maintenance for the enum-only re-run.
 #SBATCH --partition=compute
 #SBATCH --gpus-per-node=1
 #SBATCH --output=/scratch/markymoo/rgfn_runs/%x-%j.out
@@ -56,29 +56,43 @@ echo "host=$(hostname)"; nvidia-smi -L
 echo "CKPT=$CKPT"
 echo "N_TRAJ=$N_TRAJ K=$K N_HUBS=$N_HUBS ENUM_MAX=$ENUM_MAX OUT_DIR=$OUT_DIR"
 
-# --- 1. Sample -> records.csv + compositions.json + routes.json (native routes). ---------------
-echo "=== [1/3] sample N=$N_TRAJ -> routes.json ==="
-python validation/lsdflow/adapters/workers/scent_worker.py --mode sample \
-    --config "$CFG" --checkpoint "$CKPT" \
-    --n-trajectories "$N_TRAJ" --batch-size "$SAMPLE_BATCH" \
-    --reward-name "$REWARD" --out-dir "$SAMPLE_DIR"
-if [ ! -s "$SAMPLE_DIR/routes.json" ] || [ ! -s "$SAMPLE_DIR/records.csv" ]; then
-    echo "[native] FATAL: sample step did not produce routes.json + records.csv — aborting." >&2
-    exit 1
+# --- 1. Sample -> records.csv + compositions.json + routes.json (native routes). RESUMABLE. -------
+if [ -s "$SAMPLE_DIR/routes.json" ] && [ -s "$SAMPLE_DIR/records.csv" ]; then
+    echo "=== [1/3] sample: routes.json + records.csv already present in $SAMPLE_DIR — SKIP ==="
+else
+    echo "=== [1/3] sample N=$N_TRAJ -> routes.json ==="
+    python validation/lsdflow/adapters/workers/scent_worker.py --mode sample \
+        --config "$CFG" --checkpoint "$CKPT" \
+        --n-trajectories "$N_TRAJ" --batch-size "$SAMPLE_BATCH" \
+        --reward-name "$REWARD" --out-dir "$SAMPLE_DIR"
+    if [ ! -s "$SAMPLE_DIR/routes.json" ] || [ ! -s "$SAMPLE_DIR/records.csv" ]; then
+        echo "[native] FATAL: sample step did not produce routes.json + records.csv — aborting." >&2
+        exit 1
+    fi
 fi
 
-# --- 2. Pick + rank the 200-hub set (pure CPU; rgfn env has pick_hubs' deps but scent works too). --
-echo "=== [2/3] pick_hubs -> $N_HUBS hubs ==="
-python experiments/lsd_hubs/campaign/pick_hubs.py \
-    --records "$SAMPLE_DIR/records.csv" --out "$OUT_DIR/hubs.csv" \
-    --top-k-candidates "$K" --n-hubs "$N_HUBS"
+# --- 2. Pick + rank the hub set (pure CPU; rgfn env has pick_hubs' deps but scent works too). RESUMABLE. --
+if [ -s "$OUT_DIR/hubs.csv" ]; then
+    echo "=== [2/3] pick_hubs: hubs.csv already present — SKIP ==="
+else
+    echo "=== [2/3] pick_hubs -> $N_HUBS hubs ==="
+    python experiments/lsd_hubs/campaign/pick_hubs.py \
+        --records "$SAMPLE_DIR/records.csv" --out "$OUT_DIR/hubs.csv" \
+        --top-k-candidates "$K" --n-hubs "$N_HUBS"
+fi
 
 # --- 3. Enumerate their children -> enum_children.json WITH the per-child `reaction` field. --------
+# ALWAYS (re-)run: this is the step the fix in scent_worker.py (ReactionStateEarlyTerminal guard, the
+# crash that left enum_children.json missing in job 70974) targets.
 echo "=== [3/3] enumerate $N_HUBS hubs -> enum_children.json (reaction field) ==="
 python validation/lsdflow/adapters/workers/scent_worker.py --mode enumerate \
     --config "$CFG" --checkpoint "$CKPT" \
     --hubs-file "$OUT_DIR/hubs.csv" --enum-max-children "$ENUM_MAX" \
     --out-dir "$ENUM_DIR"
+if [ ! -s "$ENUM_DIR/enum_children.json" ]; then
+    echo "[native] FATAL: enumerate step did not write enum_children.json — see errors above." >&2
+    exit 1
+fi
 
 echo ""
 echo "DONE scent_seh_native -> $OUT_DIR"

@@ -62,7 +62,16 @@ class SEHFrozenReward:
             graphs, valid = [], []
             for s in chunk:
                 mol = Chem.MolFromSmiles(s) if s else None
-                g = bengio2021flow.mol2graph(mol) if mol is not None else None
+                g = None
+                if mol is not None:
+                    try:
+                        g = bengio2021flow.mol2graph(mol)
+                    except Exception:
+                        # unsupported atom/feature (e.g. exotic elements from an unconstrained
+                        # SMILES generator like S3-GFN) -> treat as invalid, exactly as native
+                        # S3-GFN's mol2seh does (train.py try/except). RGFN/RxnFlow never hit this
+                        # (curated building blocks), but the SMILES-GFN entrant can.
+                        g = None
                 valid.append(g is not None)
                 if g is not None:
                     graphs.append(g)

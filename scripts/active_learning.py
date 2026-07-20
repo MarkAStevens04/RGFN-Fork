@@ -35,13 +35,16 @@ if __name__ == "__main__":
         "--acquisition",
         type=str,
         default=None,
-        choices=["policy", "random"],
+        choices=["policy", "random", "hub_batching", "best_candidate"],
         help=(
-            "Which policy proposes each round's query batch: 'policy' (the learned "
-            "RGFN loop) or 'random' (uniform-policy baseline, the [bengio2021gflownet] "
-            "Fig. 7 control). Overrides ActiveLearningLoop.acquisition from the config; "
-            "if omitted, the config's value (default 'policy') is used. Lets one config "
-            "drive both arms of the oracle-efficiency comparison."
+            "Which strategy proposes each round's query batch: 'policy' (the learned "
+            "RGFN loop) or 'random' (uniform-policy baseline) — the [bengio2021gflownet] "
+            "Fig. 7 controls — or the LSD-Flow arms 'hub_batching' (UCB-rank hubs by "
+            "z(reward)+lambda*U(h), diversify into modes) / 'best_candidate' (top-M "
+            "sampled terminals under the same hit-bar + diversity filter). Overrides "
+            "ActiveLearningLoop.acquisition from the config; if omitted, the config's "
+            "value is used. Lets one config drive every arm of the oracle-efficiency "
+            "comparison."
         ),
     )
     parser.add_argument(

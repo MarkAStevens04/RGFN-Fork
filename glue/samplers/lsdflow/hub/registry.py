@@ -20,6 +20,7 @@ from glue.samplers.lsdflow.hub.highest_visitation import HighestVisitationStrate
 from glue.samplers.lsdflow.hub.lowest_uncertainty import LowestUncertaintyStrategy
 from glue.samplers.lsdflow.hub.most_modes import MostModesStrategy
 from glue.samplers.lsdflow.hub.parent_of_topk import ParentOfTopKStrategy
+from glue.samplers.lsdflow.hub.ucb import UcbHubStrategy
 
 _STRATEGIES: Dict[str, Type[HubSelectionStrategy]] = {
     cls.name: cls
@@ -30,6 +31,7 @@ _STRATEGIES: Dict[str, Type[HubSelectionStrategy]] = {
         ParentOfTopKStrategy,
         HighestVisitationStrategy,
         LowestUncertaintyStrategy,
+        UcbHubStrategy,
     )
 }
 

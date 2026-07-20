@@ -41,7 +41,18 @@ from glue.datasets.oracle_labeled import OracleLabeledDataset
 from glue.datasets.suggestion_log import SuggestionLog
 from glue.oracles.base import GlueOracle
 from glue.proxies.learned_proxy import LearnedGlueProxy
+from glue.samplers.lsdflow.acquisition import LSDFlowAcquisition
 from rgfn.gfns.reaction_gfn.api.reaction_api import ReactionStateTerminal
+
+# Acquisition arms (the ``[bengio2021gflownet]`` Fig. 7 comparison + the LSD-Flow arms):
+#   policy         — the learned RGFN forward policy proposes the batch (full Alg. 1).
+#   random         — uniform policy over the same reaction blocks (the paper's control).
+#   hub_batching   — LSD-Flow: UCB-rank hubs by z(reward)+λ·U(h), diversify into modes.
+#   best_candidate — the LSD-Flow control ("policy" in the researcher's framing): top-M
+#                    sampled terminals under the SAME hit-bar + diversity filter.
+_LEARNED_ARMS = ("policy", "hub_batching", "best_candidate")  # arms that fit M + train the GFN
+_LSDFLOW_ARMS = ("hub_batching", "best_candidate")  # arms served by LSDFlowAcquisition
+_ARMS = ("policy", "random") + _LSDFLOW_ARMS
 
 
 @gin.configurable()
@@ -112,10 +123,11 @@ class ActiveLearningLoop:
         self.query_batch_size = query_batch_size
         self.sample_oversample = sample_oversample
         self.top_k = top_k
-        if acquisition not in ("policy", "random"):
-            raise ValueError(f"acquisition must be 'policy' or 'random', got {acquisition!r}.")
+        if acquisition not in _ARMS:
+            raise ValueError(f"acquisition must be one of {_ARMS}, got {acquisition!r}.")
         self.acquisition = acquisition
         self._random_sampler = None  # lazily built for acquisition='random'
+        self._last_acq_result = None  # stashed LSDFlowAcquisition result (hub arms) for the trace
         self.reset_replay_each_round = reset_replay_each_round
         self.run_dir = Path(run_dir) if run_dir else Path(trainer.run_dir)
         self.system = system
@@ -205,7 +217,7 @@ class ActiveLearningLoop:
             # proxy/policy — it just samples uniformly, §Fig. 7 control).
             smiles, labels = self.dataset.to_lists()
             fit_metrics = {}
-            if self.acquisition == "policy":
+            if self.acquisition in _LEARNED_ARMS:
                 with timer.phase("fit_proxy", rnd):
                     fit_metrics = self.proxy.fit(smiles, labels)
                     self.proxy.clear_cache()  # predictions changed -> drop stale cache
@@ -269,12 +281,16 @@ class ActiveLearningLoop:
             # per molecule *submitted* to O (docking failures still spent a call);
             # the running Top-K is taken over the whole accumulated D.
             ds_smiles, ds_labels = self.dataset.to_lists()
+            acq_result = self._last_acq_result  # set by the lsdflow arms; None otherwise
             trace_row = trace.record(
                 rnd,
                 oracle_calls_round=len(batch),
                 n_labelled_round=len(valid_scores),
                 smiles=ds_smiles,
                 labels=ds_labels,
+                reward_gen_calls_round=getattr(acq_result, "reward_gen_calls", 0),
+                n_hubs_used=getattr(acq_result, "n_hubs_used", None),
+                avg_mols_per_hub=getattr(acq_result, "avg_mols_per_hub", None),
             )
 
             round_metrics = {
@@ -290,11 +306,20 @@ class ActiveLearningLoop:
                 if valid_scores
                 else float("nan"),
                 "al_batch_oracle_max": max(valid_scores) if valid_scores else float("nan"),
+                "al_reward_gen_calls_round": getattr(acq_result, "reward_gen_calls", 0),
+                "al_reward_gen_calls_cumulative": trace_row.get("reward_gen_calls_cumulative", 0),
+                "al_n_hubs_used": getattr(acq_result, "n_hubs_used", 0),
+                "al_avg_mols_per_hub": getattr(acq_result, "avg_mols_per_hub", float("nan")),
                 **fit_metrics,
                 **{f"batch_{k}": v for k, v in batch_metrics.items() if k != "al_round"},
             }
             logger.log_metrics(metrics=round_metrics, prefix="active_learning")
             self.dataset.save_csv(str(out_dir / f"dataset_round_{rnd:03d}.csv"))
+            # Per-hub acquisition provenance (hub_batching arm): which hubs were walked, their
+            # U(h)/reward/score, and how many docked modes each contributed — the record behind the
+            # avg-mols/hub stat and any post-hoc reactions-per-mode / hub-coincidence analysis.
+            if acq_result is not None and getattr(acq_result, "per_hub", None):
+                self._write_per_hub(out_dir / f"hub_acquisition_round_{rnd:03d}.csv", acq_result)
             print(
                 f"[AL] round {rnd}: |D|={len(self.dataset)} (+{n_added}); "
                 f"oracle_calls={trace.cumulative}, "
@@ -354,12 +379,20 @@ class ActiveLearningLoop:
     def _sample_query_batch(self) -> tuple:
         """Sample the query batch from the acquisition sampler; return ``(smiles, routes)``.
 
+        The ``hub_batching`` / ``best_candidate`` arms delegate to
+        :class:`~glue.samplers.lsdflow.acquisition.LSDFlowAcquisition` (which builds the hub DAG,
+        UCB-ranks hubs, enumerates + diversifies into modes) and stash its accounting on
+        ``self._last_acq_result`` for the trace. The ``policy`` / ``random`` arms keep the original
+        sample-and-dedup path below.
+
         Returns parallel lists: the unique valid terminal SMILES and, for each,
         the structured synthesis route (``extract_route``) reconstructed from that
         molecule's trajectory. ``trajectories.get_last_states_flat()`` is built as
         ``[states[-1] for states in _states_list]``, so index ``i`` there indexes
         the same trajectory in ``_states_list``/``_actions_list`` — that alignment
         is how we recover each terminal molecule's route."""
+        if self.acquisition in _LSDFLOW_ARMS:
+            return self._lsdflow_query_batch()
         sampler = self._query_sampler()
         n_sample = int(self.query_batch_size * self.sample_oversample)
         batch_size = self.trainer.train_batch_size
@@ -380,6 +413,48 @@ class ActiveLearningLoop:
                 if len(batch) >= self.query_batch_size:
                     return batch, routes
         return batch, routes
+
+    def _lsdflow_sampler(self):
+        """The sampler LSDFlowAcquisition samples + enumerates through.
+
+        Prefer the trainer's pure-policy ``valid_sampler`` (the policy ``assign_log_probs`` scores
+        against, so ``U(h)`` is a clean flow-matching residual — §5); fall back to the training
+        forward sampler. Both must expose ``.env`` + ``.reward`` (the shaped ``M`` reward the
+        enumeration scores children with)."""
+        for cand in (
+            getattr(self.trainer, "valid_sampler", None),
+            self.trainer.train_forward_sampler,
+        ):
+            if (
+                cand is not None
+                and getattr(cand, "env", None) is not None
+                and getattr(cand, "reward", None) is not None
+            ):
+                return cand
+        return self.trainer.train_forward_sampler
+
+    def _lsdflow_query_batch(self) -> tuple:
+        """Build the query batch via :class:`LSDFlowAcquisition` (hub_batching / best_candidate).
+
+        The loop owns the two authoritative knobs — the arm and the oracle orientation +
+        per-round docking budget — and passes them explicitly (call-site args win over gin); the
+        science knobs (λ, hit-bar, child policy, pre-select-K, hub terms, sampling size) come from
+        the gin config. The result's accounting is stashed for the trace + per-round metrics."""
+        acq = LSDFlowAcquisition(
+            arm=self.acquisition,
+            higher_is_better=self.oracle.higher_is_better,
+            budget_modes=self.query_batch_size,
+        )
+        result = acq.select_batch(self._lsdflow_sampler(), self.trainer.objective)
+        self._last_acq_result = result
+        print(
+            f"[AL] lsdflow[{self.acquisition}]: {len(result.smiles)} modes from "
+            f"{result.n_hubs_used}/{result.n_hubs_ranked} hubs "
+            f"(reward-gen calls={result.reward_gen_calls}, "
+            f"avg mols/hub={result.avg_mols_per_hub:.2f})",
+            flush=True,
+        )
+        return result.smiles, result.routes
 
     @staticmethod
     def _free_torch_gpu_cache(rnd: int) -> None:
@@ -440,3 +515,24 @@ class ActiveLearningLoop:
             writer.writerow(["rank", "smiles", "oracle_label"])
             for rank, (smi, label) in enumerate(rows, start=1):
                 writer.writerow([rank, smi, label])
+
+    @staticmethod
+    def _write_per_hub(path: Path, acq_result) -> None:
+        """Per-hub acquisition provenance for the hub-batching arm (best-first walk order)."""
+        import csv
+
+        fields = [
+            "rank",
+            "hub_key",
+            "depth",
+            "n_enumerated",
+            "n_accepted",
+            "uncertainty",
+            "reward",
+            "score",
+        ]
+        with open(path, "w", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=fields)
+            writer.writeheader()
+            for rank, row in enumerate(acq_result.per_hub, start=1):
+                writer.writerow({"rank": rank, **{k: row.get(k) for k in fields[1:]}})

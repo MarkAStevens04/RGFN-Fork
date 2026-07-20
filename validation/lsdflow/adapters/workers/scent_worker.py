@@ -312,6 +312,14 @@ def _make_enumerator(rgfn_api, Trajectories, RSA, RSB, RSC, RST, RAC, Molecule):
         def dfs(state, steps):
             if len(out) >= max_children:
                 return
+            # Only mid-trajectory states (A/B/C) expand. A STOP or EARLY-TERMINATE action can land on
+            # a terminal / early-terminal state (RST / ReactionStateEarlyTerminal) that has NO forward
+            # action space -> get_forward_action_spaces raises KeyError (crashed the full 200-hub
+            # enum: some hub's DFS reached an early-terminal before any hub was written). Those are
+            # dead-ends for enumeration anyway: valid one-reaction children are collected at RSC below,
+            # and build_child_trajectory only keeps paths that STOP to a proper RST. So skip them.
+            if not isinstance(state, (RSA, RSB, RSC)):
+                return
             fas = env.get_forward_action_spaces([state])[0]
             if not hasattr(fas, "get_possible_actions_indices"):
                 return

@@ -80,6 +80,10 @@ grep -viE '^\s*(--index-url|--extra-index-url|-f |torch==|torchvision|torchaudio
     "${CLONE_DIR}/requirements.txt" > "${REQ_TMP}"
 conda run -n "${ENV_NAME}" pip install -r "${REQ_TMP}" --find-links "${PYG_FIND_LINKS}"
 rm -f "${REQ_TMP}"
+# PyTDC (scoring_function.py: `from tdc import Oracle`) imports `pkg_resources`, which setuptools>=81
+# no longer ships. Pin <81 so the DRD2/GSK3B/JNK3/QED/SA oracles import (same fix as the SCENT env).
+echo "[setup_s3gfn] pinning setuptools<81 (PyTDC needs pkg_resources)"
+conda run -n "${ENV_NAME}" pip install "setuptools<81"
 echo "[setup_s3gfn] installing S3-GFN (editable)"
 conda run -n "${ENV_NAME}" pip install -e "${CLONE_DIR}"
 
@@ -88,10 +92,36 @@ conda run -n "${ENV_NAME}" pip install -e "${CLONE_DIR}"
 # one our benchmark uses. requirements.txt does not list gflownet, so install it explicitly (the
 # same package the rxnflow/fraggfn envs carry). bengio2021flow.load_original_model() then downloads
 # the sEH MPNN weights on first use.
-echo "[setup_s3gfn] installing recursion gflownet (for bengio2021flow sEH proxy)"
-conda run -n "${ENV_NAME}" pip install "gflownet @ git+https://github.com/recursionpharma/gflownet.git" \
-    --find-links "${PYG_FIND_LINKS}" \
+#
+# CRITICAL: install with --no-deps. Recursion's gflownet==0.1.14 HARD-PINS torch==2.1.2 +
+# torch-geometric==2.4.0 in its metadata; a plain `pip install` honors that pin and SILENTLY
+# DOWNGRADES the torch 2.5.1 stack from step 3, which then breaks the +pt25cu121 pyg extension .so's
+# (undefined symbol _ZN5torch3jit...) and xformers. bengio2021flow.py itself only imports torch /
+# torch_geometric / torch_sparse / rdkit / numpy / requests — ALL fine on torch 2.5.1 — so the pin
+# is spurious for our use (we only want the module code, not gflownet's runtime). --no-deps takes
+# just the code and leaves the coherent 2.5.1 stack intact.
+echo "[setup_s3gfn] installing recursion gflownet --no-deps (for bengio2021flow sEH proxy)"
+conda run -n "${ENV_NAME}" pip install --no-deps "gflownet @ git+https://github.com/recursionpharma/gflownet.git" \
     || echo "[setup_s3gfn] WARNING gflownet install failed — pin a version if bengio2021flow import fails (TODO)"
+
+# gflownet.utils.sascore reads fpscores.pkl.gz from its own dir, which the wheel does not ship — so
+# S3-GFN's SA logging fails (returns 10.0 for everything). RDKit ships the IDENTICAL file in
+# Contrib/SA_Score; copy it in. (SA is only a LOGGED metric in s3gfn training mode — the positive/
+# negative synthesizability gating uses the retro analyzer, not SA — but faithful logging is cheap.)
+echo "[setup_s3gfn] providing gflownet sascore fpscores.pkl.gz (from RDKit Contrib)"
+FPS_PY="$(mktemp --suffix=.py)"   # temp file, NOT `python - <<HEREDOC` (conda run swallows stdin)
+cat > "${FPS_PY}" <<'PY'
+import os, shutil
+from rdkit.Chem import RDConfig
+import gflownet.utils as gu
+src = os.path.join(RDConfig.RDContribDir, "SA_Score", "fpscores.pkl.gz")
+dst = os.path.join(os.path.dirname(gu.__file__), "fpscores.pkl.gz")
+shutil.copyfile(src, dst)
+print("[setup_s3gfn] fpscores.pkl.gz ->", dst)
+PY
+conda run -n "${ENV_NAME}" python "${FPS_PY}" \
+    || echo "[setup_s3gfn] WARNING could not place fpscores.pkl.gz (SA logging will read 10.0)"
+rm -f "${FPS_PY}"
 
 # --- 5. GP-MolFormer prior weights (HuggingFace ibm-research/GP-MoLFormer-Uniq). ----------------
 # S3-GFN post-trains this SMILES language model. Pre-fetch so the first training run doesn't block
@@ -137,9 +167,14 @@ conda run -n "${ENV_NAME}" python "${SMOKE_PY}" \
 rm -f "${SMOKE_PY}"
 
 echo "[setup_s3gfn] done. Activate with:  conda activate ${ENV_NAME}"
-echo "[setup_s3gfn] NEXT (TODO, validate on the cluster):"
-echo "  - sEH data prep: S3-GFN follows RxnFlow's pipeline for the retro env (stock_hb = SynFlowNet"
-echo "    105 templates + Enamine stock) used for the synthesizability buffers — see the repo README."
-echo "  - train:  PYTHONPATH=${CLONE_DIR}/src conda run -n ${ENV_NAME} python -m s3gfn.train \\"
-echo "              --task seh --training_mode s3gfn --use_retrosynthesis --retro_env stock_hb --retro_steps 3"
-echo "  - then re-score the emitted SMILES pool on OUR raw sEH proxy (>7 gate) + ingest_candidates.py (has_route=0)."
+echo "[setup_s3gfn] NEXT:"
+echo "  - Build the retrosynthesis env (training-time synthesizability signal):"
+echo "      bash experiments/lsd_hubs/campaign/build_s3gfn_retro_env.sh"
+echo "    We use retro_env=zincfrag_hb105 (ZINCFrag public blocks + hb.txt/105 templates), NOT the"
+echo "    paper's stock_hb (Enamine stock is vendor-gated). ZINCFrag+71-templates gives only 0.8%"
+echo "    starting synth_ratio (won't train); +105 templates gives 4.7% -> climbs to 90%+. Full"
+echo "    rationale is in that build script's header + validation/configs/s3gfn_seh_fixed.yaml."
+echo "  - Run the fixed-reward entrant (trains, samples a pool, ingests has_route=0 candidates):"
+echo "      conda run -n ${ENV_NAME} python validation/generators/s3gfn/run_s3gfn_fixed.py \\"
+echo "          --cfg validation/configs/s3gfn_seh_fixed.yaml --root-dir \$SCRATCH/rgfn_runs/experiments"
+echo "    (The driver injects OUR sEH reward via get_scores and re-scores the pool on the raw proxy.)"
