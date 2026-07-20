@@ -60,11 +60,14 @@ def env_python(env_name: str):
 
 @dataclass
 class RouteCache:
-    """Persistent ``{canonical_smiles: {"solved": 0|1, "route": route|None}}`` memo (JSON).
+    """Persistent ``{canonical_smiles: {"solved": 0|1, "route": route|None, "search_time": s}}`` memo.
 
     ``route`` is the ``network.py``-consumable dict (``{product_smiles, num_reactions, steps:[...]}``)
     or ``None`` when AiZynth could not solve the molecule (an *answered* miss — cached so we never
-    re-attempt it). ``has(c)`` distinguishes "never attempted" from "attempted, unsolved"."""
+    re-attempt it). ``search_time`` is the AiZynth wall-clock spent on this molecule (solved or not),
+    stored so the from-scratch route-finding COMPUTE is attributable per molecule (T2.2 compute
+    frontier) without any re-run. ``has(c)`` distinguishes "never attempted" from "attempted,
+    unsolved"."""
 
     path: Path
     _data: Dict[str, dict] = field(default_factory=dict)
@@ -82,8 +85,24 @@ class RouteCache:
         rec = self._data.get(canon)
         return rec.get("route") if rec else None
 
-    def put(self, canon: str, solved: bool, route: Optional[dict]) -> None:
-        self._data[canon] = {"solved": int(bool(solved)), "route": route}
+    def search_time(self, canon: str) -> Optional[float]:
+        """AiZynth seconds spent on this molecule (``None`` if never attempted or not timed)."""
+        rec = self._data.get(canon)
+        return rec.get("search_time") if rec else None
+
+    def put(
+        self, canon: str, solved: bool, route: Optional[dict], search_time: Optional[float] = None
+    ) -> None:
+        self._data[canon] = {
+            "solved": int(bool(solved)),
+            "route": route,
+            "search_time": search_time,
+        }
+
+    def total_search_time(self, canons) -> float:
+        """Total AiZynth route-finding seconds over ``canons`` (missing/untimed count as 0). The
+        per-method route-finding compute for T2.2: pass the canonical SMILES the method routed."""
+        return float(sum(self.search_time(c) or 0.0 for c in canons))
 
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -188,7 +207,7 @@ def recover_routes(
             c = canonical(rec.get("smiles"))
             if c is None:
                 continue
-            cache.put(c, bool(rec.get("solved")), rec.get("route"))
+            cache.put(c, bool(rec.get("solved")), rec.get("route"), rec.get("search_time"))
             n_newly += 1
         cache.save()
 

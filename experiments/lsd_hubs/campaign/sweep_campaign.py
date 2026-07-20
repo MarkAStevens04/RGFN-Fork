@@ -44,7 +44,13 @@ from run_campaign import (  # same-dir helpers
 
 from glue.samplers.lsdflow.campaign import RANK_METHODS, rank_fragments
 from glue.samplers.lsdflow.child_select import make_child_policy
-from validation.lsdflow.eval import CountOnceEvaluator, LibrarySet, load_price_table
+from validation.lsdflow.eval import (
+    CountOnceEvaluator,
+    LibrarySet,
+    canonical,
+    load_price_table,
+)
+from validation.lsdflow.metrics.cost.compute_time import account_strategy
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
 )
@@ -200,6 +206,150 @@ def evaluate_ordering(
         modes = res.n_priced if res.n_priced is not None else sub[-1].cum_modes
         curve.append((modes, res.total_reactions))
     return curve
+
+
+# ---- T2.2 compute frontier ("where does the time go") --------------------------------------------
+# Per-method end-to-end wall-clock to PRODUCE its library, differentiated by stage, for the SPARROW
+# frontier (docs/LSD_FLOW_BENCHMARK_PLAN.md T2.2). Composes the count-once generation/selection
+# compute (account_strategy, Logs/039) with the two SPARROW-evaluation stages:
+#   * route_finding — from-scratch AiZynth search, AMORTIZED PER MOLECULE (Σ search_time over the
+#     modes THIS method selected, from the timed RouteCache; shared molecules counted once by the
+#     cache). 0 for native-route (routes are by-construction).
+#   * sparrow_mip   — the MILP that prices the method's FINAL library (build + solve), measured by
+#     re-scoring that library once (not summed over snapshots — snapshots are our curve-drawing
+#     device, not the chemist's cost).
+# Emits a reactions-per-compute-hour scalar with a lab_hours_per_reaction hook (=1.0; §8): later one
+# config turn converts compute-hours saved into bench-days/$ saved.
+_FRONTIER_COMPONENTS = [
+    ("generation_s", "generation (sampling)", "#8a4fbf"),
+    ("hub_pick_s", "hub pick", "#577590"),
+    ("enumeration_s", "enumeration", "#2a9d8f"),
+    ("reward_gen_s", "reward-gen", "#b23a48"),
+    ("flow_extract_s", "flow-extract", "#e9a20c"),
+    ("mode_selection_s", "mode-select", "#2a6f97"),
+    ("route_finding_s", "route-finding (AiZynth)", "#bc5090"),
+    ("sparrow_mip_s", "SPARROW MILP", "#ff764a"),
+]
+
+
+def _sample_generation_s(analysis_dir: Path) -> float:
+    """Stage-1 sampling wall-clock (shared by both strategies) from sample_timings.json if present
+    (the SCENT worker writes it beside records.csv); 0 if absent."""
+    for p in (analysis_dir / "sample_timings.json", analysis_dir.parent / "sample_timings.json"):
+        if p.exists():
+            try:
+                tot = json.load(open(p)).get("meta", {}).get("totals_s", {})
+                return float(tot.get("sampling_s", 0.0))
+            except Exception:  # noqa: BLE001
+                return 0.0
+    return 0.0
+
+
+def sparrow_compute_frontier(
+    results, sels, evaluator, enum_timings, hub_pick_s, cutoff, generation_s, lab_hours_per_reaction
+):
+    """Per-method compute breakdown + reactions-per-compute-hour at one cutoff (SPARROW evaluator).
+
+    Re-scores each strategy's final library once for the MILP time and reads route-finding from the
+    evaluator's timed RouteCache (amortized per molecule). Returns ``{strategy: {components..,
+    total_s, reactions, reactions_per_compute_hour}}``."""
+    cache = getattr(evaluator, "cache", None)
+    strip = getattr(evaluator, "strip_stereo", True)
+    out = {}
+    for s in STRATS:
+        res = results[(s, cutoff)]
+        bd = account_strategy(
+            res,
+            enum_timings,
+            selection_s=sels[(s, cutoff)],
+            hub_pick_s=(hub_pick_s if s == "hub_batching" else 0.0),
+        )
+        comp = bd.components()  # count-once side (setup/hub_pick/enum/reward-gen/flow/mode-select)
+        comp["generation_s"] = float(generation_s)
+        # route-finding: Σ AiZynth search_time over the modes this method selected (per-molecule).
+        modes = [p.smiles for p in res.accepted]
+        canons = {c for c in (canonical(m, strip) for m in modes) if c}
+        comp["route_finding_s"] = (
+            float(cache.total_search_time(canons)) if cache is not None else 0.0
+        )
+        # SPARROW MILP for the FINAL library (one re-score; the chemist's price, not our snapshots').
+        lib = LibrarySet(
+            smiles=modes,
+            rewards={p.smiles: p.reward for p in res.accepted},
+            provenance={"strategy": s, "cutoff": cutoff, "stage": "compute_frontier"},
+            count_once_reactions=res.total_reactions,
+        )
+        ev = evaluator.score(lib)
+        comp["sparrow_mip_s"] = float(ev.timing_s.get("sparrow_build", 0.0)) + float(
+            ev.timing_s.get("sparrow_mip", 0.0)
+        )
+        keys = [k for k, _, _ in _FRONTIER_COMPONENTS]
+        total_s = sum(comp.get(k, 0.0) for k in keys)
+        reactions = ev.total_reactions
+        rpch = (
+            (reactions / (total_s / 3600.0) * lab_hours_per_reaction)
+            if (reactions and total_s > 0)
+            else None
+        )
+        out[s] = {
+            **{k: round(comp.get(k, 0.0), 4) for k in keys},
+            "total_s": round(total_s, 4),
+            "reactions": reactions,
+            "n_priced_modes": ev.n_priced,
+            "reactions_per_compute_hour": (round(rpch, 4) if rpch is not None else None),
+        }
+    return out
+
+
+def plot_compute_frontier(path, frontier, tag, lab_hours_per_reaction):
+    """Stacked horizontal bar of per-method compute by stage (which stage dominates each method)."""
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except Exception as exc:  # noqa: BLE001
+        print(f"[frontier] plot skipped ({exc})")
+        return
+    strategies = [("hub_batching", "Hub Batching"), ("best_candidate", "Best Candidate")]
+    fig, ax = plt.subplots(figsize=(9.2, 3.2))
+    for row, (skey, slabel) in enumerate(strategies):
+        bd = frontier.get(skey, {})
+        left = 0.0
+        for comp, clabel, color in _FRONTIER_COMPONENTS:
+            val = float(bd.get(comp, 0.0) or 0.0)
+            if val <= 0:
+                continue
+            ax.barh(
+                row,
+                val,
+                left=left,
+                color=color,
+                edgecolor="white",
+                height=0.62,
+                label=clabel if row == 0 else None,
+            )
+            left += val
+        rpch = bd.get("reactions_per_compute_hour")
+        ax.text(
+            left,
+            row,
+            f"  {left:.0f}s" + (f" · {rpch:g} rxn/cpu-hr" if rpch else ""),
+            va="center",
+            ha="left",
+            fontsize=8,
+        )
+    ax.set_yticks(range(len(strategies)))
+    ax.set_yticklabels([s[1] for s in strategies])
+    ax.set_xlabel("measured compute time (s) to produce the library")
+    ax.set_title(
+        f"{tag}: compute frontier by stage (lab_hours_per_reaction={lab_hours_per_reaction:g})",
+        fontsize=10,
+    )
+    ax.legend(fontsize=7, ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.22), framealpha=0.9)
+    fig.tight_layout()
+    fig.savefig(path, dpi=130, bbox_inches="tight")
+    print(f"[frontier] wrote {path}")
 
 
 def _modes_at_reactions(curve, r_budget: int) -> int:
@@ -386,6 +536,13 @@ def main() -> None:
     ap.add_argument("--sparrow-work-dir", default=None, help="MILP scratch (default: on $SCRATCH)")
     ap.add_argument(
         "--price-library", default=None, help="glue library dir for building-block $ (count_cost)"
+    )
+    ap.add_argument(
+        "--lab-hours-per-reaction",
+        type=float,
+        default=1.0,
+        help="compute-frontier hook (T2.2/§8): multiplier turning reactions into lab-time; 1.0 for "
+        "now — later one config turn converts compute-hours saved into bench-days/$ saved.",
     )
     a = ap.parse_args()
     policy_label = POLICY_LABEL[a.child_policy]
@@ -639,6 +796,62 @@ def main() -> None:
             ],
         }
 
+    # ---- T2.2 compute frontier (SPARROW evaluators only; count-once has the Logs/039 view above) ----
+    compute_frontier = None
+    if a.evaluator != "count_once":
+        gen_s = _sample_generation_s(adir)
+        frontier = sparrow_compute_frontier(
+            results,
+            sels,
+            evaluator,
+            enum_timings,
+            hub_pick_s,
+            base,
+            gen_s,
+            a.lab_hours_per_reaction,
+        )
+        keys = [k for k, _, _ in _FRONTIER_COMPONENTS]
+        with open(out / "compute_frontier.csv", "w", newline="") as fh:
+            w = csv.writer(fh)
+            w.writerow(
+                [
+                    "strategy",
+                    *keys,
+                    "total_s",
+                    "reactions",
+                    "n_priced_modes",
+                    "reactions_per_compute_hour",
+                ]
+            )
+            for s in STRATS:
+                bd = frontier[s]
+                w.writerow(
+                    [
+                        s,
+                        *[bd.get(k, 0.0) for k in keys],
+                        bd["total_s"],
+                        bd["reactions"],
+                        bd["n_priced_modes"],
+                        bd["reactions_per_compute_hour"],
+                    ]
+                )
+        plot_compute_frontier(
+            out / "compute_frontier.png", frontier, a.tag, a.lab_hours_per_reaction
+        )
+        compute_frontier = {
+            "baseline_cutoff": base,
+            "lab_hours_per_reaction": a.lab_hours_per_reaction,
+            "generation_s": gen_s,
+            "by_strategy": frontier,
+        }
+        for s in STRATS:
+            bd = frontier[s]
+            print(
+                f"[frontier] {s}: total {bd['total_s']:.0f}s | route-finding {bd['route_finding_s']:.0f}s "
+                f"| MILP {bd['sparrow_mip_s']:.1f}s | {bd['reactions']} rxn over {bd['n_priced_modes']} modes "
+                f"-> {bd['reactions_per_compute_hour']} rxn/cpu-hr"
+            )
+
     summary = {
         "tag": a.tag,
         "reward_threshold": a.reward_threshold,
@@ -650,6 +863,7 @@ def main() -> None:
         "rank_by": a.rank_by if a.prebuild_k > 0 else None,
         "evaluator": a.evaluator,  # how snapshots were priced (T0.3): count_once | sparrow | multiaiz
         "snapshot_schedule": a.snapshot_schedule,
+        "lab_hours_per_reaction": a.lab_hours_per_reaction,
         "cutoffs": cutoffs,
         "pareto_modes_at_R": {
             s: [_modes_at_reactions(curves[(s, c)], a.budget_reactions) for c in cutoffs]
@@ -667,6 +881,7 @@ def main() -> None:
             for s in STRATS
         },
         "compute_time": compute_time,  # None if no measured enum_timings.json
+        "compute_frontier": compute_frontier,  # T2.2; None for count_once
     }
     (out / "sweep_summary.json").write_text(json.dumps(summary, indent=2))
     if compute_time is not None and compute_time["at_baseline"]:

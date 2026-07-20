@@ -100,7 +100,7 @@ for line in open(jsonl):
     c = canonical(rec.get("smiles"))
     if c is None:
         continue
-    cache.put(c, bool(rec.get("solved")), rec.get("route"))
+    cache.put(c, bool(rec.get("solved")), rec.get("route"), rec.get("search_time"))
     n += 1; solved += int(bool(rec.get("solved")))
 cache.save()
 print(f"[routes] folded {n} routes into cache ({solved} solved, {solved/max(n,1):.1%}) -> {cache_path}")

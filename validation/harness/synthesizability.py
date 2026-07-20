@@ -341,14 +341,21 @@ def extract_top_route(finder) -> Optional[Dict[str, Any]]:
 
 def _search_one_route(smiles: str) -> Dict[str, Any]:
     """Search one target and return its recovered route (or unsolved). Pool worker for
-    :func:`recover_routes`; reuses the module-global ``_FINDER`` set by :func:`_init_finder`."""
+    :func:`recover_routes`; reuses the module-global ``_FINDER`` set by :func:`_init_finder`.
+
+    ``search_time`` (seconds of AiZynth tree-search + route-building for this molecule) is recorded
+    ALWAYS — solved or not — so the from-scratch route-finding COMPUTE is attributable per molecule
+    downstream (the LSD-Flow compute frontier, T2.2) with no re-run. Instrument the plumbing once,
+    upfront; never pay a big re-run just to get timing."""
     out: Dict[str, Any] = {
         "smiles": smiles,
         "solved": 0,
         "route": None,
         "n_steps": None,
+        "search_time": None,
         "error": None,
     }
+    t0 = time.perf_counter()
     try:
         _FINDER.target_smiles = smiles
         _FINDER.tree_search()
@@ -360,6 +367,7 @@ def _search_one_route(smiles: str) -> Dict[str, Any]:
             out["n_steps"] = route["num_reactions"]
     except Exception as exc:  # never let one bad molecule kill the batch
         out["error"] = f"{type(exc).__name__}: {exc}"
+    out["search_time"] = round(time.perf_counter() - t0, 3)
     return out
 
 
