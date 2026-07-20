@@ -267,7 +267,9 @@
       "Bash(grep -rniE \"accidental|not.{0,3}fair|unfair|share.{0,6}hub|shared.{0,6}scaffold|full number of reactions|double.?count\" Logs/ docs/)",
       "Bash(grep -niA6 \"bengio2021\\\\|koziarski2024\\\\|epoxide\\\\|seh\" Logs/references/references.bib)",
       "Bash(awk -F, '{if\\($8!=\"\"\\)c++} END{print c\" of \"NR\" modes charged against a shared hub\"}')",
-      "WebFetch(domain:www.biorxiv.org)"
+      "WebFetch(domain:www.biorxiv.org)",
+      "Bash(echo \"=== any recover-routes / validate procs still alive? ===\")",
+      "Bash(pgrep -fc \"recover-routes\\\\|validate.py\")"
     ]
   }
 }

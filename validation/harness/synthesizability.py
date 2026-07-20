@@ -100,6 +100,25 @@ def read_candidates(dataset_dir: Path) -> Tuple[Dict[str, Any], List[Dict[str, A
     return manifest, rows
 
 
+def _read_smiles_file(path: Path) -> List[str]:
+    """Read SMILES from a ``.smi`` (one per line, first token) or a CSV with a ``smiles`` column
+    (route-recovery input, T1.3). Blank lines / ``#`` comments ignored."""
+    lines = Path(path).read_text().splitlines()
+    if not lines:
+        return []
+    first = lines[0].lower()
+    if "smiles" in first and "," in lines[0]:  # CSV with a header
+        with open(path, newline="") as fh:
+            reader = csv.DictReader(fh)
+            col = (
+                "smiles"
+                if "smiles" in (reader.fieldnames or [])
+                else (reader.fieldnames or [""])[0]
+            )
+            return [r[col].strip() for r in reader if r.get(col, "").strip()]
+    return [ln.split()[0].strip() for ln in lines if ln.strip() and not ln.startswith("#")]
+
+
 # --- RDKit helpers: canonicalization + SA score --------------------------------------
 
 
@@ -255,6 +274,118 @@ def run_aizynth(
     with mp.Pool(processes=nproc, initializer=_init_finder, initargs=init_args) as pool:
         # chunksize 1: searches are long and uneven, so balance dynamically.
         return pool.map(_search_one, smiles_list, chunksize=1)
+
+
+# --- route EXTRACTION (additive; for the LSD-Flow SPARROW evaluator, T1.3) -------------
+# The synthesizability metric above only needs solved/n_steps. The library-efficiency benchmark
+# additionally needs the actual RECOVERED ROUTE (reactants -> product per step) so route-less
+# molecules can be priced by SPARROW's batch MILP. AiZynth's route tree is nested mol/reaction
+# nodes: a `mol` node's `reaction` child has the reactant `mol`s as ITS children; `in_stock` leaves
+# are the buyable starting materials. We walk it into the repo's route step schema
+# (validation/lsdflow/eval/network.py consumes `{reactants, product}` steps directly).
+
+
+def _route_all_leaves_in_stock(mol_node: Dict[str, Any]) -> bool:
+    """True iff every leaf compound of this route tree is a buyable stock material (== 'solved')."""
+    children = mol_node.get("children") or []
+    if not children:  # a leaf compound
+        return bool(mol_node.get("in_stock"))
+    ok = True
+    for rxn in children:
+        if rxn.get("type") == "reaction":
+            for reactant in rxn.get("children") or []:
+                if reactant.get("type") == "mol":
+                    ok = ok and _route_all_leaves_in_stock(reactant)
+    return ok
+
+
+def _walk_route_steps(
+    mol_node: Dict[str, Any], steps: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """Depth-first walk of an AiZynth route tree -> list of ``{reactants, product}`` steps."""
+    product = mol_node.get("smiles")
+    for rxn in mol_node.get("children") or []:
+        if rxn.get("type") != "reaction":
+            continue
+        reactants = [g.get("smiles") for g in (rxn.get("children") or []) if g.get("type") == "mol"]
+        steps.append({"reactants": reactants, "product": product})
+        for g in rxn.get("children") or []:
+            if g.get("type") == "mol":
+                _walk_route_steps(g, steps)
+    return steps
+
+
+def extract_top_route(finder) -> Optional[Dict[str, Any]]:
+    """The best-ranked FULLY-SOLVED route as a route dict, or ``None`` if unsolved.
+
+    Iterates AiZynth's ranked route trees and returns the first whose leaves are all in-stock (the
+    routes are score-ranked, so this is the best solved route). Shape (network.py-consumable)::
+
+        {product_smiles, num_reactions, steps: [{reactants: [...], product: ...}, ...]}
+    """
+    dicts = getattr(getattr(finder, "routes", None), "dicts", None)
+    if not dicts:
+        return None
+    for tree in dicts:
+        if not _route_all_leaves_in_stock(tree):
+            continue
+        steps = _walk_route_steps(tree, [])
+        if steps:
+            return {
+                "product_smiles": tree.get("smiles"),
+                "num_reactions": len(steps),
+                "steps": steps,
+            }
+    return None
+
+
+def _search_one_route(smiles: str) -> Dict[str, Any]:
+    """Search one target and return its recovered route (or unsolved). Pool worker for
+    :func:`recover_routes`; reuses the module-global ``_FINDER`` set by :func:`_init_finder`."""
+    out: Dict[str, Any] = {
+        "smiles": smiles,
+        "solved": 0,
+        "route": None,
+        "n_steps": None,
+        "error": None,
+    }
+    try:
+        _FINDER.target_smiles = smiles
+        _FINDER.tree_search()
+        _FINDER.build_routes()
+        route = extract_top_route(_FINDER)
+        if route is not None:
+            out["solved"] = 1
+            out["route"] = route
+            out["n_steps"] = route["num_reactions"]
+    except Exception as exc:  # never let one bad molecule kill the batch
+        out["error"] = f"{type(exc).__name__}: {exc}"
+    return out
+
+
+def recover_routes(
+    smiles_list: List[str],
+    *,
+    config: str,
+    stock: str = "zinc",
+    expansion: str = "uspto",
+    filter_policy: Optional[str] = "uspto",
+    time_limit: Optional[int] = None,
+    iteration_limit: Optional[int] = None,
+    nproc: int = 1,
+) -> List[Dict[str, Any]]:
+    """Recover a synthesis route per SMILES (order preserved). Each result:
+    ``{smiles, solved, route|None, n_steps, error}``. Reuses the parameterized finder setup +
+    parallel pool of the synthesizability metric — same config/stock/expansion/filter knobs."""
+    init_args = (config, stock, expansion, filter_policy, time_limit, iteration_limit)
+    if nproc <= 1:
+        _init_finder(*init_args)
+        return [_search_one_route(s) for s in smiles_list]
+
+    import multiprocessing as mp
+
+    with mp.Pool(processes=nproc, initializer=_init_finder, initargs=init_args) as pool:
+        return pool.map(_search_one_route, smiles_list, chunksize=1)
 
 
 # --- aggregation ----------------------------------------------------------------------
@@ -524,9 +655,25 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     p.add_argument(
         "--dataset",
-        required=True,
+        required=False,
         type=Path,
-        help="candidate dataset dir (manifest.json + candidates.csv)",
+        help="candidate dataset dir (manifest.json + candidates.csv). Required unless "
+        "--recover-routes is given.",
+    )
+    p.add_argument(
+        "--recover-routes",
+        type=Path,
+        default=None,
+        help="ROUTE-RECOVERY mode (LSD-Flow SPARROW evaluator, T1.3): a .smi (one SMILES per line) "
+        "or CSV-with-'smiles' file; recover a route per molecule and write --routes-out, then exit "
+        "(no dataset synthesizability report).",
+    )
+    p.add_argument(
+        "--routes-out",
+        type=Path,
+        default=None,
+        help="route-recovery output JSONL ({smiles, solved, route, n_steps, error} per line); "
+        "required with --recover-routes.",
     )
     p.add_argument(
         "--out",
@@ -575,6 +722,40 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = p.parse_args(argv)
 
     filt = None if (args.filter_policy or "").lower() == "none" else args.filter_policy
+
+    # Route-recovery mode (T1.3): recover a route per SMILES, write JSONL, and exit.
+    if args.recover_routes is not None:
+        if args.routes_out is None:
+            raise SystemExit("--recover-routes requires --routes-out")
+        smiles = _read_smiles_file(args.recover_routes)
+        print(
+            f"[recover_routes] recovering routes for {len(smiles)} SMILES (nproc={args.nproc})",
+            flush=True,
+        )
+        results = recover_routes(
+            smiles,
+            config=args.config,
+            stock=args.stock,
+            expansion=args.expansion,
+            filter_policy=filt,
+            time_limit=args.time_limit,
+            iteration_limit=args.iteration_limit,
+            nproc=args.nproc,
+        )
+        args.routes_out.parent.mkdir(parents=True, exist_ok=True)
+        with open(args.routes_out, "w") as fh:
+            for rec in results:
+                fh.write(json.dumps(rec) + "\n")
+        n_solved = sum(1 for r in results if r["solved"])
+        print(
+            f"[recover_routes] solved {n_solved}/{len(results)} "
+            f"({n_solved / len(results) if results else 0:.2%}) -> {args.routes_out}",
+            flush=True,
+        )
+        return 0
+
+    if args.dataset is None:
+        raise SystemExit("--dataset is required (unless --recover-routes)")
     evaluate_dataset(
         args.dataset,
         out_dir=args.out,

@@ -8,6 +8,71 @@ crosses conda-env boundaries by subprocess, never by import.
 
 ---
 
+## Background & objective (read this first — it is not in the repo)
+
+**What this project is.** LSD-Flow is a research fork of **RGFN** (Reaction-GFlowNet). An RGFN builds
+molecules by composing chemical *reactions* over a fixed building-block set, so every molecule it
+proposes is synthesizable *by construction* (it comes with a route), and it samples proportional to
+reward — many diverse good molecules, not one optimum. **LSD-Flow** is a post-hoc capability on top of
+a trained reaction-GFN: read the learned flow field to find high-traffic pre-terminal **"hub"**
+intermediates, synthesize a hub once, then diversify it with many cheap last-step reactions. This is
+*late-stage diversification* recovered from the flow — hence the name.
+
+**The scientific claim we are testing.** A good screening library is two things at once: *near in
+synthesis space* (its molecules share scaffolds/routes, so they are cheap to co-synthesize) and *far
+in chemical space* (structurally diverse, so it actually covers ground). The single number that
+captures this tension is **reactions per mode** — total distinct bench reactions divided by the number
+of diverse, high-reward molecules obtained. The thesis: because a reaction-GFN's molecules are built
+from shared reaction steps, it can hit a far lower reactions-per-mode *at matched diversity and reward*
+than any other way of assembling a library — **even when the competing approaches are handed
+state-of-the-art batch-retrosynthesis planners (SPARROW, MultiAiZ)** to find shared intermediates
+after the fact. Forward construction beats post-hoc recovery. **This benchmark is the evidence for
+that claim**, targeting a top-tier ML conference.
+
+**Why S3-GFN is the marquee baseline (T3.1–T3.2).** A recent paper (S3-GFN, arXiv 2602.04119) argues
+you *don't* need a reaction-based decision process — a plain SMILES generator with a synthesizability
+penalty matches reaction-based models on *per-molecule* synthesizability. That is true but beside the
+point: per-molecule synthesizability is not what sets a lab's cost — *library* co-synthesis is, and the
+shared-hub structure that makes a library cheap only exists in a reaction-grounded model. S3-GFN emits
+molecules with no shared-route structure, so batching them requires recovering routes post-hoc. The
+headline figure shows S3-GFN + best planner still loses to a reaction-GFN + hub-batching on
+reactions-per-mode. Everything in the plan is built so this one comparison is airtight and fair.
+
+**Terminology (used precisely throughout — do not conflate the two "libraries").**
+- **Chemistry library** = the *fixed* set of reaction templates + building blocks (`glue_standard_v1`,
+  418 fragments + 112 templates). It never varies within a run. It is the vocabulary, not the product.
+- **Library** (the thing being *built* and measured) = the set of molecules a scientist commits to
+  synthesizing. Its size *is* its **mode count**. A **mode** = a molecule whose reward clears a
+  per-target gate (sEH: `> 7`, higher-is-better) *and* that is Tanimoto-`< τ` (Morgan r=3) from every
+  molecule already in the library. So the library is a curated, diverse, high-reward set, grown
+  greedily one molecule at a time with that filter checked on every addition.
+
+**The two stopping conditions (the "two companies" — the core experimental setup).** Both want the
+same thing: many modes, few reactions. They differ only in when they stop:
+- **Fixed-reaction budget (the HEADLINE):** "I will run 100 reactions — get me as many modes as
+  possible." Sweep the diversity filter τ from 0.3 (strict — modes must be very dissimilar, so fewer
+  fit) to 0.9 (lax — near-duplicates count, so more fit); plot modes achieved, per method.
+- **Fixed-mode target:** "I need 300 modes — get them in as few reactions as possible." Same τ sweep;
+  plot reactions required, per method.
+
+**The two selection strategies (what a chemist actually does with a pool of candidates).**
+- **best-candidate** (the naive baseline): sort the pool by reward, add the best one that passes the
+  filter, repeat. Available to *every* generator.
+- **hub-batching** (LSD-Flow): pick high-flow hubs (plus high-value shared fragments for SCENT), take a
+  few filter-passing representative children of each hub, move to the next hub. Requires a
+  reaction-grounded flow field, so it only applies to reaction-GFNs.
+
+**One subtlety that shapes the architecture.** A strategy's output is *whatever it selected* — never
+assume it is the reward-optimal or reaction-minimal subset. hub-batching may pick molecules that are
+not the strongest binders and not a perfectly cost-minimal set; that is fine and expected. The
+**evaluator scores the set the strategy actually chose.** This is why selection and evaluation are kept
+as independent stages (§0): the strategy *tries* to be cheap using its own logic; the evaluator
+(SPARROW/MultiAiZ, or count-once for the internal check) *independently* prices the result. When the
+strategy's own cheap-ness (count-once) and the independent price (SPARROW) agree, the result is
+trustworthy; the reconciliation gate (T1.5) enforces exactly this before any comparison is plotted.
+
+---
+
 ## 0. The one-paragraph mental model
 
 Three **orthogonal, pluggable stages** joined by two contracts:

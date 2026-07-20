@@ -1,0 +1,46 @@
+{
+  "tag": "recon_smoke",
+  "recon_dir": "/scratch/markymoo/rgfn_runs/lsdflow/recon_smoke_70526",
+  "cutoff": 0.5,
+  "reward_threshold": 7.0,
+  "tolerance": 0.1,
+  "min_coverage": 0.95,
+  "records": [
+    {
+      "strategy": "best_candidate",
+      "n_modes": 100,
+      "n_native_routes": 59,
+      "native_route_coverage": 0.59,
+      "count_once_reactions": 346,
+      "sparrow_reactions": 202,
+      "sparrow_priced_modes": 59,
+      "abs_diff": 144,
+      "rel_diff": 0.4162,
+      "sparrow_milp_status": "Optimal",
+      "sparrow_n_reaction_nodes": 202,
+      "sparrow_n_shared_compounds": 59
+    },
+    {
+      "strategy": "hub_batching",
+      "n_modes": 100,
+      "n_native_routes": 100,
+      "native_route_coverage": 1.0,
+      "count_once_reactions": 289,
+      "sparrow_reactions": 282,
+      "sparrow_priced_modes": 100,
+      "abs_diff": 7,
+      "rel_diff": 0.0242,
+      "sparrow_milp_status": "Optimal",
+      "sparrow_n_reaction_nodes": 282,
+      "sparrow_n_shared_compounds": 56
+    }
+  ],
+  "gated_strategies": [
+    "hub_batching"
+  ],
+  "ungated_strategies": [
+    "best_candidate"
+  ],
+  "worst_rel_diff": 0.0242,
+  "gate_passed": true
+}

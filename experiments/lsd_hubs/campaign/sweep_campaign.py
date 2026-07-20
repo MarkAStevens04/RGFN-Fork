@@ -44,6 +44,7 @@ from run_campaign import (  # same-dir helpers
 
 from glue.samplers.lsdflow.campaign import RANK_METHODS, rank_fragments
 from glue.samplers.lsdflow.child_select import make_child_policy
+from validation.lsdflow.eval import CountOnceEvaluator, LibrarySet, load_price_table
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
 )
@@ -72,12 +73,135 @@ def _cutoff_grid(lo: float, hi: float, step: float):
     return [round(lo + i * step, 4) for i in range(n)]
 
 
-def _modes_at_reactions(result, r_budget: int) -> int:
-    return max((p.cum_modes for p in result.accepted if p.cum_reactions <= r_budget), default=0)
+# ---- evaluator seam (T0.3) ------------------------------------------------------------------------
+# The frontier no longer reads reactions straight off the strategy's CampaignResult; it prices ORDERED
+# SNAPSHOTS of the selection with an INJECTED Evaluator (docs/LSD_FLOW_BENCHMARK_PLAN.md §0/T0.3), so
+# the same driver serves count-once, from-scratch SPARROW, and MultiAiZ. --evaluator count_once
+# surfaces the strategy's own DAG count-once estimate (CHECK 2); with the default every-mode schedule
+# it reproduces the pre-seam curves bit-for-bit. sparrow/multiaiz (from-scratch pricing) are T1.4/T4.1.
+_LIVE_EVALUATORS = ("count_once", "sparrow")
+_PLANNED_EVALUATORS = {"multiaiz": "T4.1 (validation/lsdflow/eval/multiaiz.py)"}
 
 
-def _reactions_at_modes(result, m_budget: int):
-    return next((p.cum_reactions for p in result.accepted if p.cum_modes >= m_budget), None)
+def make_evaluator(name, a):
+    """Injected Evaluator for the frontier. count_once = the strategy's own DAG estimate (CHECK 2);
+    sparrow = from-scratch AiZynth->SPARROW MILP (HEADLINE) or native-route SPARROW (CHECK 1) via
+    --route-source; multiaiz is planned (T4.1). Fails loud on unknown/unbuilt names."""
+    if name == "count_once":
+        return CountOnceEvaluator()
+    if name == "sparrow":
+        from validation.lsdflow.eval.route_recovery import RouteCache
+        from validation.lsdflow.eval.sparrow import SparrowEvaluator
+
+        # Route cache + MILP scratch live on $SCRATCH by default (many small per-snapshot files);
+        # the cache is chemistry-specific, so its default name carries stock+expansion.
+        scratch = Path(a.sparrow_work_dir) if a.sparrow_work_dir else _default_sparrow_dir(a.tag)
+        cache_path = (
+            Path(a.sparrow_cache)
+            if a.sparrow_cache
+            else scratch / f"routecache_{a.aizynth_stock}_{a.aizynth_expansion}.json"
+        )
+        price_table = (
+            load_price_table(Path(a.price_library) / "fragments.csv") if a.price_library else None
+        )
+        return SparrowEvaluator(
+            route_source=a.route_source,
+            cache=RouteCache(cache_path),
+            objective=a.milp_objective,
+            aizynth_env=a.aizynth_env,
+            sparrow_env=a.sparrow_env,
+            aizynth_config=a.aizynth_config,
+            stock=a.aizynth_stock,
+            expansion=a.aizynth_expansion,
+            filter_policy=(
+                None if (a.aizynth_filter or "none").lower() == "none" else a.aizynth_filter
+            ),
+            time_limit=a.aizynth_time_limit,
+            nproc=a.aizynth_nproc,
+            max_seconds=a.milp_max_seconds,
+            work_dir=scratch,
+            price_table=price_table,
+        )
+    if name in _PLANNED_EVALUATORS:
+        raise NotImplementedError(
+            f"--evaluator {name} is not built yet — see {_PLANNED_EVALUATORS[name]}. "
+            f"Available now: {sorted(_LIVE_EVALUATORS)}."
+        )
+    raise SystemExit(
+        f"unknown --evaluator {name!r}; available: {sorted(_LIVE_EVALUATORS)} "
+        f"(+ planned: {sorted(_PLANNED_EVALUATORS)})"
+    )
+
+
+def _default_sparrow_dir(tag):
+    """Default SPARROW scratch (route cache + per-snapshot MILP files) — $SCRATCH if set, else /tmp;
+    kept OUT of the repo (many small transient files)."""
+    import os
+
+    base = os.environ.get("SCRATCH", "/tmp")
+    return Path(base) / "lsdflow_sparrow" / tag
+
+
+def _snapshot_sizes(n, schedule, k, points):
+    """Prefix sizes (ascending, 1..n, always including n) at which to price the ordering.
+
+    ``all`` = every mode (bit-for-bit for count_once; the default). ``every_k`` = k, 2k, …, n.
+    ``geometric`` = ~``points`` log-spaced sizes — for expensive per-snapshot pricers (SPARROW MILP)
+    where one solve per mode is infeasible; the read-time slicers step over the coarse curve."""
+    if n <= 0:
+        return []
+    if schedule == "all":
+        return list(range(1, n + 1))
+    if schedule == "every_k":
+        step = max(1, int(k))
+        sizes = list(range(step, n + 1, step))
+        if not sizes or sizes[-1] != n:
+            sizes.append(n)
+        return sizes
+    if schedule == "geometric":
+        if n <= points:
+            return list(range(1, n + 1))
+        sizes = sorted({max(1, int(round(n ** (i / (points - 1))))) for i in range(points)})
+        if sizes[-1] != n:
+            sizes.append(n)
+        return sizes
+    raise SystemExit(f"unknown snapshot schedule {schedule!r} (all | every_k | geometric)")
+
+
+def evaluate_ordering(
+    result, evaluator, *, schedule="all", k=25, points=15, routes=None, provenance=None
+):
+    """Price snapshots of a strategy's ordering into a ``[(modes, reactions), …]`` curve.
+
+    Each snapshot is the first-``size`` accepted modes as a :class:`LibrarySet`, carrying (a) the
+    strategy's own count-once estimate at that prefix (``accepted[size-1].cum_reactions`` — CHECK 2)
+    and (b) native routes when available (for the native-route/from-scratch SPARROW pricers).
+    ``reactions`` is whatever the evaluator returns (``None`` ⇒ dropped by the read-time slicers).
+    """
+    accepted = result.accepted
+    curve = []
+    for size in _snapshot_sizes(len(accepted), schedule, k, points):
+        sub = accepted[:size]
+        smis = [p.smiles for p in sub]
+        lib = LibrarySet(
+            smiles=smis,
+            rewards={p.smiles: p.reward for p in sub},
+            routes=({s: routes[s] for s in smis if s in routes} if routes else None),
+            provenance=provenance or {},
+            count_once_reactions=sub[-1].cum_reactions,
+        )
+        curve.append((sub[-1].cum_modes, evaluator.score(lib).total_reactions))
+    return curve
+
+
+def _modes_at_reactions(curve, r_budget: int) -> int:
+    """Largest mode count reachable within the reaction budget (read-time, over the priced curve)."""
+    return max((m for m, r in curve if r is not None and r <= r_budget), default=0)
+
+
+def _reactions_at_modes(curve, m_budget: int):
+    """Reactions to reach the mode target (read-time); ``None`` if never reached / unpriced."""
+    return next((r for m, r in curve if m >= m_budget and r is not None), None)
 
 
 def _run(
@@ -204,8 +328,69 @@ def main() -> None:
     ap.add_argument(
         "--hub-pick-timing", default=None, help="pick_hubs_timing.json (default: beside)"
     )
+    ap.add_argument(
+        "--evaluator",
+        default="count_once",
+        help="how the frontier prices each ordered snapshot (T0.3): count_once = the strategy's own "
+        "DAG estimate (CHECK 2, default, reproduces the pre-seam curves); sparrow/multiaiz = "
+        "from-scratch route-recovery + MILP (T1.4/T4.1, planned).",
+    )
+    ap.add_argument(
+        "--snapshot-schedule",
+        default="all",
+        choices=["all", "every_k", "geometric"],
+        help="prefix sizes priced per ordering: all = every mode (bit-for-bit for count_once); "
+        "every_k / geometric = coarse (for expensive per-snapshot pricers like SPARROW).",
+    )
+    ap.add_argument(
+        "--snapshot-k", type=int, default=25, help="step for --snapshot-schedule every_k"
+    )
+    ap.add_argument(
+        "--snapshot-points", type=int, default=15, help="#points for --snapshot-schedule geometric"
+    )
+    # ---- SPARROW evaluator config (only used when --evaluator sparrow) ----
+    ap.add_argument(
+        "--route-source",
+        default="from_scratch",
+        choices=["from_scratch", "native"],
+        help="sparrow: from_scratch = AiZynth re-routes every molecule (HEADLINE); native = use the "
+        "generator's own routes from --routes (CHECK 1).",
+    )
+    ap.add_argument(
+        "--milp-objective",
+        default="count",
+        choices=["count", "count_cost"],
+        help="sparrow MILP objective: count = minimize #reactions (default); count_cost = + "
+        "starting-material $ (needs --price-library). [feasibility TODO — see memory]",
+    )
+    ap.add_argument("--aizynth-env", default="aizynth")
+    ap.add_argument("--sparrow-env", default="sparrow")
+    ap.add_argument("--aizynth-config", default="data/models/aizynthfinder/config.yml")
+    ap.add_argument("--aizynth-stock", default="zinc")
+    ap.add_argument("--aizynth-expansion", default="uspto")
+    ap.add_argument("--aizynth-filter", default="uspto")
+    ap.add_argument(
+        "--aizynth-time-limit", type=int, default=60, help="per-molecule AiZynth seconds"
+    )
+    ap.add_argument("--aizynth-nproc", type=int, default=8)
+    ap.add_argument("--milp-max-seconds", type=int, default=600, help="per-snapshot MILP seconds")
+    ap.add_argument("--sparrow-cache", default=None, help="route cache JSON (default: on $SCRATCH)")
+    ap.add_argument("--sparrow-work-dir", default=None, help="MILP scratch (default: on $SCRATCH)")
+    ap.add_argument(
+        "--price-library", default=None, help="glue library dir for building-block $ (count_cost)"
+    )
     a = ap.parse_args()
     policy_label = POLICY_LABEL[a.child_policy]
+    evaluator = make_evaluator(a.evaluator, a)  # fail loud on unknown / not-yet-built evaluators
+    # Expensive per-snapshot pricers (SPARROW MILP) can't afford one solve per mode; default them to a
+    # coarse geometric schedule unless the user asked otherwise. count_once stays 'all' (bit-for-bit).
+    if a.evaluator != "count_once" and a.snapshot_schedule == "all":
+        a.snapshot_schedule = "geometric"
+        print(
+            f"[sweep] --evaluator {a.evaluator}: snapshot schedule -> geometric "
+            f"({a.snapshot_points} pts) so the MILP isn't run once per mode "
+            f"(override with --snapshot-schedule)"
+        )
 
     adir = Path(a.analysis_dir)
     cands, comps = _load_candidates(adir, a.higher_is_better)
@@ -239,8 +424,11 @@ def main() -> None:
     )  # the default cutoff: Plot 3's fixed value + Plots 1/2 marker
 
     # One run per (strategy, cutoff) to the mode budget -> all three plots read off the prefixes.
+    # The strategy emits an ORDERING (CampaignResult.accepted); the injected evaluator prices its
+    # snapshots into a (modes, reactions) curve, and all read-time budgets slice that curve (T0.3).
     results = {}  # (strategy, cutoff) -> CampaignResult
     sels = {}  # (strategy, cutoff) -> live selection wall-clock (compute-time accounting, Logs/039)
+    curves = {}  # (strategy, cutoff) -> [(modes, reactions), ...] priced by the injected evaluator
     for cut in cutoffs:
         for s in STRATS:
             results[(s, cut)], sels[(s, cut)] = _run(
@@ -254,7 +442,20 @@ def main() -> None:
                 child_policy,
                 prebuilt_fragments=prebuilt,
             )
-        hb, bc = results[("hub_batching", cut)], results[("best_candidate", cut)]
+            curves[(s, cut)] = evaluate_ordering(
+                results[(s, cut)],
+                evaluator,
+                schedule=a.snapshot_schedule,
+                k=a.snapshot_k,
+                points=a.snapshot_points,
+                provenance={
+                    "strategy": s,
+                    "cutoff": cut,
+                    "target": a.tag,
+                    "evaluator": evaluator.name,
+                },
+            )
+        hb, bc = curves[("hub_batching", cut)], curves[("best_candidate", cut)]
         print(
             f"  cutoff {cut:.2f}: hub modes@{a.budget_reactions}rxn={_modes_at_reactions(hb, a.budget_reactions)} "
             f"rxn@{a.budget_modes}modes={_reactions_at_modes(hb, a.budget_modes)} | "
@@ -268,14 +469,14 @@ def main() -> None:
         w.writerow(["strategy", "cutoff", f"modes_at_{a.budget_reactions}rxn"])
         for s in STRATS:
             for cut in cutoffs:
-                w.writerow([s, cut, _modes_at_reactions(results[(s, cut)], a.budget_reactions)])
+                w.writerow([s, cut, _modes_at_reactions(curves[(s, cut)], a.budget_reactions)])
     _plot(
         out / "pareto.png",
         [
             (
                 STRAT_LABEL[s],
                 cutoffs,
-                [_modes_at_reactions(results[(s, c)], a.budget_reactions) for c in cutoffs],
+                [_modes_at_reactions(curves[(s, c)], a.budget_reactions) for c in cutoffs],
             )
             for s in STRATS
         ],
@@ -299,10 +500,10 @@ def main() -> None:
         w.writerow(["strategy", "cutoff", f"reactions_for_{a.budget_modes}modes"])
         for s in STRATS:
             for cut in cutoffs:
-                w.writerow([s, cut, _reactions_at_modes(results[(s, cut)], a.budget_modes)])
+                w.writerow([s, cut, _reactions_at_modes(curves[(s, cut)], a.budget_modes)])
     fm_series = []
     for s in STRATS:
-        pts = [(c, _reactions_at_modes(results[(s, c)], a.budget_modes)) for c in cutoffs]
+        pts = [(c, _reactions_at_modes(curves[(s, c)], a.budget_modes)) for c in cutoffs]
         pts = [(c, r) for c, r in pts if r is not None]  # drop cutoffs that can't reach M*
         fm_series.append((STRAT_LABEL[s], [c for c, _ in pts], [r for _, r in pts]))
     _plot(
@@ -337,19 +538,34 @@ def main() -> None:
                 child_policy,
                 prebuilt_fragments=prebuilt,
             )
+            curves[(s, base)] = evaluate_ordering(
+                results[(s, base)],
+                evaluator,
+                schedule=a.snapshot_schedule,
+                k=a.snapshot_k,
+                points=a.snapshot_points,
+                provenance={
+                    "strategy": s,
+                    "cutoff": base,
+                    "target": a.tag,
+                    "evaluator": evaluator.name,
+                },
+            )
+    # The one inherently-cumulative curve: the priced (reactions, modes) points at the default cutoff.
+    be_curve = {s: [(m, r) for m, r in curves[(s, base)] if r is not None] for s in STRATS}
     with open(out / "budget_efficiency.csv", "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["strategy", "cutoff", "cum_reactions", "cum_modes"])
         for s in STRATS:
-            for p in results[(s, base)].accepted:
-                w.writerow([s, base, p.cum_reactions, p.cum_modes])
+            for m, r in be_curve[s]:
+                w.writerow([s, base, r, m])
     _plot(
         out / "budget_efficiency.png",
         [
             (
                 s,
-                [p.cum_reactions for p in results[(s, base)].accepted],
-                [p.cum_modes for p in results[(s, base)].accepted],
+                [r for _m, r in be_curve[s]],
+                [m for m, _r in be_curve[s]],
             )
             for s in STRATS
         ],
@@ -424,19 +640,21 @@ def main() -> None:
         "child_policy": a.child_policy,
         "prebuild_k": a.prebuild_k,
         "rank_by": a.rank_by if a.prebuild_k > 0 else None,
+        "evaluator": a.evaluator,  # how snapshots were priced (T0.3): count_once | sparrow | multiaiz
+        "snapshot_schedule": a.snapshot_schedule,
         "cutoffs": cutoffs,
         "pareto_modes_at_R": {
-            s: [_modes_at_reactions(results[(s, c)], a.budget_reactions) for c in cutoffs]
+            s: [_modes_at_reactions(curves[(s, c)], a.budget_reactions) for c in cutoffs]
             for s in STRATS
         },
         "fixed_modes_reactions_at_M": {
-            s: [_reactions_at_modes(results[(s, c)], a.budget_modes) for c in cutoffs]
+            s: [_reactions_at_modes(curves[(s, c)], a.budget_modes) for c in cutoffs]
             for s in STRATS
         },
         "budget_efficiency_endpoint": {
             s: {
-                "reactions": results[(s, base)].total_reactions,
-                "modes": results[(s, base)].total_modes,
+                "reactions": (be_curve[s][-1][1] if be_curve[s] else None),
+                "modes": (be_curve[s][-1][0] if be_curve[s] else 0),
             }
             for s in STRATS
         },
