@@ -1,0 +1,17 @@
+generator,target,seed,config,checkpoint,guidance_sidecar
+rgfn,seh,42,configs/glue/fixed_reward_seh_proxy_stdlib_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rgfn_seh_5k/seed42/train/checkpoints/last_gfn.pt,
+rgfn,drd2,42,configs/glue/fixed_reward_drd2_stdlib_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rgfn_drd2_5k/seed42/train/checkpoints/last_gfn.pt,
+rgfn,6td3,42,configs/glue/fixed_reward_6td3_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rgfn_6td3_5k/seed42/train/checkpoints/last_gfn.pt,
+rgfn,clpp,42,configs/glue/fixed_reward_clpp_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rgfn_clpp_5k/seed42/train/checkpoints/last_gfn.pt,
+scent,seh,42,validation/configs/scent_seh_fixed_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh_5k/seed42/train/checkpoints/last_gfn.pt,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh_5k/seed42/train/checkpoints/guidance_models.pt
+scent,drd2,42,validation/configs/scent_drd2_fixed_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_drd2_5k/seed42/train/checkpoints/last_gfn.pt,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_drd2_5k/seed42/train/checkpoints/guidance_models.pt
+scent,6td3,42,validation/configs/scent_6td3_fixed_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_6td3_5k/seed42/train/checkpoints/last_gfn.pt,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_6td3_5k/seed42/train/checkpoints/guidance_models.pt
+scent,clpp,42,validation/configs/scent_clpp_fixed_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_clpp_5k/seed42/train/checkpoints/last_gfn.pt,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_clpp_5k/seed42/train/checkpoints/guidance_models.pt
+fraggfn,seh,42,validation/configs/fraggfn_seh_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/fraggfn_seh_5k/seed42/checkpoints/last_gfn.pt,
+fraggfn,drd2,42,validation/configs/fraggfn_drd2_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/fraggfn_drd2_5k/seed42/checkpoints/last_gfn.pt,
+fraggfn,6td3,42,validation/configs/fraggfn_6td3_docking_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/fraggfn_6td3_5k/seed42/checkpoints/last_gfn.pt,
+fraggfn,clpp,42,validation/configs/fraggfn_clpp_docking_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/fraggfn_clpp_5k/seed42/checkpoints/last_gfn.pt,
+rxnflow,seh,42,validation/configs/rxnflow_seh_fixed_stdlib_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rxnflow_seh_5k/seed42/checkpoints/last_gfn.pt,
+rxnflow,drd2,42,validation/configs/rxnflow_drd2_fixed_stdlib_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rxnflow_drd2_5k/seed42/checkpoints/last_gfn.pt,
+rxnflow,6td3,42,validation/configs/rxnflow_6td3_docking_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rxnflow_6td3_5k/seed42/checkpoints/last_gfn.pt,
+rxnflow,clpp,42,validation/configs/rxnflow_clpp_docking_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rxnflow_clpp_5k/seed42/checkpoints/last_gfn.pt,
