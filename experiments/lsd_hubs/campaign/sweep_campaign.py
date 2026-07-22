@@ -85,8 +85,8 @@ def _cutoff_grid(lo: float, hi: float, step: float):
 # the same driver serves count-once, from-scratch SPARROW, and MultiAiZ. --evaluator count_once
 # surfaces the strategy's own DAG count-once estimate (CHECK 2); with the default every-mode schedule
 # it reproduces the pre-seam curves bit-for-bit. sparrow/multiaiz (from-scratch pricing) are T1.4/T4.1.
-_LIVE_EVALUATORS = ("count_once", "sparrow")
-_PLANNED_EVALUATORS = {"multiaiz": "T4.1 (validation/lsdflow/eval/multiaiz.py)"}
+_LIVE_EVALUATORS = ("count_once", "sparrow", "multiaiz")
+_PLANNED_EVALUATORS: dict = {}  # multiaiz built (T4.1, Logs/043)
 
 
 def make_evaluator(name, a):
@@ -124,6 +124,30 @@ def make_evaluator(name, a):
             ),
             time_limit=a.aizynth_time_limit,
             nproc=a.aizynth_nproc,
+            max_seconds=a.milp_max_seconds,
+            work_dir=scratch,
+            price_table=price_table,
+        )
+    if name == "multiaiz":
+        from validation.lsdflow.eval.multiaiz import MultiAiZEvaluator
+
+        # MultiAiZ discovers routes PER POOL (isolated) — no shared route cache across strategies.
+        scratch = Path(a.sparrow_work_dir) if a.sparrow_work_dir else _default_sparrow_dir(a.tag)
+        price_table = (
+            load_price_table(Path(a.price_library) / "fragments.csv") if a.price_library else None
+        )
+        return MultiAiZEvaluator(
+            n_iters=a.multiaiz_n_iters,
+            objective=a.milp_objective,
+            aizynth_env=a.aizynth_env,
+            sparrow_env=a.sparrow_env,
+            aizynth_config=a.aizynth_config,
+            stock=a.aizynth_stock,
+            expansion=a.aizynth_expansion,
+            filter_policy=(
+                None if (a.aizynth_filter or "none").lower() == "none" else a.aizynth_filter
+            ),
+            max_routes_per_target=a.multiaiz_max_routes,
             max_seconds=a.milp_max_seconds,
             work_dir=scratch,
             price_table=price_table,
@@ -526,6 +550,19 @@ def main() -> None:
         choices=["count", "count_cost"],
         help="sparrow MILP objective: count = minimize #reactions (default); count_cost = + "
         "starting-material $ (needs --price-library). [feasibility TODO — see memory]",
+    )
+    # ---- MultiAiZ evaluator config (only used when --evaluator multiaiz; T4.1) ----
+    ap.add_argument(
+        "--multiaiz-n-iters",
+        type=int,
+        default=5,
+        help="multiaiz: number of MultiAiZ cycles (paper default 5; more = more shared intermediates)",
+    )
+    ap.add_argument(
+        "--multiaiz-max-routes",
+        type=int,
+        default=0,
+        help="multiaiz: cap candidate routes/target fed to SPARROW (0 = all; SPARROW picks max-sharing)",
     )
     ap.add_argument("--aizynth-env", default="aizynth")
     ap.add_argument("--sparrow-env", default="sparrow")

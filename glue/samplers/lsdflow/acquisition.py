@@ -38,6 +38,7 @@ cross-env SCENT path where selection runs in the ``rgfn`` env on the worker's en
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -80,6 +81,16 @@ class AcquisitionResult:
     )  # hub_key, n_children, n_accepted, U(h), score
     n_trajectories: int = 0
     n_hubs_ranked: int = 0
+    # Measured per-component wall-clock (Logs/039), seconds — the "where does the acquisition's
+    # time go" breakdown behind the hub-batching-vs-best-candidate compute comparison:
+    #   sampling_s     — trajectory generation (the policy forward pass)
+    #   flow_extract_s — assign_log_probs -> P_F/P_B (sampled DAG + enumerated children)
+    #   enumeration_s  — RDKit one-reaction child construction (hub_batching only)
+    #   reward_gen_s   — proxy M scoring the enumerated children (hub_batching only)
+    #   hub_rank_s     — UCB z-scoring + sort (hub_batching only)
+    #   mode_select_s  — reward-gate + Tanimoto diversity accept loop
+    # (Docking time is the loop's separate `oracle_score` phase in phase_timings.csv.)
+    timing: Dict[str, float] = field(default_factory=dict)
 
 
 @gin.configurable()
@@ -96,6 +107,8 @@ class LSDFlowAcquisition:
         budget_modes: int = 100,
         reward_threshold: Optional[float] = -1.5,
         similarity: float = 0.5,
+        proxy_label_mean: float = 0.0,
+        proxy_label_std: float = 1.0,
         # hub ranking (UCB) --------------------------------------------------------------
         lam: float = 1.0,
         hub_min_children: int = 2,
@@ -106,6 +119,10 @@ class LSDFlowAcquisition:
         prebuild_k: int = 20,
         max_children_per_hub: int = 2000,
         max_hubs_walked: int = 1000,
+        n_candidate_hubs: int = 150,
+        min_hub_visits: int = 1,
+        min_hub_depth: int = 1,
+        max_hub_depth: int = 3,
         enumerate_chunk_size: int = 64,
         strip_stereo: bool = True,
     ):
@@ -131,7 +148,18 @@ class LSDFlowAcquisition:
                 (Logs/037). Inert without a cost table (RGFN); the seam for the SCENT run.
             max_children_per_hub: per-hub enumeration cap (docking-budget guard, §6). For an
                 in-loop *proxy* reward-gen this bounds compute, not oracle calls.
-            max_hubs_walked: safety cap on hubs enumerated in a round (stop once budget met anyway).
+            max_hubs_walked: safety cap on ranked hubs walked for mode selection.
+            n_candidate_hubs: how many hubs to enumerate for ranking. Candidates are the most-visited
+                hubs from sampling (visit-count is robust to sparse per-hub sampled children — unlike
+                a sampled-``U(h)`` gate, which the boundary artifact starves). ``U(h)`` + ``reward(h)``
+                are then computed from each candidate's **enumerated** neighborhood (always many
+                children → well-defined), so the UCB ranking is trustworthy. This is the reward-gen
+                (enumeration) cost knob.
+            min_hub_visits: drop candidate hubs visited fewer times than this (noise floor).
+            min_hub_depth/max_hub_depth: keep candidate hubs in this reaction-depth band. Default
+                ``[1, 3]`` — skip depth-0 building blocks (huge fan-out, zero amortization — not the
+                "build once, diversify" signal, Logs/025) and depth-4 children at the reaction cap
+                (``P_B`` unrecoverable).
             strip_stereo: use the stereo-stripped cross-model node key (§6).
         """
         if arm not in _ARMS:
@@ -143,6 +171,8 @@ class LSDFlowAcquisition:
         self.budget_modes = budget_modes
         self.reward_threshold = reward_threshold
         self.similarity = similarity
+        self.proxy_label_mean = proxy_label_mean
+        self.proxy_label_std = proxy_label_std
         self.lam = lam
         self.hub_min_children = hub_min_children
         self.hub_reward_fn = hub_reward_fn
@@ -151,6 +181,10 @@ class LSDFlowAcquisition:
         self.prebuild_k = prebuild_k
         self.max_children_per_hub = max_children_per_hub
         self.max_hubs_walked = max_hubs_walked
+        self.n_candidate_hubs = n_candidate_hubs
+        self.min_hub_visits = min_hub_visits
+        self.min_hub_depth = min_hub_depth
+        self.max_hub_depth = max_hub_depth
         self.enumerate_chunk_size = enumerate_chunk_size
         self.strip_stereo = strip_stereo
 
@@ -164,26 +198,48 @@ class LSDFlowAcquisition:
         ``assign_log_probs`` (the §2 P_F/P_B). Nothing is docked here; the loop docks the returned
         SMILES with the expensive oracle ``O``.
         """
-        records, terminal_routes, n_traj = self._sample(sampler, objective)
+        timing: Dict[str, float] = {}
+        records, terminal_routes, visit_counts, n_traj = self._sample(sampler, objective, timing)
         if self.arm == "best_candidate":
-            return self._best_candidate(records, terminal_routes, n_traj)
-        return self._hub_batching(records, sampler, objective, n_traj)
+            res = self._best_candidate(records, terminal_routes, n_traj, timing)
+        else:
+            res = self._hub_batching(records, visit_counts, sampler, objective, n_traj, timing)
+        res.timing = {k: round(v, 4) for k, v in timing.items()}
+        return res
+
+    def _sync(self) -> None:
+        """Fence async CUDA work so each timed stage is charged its real wall-clock (Logs/039)."""
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
 
     # --------------------------------------------------------------------- sampling
-    def _sample(self, sampler, objective):
+    def _sample(self, sampler, objective, timing: Dict[str, float]):
         """One sampling pass → (flow records, terminal→route map, n_trajectories).
 
         Records feed the DAG (hub ranking) and the best-candidate pool; the route map gives every
-        sampled terminal its full synthesis route (for best-candidate provenance)."""
+        sampled terminal its full synthesis route (for best-candidate provenance). Times trajectory
+        generation (``sampling_s``) apart from flow recovery + route extraction (``flow_extract_s``).
+        """
         records = []
         terminal_routes: Dict[str, dict] = {}
+        visit_counts: Dict[str, int] = {}
         n_traj = 0
-        for traj in sampler.get_trajectories_iterator(
-            self.n_sample_trajectories, self.sample_batch_size
-        ):
-            recs, _visits, n = extract_flow_records(objective, traj, strip_stereo=self.strip_stereo)
+        it = sampler.get_trajectories_iterator(self.n_sample_trajectories, self.sample_batch_size)
+        while True:
+            self._sync()
+            t0 = time.perf_counter()
+            try:
+                traj = next(it)
+            except StopIteration:
+                break
+            self._sync()
+            timing["sampling_s"] = timing.get("sampling_s", 0.0) + (time.perf_counter() - t0)
+            t1 = time.perf_counter()
+            recs, visits, n = extract_flow_records(objective, traj, strip_stereo=self.strip_stereo)
             records.extend(recs)
             n_traj += n
+            for k, c in visits.items():  # accumulate visit counts (candidate-hub discovery signal)
+                visit_counts[k] = visit_counts.get(k, 0) + c
             states_list = traj._states_list
             actions_list = traj._actions_list
             for i, states in enumerate(states_list):
@@ -193,11 +249,16 @@ class LSDFlowAcquisition:
                 if key is None or key in terminal_routes:
                     continue
                 terminal_routes[key] = extract_route(states, actions_list[i])
-        return records, terminal_routes, n_traj
+            self._sync()
+            timing["flow_extract_s"] = timing.get("flow_extract_s", 0.0) + (
+                time.perf_counter() - t1
+            )
+        return records, terminal_routes, visit_counts, n_traj
 
     # --------------------------------------------------------------------- best-candidate arm
-    def _best_candidate(self, records, terminal_routes, n_traj) -> AcquisitionResult:
+    def _best_candidate(self, records, terminal_routes, n_traj, timing) -> AcquisitionResult:
         """Top-``M`` sampled terminals under the same hit-bar + diversity filter (the control)."""
+        t_ms = time.perf_counter()
         # Dedup candidates by canonical key, keeping the best-reward observation of each.
         best: Dict[str, float] = {}
         for r in records:
@@ -220,6 +281,7 @@ class LSDFlowAcquisition:
             if selector.accept(key, reward):
                 smiles.append(key)
                 routes.append(terminal_routes.get(key, {}))
+        timing["mode_select_s"] = timing.get("mode_select_s", 0.0) + (time.perf_counter() - t_ms)
         return AcquisitionResult(
             smiles=smiles,
             routes=routes,
@@ -232,36 +294,40 @@ class LSDFlowAcquisition:
         )
 
     # --------------------------------------------------------------------- hub-batching arm
-    def _hub_batching(self, records, sampler, objective, n_traj) -> AcquisitionResult:
-        """UCB-rank hubs, walk best-first, enumerate + diversify into modes up to the budget."""
+    def _hub_batching(
+        self, records, visit_counts, sampler, objective, n_traj, timing
+    ) -> AcquisitionResult:
+        """Enumerate the most-visited hubs, rank them by ``z(reward)+λ·z(U(h))`` computed from their
+        **enumerated** neighborhoods, then diversify the best into modes up to the budget.
+
+        ``U(h)`` is taken from *enumerated* children (always many → well-defined), not sampled ones:
+        sampling under-counts a hub's children (Logs/025), so a sampled-``U(h)`` gate is starved (the
+        smoke's 0-mode failure). Candidate hubs are chosen by **visit count**, which sampling does
+        estimate robustly — the genuine high-traffic pre-terminal "hubs"."""
         env = getattr(sampler, "env", None)
         reward = getattr(sampler, "reward", None)
         if env is None or reward is None:
             raise RuntimeError("hub_batching needs sampler.env + sampler.reward (the shaped M).")
 
-        dag = LiteHubDAG.from_records(records, higher_is_better=self.higher_is_better)
-        strategy = UcbHubStrategy(
-            min_children=self.hub_min_children,
-            min_effective_n=self.hub_min_children,
-            lam=self.lam,
-            reward_fn=self.hub_reward_fn,
-            uncertainty_fn=self.hub_uncertainty_fn,
+        # Stage 1 — candidate hubs = most-visited pre-terminal states in the depth band.
+        t_rank = time.perf_counter()
+        sampled = LiteHubDAG.from_records(
+            records, higher_is_better=self.higher_is_better, visit_counts=visit_counts
         )
-        ranked = strategy.rank(dag)[: self.max_hubs_walked]
-        breakdown = {row["hub_key"]: row for row in strategy.score_breakdown(dag)}
+        candidates = [
+            h
+            for h in sampled.hubs_iter()
+            if h.visit_count >= self.min_hub_visits
+            and self.min_hub_depth <= h.depth <= self.max_hub_depth
+        ]
+        candidates.sort(key=lambda h: h.visit_count, reverse=True)
+        candidates = candidates[: self.n_candidate_hubs]
+        timing["hub_rank_s"] = timing.get("hub_rank_s", 0.0) + (time.perf_counter() - t_rank)
 
-        child_policy: ChildSelectionPolicy = make_child_policy(self.child_policy_name)
-        selector = self._mode_selector()
-        # pre-select-K stock: inert without a cost table (RGFN). The seam is here; the SCENT path
-        # supplies a FragmentCostTable + promoted fragments and stocks the top-K by build-score.
-        prebuilt: set = set()
-
-        smiles, routes, per_hub = [], [], []
-        reward_gen_calls = 0
-        hubs_used = 0
-        for hub in ranked:
-            if len(smiles) >= self.budget_modes:
-                break
+        # Stage 2 — enumerate each candidate's full one-reaction neighborhood (scored by M) → the
+        # enumerated FlowRecords give well-defined per-hub U(h) + reward(h).
+        enum_records: List = []
+        for hub in candidates:
             hub_state = hub_state_from_smiles(hub.stereo_key or hub.key, hub.depth)
             if hub_state is None:
                 continue
@@ -273,9 +339,40 @@ class LSDFlowAcquisition:
                 max_children=self.max_children_per_hub,
                 chunk_size=self.enumerate_chunk_size,
                 strip_stereo=self.strip_stereo,
+                timing=timing,  # accumulates enumeration_s / reward_gen_s / flow_extract_s
+                sync=self._sync,
             )
-            reward_gen_calls += len(recs)  # every enumerated child was scored by M
-            children = [_EnumChild(r.child_key, r.reward) for r in recs]
+            enum_records.extend(recs)
+        reward_gen_calls = len(enum_records)  # every enumerated child was scored by M
+        enum_dag = LiteHubDAG.from_records(enum_records, higher_is_better=self.higher_is_better)
+
+        # Stage 3 — UCB-rank the enumerated hubs by z(reward)+λ·z(U(h)).
+        t_rank2 = time.perf_counter()
+        strategy = UcbHubStrategy(
+            min_children=self.hub_min_children,
+            min_effective_n=self.hub_min_children,
+            lam=self.lam,
+            reward_fn=self.hub_reward_fn,
+            uncertainty_fn=self.hub_uncertainty_fn,
+        )
+        ranked = strategy.rank(enum_dag)[: self.max_hubs_walked]
+        breakdown = {row["hub_key"]: row for row in strategy.score_breakdown(enum_dag)}
+        timing["hub_rank_s"] = timing.get("hub_rank_s", 0.0) + (time.perf_counter() - t_rank2)
+
+        # Stage 4 — walk ranked hubs, diversify their enumerated children into modes up to budget.
+        child_policy: ChildSelectionPolicy = make_child_policy(self.child_policy_name)
+        selector = self._mode_selector()
+        # pre-select-K stock: inert without a cost table (RGFN). The seam is here; the SCENT path
+        # supplies a FragmentCostTable + promoted fragments and stocks the top-K by build-score.
+        prebuilt: set = set()
+
+        smiles, routes, per_hub = [], [], []
+        hubs_used = 0
+        for hub in ranked:
+            if len(smiles) >= self.budget_modes:
+                break
+            t_ms = time.perf_counter()
+            children = [_EnumChild(c.key, c.reward) for c in hub.children]
             ordered = child_policy.order(
                 children,
                 higher_is_better=self.higher_is_better,
@@ -290,6 +387,9 @@ class LSDFlowAcquisition:
                     smiles.append(child.smiles)
                     routes.append({"source_hub": hub.key, "product_smiles": child.smiles})
                     n_accepted += 1
+            timing["mode_select_s"] = timing.get("mode_select_s", 0.0) + (
+                time.perf_counter() - t_ms
+            )
             if n_accepted:
                 hubs_used += 1
             row = breakdown.get(hub.key, {})
@@ -297,7 +397,7 @@ class LSDFlowAcquisition:
                 {
                     "hub_key": hub.key,
                     "depth": hub.depth,
-                    "n_enumerated": len(recs),
+                    "n_enumerated": hub.n_children,
                     "n_accepted": n_accepted,
                     "uncertainty": row.get("uncertainty"),
                     "reward": row.get("reward"),
@@ -319,9 +419,18 @@ class LSDFlowAcquisition:
 
     # --------------------------------------------------------------------- helpers
     def _mode_selector(self) -> DiverseThresholdModeSelector:
-        return DiverseThresholdModeSelector(
-            self.reward_threshold, self.similarity, self.higher_is_better
-        )
+        """Build the mode selector, transforming the hit bar into the proxy's output units.
+
+        ``reward_threshold`` (e.g. 6TD3's −1.5) is in **real ΔVina kcal/mol**, but the reward
+        generator ``M`` outputs **standardized** predictions (it standardizes labels at ``fit`` time).
+        A child's ``record.reward`` is that standardized value, so the bar must be mapped into the
+        same space: ``thr_std = (thr_real − label_mean) / label_std``. Ranking is unaffected (z-scored
+        ⇒ invariant to this affine map); only the gate needs it. When ``label_std == 1`` /
+        ``label_mean == 0`` (a proxy that already emits real units) this is a no-op."""
+        thr = self.reward_threshold
+        if thr is not None and self.proxy_label_std and self.proxy_label_std > 0:
+            thr = (thr - self.proxy_label_mean) / self.proxy_label_std
+        return DiverseThresholdModeSelector(thr, self.similarity, self.higher_is_better)
 
     def _key(self, molecule) -> Optional[str]:
         """Stereo-stripped canonical key (§6), matching ``rgfn_extract``'s record keys."""

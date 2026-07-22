@@ -53,7 +53,11 @@ train_metrics = [@StandardGFNMetrics(), @SafeNumScaffoldsFound(), @UniqueMolecul
 Trainer.train_metrics = %train_metrics
 
 # --- Inner GFN budget per round (warm-started across rounds). ----------------
-Trainer.n_iterations = 300
+# Measured ~13 s/iter on balam (smoke 71025); 10 warm-started rounds → keep this modest
+# (the paper uses "fewer iterations when fitting the generative model" in the multi-round
+# setting). 150/round × 10 = 1500 iters ≈ 5.5 h training. CONFIRM wall-clock on the first
+# post-maintenance run and adjust with the submit --time.
+Trainer.n_iterations = 150
 Trainer.valid_every_n_iterations = 100000   # skip mid-run validation
 trainer/gin.singleton.constructor = @Trainer
 trainer = @trainer/gin.singleton()
@@ -85,7 +89,17 @@ LSDFlowAcquisition.child_policy = 'free_frag'
 LSDFlowAcquisition.prebuild_k = 20           # pre-select-K (inert on RGFN; SCENT seam)
 LSDFlowAcquisition.n_sample_trajectories = 2000
 LSDFlowAcquisition.sample_batch_size = 100
-LSDFlowAcquisition.max_children_per_hub = 2000
+# Enumeration is the acquisition's dominant cost (~20 children/s on balam, smoke 71025 — RDKit
+# child construction, not proxy scoring; matches Logs/039). n_candidate_hubs × max_children bounds
+# it: 100 × 200 ≈ 20k children/round ≈ ~17 min/round. Enough children per hub for a well-defined
+# U(h) + a few diverse modes; raise for deeper enumeration at a linear compute cost.
+LSDFlowAcquisition.max_children_per_hub = 200
+# Candidate hubs to enumerate for U(h)-based ranking: the most-visited depth-1..3 pre-terminal
+# states. U(h) is computed from each hub's ENUMERATED neighborhood (many children → well-defined),
+# not sparse sampled children (the smoke-71011 0-mode bug).
+LSDFlowAcquisition.n_candidate_hubs = 100
+LSDFlowAcquisition.min_hub_depth = 1
+LSDFlowAcquisition.max_hub_depth = 3
 
 # --- Outer active-learning loop. ---------------------------------------------
 ActiveLearningLoop.trainer = %trainer

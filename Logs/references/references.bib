@@ -137,3 +137,21 @@
   url     = {https://pubs.acs.org/doi/10.1021/acsomega.4c08049},
   note    = {In-silico molecular-glue design/evaluation. Reference for glue design and the choice of the 6TD3 system (see Logs/002_6td3-cr8-validation-and-discrimination.md).}
 }
+
+@article{ianez2026multiaiz,
+  title   = {Joint synthesis planning by leveraging common intermediates},
+  author  = {I{\'a}{\~n}ez Picazo, Pablo and Voronov, Alexey and Genheden, Samuel and Westerlund, Annie M.},
+  journal = {Artificial Intelligence in the Life Sciences},
+  year    = {2026},
+  doi     = {10.1016/j.ailsci.2026.100175},
+  url     = {https://www.sciencedirect.com/science/article/pii/S2667318526000231},
+  note    = {MultiAiZ (MolecularAI/multiaiz): extends AiZynthFinder to MULTI-TARGET retrosynthesis by
+             iteratively appending discovered intermediates to the stock (the paper uses 5 cycles) so
+             targets converge on shared intermediates, then ranks them by the novel "intermediate
+             score". The SECOND competitor route-planner for the LSD-Flow library-efficiency benchmark
+             (docs/LSD_FLOW_BENCHMARK_PLAN.md T4.1): each acquisition function's accepted-mode pool is
+             priced in ISOLATION by MultiAiZ->SPARROW (shared intermediates found within a pool are NOT
+             shared to other pools) to test whether smarter shared-intermediate discovery lowers
+             reactions-per-mode vs plain AiZynth->SPARROW. Molecular AI / AstraZeneca (same group as
+             AiZynthFinder). PDF: pdfs/ianez2026multiaiz.pdf.}
+}

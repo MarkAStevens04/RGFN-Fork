@@ -310,6 +310,12 @@ class ActiveLearningLoop:
                 "al_reward_gen_calls_cumulative": trace_row.get("reward_gen_calls_cumulative", 0),
                 "al_n_hubs_used": getattr(acq_result, "n_hubs_used", 0),
                 "al_avg_mols_per_hub": getattr(acq_result, "avg_mols_per_hub", float("nan")),
+                # Per-component acquisition wall-clock (Logs/039): sampling / flow_extract /
+                # enumeration / reward_gen / hub_rank / mode_select seconds — the breakdown of the
+                # sample_batch phase behind the hub-batching-vs-best-candidate compute comparison.
+                **{
+                    f"al_acq_{k}": v for k, v in (getattr(acq_result, "timing", None) or {}).items()
+                },
                 **fit_metrics,
                 **{f"batch_{k}": v for k, v in batch_metrics.items() if k != "al_round"},
             }
@@ -320,6 +326,10 @@ class ActiveLearningLoop:
             # avg-mols/hub stat and any post-hoc reactions-per-mode / hub-coincidence analysis.
             if acq_result is not None and getattr(acq_result, "per_hub", None):
                 self._write_per_hub(out_dir / f"hub_acquisition_round_{rnd:03d}.csv", acq_result)
+            # Append the per-component acquisition wall-clock (Logs/039 compute axis) — one row per
+            # round, so hub_batching vs best_candidate compute is directly comparable across arms.
+            if acq_result is not None and getattr(acq_result, "timing", None):
+                self._append_acq_timing(out_dir / "acquisition_timings.csv", rnd, acq_result)
             print(
                 f"[AL] round {rnd}: |D|={len(self.dataset)} (+{n_added}); "
                 f"oracle_calls={trace.cumulative}, "
@@ -444,6 +454,10 @@ class ActiveLearningLoop:
             arm=self.acquisition,
             higher_is_better=self.oracle.higher_is_better,
             budget_modes=self.query_batch_size,
+            # M outputs standardized predictions; pass the fit's label mean/std so the acquisition
+            # maps the real-unit hit bar (e.g. 6TD3 −1.5) into M's output space for the mode gate.
+            proxy_label_mean=float(getattr(self.proxy, "_label_mean", 0.0)),
+            proxy_label_std=float(getattr(self.proxy, "_label_std", 1.0)),
         )
         result = acq.select_batch(self._lsdflow_sampler(), self.trainer.objective)
         self._last_acq_result = result
@@ -536,3 +550,31 @@ class ActiveLearningLoop:
             writer.writeheader()
             for rank, row in enumerate(acq_result.per_hub, start=1):
                 writer.writerow({"rank": rank, **{k: row.get(k) for k in fields[1:]}})
+
+    def _append_acq_timing(self, path: Path, rnd: int, acq_result) -> None:
+        """Append this round's per-component acquisition wall-clock (Logs/039) to a run-level CSV."""
+        import csv
+
+        components = [
+            "sampling_s",
+            "flow_extract_s",
+            "enumeration_s",
+            "reward_gen_s",
+            "hub_rank_s",
+            "mode_select_s",
+        ]
+        timing = acq_result.timing or {}
+        header = ["round", "arm", "seed", "total_s"] + components
+        row = {
+            "round": rnd,
+            "arm": self.acquisition,
+            "seed": self.seed if self.seed is not None else "",
+            "total_s": round(sum(timing.values()), 4),
+            **{c: timing.get(c, 0.0) for c in components},
+        }
+        write_header = not path.exists()
+        with open(path, "a", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=header)
+            if write_header:
+                writer.writeheader()
+            writer.writerow(row)

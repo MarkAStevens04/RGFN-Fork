@@ -1,0 +1,37 @@
+{
+  "best-candidate": {
+    "reward_gen_calls": 0,
+    "compute_total_s": 1.1,
+    "reactions": 929,
+    "reactions_per_mode": 3.097,
+    "enumeration_frac": 0.0
+  },
+  "free-frag (K=0)": {
+    "reward_gen_calls": 315539,
+    "compute_total_s": 7471.7,
+    "reactions": 367,
+    "reactions_per_mode": 1.223,
+    "enumeration_frac": 0.795
+  },
+  "pre-select K=50": {
+    "reward_gen_calls": 158660,
+    "compute_total_s": 3732.3,
+    "reactions": 378,
+    "reactions_per_mode": 1.26,
+    "enumeration_frac": 0.791
+  },
+  "pre-select K=100": {
+    "reward_gen_calls": 85165,
+    "compute_total_s": 2004.5,
+    "reactions": 422,
+    "reactions_per_mode": 1.407,
+    "enumeration_frac": 0.788
+  },
+  "pre-select K=200": {
+    "reward_gen_calls": 52865,
+    "compute_total_s": 1218.9,
+    "reactions": 556,
+    "reactions_per_mode": 1.853,
+    "enumeration_frac": 0.775
+  }
+}

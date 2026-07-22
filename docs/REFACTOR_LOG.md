@@ -1320,3 +1320,99 @@ to the analyses; fixed the primitive routing), the `glue/samplers/lsdflow/__init
 definition (count-once, not the `depth(h)+k` sketch), and the `docs/RESEARCH_CONTEXT.md` Logs/025
 row. Added the `verify-state-not-docs` auto-memory. No source files were deleted or moved; the
 `.pyc` for the removed modules are gitignored (not tracked).
+
+---
+
+## 2026-07-20 — LSD-Flow acquisition wired into active learning (uncertainty-driven, RGFN in-env)
+
+**Why.** The capstone the campaign primitives were built to feed (Logs/037/038 "next steps"): put
+LSD-Flow hub selection *inside* the active-learning loop so we can measure how fast a real lab run
+finds high-quality candidates per expensive-oracle (docking) call — with the hub-flow **uncertainty
+`U(h)`** as the acquisition's exploration signal (proposal §2 phase-2, §4a).
+
+**What (production `glue/`, model-agnostic).**
+- **`glue/samplers/lsdflow/hub/ucb.py` — new `UcbHubStrategy`** (registered as `ucb`). Ranks hubs by
+  the explore/exploit score `score(h) = z(reward(h)) + λ·z(U(h))`, each term **z-scored across the
+  round's eligible hubs** so `λ` is a scale-free relative weight. `reward_fn` (exploitation) and
+  `uncertainty_fn` (exploration) are swappable by name (small registries) or callable — the
+  researcher's explicit modularity ask. Overrides `rank()` (the score is set-relative, not per-hub);
+  `score_breakdown()` emits per-hub provenance (raw + z + blended).
+- **`glue/samplers/lsdflow/acquisition.py` — `LSDFlowAcquisition` RE-INTRODUCED** (it and a
+  `molecule/` registry were deleted 2026-07-11 when the count-once campaign superseded the *first*
+  acquisition design; this is the AL-wired version the proposal §4a always intended, now built **on**
+  the campaign primitives, not replacing them). A drop-in batch-selection sampler with two arms:
+  `hub_batching` (sample → `LiteHubDAG` → UCB rank → walk hubs best-first, enumerate each hub's
+  one-reaction children scored by the reward-generator `M`, pre-select-K + `free_frag` child policy,
+  accept reward-gated + Tanimoto-diverse **modes** up to a per-round budget) and `best_candidate`
+  (top-`M` sampled terminals under the **same** hit-bar + diversity filter — the control). Returns a
+  flat SMILES batch + routes + dual accounting (**oracle calls** = docked modes; **reward-gen
+  calls** = `M` evaluations on enumerated children) + `avg mols/hub` + per-hub provenance.
+  pre-select-K=20 is **wired but inert on RGFN** (no dynamic library); it becomes load-bearing on the
+  SCENT path.
+- **`glue/active_learning/loop.py`** — additive: `acquisition` now accepts `hub_batching` /
+  `best_candidate` (alongside `policy` / `random`); the two LSD-Flow arms fit `M` + train the GFN
+  (like `policy`) then delegate to `LSDFlowAcquisition`; the fit→train→sample→dock→grow structure is
+  unchanged (§4a v1). Prefers the pure-policy `valid_sampler` for a clean `U(h)`. Writes a per-round
+  `hub_acquisition_round_NNN.csv`.
+- **`glue/active_learning/acquisition_trace.py`** — extended `oracle_calls.csv` with
+  `reward_gen_calls_{round,cumulative}` + `n_hubs_used` + `avg_mols_per_hub` (both cost axes on the
+  Fig.7 substrate). Backward compatible (blank for policy/random).
+- **`scripts/active_learning.py`** — `--acquisition` gains `hub_batching` / `best_candidate`.
+- **`validation/harness/acquisition_curve.py`** — arm colours/labels for the four arms.
+- **`configs/glue/active_learning_6td3_lsdflow.gin`** (new) — RGFN in-env anchor: 6TD3 GPU
+  differential docking, 10 rounds, 100 modes/round, hit bar **−1.5** (the glue/decoy discrimination
+  cut, Logs/002; Youden −1.58, Logs/006), λ=1, similarity 0.5. Plus
+  `experiments/active_learning/6td3/{submit_al_6td3_lsdflow.sh,launch_lsdflow_6td3.sh}`.
+
+**Why RGFN in-env first (build order).** The `glue/` selection primitives can't be imported in the
+`scent` env (its `import rgfn` resolves to SCENT's fork — the existing `scent_worker` *vendors* the
+extraction/enumeration for exactly this reason), so the clean architecture is the existing harness
+pattern: SCENT produces enumeration files in its env, `glue` selection runs in the `rgfn` env on
+them. Validating the whole acquisition + curve **in-env on RGFN** (proposal §10 step 2) locks the
+modular contract with zero cross-env friction; the SCENT headline run (where pre-select-K=20 is real)
+reuses the *same* `LSDFlowAcquisition` via that file bridge — the next build step.
+
+**Compute-time accounting (Logs/039 requirement).** Per-component acquisition wall-clock is measured
+live and CUDA-synchronized: `rgfn_enumerate.enumerate_terminal_children` gained a backward-compatible
+`timing`/`sync` hook splitting `enumeration_s` / `reward_gen_s` / `flow_extract_s`;
+`LSDFlowAcquisition` times `sampling_s` / `flow_extract_s` / `hub_rank_s` / `mode_select_s` around
+those, attaches the breakdown to `AcquisitionResult.timing`, and the loop writes it to
+`active_learning/acquisition_timings.csv` (one row per round: arm, total, six components) + into the
+round metrics. This sits **inside** the loop's `sample_batch` `PhaseTimer` bucket; docking is the
+separate `oracle_score` phase — so the run reports both call-count axes (oracle vs reward-gen) AND
+the wall-clock breakdown behind "how much longer hub-batching works vs best-candidate."
+
+**Verified (login node, `~/bin/rgfn-smoke-env.sh`).** `py_compile` all touched files; `import glue`
++ `ucb` registered + `LSDFlowAcquisition` gin-configurable; unit smoke of UCB ranking (λ=0 →
+best-reward hub first, λ=100 → highest-`U(h)` hub first, λ=1 → z-scored blend) + `score_breakdown` +
+the mode hit-bar/diversity gate; timing plumbing present; both configs parse; `bash -n` on all submit
+scripts.
+
+**Two compute-node smokes, two real bugs caught (the reason to smoke the full loop, not just imports).**
+Both ran clean end-to-end (exit 0) but exposed correctness bugs that compile/import/unit-smoke all
+passed:
+1. **Smoke 71011 → 0 modes (sampled-`U(h)` starvation).** `U(h)` was computed from *sampled* children
+   with a ≥2-child gate; sampling under-counts a hub's children (Logs/025), so the ranker's eligible
+   set was empty. **Fix:** two-stage `_hub_batching` — pick candidate hubs by **visit count** (robust
+   to sparse sampling), **enumerate** each, compute `U(h)`/`reward(h)` from the *enumerated*
+   neighborhood (matches how the campaign/paper compute it), UCB-rank, mode-select. Added knobs
+   `n_candidate_hubs` / `min_hub_visits` / `min_hub_depth` / `max_hub_depth`.
+2. **Smoke 71025 → still 0 modes (units mismatch).** Two-stage ranking worked (`U(h)` well-defined
+   ~22–28), but the `−1.5` **real-ΔVina** hit bar was compared against `M`'s **standardized** output
+   (`LearnedGlueProxy.fit` standardizes labels). Best child std `−1.22` = real `−2.35` (a hit) but
+   `−1.22 ≤ −1.5` is false → everything rejected. **Fix:** `_mode_selector` maps the bar into `M`'s
+   space `(thr−label_mean)/label_std` (the loop passes the proxy's fit stats); z-scored ranking is
+   invariant to the affine map so only the gate changes. Unit-tested: real `−1.5` → std `−0.27`, the
+   std `−1.22` child now accepts, mean/positive reject.
+
+**Measured compute (smoke 71025, the answer to "where does time go").** Acquisition 5 min:
+`enumeration_s` 220 s (73%, RDKit child construction — the dominant cost, per Logs/039), `sampling_s`
+56 s, `flow_extract_s` 18 s, `reward_gen_s` 5.7 s (proxy scoring is cheap); `train_gfn` ~13 s/iter.
+**Full-run sizing set to these rates:** `Trainer.n_iterations` 300→**150**/round (~5.5 h train),
+`max_children_per_hub` 2000→**200** + `n_candidate_hubs` **100** (~17 min/round enum), submit
+`--time` 11→**13 h**. CONFIRM on the first post-maintenance run.
+
+**Status.** Fixed smoke **re-queued as job 71114** (`hub_batching`, held `ReqNodeNotAvail` — auto-runs
+when nodes return; should now yield modes + a full timing breakdown). **Not yet run:** the full 3-arm
+× 10-round run (`launch_lsdflow_6td3.sh 42`, hold until 71114 confirms modes) and the SCENT cross-env
+path (pre-select-K live).

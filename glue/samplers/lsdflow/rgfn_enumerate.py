@@ -18,6 +18,7 @@ sampled DAG.
 
 from __future__ import annotations
 
+import time
 from typing import List, Optional, Tuple
 
 import torch
@@ -120,11 +121,37 @@ def _build_child_trajectory(env, hub_state, path) -> Optional[Trajectories]:
     return traj
 
 
-def _extract(objective, reward, trajs: List[Trajectories], strip_stereo: bool) -> List[FlowRecord]:
+def _add(timing, key, dt):
+    if timing is not None:
+        timing[key] = timing.get(key, 0.0) + dt
+
+
+def _extract(
+    objective, reward, trajs: List[Trajectories], strip_stereo: bool, timing=None, sync=None
+) -> List[FlowRecord]:
+    """Score + flow-extract a chunk of enumerated child trajectories.
+
+    When ``timing`` (a dict accumulator) is passed, the three §Logs/039 components are timed
+    separately: ``enumeration_s`` (the ``Trajectories`` assembly book-keeping), ``reward_gen_s``
+    (the reward-generator ``M`` scoring the children — the axis that dominates for docking), and
+    ``flow_extract_s`` (``assign_log_probs`` → P_F/P_B, the hub-ranking / ``U(h)`` signal). ``sync``
+    (e.g. ``torch.cuda.synchronize``) is called at GPU-timing boundaries so async CUDA work is
+    charged to the right component. Both default off → behaviour unchanged."""
+    _sync = sync or (lambda: None)
+    _t0 = time.perf_counter()
     big = Trajectories.from_trajectories(trajs) if len(trajs) > 1 else trajs[0]
     terminals = big.get_last_states_flat()
-    big.set_reward_outputs(reward.compute_reward_output(terminals))
+    _add(timing, "enumeration_s", time.perf_counter() - _t0)
+    _sync()
+    _r0 = time.perf_counter()
+    reward_output = reward.compute_reward_output(terminals)
+    _sync()
+    _add(timing, "reward_gen_s", time.perf_counter() - _r0)
+    big.set_reward_outputs(reward_output)
+    _f0 = time.perf_counter()
     records, _visits, _n = extract_flow_records(objective, big, strip_stereo=strip_stereo)
+    _sync()
+    _add(timing, "flow_extract_s", time.perf_counter() - _f0)
     return records
 
 
@@ -138,6 +165,8 @@ def enumerate_terminal_children(
     max_children: int = 2000,
     chunk_size: int = 64,
     strip_stereo: bool = True,
+    timing=None,
+    sync=None,
 ) -> Tuple[List[FlowRecord], int]:
     """Enumerate a hub's one-reaction terminal children as ``FlowRecord``s.
 
@@ -150,26 +179,36 @@ def enumerate_terminal_children(
         chunk_size: children per policy batch; a chunk that fails ``assign_log_probs`` (e.g. a
             backward disconnection the policy can't score) is retried per-child, skipping the bad
             ones — so one pathological product never voids the whole hub.
+        timing: optional dict accumulator for the §Logs/039 per-component wall-clock
+            (``enumeration_s`` / ``reward_gen_s`` / ``flow_extract_s``); ``None`` → no timing.
+        sync: optional no-arg callable (e.g. ``torch.cuda.synchronize``) fired at GPU-timing
+            boundaries so async CUDA work is attributed to the right component.
 
     Returns:
         ``(records, n_enumerated_paths)``. ``len(records) <= n_enumerated_paths`` when some
         products fail to build a scorable trajectory.
     """
+    _t0 = time.perf_counter()
     paths = _enumerate_product_paths(env, hub_state, max_children)
     trajs = [
         t for t in (_build_child_trajectory(env, hub_state, p) for p in paths) if t is not None
     ]
+    _add(timing, "enumeration_s", time.perf_counter() - _t0)  # RDKit child construction
     if not trajs:
         return [], len(paths)
     records: List[FlowRecord] = []
     for i in range(0, len(trajs), chunk_size):
         chunk = trajs[i : i + chunk_size]
         try:
-            records.extend(_extract(objective, reward, chunk, strip_stereo))
+            records.extend(
+                _extract(objective, reward, chunk, strip_stereo, timing=timing, sync=sync)
+            )
         except Exception:  # noqa: BLE001 - isolate a bad product, keep the rest of the hub
             for t in chunk:
                 try:
-                    records.extend(_extract(objective, reward, [t], strip_stereo))
+                    records.extend(
+                        _extract(objective, reward, [t], strip_stereo, timing=timing, sync=sync)
+                    )
                 except Exception:  # noqa: BLE001
                     continue
     return records, len(paths)

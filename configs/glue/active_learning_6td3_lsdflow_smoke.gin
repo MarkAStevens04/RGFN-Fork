@@ -1,0 +1,23 @@
+# Fast full-loop SMOKE of the LSD-Flow acquisition on the 6TD3 GPU oracle (compute node).
+#
+# Includes the real config and shrinks it to one round with a tiny budget so the WHOLE
+# integration is exercised end-to-end on a compute node before the 10-round run:
+# fit M on D_0 (408 real labels) -> train the GFN briefly -> LSDFlowAcquisition
+# (sample -> LiteHubDAG -> UCB rank -> enumerate -> mode-select) -> REAL 6TD3 docking of
+# the chosen modes -> grow D -> the oracle_calls.csv trace (both cost axes) +
+# hub_acquisition_round CSV. The real hit bar (-1.5) is kept — M is fit on D_0 first, so
+# it predicts realistic dvina and yields modes.
+#
+# Run (one arm; hub_batching is the riskiest new path):
+#   ARM=hub_batching sbatch experiments/active_learning/6td3/submit_al_6td3_lsdflow_smoke.sh
+
+include 'configs/glue/active_learning_6td3_lsdflow.gin'
+
+# --- shrink for a fast smoke (later bindings override the included ones) ------
+Trainer.n_iterations = 60
+ActiveLearningLoop.n_rounds = 1
+ActiveLearningLoop.query_batch_size = 24    # dock <=24 modes (== LSDFlowAcquisition.budget_modes)
+ActiveLearningLoop.top_k = 24
+LSDFlowAcquisition.n_sample_trajectories = 500
+LSDFlowAcquisition.max_children_per_hub = 150
+LSDFlowAcquisition.n_candidate_hubs = 30    # enumerate few hubs for a fast smoke

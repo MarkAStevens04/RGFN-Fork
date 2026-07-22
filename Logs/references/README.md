@@ -152,6 +152,22 @@ The cheap, RDKit-native companion to AiZynth that the same papers also report (a
 … 10 = hard heuristic from fragment contributions + complexity penalties). We compute it
 alongside the AiZynth verdict in the same evaluator. &nbsp;DOI:10.1186/1758-2946-1-8
 
+### `[ianez2026multiaiz]` — MultiAiZ: joint synthesis planning by leveraging common intermediates
+The **second competitor route-planner** for the LSD-Flow library benchmark (T4.1), a smarter
+alternative to plain AiZynth→SPARROW. Where AiZynth routes each target *independently*,
+MultiAiZ ([`MolecularAI/multiaiz`](https://github.com/MolecularAI/multiaiz)) plans over a
+**set** of targets: it runs AiZynthFinder for `n_iters` **cycles** (paper: **5**), and after
+each cycle **appends the discovered intermediates to the stock** so later targets route
+*through* them → convergent routes that reuse shared intermediates. It ranks intermediates by a
+novel **"intermediate score"** (amortized subtree cost × reaction-class utility). We use it as a
+per-pool pricer: run MultiAiZ on *one* acquisition function's accepted-mode pool in **isolation**
+(sharing found within a pool is **not** leaked to other pools), feed the resulting route trees to
+the same SPARROW MILP over the base ZINC stock (so a shared intermediate is **built once and
+amortized**, not free), and ask whether smarter discovery lowers **reactions-per-mode** vs plain
+AiZynth→SPARROW, or SPARROW's MILP already captures the sharing. Own `multiaiz` conda env
+(`external/setup_multiaiz.sh`); Molecular AI / AstraZeneca, same group as AiZynthFinder.
+&nbsp;DOI:10.1016/j.ailsci.2026.100175 · `pdfs/ianez2026multiaiz.pdf`
+
 ---
 
 ## Domain — systems, glue design & evaluation
