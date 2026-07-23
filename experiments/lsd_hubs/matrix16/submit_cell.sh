@@ -32,7 +32,9 @@ cd "$REPO" || { echo "ERROR: cannot cd to repo root '$REPO'"; exit 1; }
 
 N_TRAJ=${N_TRAJ:-30000}
 N_HUBS=${N_HUBS:-200}
-TOPK=${TOPK:-100}
+TOPK=${TOPK:-1000}   # top candidates whose parent hubs pick_hubs ranks. CAPS the hub count: only
+                     # TOPK distinct parents exist, so TOPK must be >= a few× N_HUBS to reach it
+                     # (Logs/031: top-1000 -> 575 distinct -> top-200). TOPK=100 gave only 100 hubs.
 SAMPLE_BATCH=${SAMPLE_BATCH:-200}
 ENUM_MAX=${ENUM_MAX:-4000}
 DEVICE=${DEVICE:-auto}
