@@ -312,6 +312,12 @@ def _make_enumerator(rgfn_api, Trajectories, RSA, RSB, RSC, RST, RAC, Molecule):
         def dfs(state, steps):
             if len(out) >= max_children:
                 return
+            # A template/reactant application can yield a ReactionStateEarlyTerminal (dead-end mol);
+            # SCENT's env raises KeyError on get_forward_action_spaces for terminal/early-terminal
+            # states (RGFN returns a degenerate space instead). Only A/B/C states have forward
+            # actions, so skip anything else BEFORE querying the env (the dead-end has no children).
+            if not isinstance(state, (RSA, RSB, RSC)):
+                return
             fas = env.get_forward_action_spaces([state])[0]
             if not hasattr(fas, "get_possible_actions_indices"):
                 return
