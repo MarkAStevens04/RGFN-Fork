@@ -143,6 +143,18 @@ def main() -> None:
         frameon=False,
     )
 
+    from matplotlib.patches import Patch
+
+    handles = [Patch(facecolor=c, label=l) for _, l, c in COMPONENTS]
+    fig.legend(
+        handles=handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.92),
+        ncol=5,
+        fontsize=8,
+        frameon=False,
+    )
+
     fig.suptitle(args.title, fontsize=12, fontweight="bold")
     fig.text(
         0.5,

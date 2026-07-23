@@ -189,6 +189,10 @@ def _snapshot_sizes(n, schedule, k, points):
             sizes.append(n)
         return sizes
     if schedule == "geometric":
+        if points <= 1:
+            return [
+                n
+            ]  # price the FINAL library only (expensive pricers, e.g. MultiAiZ: 1 run/cutoff)
         if n <= points:
             return list(range(1, n + 1))
         sizes = sorted({max(1, int(round(n ** (i / (points - 1))))) for i in range(points)})

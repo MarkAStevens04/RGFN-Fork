@@ -71,7 +71,8 @@ fi
 # eval modules (route_recovery/network) are RDKit+stdlib, dgl-free -> run in the aizynth env.
 FOLD_PY="$(mktemp --suffix=.py)"   # temp file, NOT `python - <<HEREDOC` under conda run (stdin gotcha)
 cat > "$FOLD_PY" <<'PY'
-import json, sys
+import json, sys, os
+sys.path.insert(0, os.environ["REPO_ROOT"])  # temp script lives in /tmp -> put the repo on sys.path
 from validation.lsdflow.eval.route_recovery import RouteCache
 from validation.lsdflow.eval.network import canonical
 jsonl, cache_path = sys.argv[1], sys.argv[2]
@@ -97,7 +98,7 @@ cache.save()
 print(f"[s3gfn-routes] folded {n} routes into cache ({solved} solved, "
       f"{100.0*solved/max(n,1):.1f}%) -> {cache_path}")
 PY
-python "$FOLD_PY" "$ROUTES_JSONL" "$CACHE"
+REPO_ROOT="$PWD" python "$FOLD_PY" "$ROUTES_JSONL" "$CACHE"
 rm -f "$FOLD_PY"
 
 echo ""

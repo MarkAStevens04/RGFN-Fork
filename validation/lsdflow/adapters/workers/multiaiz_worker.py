@@ -109,7 +109,25 @@ def main():
     strip = a.strip_stereo.lower() != "false"
 
     from aizynthfinder.aizynthfinder import AiZynthFinder
+    from aizynthfinder.context.scoring import AverageTemplateOccurrenceScorer
+    from aizynthfinder.reactiontree import ReactionTree
     from multiaiz.multiaiz import MultiAiZ
+
+    # MultiAiZ (pinned aizynthfinder ^4.4.0) calls ReactionTree.get_subtree(mol) in
+    # post_processing.select_best_route, but aizynthfinder 4.4.1 (our env) dropped it — it kept
+    # subtrees() (all non-leaf subtrees, each with .root). Shim get_subtree(mol) = the subtree rooted
+    # at mol, recovered from subtrees(). Version-tolerant (only added if missing); avoids editing the
+    # upstream clone or changing the aizynth env's version (which the SPARROW route recovery shares).
+    if not hasattr(ReactionTree, "get_subtree"):
+
+        def _get_subtree(self, mol):
+            target = getattr(mol, "smiles", None)
+            for st in self.subtrees():
+                if st.root is mol or getattr(st.root, "smiles", None) == target:
+                    return st
+            return None
+
+        ReactionTree.get_subtree = _get_subtree
 
     targets = [ln.strip() for ln in open(a.pool_smi) if ln.strip()]
     finder = AiZynthFinder(configfile=a.config)
@@ -117,6 +135,18 @@ def main():
     finder.expansion_policy.select(a.expansion)
     if a.filter and a.filter.lower() != "none":
         finder.filter_policy.select(a.filter)
+
+    # MultiAiZ ranks intermediates for stock-promotion by an "intermediate score" whose UTILITY term
+    # is a "reaction class-rank score" (a reaction-feasibility proxy) needing AstraZeneca-internal
+    # reaction-class data we don't have (Logs/043). Substitute AiZynthFinder's DATA-FREE
+    # AverageTemplateOccurrenceScorer under that exact name: well-precedented (common-template)
+    # reactions score higher = a data-free feasibility proxy matching the paper's stated intent. Without
+    # this, MultiAiZ crashes mid-cycle (KeyError) on the first real target's intermediates.
+    # User-approved deviation (2026-07-22).
+    class _TemplateOccUtility(AverageTemplateOccurrenceScorer):
+        scorer_name = "reaction class-rank score"
+
+    finder.scorers.load(_TemplateOccUtility(finder.config))
 
     work = Path(a.work_dir)
     work.mkdir(parents=True, exist_ok=True)
