@@ -382,11 +382,20 @@ def _enumerate_hub(
         lf = rec["log_reward"] + rec["log_pb_move"] - rec["log_pf_move"] - rec["log_pf_stop"]
         if child_stereo not in best or lf > best[child_stereo][0]:
             best[child_stereo] = (lf, rec)
+            # RxnAction.block is an ASSERTING property (raises AssertionError when _block is None,
+            # e.g. a UniRxn action has no building block) — getattr's default does NOT catch that.
+            # Only read it for BiRxn, guarded, and stringify for JSON-safety.
+            block = None
+            if act.action is RxnActionType.BiRxn:
+                try:
+                    block = str(act.block)
+                except Exception:
+                    block = None
             reaction_by_child[child_stereo] = [
                 {
                     "op": "reaction",
-                    "protocol": act.protocol,
-                    "block": getattr(act, "block", None),
+                    "protocol": getattr(act, "protocol", None),
+                    "block": block,
                     "input": hub_stereo,
                     "product": child_stereo,
                 }
