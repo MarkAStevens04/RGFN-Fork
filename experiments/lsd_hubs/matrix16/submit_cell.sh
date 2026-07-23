@@ -33,6 +33,14 @@ ENUM_MAX=${ENUM_MAX:-4000}
 DEVICE=${DEVICE:-auto}
 STAGE=${STAGE:-all}
 
+# Conda must be active BEFORE the manifest emit: a bare SLURM batch shell has NO python on PATH
+# until a conda env is activated, yet the emit is what tells us which env the worker needs. conda
+# base always has python and manifest.py is stdlib-only, so bootstrap with base for the emit, then
+# switch to the cell's env for the worker (below). (Login smokes masked this — they had an env active.)
+CONDA_SH=/home/markymoo/miniconda3/etc/profile.d/conda.sh
+source "$CONDA_SH"
+conda activate base
+
 # Resolve the cell from the manifest (single source of truth) into shell vars.
 SPEC="$(python experiments/lsd_hubs/matrix16/manifest.py --emit "$GEN" "$TGT")" || {
     echo "ERROR: manifest emit failed for '$GEN' '$TGT'"; exit 1; }
@@ -53,10 +61,8 @@ export WANDB_MODE=offline PYTHONUNBUFFERED=1
 RUN_DIR=$SCRATCH/rgfn_runs/lsdflow/matrix16/$CELL_TAG/run
 mkdir -p "$SAMPLE_DIR" "$ENUM_DIR" "$RUN_DIR" "$TORCH_HOME" "$HF_HOME"
 
-CONDA_SH=/home/markymoo/miniconda3/etc/profile.d/conda.sh
 module load cuda/11.8.0 2>/dev/null || true    # dgl graphbolt on compute nodes (absent on Trillium)
-source "$CONDA_SH"
-conda activate "$CONDA_ENV"
+conda activate "$CONDA_ENV"                     # switch from the bootstrap base env to the cell's env
 # dgl/graphbolt need torch's bundled CUDA libs on LD_LIBRARY_PATH (cluster-agnostic; the
 # ~/bin/rgfn-smoke-env.sh trick, applied to whichever env this cell's worker runs in).
 export LD_LIBRARY_PATH="$(ls -d /home/markymoo/miniconda3/envs/$CONDA_ENV/lib/python*/site-packages/nvidia/*/lib 2>/dev/null | paste -sd:):${LD_LIBRARY_PATH:-}"
