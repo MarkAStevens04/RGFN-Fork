@@ -22,8 +22,13 @@ set -uo pipefail
 GEN=${1:?usage: submit_cell.sh <generator> <target>}
 TGT=${2:?usage: submit_cell.sh <generator> <target>}
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"   # worktree/main repo root
-cd "$REPO"
+# Repo root. Under SLURM the batch script is COPIED to a spool dir, so BASH_SOURCE points at
+# /var/spool/... not the repo — use SLURM_SUBMIT_DIR (set to where sbatch was invoked; launch
+# scripts cd to the repo root first). Fall back to BASH_SOURCE for direct/login runs.
+REPO="${SLURM_SUBMIT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)}"
+cd "$REPO" || { echo "ERROR: cannot cd to repo root '$REPO'"; exit 1; }
+[ -f experiments/lsd_hubs/matrix16/manifest.py ] || {
+    echo "ERROR: not at repo root (no matrix16/manifest.py under $REPO); check SLURM_SUBMIT_DIR."; exit 1; }
 
 N_TRAJ=${N_TRAJ:-30000}
 N_HUBS=${N_HUBS:-200}
