@@ -33,6 +33,12 @@ CUTMIN=${CUTMIN:-0.3}; CUTMAX=${CUTMAX:-0.7}; CUTSTEP=${CUTSTEP:-0.2}   # coarse
 SNAP_POINTS=${SNAP_POINTS:-1}          # MultiAiZ is expensive -> price the final library only (1 pt/cutoff)
 N_ITERS=${N_ITERS:-5}                   # MultiAiZ cycles (paper value)
 MAX_ROUTES=${MAX_ROUTES:-0}            # candidate routes/target fed to SPARROW (0 = all)
+# Referee stock/config (default = pristine ZINC/USPTO). Exp C (Logs/047 follow-up, chemistry
+# homogenization) overrides these with the ZINC∪SMALL merged stock to test whether adding the
+# reaction-GFN's own blocks lets MultiAiZ→SPARROW recover the native ~1.22 rxn/mode. FRAGMENTS ONLY
+# (the merged stock adds blocks; USPTO templates are unchanged).
+AICONFIG=${AICONFIG:-data/models/aizynthfinder/config.yml}
+STOCK=${STOCK:-zinc}
 
 export TORCH_HOME=$SCRATCH/.cache/torch HF_HOME=$SCRATCH/.cache/huggingface PYTHONUNBUFFERED=1
 mkdir -p "$OUT_DIR" "$TORCH_HOME"
@@ -53,6 +59,7 @@ python experiments/lsd_hubs/campaign/sweep_campaign.py \
     --budget-modes "$BUDGET_MODES" \
     --cutoff-min "$CUTMIN" --cutoff-max "$CUTMAX" --cutoff-step "$CUTSTEP" \
     --multiaiz-n-iters "$N_ITERS" --multiaiz-max-routes "$MAX_ROUTES" \
+    --aizynth-config "$AICONFIG" --aizynth-stock "$STOCK" \
     --n-hubs 200
 
 echo ""

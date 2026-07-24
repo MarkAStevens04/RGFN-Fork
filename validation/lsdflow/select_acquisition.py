@@ -178,7 +178,7 @@ def select(
         result = BestCandidateStrategy(cands, cost_table, hub_compositions=comps, **common).run(
             ("modes", budget_modes)
         )
-        return [(p.smiles, p.source_hub) for p in result.accepted]
+        return result.accepted
 
     # hub_batching
     hubs = _load_enum_hubs(enum_children, comps)
@@ -196,7 +196,7 @@ def select(
         prebuilt_fragments=prebuilt,
         **common,
     ).run(("modes", budget_modes))
-    return [(p.smiles, p.source_hub) for p in result.accepted]
+    return result.accepted
 
 
 def main(argv=None) -> None:
@@ -241,12 +241,23 @@ def main(argv=None) -> None:
         proxy_label_mean=a.proxy_label_mean,
         proxy_label_std=a.proxy_label_std,
     )
+    # Persist the strategy's count-once reaction accounting per chosen molecule (reactions_added =
+    # marginal count-once reactions for this mode; cum_reactions = cumulative). This is the
+    # reactions-per-mode substrate — computed by the campaign cost model itself, correct for both
+    # arms (shared hubs charged once, pre-select-K, promoted-fragment builds). The loop docks `smiles`;
+    # the reaction columns feed analyze_reactions_per_mode.py.
     with open(a.out, "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["smiles", "source_hub"])
-        for smi, hub in chosen:
-            w.writerow([smi, hub or ""])
-    print(f"[select_acquisition] arm={a.arm}: wrote {len(chosen)} chosen molecules -> {a.out}")
+        w.writerow(["smiles", "source_hub", "reactions_added", "cum_reactions", "pred_reward"])
+        for p in chosen:
+            w.writerow([p.smiles, p.source_hub or "", p.reactions_added, p.cum_reactions, p.reward])
+    total_rx = chosen[-1].cum_reactions if chosen else 0
+    print(
+        f"[select_acquisition] arm={a.arm}: wrote {len(chosen)} chosen molecules "
+        f"({total_rx} count-once reactions, {total_rx/len(chosen):.2f} rxn/mode) -> {a.out}"
+        if chosen
+        else f"[select_acquisition] arm={a.arm}: wrote 0 chosen molecules -> {a.out}"
+    )
 
 
 if __name__ == "__main__":

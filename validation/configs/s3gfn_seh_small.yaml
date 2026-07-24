@@ -1,0 +1,56 @@
+# S3-GFN FIXED-REWARD on sEH — EXP A (chemistry-homogenization): retro env = the 418 SMALL blocks ONLY.
+# Identical to s3gfn_seh_fixed.yaml in EVERY respect except `retro_env` + run name, so the ONLY
+# variable is the synthesizability library. FRAGMENTS ONLY — templates stay hb105 (no reaction
+# transfer; user directive 2026-07-24). See docs/LSD_FLOW_BENCHMARK_PLAN (chemistry fairness) + Logs.
+#
+# PURPOSE: show the small library alone cannot support a from-scratch SMILES generator. The 418 RGFN
+# blocks are very different from the drug-like SMILES GP-MolFormer emits, so the cold-start
+# synth_ratio is expected ~0 and training may fail to bootstrap (empty positive buffer). That failure
+# IS the result: "S3-GFN recovers ~no routes with our small library" — the reaction-GFN's low
+# reactions/mode is NOT reproducible by a SMILES generator handed the same blocks.
+#
+# Run (from repo root, s3gfn env):
+#   conda run -n s3gfn python validation/generators/s3gfn/run_s3gfn_fixed.py \
+#       --cfg validation/configs/s3gfn_seh_small.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+
+run:
+  name: fixed_reward/s3gfn_seh_small
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  system: seh
+  reward_name: seh_proxy
+  n_train_steps: 5000
+  n_samples: 2000
+  sample_oversample: 6.0
+  max_sample_batches: 4000
+  score_units: "seh_mpnn_reward (higher is better)"
+
+reward:
+  type: seh_proxy
+  clip: 10.0
+  batch_size: 128
+
+s3gfn:
+  device: null
+  batch_size: 64
+  replay_batch_size: 64
+  buffer_size: 6400
+  num_warmup_steps: 100
+  learning_rate: 1.0e-4
+  log_z_learning_rate: 1.0e-3
+  beta: 50.0
+  sampling_temperature: 1.0
+  eval_sampling_temperature: 1.0
+  training_mode: s3gfn
+  use_retrosynthesis: true
+  retro_env: small_hb105                # EXP A: 389 stereo-stripped SMALL blocks + hb105 templates
+  retro_steps: 3
+  sa_threshold: 4.0
+  aux_coefficient: 0.0001
+  eval_samples: 1000
+  eval_every: 100000
+  save_periodic_every: 0
+  catalog: ""
+  property_rule: none

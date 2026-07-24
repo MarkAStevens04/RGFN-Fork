@@ -21,8 +21,14 @@
 
 include 'validation/configs/scent_seh.gin'   # base: SCENT + M + docking_seh + oracle_threshold=-8.0
 
-# Warm-started → refine (not train-from-scratch); 5 AL cycles.
-Trainer.n_iterations = 300
+# Warm-start LIBRARY ONLY (confound fix, AL_PIPELINE_ARCHITECTURE.md §7): freeze the rich 2018-frag
+# vocabulary (so pre-select-K bites) but train a FRESH forward policy from scratch on the docking
+# proxy M — do NOT inherit the sEH-proxy-trained checkpoint policy, which biased the learned arms
+# toward proxy-good/docking-mediocre molecules and let random win. All arms share this fresh policy.
+ScentActiveLearningLoop.warm_start_policy = False
+
+# 5 AL cycles. A fresh policy over 2018 fragments needs more inner training than a warm-started one.
+Trainer.n_iterations = 500
 
 # Disable SCENT's train-time logging metrics: its scaffold-cost metric (reaction_metrics.py)
 # dereferences ``state.molecule`` on terminal states without guarding against ReactionStateEarlyTerminal

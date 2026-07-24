@@ -28,6 +28,11 @@ FR_ROOT="$SCRATCH/rgfn_runs/experiments/fixed_reward"
 SEEDS=(43 44)
 GENS=(rgfn fraggfn rxnflow scent)
 CAP=${CAP:-60}; HEADROOM=${HEADROOM:-2}; MINI=${MINI:-2}
+# Campaign jobs run at LOW priority (high --nice) so any freshly-submitted job schedules first when a
+# node frees. PreemptMode=OFF on this cluster, so this ONLY reorders the PENDING queue — it never
+# preempts a running campaign job (that finishes its 3-day link, then its next link waits behind fresh
+# jobs). Priorities are ~3M here; NICE=10M floors the campaign below any normal (nice=0) job.
+NICE=${NICE:-10000000}
 
 if [ -n "${SLURM_JOB_ID:-}" ]; then
   echo "FATAL: run orchestrate.sh from a LOGIN node, not inside a job (Balam forbids sbatch there)."; exit 1
@@ -41,8 +46,8 @@ launch_cell(){ # tag script args...
   local tag=$1; shift; local script=$1; shift
   local dep="" jid k
   for k in $(seq 1 "$MINI"); do
-    if [ -z "$dep" ]; then jid=$(sbatch --parsable -J "$tag" "$script" "$@")
-    else jid=$(sbatch --parsable -J "$tag" --dependency=afterany:"$dep" "$script" "$@"); fi
+    if [ -z "$dep" ]; then jid=$(sbatch --parsable --nice="$NICE" -J "$tag" "$script" "$@")
+    else jid=$(sbatch --parsable --nice="$NICE" -J "$tag" --dependency=afterany:"$dep" "$script" "$@"); fi
     if [ -z "$jid" ]; then echo "    ERROR: sbatch failed for $tag"; return 1; fi
     dep=$jid
   done

@@ -326,6 +326,10 @@ class ActiveLearningLoop:
             # avg-mols/hub stat and any post-hoc reactions-per-mode / hub-coincidence analysis.
             if acq_result is not None and getattr(acq_result, "per_hub", None):
                 self._write_per_hub(out_dir / f"hub_acquisition_round_{rnd:03d}.csv", acq_result)
+            # Per-mode chosen provenance with count-once reactions (uniform with the SCENT selector's
+            # chosen.csv) — the reactions/mode substrate read by analyze_reactions_per_mode.py.
+            if acq_result is not None and getattr(acq_result, "routes", None):
+                self._write_chosen(out_dir / f"chosen_round_{rnd:03d}.csv", acq_result)
             # Append the per-component acquisition wall-clock (Logs/039 compute axis) — one row per
             # round, so hub_batching vs best_candidate compute is directly comparable across arms.
             if acq_result is not None and getattr(acq_result, "timing", None):
@@ -550,6 +554,28 @@ class ActiveLearningLoop:
             writer.writeheader()
             for rank, row in enumerate(acq_result.per_hub, start=1):
                 writer.writerow({"rank": rank, **{k: row.get(k) for k in fields[1:]}})
+
+    @staticmethod
+    def _write_chosen(path: Path, acq_result) -> None:
+        """Per-mode chosen provenance: smiles + source_hub + count-once reactions (reactions_added /
+        cum_reactions), matching validation/lsdflow/select_acquisition.py's chosen.csv so the RGFN
+        in-env arms and the SCENT cross-env arms feed analyze_reactions_per_mode.py identically."""
+        import csv
+
+        fields = ["smiles", "source_hub", "reactions_added", "cum_reactions"]
+        with open(path, "w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=fields)
+            w.writeheader()
+            for smi, route in zip(acq_result.smiles, acq_result.routes):
+                route = route or {}
+                w.writerow(
+                    {
+                        "smiles": smi,
+                        "source_hub": route.get("source_hub", ""),
+                        "reactions_added": route.get("reactions_added", ""),
+                        "cum_reactions": route.get("cum_reactions", ""),
+                    }
+                )
 
     def _append_acq_timing(self, path: Path, rnd: int, acq_result) -> None:
         """Append this round's per-component acquisition wall-clock (Logs/039) to a run-level CSV."""

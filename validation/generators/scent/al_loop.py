@@ -168,6 +168,9 @@ class ScentActiveLearningLoop:
         warm_start_checkpoint: Optional[str] = None,
         warm_start_guidance: Optional[str] = None,
         freeze_snapshot: Optional[str] = None,
+        # confound fix: False = freeze the library only, train a FRESH docking-aligned policy (don't
+        # inherit the proxy-trained checkpoint policy — AL_PIPELINE_ARCHITECTURE.md §7).
+        warm_start_policy: bool = True,
         # LSD-Flow acquisition knobs (hub_batching / best_candidate)
         lam: float = 1.0,
         prebuild_k: int = 20,
@@ -230,6 +233,7 @@ class ScentActiveLearningLoop:
         self.warm_start_checkpoint = warm_start_checkpoint
         self.warm_start_guidance = warm_start_guidance
         self.freeze_snapshot = freeze_snapshot
+        self.warm_start_policy = warm_start_policy
         self._chosen_set: set = set()
         self._random_sampler = None
         self._last_acq_stats: dict = {}
@@ -313,6 +317,7 @@ class ScentActiveLearningLoop:
                 self.warm_start_checkpoint,
                 self.warm_start_guidance or "",
                 self.freeze_snapshot or "",
+                load_policy=self.warm_start_policy,
             )
 
         trace_path = out_dir / "oracle_calls.csv"

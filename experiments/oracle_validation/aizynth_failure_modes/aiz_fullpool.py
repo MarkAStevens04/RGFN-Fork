@@ -18,7 +18,11 @@ CONFIG = os.environ.get(
     "AIZ_CONFIG", "/scratch/markymoo/rgfn_runs/lsdflow_sparrow/config_rgfnlib_flat.yml"
 )
 STOCKS = {"zinc": ["zinc"], "union": ["zinc", "rgfnlib"]}
-IT, TL, MT = 100, 60, 6
+# budget knobs (env-overridable): production = 100/60/6 (matches the 48.7%/73.8% headline);
+# the high-budget "ceiling" run uses AIZ_IT=1000 AIZ_TL=300 AIZ_MT=9.
+IT = int(os.environ.get("AIZ_IT", "100"))
+TL = int(os.environ.get("AIZ_TL", "60"))
+MT = int(os.environ.get("AIZ_MT", "6"))
 _F = None
 
 

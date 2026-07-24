@@ -275,12 +275,19 @@ class LSDFlowAcquisition:
         )
         selector = self._mode_selector()
         smiles, routes = [], []
+        cum_reactions = (
+            0  # independent molecules: each charged its own route's num_reactions (no amortization)
+        )
         for key, reward in order:
             if len(smiles) >= self.budget_modes:
                 break
             if selector.accept(key, reward):
+                route = dict(terminal_routes.get(key, {}))
+                rx = int(route.get("num_reactions", 0) or 0)
+                cum_reactions += rx
+                route.update({"reactions_added": rx, "cum_reactions": cum_reactions})
                 smiles.append(key)
-                routes.append(terminal_routes.get(key, {}))
+                routes.append(route)
         timing["mode_select_s"] = timing.get("mode_select_s", 0.0) + (time.perf_counter() - t_ms)
         return AcquisitionResult(
             smiles=smiles,
@@ -368,6 +375,11 @@ class LSDFlowAcquisition:
 
         smiles, routes, per_hub = [], [], []
         hubs_used = 0
+        # Count-once reaction accounting (per round, matching the SCENT selector / campaign model):
+        # build each distinct hub scaffold once (its depth reactions), then +1 marginal reaction per
+        # accepted mode. RGFN has no promoted fragments, so there are no extra fragment builds.
+        built_hubs: Dict[str, int] = {}
+        cum_reactions = 0
         for hub in ranked:
             if len(smiles) >= self.budget_modes:
                 break
@@ -384,8 +396,20 @@ class LSDFlowAcquisition:
                 if len(smiles) >= self.budget_modes:
                     break
                 if selector.accept(child.smiles, child.reward):
+                    rx = 1  # the final diversifying reaction (one coupling)
+                    if hub.key not in built_hubs:  # build the shared scaffold once
+                        built_hubs[hub.key] = hub.depth
+                        rx += hub.depth
+                    cum_reactions += rx
                     smiles.append(child.smiles)
-                    routes.append({"source_hub": hub.key, "product_smiles": child.smiles})
+                    routes.append(
+                        {
+                            "source_hub": hub.key,
+                            "product_smiles": child.smiles,
+                            "reactions_added": rx,
+                            "cum_reactions": cum_reactions,
+                        }
+                    )
                     n_accepted += 1
             timing["mode_select_s"] = timing.get("mode_select_s", 0.0) + (
                 time.perf_counter() - t_ms

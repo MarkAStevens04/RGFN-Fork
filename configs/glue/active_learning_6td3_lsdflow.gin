@@ -80,7 +80,11 @@ dataset = @dataset/gin.singleton()
 #     set by the loop). The 6TD3 hit bar is the glue/decoy discrimination cut
 #     −1.5 (Logs/002; Youden −1.58, Logs/006). ----------------------------------
 LSDFlowAcquisition.lam = 1.0                 # λ: exploration weight on z(U(h))
-LSDFlowAcquisition.reward_threshold = -1.5   # mode iff M(x) <= −1.5 (minimize)
+# NO pre-dock hit gate (reward_threshold=None), matching the SCENT arms + the Q3 framing: dock the most
+# promising, diverse candidates that fit the budget; "modes" (real dvina ≤ −1.5, the 6TD3 discrimination
+# cut) are counted POST-dock. A strict pre-dock gate is circular (docking is how we learn a hit) and
+# would make RGFN vs SCENT an unmatched comparison.
+LSDFlowAcquisition.reward_threshold = None
 LSDFlowAcquisition.similarity = 0.5          # Tanimoto (ECFP r=3/2048) diversity cutoff
 LSDFlowAcquisition.hub_min_children = 2      # U(h) undefined below 2 children
 LSDFlowAcquisition.hub_reward_fn = 'best_child'

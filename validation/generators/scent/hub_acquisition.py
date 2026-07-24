@@ -45,36 +45,51 @@ def warm_start(
     checkpoint: str,
     guidance: str,
     snapshot: str,
+    load_policy: bool = True,
 ) -> set:
-    """Load the sEH checkpoint (forward policy + logZ + guidance ``P_B``) into ``trainer.objective``
-    and freeze the dynamic library to ``snapshot``. Returns the frozen ``chosen_set`` (promoted
-    fragment SMILES) used to tag per-molecule compositions. Mirrors ``scent_worker``'s build recipe.
-    """
+    """Freeze the dynamic library to ``snapshot`` (the rich promoted-fragment vocabulary pre-select-K
+    ranks over) and, if ``load_policy``, also load the checkpoint's trained forward policy + logZ +
+    guidance ``P_B``. Returns the frozen ``chosen_set``. Mirrors ``scent_worker``'s build recipe.
+
+    **``load_policy`` is the confound knob (docs/AL_PIPELINE_ARCHITECTURE.md §7).** The sEH checkpoint's
+    policy was trained on the sEH *proxy*, which DISAGREES with the docking oracle (the known
+    proxy≠docking finding) — so warm-starting it biases the from-policy arms toward proxy-good /
+    docking-mediocre molecules and random beat them. ``load_policy=False`` freezes ONLY the library
+    (keeps pre-select-K meaningful) and leaves the forward policy at fresh init, so the AL loop trains
+    it from scratch on the docking proxy ``M`` → docking-aligned, unconfounded, still over the rich
+    2018-fragment vocabulary."""
     import torch
     from guidance_io import load_guidance_models  # scent sibling
 
     from rgfn.gfns.reaction_gfn.api.data_structures import Molecule
 
     objective = trainer.objective
-    ckpt = torch.load(checkpoint, map_location="cpu", weights_only=False)
-    state = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
-    res = objective.load_state_dict(state, strict=False)
-    real_missing = [k for k in res.missing_keys if "_cache" not in k]
-    print(
-        f"[SCENT-AL] warm-start: loaded forward policy + logZ (real-missing={len(real_missing)})",
-        flush=True,
-    )
-    if guidance and Path(guidance).exists():
-        loaded, unmatched = load_guidance_models(
-            objective, guidance, map_location="cpu", strict=True
-        )
+    if load_policy:
+        ckpt = torch.load(checkpoint, map_location="cpu", weights_only=False)
+        state = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
+        res = objective.load_state_dict(state, strict=False)
+        real_missing = [k for k in res.missing_keys if "_cache" not in k]
         print(
-            f"[SCENT-AL] warm-start: loaded guidance sidecar ({loaded} keys, unmatched={unmatched})",
+            f"[SCENT-AL] warm-start: loaded forward policy + logZ (real-missing={len(real_missing)})",
             flush=True,
         )
+        if guidance and Path(guidance).exists():
+            loaded, unmatched = load_guidance_models(
+                objective, guidance, map_location="cpu", strict=True
+            )
+            print(
+                f"[SCENT-AL] warm-start: loaded guidance sidecar ({loaded} keys, unmatched={unmatched})",
+                flush=True,
+            )
+        else:
+            print(
+                f"[SCENT-AL] WARNING warm-start: guidance sidecar missing ({guidance}) — P_B not the trained one",
+                flush=True,
+            )
     else:
         print(
-            f"[SCENT-AL] WARNING warm-start: guidance sidecar missing ({guidance}) — P_B not the trained one",
+            "[SCENT-AL] warm-start: LIBRARY-ONLY (fresh docking-aligned policy; not loading the "
+            "proxy-trained checkpoint policy — confound fix)",
             flush=True,
         )
     env = (
