@@ -186,4 +186,24 @@ server-mode edit → moved back onto the class.
 dependency chains via `launch_matrix.sh 42`). Docking cells 5 links (~15 d), surrogate 2 links
 (~6 d). Monitor: `squeue -u markymoo`.
 
-*(TODO — the full 4×4 matrix results once launched.)*
+**3-SEED EXTENSION — seeds 43,44 (+ seed-42 FragGFN re-run) launched 2026-07-23.** To get error
+bars, two more trials across all 16 cells (cluster idle). Two config changes for the new seeds
+(seed 42 for the other three generators is kept as-is):
+- **ClpP `docking_batch_size` 25→200** (`glue/oracles/docking_seh_oracle.py` default): 3.3× faster
+  ClpP docking at byte-identical, batch-invariant scores (exp 036 / Logs/036). Covers both the RGFN
+  in-env oracle and the baseline docking server (neither overrides the default).
+- **FragGFN `max_nodes` 9→6 for all four cells** (paper-faithful; Logs/046 found 9 → oversized MW →
+  reward collapse, e.g. DRD2). The seed-42 FragGFN cells had finished at the wrong value 9, so they
+  were archived to `fraggfn_<sys>_5k/seed42_maxnodes9/` and re-run at 6 — the FragGFN row is now
+  seeds 42/43/44 all at 6. RGFN/RxnFlow/SCENT are unaffected (their max-reaction cap is separate).
+
+Because 36 cells (2 seeds × 16 + 4 seed-42 FragGFN) exceed the 60-submit/30-run per-user caps
+(shared with other jobs), they are driven by a cap-aware orchestrator
+`experiments/fixed_reward/scale5k/orchestrate.sh` (idempotent; tags each cell
+`c5_<gen>_<sys>_s<seed>` in its SLURM job name; launches idle cells as 2-link afterany mini-chains,
+docking-first, up to the live submit budget; re-run to top up + launch waiters). crontab is
+disallowed for this user, so it is re-run on check-ins; each cell's 2-link chain gives a ~6-day
+autonomous buffer. First wave: 17 docking cells (jobs 71441–71474). Data layout is unchanged —
+`<gen>_<sys>_5k/seed{42,43,44}/` — with no aggregation layer (analyzed downstream).
+
+*(TODO — the full 4×4 × 3-seed matrix results once complete.)*

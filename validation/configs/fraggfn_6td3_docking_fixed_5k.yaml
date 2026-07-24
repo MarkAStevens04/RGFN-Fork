@@ -1,8 +1,8 @@
 # FragGFN FIXED-REWARD on the 6TD3 differential — publication-scale (campaign Logs/030).
 #
 # Publication-scale variant of fraggfn_6td3_docking_fixed.yaml: n_train_steps 400 -> 5000
-# (uniform four-way budget). FragGFN is the non-synthesizable fragment foil and keeps its native
-# max_nodes=9 (fragment-based, not reaction-based). Per-step docking-in-the-loop via
+# (uniform four-way budget). FragGFN is the non-synthesizable fragment foil at max_nodes=6
+# (paper-faithful; Logs/046: 9 -> oversized MW -> collapse; seed-42 ran at 9). Docking-in-the-loop via
 # DockingBridgeReward, beta=4.
 #
 # Run (repo root, fraggfn env; docking libs exported for the rgfn subprocess):
@@ -31,7 +31,7 @@ reward:
   clip: 10.0
 
 gflownet:
-  max_nodes: 9              # native fragment budget (unchanged)
+  max_nodes: 6              # paper-faithful cap (was 9; Logs/046: 9 -> oversized MW -> collapse)
   num_emb: 128
   num_layers: 4
   sampling_tau: 0.9

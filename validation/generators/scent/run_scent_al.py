@@ -68,6 +68,18 @@ def main() -> None:
         help="base run dir (absolute). On Balam set to $SCRATCH/rgfn_runs/experiments "
         "($HOME is read-only on compute nodes). Defaults to <repo>/experiments.",
     )
+    ap.add_argument(
+        "--acquisition",
+        default="policy",
+        choices=["policy", "random", "hub_batching", "best_candidate"],
+        help="acquisition arm (docs/AL_PIPELINE_ARCHITECTURE.md); overrides the config.",
+    )
+    ap.add_argument(
+        "--warm-start-checkpoint",
+        default=None,
+        help="SCENT last_gfn.pt to warm-start the hub arms from; the guidance_models.pt sidecar "
+        "and the promoted-fragment snapshot are derived from its run dir.",
+    )
     args = ap.parse_args()
 
     if not _SCENT_ROOT.exists():
@@ -94,14 +106,18 @@ def main() -> None:
         raise SystemExit(f"seed D_0 CSV not found: {seed_abs}")
     root_dir = Path(args.root_dir).resolve() if args.root_dir else (_REPO_ROOT / "experiments")
 
-    run_name = f"active_learning/scent_6td3/{_timestamp()}"
+    # Arm+seed-tagged run dir keyed by the config stem (so concurrent arms/configs never collide,
+    # like scripts/active_learning.py).
+    run_name = f"active_learning/{cfg_path.stem}/{args.acquisition}_seed{args.seed}/{_timestamp()}"
     run_dir = (root_dir / run_name).resolve()
     run_dir.mkdir(parents=True, exist_ok=True)
 
     # --- Enter the SCENT clone so its relative config/data paths resolve. ---------
     os.chdir(_SCENT_ROOT)
-    # Resolve gin includes ('configs/…') against the SCENT clone regardless of CWD.
+    # Resolve gin includes: 'configs/…' against the SCENT clone; 'validation/configs/…' against our
+    # repo root (so scent_seh_lsdflow.gin can `include 'validation/configs/scent_seh.gin'`).
     gin.add_config_file_search_path(str(_SCENT_ROOT))
+    gin.add_config_file_search_path(str(_REPO_ROOT))
 
     # Seed (SCENT ships rgfn.utils.helpers.seed_everything, like our fork).
     try:
@@ -131,7 +147,24 @@ def main() -> None:
         f'ScentActiveLearningLoop.repo_root="{_REPO_ROOT}"',
         f'ScentActiveLearningLoop.seed_csv="{seed_abs}"',
         f"ScentActiveLearningLoop.seed={args.seed}",
+        f'ScentActiveLearningLoop.acquisition="{args.acquisition}"',
     ]
+    # Warm-start (hub arms): derive the guidance sidecar + the highest-N promoted-fragment snapshot
+    # from the checkpoint's run dir (<run>/train/checkpoints/last_gfn.pt → <run>/additional_fragments).
+    if args.warm_start_checkpoint:
+        ckpt = Path(args.warm_start_checkpoint).resolve()
+        guidance = ckpt.parent / "guidance_models.pt"
+        frag_dir = ckpt.parents[2] / "additional_fragments"
+        snaps = sorted(frag_dir.glob("fragments_*.json"), key=lambda p: int(p.stem.split("_")[1]))
+        snapshot = str(snaps[-1]) if snaps else ""
+        bindings += [
+            f'ScentActiveLearningLoop.warm_start_checkpoint="{ckpt}"',
+            f'ScentActiveLearningLoop.warm_start_guidance="{guidance}"',
+            f'ScentActiveLearningLoop.freeze_snapshot="{snapshot}"',
+        ]
+        print(
+            f"[SCENT-AL] warm-start ckpt={ckpt}\n[SCENT-AL] freeze snapshot={snapshot}", flush=True
+        )
     gin.parse_config_files_and_bindings([str(cfg_abs)], bindings=bindings)
     print(
         f"[SCENT-AL] cfg={cfg_abs.name} run_dir={run_dir} seed={args.seed}\n"

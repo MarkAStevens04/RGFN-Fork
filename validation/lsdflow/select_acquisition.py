@@ -152,14 +152,23 @@ def select(
     child_policy: str,
     rank_by: str,
     min_children: int,
+    proxy_label_mean: float = 0.0,
+    proxy_label_std: float = 1.0,
 ) -> list:
     comps = json.load(open(compositions)) if compositions and Path(compositions).exists() else {}
     cost_table = None
     if snapshot and Path(snapshot).exists():
         cost_table = load_cost_table_from_snapshot(json.load(open(snapshot)))
+    # The proxy M standardizes labels at fit time, so worker `reward` fields are STANDARDIZED. Map the
+    # real-unit hit bar (e.g. sEH docking −8) into M's output space so the mode gate is correct — the
+    # cross-env twin of glue.samplers.lsdflow.acquisition._mode_selector. Ranking (z-scored / rank
+    # order) is invariant to this affine map; only the gate needs it. No-op when std==1 & mean==0.
+    thr = reward_threshold
+    if thr is not None and proxy_label_std and proxy_label_std > 0:
+        thr = (thr - proxy_label_mean) / proxy_label_std
     common = dict(
         target="lsdflow",
-        reward_threshold=reward_threshold,
+        reward_threshold=thr,
         similarity=similarity,
         higher_is_better=higher_is_better,
     )
@@ -209,6 +218,9 @@ def main(argv=None) -> None:
     ap.add_argument("--child-policy", default="free_frag", choices=["free_frag", "reward"])
     ap.add_argument("--rank-by", default="build_score", choices=["build_score", "fanout", "reward"])
     ap.add_argument("--min-children", type=int, default=2)
+    # M standardizes labels → worker rewards are standardized; map the real hit bar into that space.
+    ap.add_argument("--proxy-label-mean", type=float, default=0.0)
+    ap.add_argument("--proxy-label-std", type=float, default=1.0)
     a = ap.parse_args(argv)
 
     chosen = select(
@@ -226,6 +238,8 @@ def main(argv=None) -> None:
         child_policy=a.child_policy,
         rank_by=a.rank_by,
         min_children=a.min_children,
+        proxy_label_mean=a.proxy_label_mean,
+        proxy_label_std=a.proxy_label_std,
     )
     with open(a.out, "w", newline="") as fh:
         w = csv.writer(fh)

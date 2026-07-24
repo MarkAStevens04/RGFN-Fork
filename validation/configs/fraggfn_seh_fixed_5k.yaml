@@ -1,8 +1,8 @@
 # FragGFN FIXED-REWARD on sEH (surrogate) — publication-scale (campaign Logs/030).
 #
 # Publication-scale variant of fraggfn_seh_fixed.yaml. The surrogate cell already ran 5000
-# steps and FragGFN keeps max_nodes=9, so this cell has NO parameter change vs the base — it is
-# re-run only for uniform campaign provenance (fresh outputs in the _5k namespace, same seed).
+# steps. FragGFN now uses max_nodes=6 (paper-faithful; Logs/046 found 9 -> oversized MW ->
+# reward collapse). The seed-42 leg ran at 9 before that fix; seeds 43/44 use 6.
 # Frozen Bengio-2021 sEH proxy, beta=8, non-synthesizable (has_route=0).
 #
 # Run (repo root, fraggfn env; candidate emission shells to the rgfn env):
@@ -26,7 +26,7 @@ reward:
   batch_size: 128
 
 gflownet:
-  max_nodes: 9              # native fragment budget (unchanged)
+  max_nodes: 6              # paper-faithful cap (was 9; Logs/046: 9 -> oversized MW -> collapse)
   num_emb: 128
   num_layers: 4
   sampling_tau: 0.9

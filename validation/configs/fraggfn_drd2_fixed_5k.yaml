@@ -1,8 +1,9 @@
 # FragGFN FIXED-REWARD on DRD2 (surrogate) — publication-scale (campaign Logs/030).
 #
 # Publication-scale variant of fraggfn_drd2_fixed.yaml. Surrogate cell already ran 5000 steps
-# and FragGFN keeps max_nodes=9, so NO parameter change vs base — re-run only for uniform
-# campaign provenance. Frozen DRD2 TDC activity oracle, beta=48, non-synthesizable (has_route=0).
+# FragGFN now uses max_nodes=6 (paper-faithful; Logs/046: 9 -> oversized MW -> DRD2 collapse).
+# Seed-42 ran at 9 before that fix; seeds 43/44 use 6. Frozen DRD2 TDC activity oracle, beta=48,
+# non-synthesizable (has_route=0).
 #
 # Run (repo root, fraggfn env; candidate emission shells to the rgfn env):
 #   conda run -n fraggfn python validation/generators/fraggfn/run_fraggfn_fixed.py \
@@ -29,7 +30,7 @@ reward:
   clip: 10.0
 
 gflownet:
-  max_nodes: 9              # native fragment budget (unchanged)
+  max_nodes: 6              # paper-faithful cap (was 9; Logs/046: 9 -> oversized MW -> collapse)
   num_emb: 128
   num_layers: 4
   sampling_tau: 0.9

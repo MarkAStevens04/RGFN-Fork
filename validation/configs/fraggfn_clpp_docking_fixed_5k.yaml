@@ -1,7 +1,7 @@
 # FragGFN FIXED-REWARD on ClpP GPU docking — publication-scale (campaign Logs/030).
 #
 # 5,000-iteration variant of fraggfn_clpp_docking_fixed.yaml: n_train_steps 400 -> 5000.
-# FragGFN keeps its native max_nodes=9 (fragment-based). Per-step docking via
+# FragGFN uses max_nodes=6 (paper-faithful; Logs/046: 9 -> oversized MW -> collapse; seed-42 ran at 9). Docking via
 # DockingBridgeReward, beta=4.
 #
 # Run (repo root, fraggfn env; docking libs exported for the rgfn subprocess):
@@ -30,7 +30,7 @@ reward:
   clip: 10.0
 
 gflownet:
-  max_nodes: 9              # native fragment budget
+  max_nodes: 6              # paper-faithful cap (was 9; Logs/046: 9 -> oversized MW -> collapse)
   num_emb: 128
   num_layers: 4
   sampling_tau: 0.9

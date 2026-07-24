@@ -1,0 +1,283 @@
+{
+  "target": "human ClpP / QuickVina2-GPU docking (data/targets/ClpP.pdbqt = 7UVU)",
+  "note": "Vina kcal/mol, lower = better binder. actives = ChEMBL4523305 binders (mostly EC50 imipridone activators); decoys = property-matched DUD-E.",
+  "recommended_threshold_youden": -8.0,
+  "n_actives": 161,
+  "n_decoys": 163,
+  "actives_vina": {
+    "n": 161,
+    "min": -12.0,
+    "p25": -9.8,
+    "median": -8.9,
+    "mean": -9.054658385093168,
+    "p75": -8.3,
+    "max": -6.5
+  },
+  "decoys_vina": {
+    "n": 163,
+    "min": -10.1,
+    "p25": -7.9,
+    "median": -7.0,
+    "mean": -7.195092024539878,
+    "p75": -6.5,
+    "max": -4.7
+  },
+  "actives_mw": {
+    "n": 161,
+    "min": 336.44,
+    "p25": 390.44,
+    "median": 417.43,
+    "mean": 433.0006832298136,
+    "p75": 456.44,
+    "max": 624.52
+  },
+  "decoys_mw": {
+    "n": 163,
+    "min": 345.35,
+    "p25": 388.96000000000004,
+    "median": 422.49,
+    "mean": 429.86920245398767,
+    "p75": 459.22,
+    "max": 625.43
+  },
+  "auroc": 0.8954006782761118,
+  "pr_auc_average_precision": 0.87878005648789,
+  "mw_matched": {
+    "n_per_group": 140,
+    "auroc": 0.8974489795918367
+  },
+  "best_cutoffs": {
+    "youden": {
+      "cutoff": -8.0,
+      "tpr_actives_retained": 0.8819875776397516,
+      "fpr_decoys_passing": 0.2331288343558282,
+      "youden_j": 0.6488587432839233,
+      "precision": 0.7888888888888889,
+      "f1": 0.8328445747800586,
+      "balanced_accuracy": 0.8244293716419617,
+      "enrichment_factor": 3.783262504086303,
+      "n_actives_below": 142,
+      "n_decoys_below": 38
+    },
+    "f1": {
+      "cutoff": -8.0,
+      "tpr_actives_retained": 0.8819875776397516,
+      "fpr_decoys_passing": 0.2331288343558282,
+      "youden_j": 0.6488587432839233,
+      "precision": 0.7888888888888889,
+      "f1": 0.8328445747800586,
+      "balanced_accuracy": 0.8244293716419617,
+      "enrichment_factor": 3.783262504086303,
+      "n_actives_below": 142,
+      "n_decoys_below": 38
+    },
+    "balanced_accuracy": {
+      "cutoff": -8.0,
+      "tpr_actives_retained": 0.8819875776397516,
+      "fpr_decoys_passing": 0.2331288343558282,
+      "youden_j": 0.6488587432839233,
+      "precision": 0.7888888888888889,
+      "f1": 0.8328445747800586,
+      "balanced_accuracy": 0.8244293716419617,
+      "enrichment_factor": 3.783262504086303,
+      "n_actives_below": 142,
+      "n_decoys_below": 38
+    }
+  },
+  "fixed_specificity_cutoffs": {
+    "90pct_decoy_specificity": {
+      "cutoff": -8.6,
+      "tpr_actives_retained": 0.6149068322981367,
+      "fpr_decoys_passing": 0.11042944785276074,
+      "youden_j": 0.5044773844453759,
+      "precision": 0.8461538461538461,
+      "f1": 0.7122302158273381,
+      "balanced_accuracy": 0.752238692222688,
+      "enrichment_factor": 5.56832298136646,
+      "n_actives_below": 99,
+      "n_decoys_below": 18
+    },
+    "95pct_decoy_specificity": {
+      "cutoff": -9.0,
+      "tpr_actives_retained": 0.484472049689441,
+      "fpr_decoys_passing": 0.06134969325153374,
+      "youden_j": 0.4231223564379073,
+      "precision": 0.8863636363636364,
+      "f1": 0.6265060240963854,
+      "balanced_accuracy": 0.7115611782189537,
+      "enrichment_factor": 7.896894409937889,
+      "n_actives_below": 78,
+      "n_decoys_below": 10
+    },
+    "99pct_decoy_specificity": {
+      "cutoff": -9.776,
+      "tpr_actives_retained": 0.2857142857142857,
+      "fpr_decoys_passing": 0.012269938650306749,
+      "youden_j": 0.27344434706397897,
+      "precision": 0.9583333333333334,
+      "f1": 0.4401913875598086,
+      "balanced_accuracy": 0.6367221735319895,
+      "enrichment_factor": 23.285714285714285,
+      "n_actives_below": 46,
+      "n_decoys_below": 2
+    }
+  },
+  "threshold_sweep": {
+    "vina_-5.0": {
+      "cutoff": -5.0,
+      "tpr_actives_retained": 1.0,
+      "fpr_decoys_passing": 0.9877300613496932,
+      "youden_j": 0.012269938650306789,
+      "precision": 0.5,
+      "f1": 0.6666666666666666,
+      "balanced_accuracy": 0.5061349693251533,
+      "enrichment_factor": 1.0124223602484472,
+      "n_actives_below": 161,
+      "n_decoys_below": 161
+    },
+    "vina_-5.5": {
+      "cutoff": -5.5,
+      "tpr_actives_retained": 1.0,
+      "fpr_decoys_passing": 0.9815950920245399,
+      "youden_j": 0.018404907975460127,
+      "precision": 0.5015576323987538,
+      "f1": 0.6680497925311203,
+      "balanced_accuracy": 0.50920245398773,
+      "enrichment_factor": 1.01875,
+      "n_actives_below": 161,
+      "n_decoys_below": 160
+    },
+    "vina_-6.0": {
+      "cutoff": -6.0,
+      "tpr_actives_retained": 1.0,
+      "fpr_decoys_passing": 0.9325153374233128,
+      "youden_j": 0.06748466257668717,
+      "precision": 0.5143769968051118,
+      "f1": 0.679324894514768,
+      "balanced_accuracy": 0.5337423312883436,
+      "enrichment_factor": 1.0723684210526316,
+      "n_actives_below": 161,
+      "n_decoys_below": 152
+    },
+    "vina_-6.5": {
+      "cutoff": -6.5,
+      "tpr_actives_retained": 1.0,
+      "fpr_decoys_passing": 0.7607361963190185,
+      "youden_j": 0.23926380368098155,
+      "precision": 0.5649122807017544,
+      "f1": 0.7219730941704036,
+      "balanced_accuracy": 0.6196319018404908,
+      "enrichment_factor": 1.314516129032258,
+      "n_actives_below": 161,
+      "n_decoys_below": 124
+    },
+    "vina_-7.0": {
+      "cutoff": -7.0,
+      "tpr_actives_retained": 0.9875776397515528,
+      "fpr_decoys_passing": 0.50920245398773,
+      "youden_j": 0.47837518576382276,
+      "precision": 0.6570247933884298,
+      "f1": 0.7890818858560794,
+      "balanced_accuracy": 0.7391875928819114,
+      "enrichment_factor": 1.9394597021626883,
+      "n_actives_below": 159,
+      "n_decoys_below": 83
+    },
+    "vina_-7.5": {
+      "cutoff": -7.5,
+      "tpr_actives_retained": 0.9565217391304348,
+      "fpr_decoys_passing": 0.36809815950920244,
+      "youden_j": 0.5884235796212324,
+      "precision": 0.719626168224299,
+      "f1": 0.8213333333333334,
+      "balanced_accuracy": 0.7942117898106162,
+      "enrichment_factor": 2.5985507246376813,
+      "n_actives_below": 154,
+      "n_decoys_below": 60
+    },
+    "vina_-8.0": {
+      "cutoff": -8.0,
+      "tpr_actives_retained": 0.8819875776397516,
+      "fpr_decoys_passing": 0.2331288343558282,
+      "youden_j": 0.6488587432839233,
+      "precision": 0.7888888888888889,
+      "f1": 0.8328445747800586,
+      "balanced_accuracy": 0.8244293716419617,
+      "enrichment_factor": 3.783262504086303,
+      "n_actives_below": 142,
+      "n_decoys_below": 38
+    },
+    "vina_-8.5": {
+      "cutoff": -8.5,
+      "tpr_actives_retained": 0.6583850931677019,
+      "fpr_decoys_passing": 0.1165644171779141,
+      "youden_j": 0.5418206759897878,
+      "precision": 0.848,
+      "f1": 0.7412587412587412,
+      "balanced_accuracy": 0.7709103379948938,
+      "enrichment_factor": 5.648251062438706,
+      "n_actives_below": 106,
+      "n_decoys_below": 19
+    },
+    "vina_-9.0": {
+      "cutoff": -9.0,
+      "tpr_actives_retained": 0.484472049689441,
+      "fpr_decoys_passing": 0.06134969325153374,
+      "youden_j": 0.4231223564379073,
+      "precision": 0.8863636363636364,
+      "f1": 0.6265060240963854,
+      "balanced_accuracy": 0.7115611782189537,
+      "enrichment_factor": 7.896894409937889,
+      "n_actives_below": 78,
+      "n_decoys_below": 10
+    },
+    "vina_-9.5": {
+      "cutoff": -9.5,
+      "tpr_actives_retained": 0.33540372670807456,
+      "fpr_decoys_passing": 0.03680981595092025,
+      "youden_j": 0.2985939107571543,
+      "precision": 0.9,
+      "f1": 0.48868778280542985,
+      "balanced_accuracy": 0.6492969553785771,
+      "enrichment_factor": 9.111801242236025,
+      "n_actives_below": 54,
+      "n_decoys_below": 6
+    },
+    "vina_-10.0": {
+      "cutoff": -10.0,
+      "tpr_actives_retained": 0.2236024844720497,
+      "fpr_decoys_passing": 0.006134969325153374,
+      "youden_j": 0.21746751514689633,
+      "precision": 0.972972972972973,
+      "f1": 0.3636363636363637,
+      "balanced_accuracy": 0.6087337575734482,
+      "enrichment_factor": 36.4472049689441,
+      "n_actives_below": 36,
+      "n_decoys_below": 1
+    },
+    "vina_-10.5": {
+      "cutoff": -10.5,
+      "tpr_actives_retained": 0.12422360248447205,
+      "fpr_decoys_passing": 0.0,
+      "youden_j": 0.12422360248447205,
+      "precision": 1.0,
+      "f1": 0.22099447513812154,
+      "balanced_accuracy": 0.562111801242236,
+      "enrichment_factor": Infinity,
+      "n_actives_below": 20,
+      "n_decoys_below": 0
+    },
+    "vina_-11.0": {
+      "cutoff": -11.0,
+      "tpr_actives_retained": 0.043478260869565216,
+      "fpr_decoys_passing": 0.0,
+      "youden_j": 0.043478260869565216,
+      "precision": 1.0,
+      "f1": 0.08333333333333333,
+      "balanced_accuracy": 0.5217391304347826,
+      "enrichment_factor": Infinity,
+      "n_actives_below": 7,
+      "n_decoys_below": 0
+    }
+  }
+}

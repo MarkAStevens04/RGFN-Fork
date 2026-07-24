@@ -1,0 +1,42 @@
+# FragGFN FIXED-REWARD on DRD2 — PAPER-FAITHFUL fragment cap (Logs/045 follow-up).
+#
+# Recovery for the FragGFN-DRD2 collapse (Logs/019: mean DRD2 ~0.03, 0 modes). Root cause,
+# found by comparing to the RGFN paper's own recipe (Koziarski 2024, Appendix B.2): the paper
+# capped FGFN at a **maximum fragment count of 6** ("as opposed to RGFN's 5 due to RGFN's
+# larger average building block sizes"); our matrix used FragGFN's NATIVE default max_nodes=9,
+# producing MW ~664 oversized assemblies that the drug-sized DRD2 SVM scores ~0. Everything
+# else already matches the paper (reward = exp(beta*proxy), fixed beta=48, no temperature
+# conditioning, bengio2021flow 72-fragment lib, TDC DRD2 oracle) — verified. So the ONLY change
+# vs fraggfn_drd2_fixed_5k.yaml is **max_nodes 9 -> 6**.
+#
+# Run (repo root, fraggfn env; candidate emission shells to the rgfn env):
+#   conda run -n fraggfn python validation/generators/fraggfn/run_fraggfn_fixed.py \
+#       --cfg validation/configs/fraggfn_drd2_maxfrag6.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+
+run:
+  name: fixed_reward/fraggfn_drd2_maxfrag6
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  n_train_steps: 5000
+  n_samples: 1000
+  sample_oversample: 4.0
+  top_k: 100
+  beta: 48
+  system: drd2
+  reward_name: drd2
+  score_units: "drd2_tdc_activity (higher is better; 0-1)"
+
+reward:
+  type: drd2
+  model_path: /home/markymoo/projects/RGFN_Fork/RGFN-Fork/oracle/drd2_current.pkl
+  clip: 10.0
+
+gflownet:
+  max_nodes: 6              # PAPER's FGFN cap (was 9); the one change that recovers DRD2
+  num_emb: 128
+  num_layers: 4
+  sampling_tau: 0.9
+  learning_rate: 1.0e-4
+  print_every: 100

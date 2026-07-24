@@ -561,7 +561,16 @@ def rank_fragments(
     best_reward: Dict[str, float] = {}
     for h in hubs:
         for c in h.children:
-            hit = c.reward >= reward_threshold
+            # "hit" = child worth crediting a fragment's fan-out. Orientation-correct (lower-is-better
+            # docking needs <=, not >=) and None-safe (no bar → every child counts; pre-select then
+            # ranks fragments by pure reuse/fan-out). The campaign's higher-is-better + value path is
+            # unchanged.
+            if reward_threshold is None:
+                hit = True
+            elif higher_is_better:
+                hit = c.reward >= reward_threshold
+            else:
+                hit = c.reward <= reward_threshold
             for f in c.added_promoted:
                 if hit:
                     fanout[f].add(h.hub_key)
@@ -570,7 +579,9 @@ def rank_fragments(
     scored: List[Tuple[str, float]] = []
     for f, hubset in fanout.items():
         adv = (
-            (best_reward[f] - reward_threshold)
+            1.0
+            if reward_threshold is None
+            else (best_reward[f] - reward_threshold)
             if higher_is_better
             else (reward_threshold - best_reward[f])
         )

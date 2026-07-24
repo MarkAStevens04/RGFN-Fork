@@ -269,7 +269,10 @@
       "Bash(awk -F, '{if\\($8!=\"\"\\)c++} END{print c\" of \"NR\" modes charged against a shared hub\"}')",
       "WebFetch(domain:www.biorxiv.org)",
       "Bash(echo \"=== any recover-routes / validate procs still alive? ===\")",
-      "Bash(pgrep -fc \"recover-routes\\\\|validate.py\")"
+      "Bash(pgrep -fc \"recover-routes\\\\|validate.py\")",
+      "Bash(sacctmgr -n show assoc user=markymoo format=Account,User,Partition,MaxJobs,MaxSubmit,GrpJobs,GrpSubmit)",
+      "Bash(sacctmgr -n show qos format=Name,MaxJobsPU,MaxSubmitPU,MaxJobsPA,MaxSubmitPA,GrpJobs)",
+      "Bash(grep -viE \"^\\\\s*$\")"
     ]
   }
 }

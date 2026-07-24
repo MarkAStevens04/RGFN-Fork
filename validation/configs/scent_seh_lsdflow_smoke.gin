@@ -1,0 +1,15 @@
+# Fast full-loop SMOKE of the SCENT + sEH LSD-Flow acquisition (compute node).
+# Includes the real config and shrinks to 1 warm-started cycle with a tiny budget, so the WHOLE
+# cross-env path is exercised end-to-end before the 3-arm run: warm-start + library freeze →
+# in-process sample/enumerate (live SCENT + M) → write files → shell to select_acquisition (rgfn env)
+# → dock the chosen modes via the bridge → grow D → trace. The real -8.0 mode bar is kept.
+
+include 'validation/configs/scent_seh_lsdflow.gin'
+
+Trainer.n_iterations = 60
+ScentActiveLearningLoop.n_rounds = 1
+ScentActiveLearningLoop.query_batch_size = 16
+ScentActiveLearningLoop.top_k = 16
+ScentActiveLearningLoop.n_candidate_hubs = 20
+ScentActiveLearningLoop.max_children_per_hub = 120
+ScentActiveLearningLoop.n_sample_trajectories = 400

@@ -1,0 +1,54 @@
+# SCENT + sEH LSD-Flow active-learning run — the cross-env pre-select-K headline.
+#
+# Extends the SCENT sEH AL config (SCENT cost-aware generator + our refit-able LearnedDockingProxy M +
+# docking_seh via the bridge + the sEH "good binder" -8.0 kcal/mol bar). Adds the LSD-Flow acquisition
+# arms (docs/AL_PIPELINE_ARCHITECTURE.md): hub_batching (UCB z(reward)+λ·z(U(h)) over enumerated hubs,
+# pre-select-K=20 over SCENT's promoted-fragment library) / best_candidate / random. The arm +
+# warm-start are set by run_scent_al.py flags; the knobs below are the science.
+#
+# WHY warm-start: SCENT only promotes a rich dynamic library on sEH (Logs/028), so warm-starting from
+# the trained sEH checkpoint (+ freezing its ~1600-fragment library) is what makes pre-select-K=20
+# actually bite here (unlike RGFN / 6TD3, where it is inert).
+#
+# Run (scent env; one arm per invocation):
+#   conda run -n scent python validation/generators/scent/run_scent_al.py \
+#     --cfg validation/configs/scent_seh_lsdflow.gin \
+#     --seed-csv experiments/active_learning/seh/seed_seh.csv \
+#     --acquisition hub_batching --seed 42 \
+#     --warm-start-checkpoint /scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh/2026-07-10_17-28-06/train/checkpoints/last_gfn.pt \
+#     --root-dir $SCRATCH/rgfn_runs/experiments
+# (best_candidate + random need no --warm-start-checkpoint; hub_batching does.)
+
+include 'validation/configs/scent_seh.gin'   # base: SCENT + M + docking_seh + oracle_threshold=-8.0
+
+# Warm-started → refine (not train-from-scratch); 5 AL cycles.
+Trainer.n_iterations = 300
+
+# Disable SCENT's train-time logging metrics: its scaffold-cost metric (reaction_metrics.py)
+# dereferences ``state.molecule`` on terminal states without guarding against ReactionStateEarlyTerminal
+# (which has no ``.molecule``) — and the warm-started policy, now rewarded by the docking proxy M
+# rather than the sEH proxy it was trained on, does emit early-terminals early in a round. These
+# metrics are logging-only; the AL loop computes its own top-k / trace / suggestion log, so dropping
+# them is safe (the crash-safe glue SafeNumScaffoldsFound isn't importable in the scent env).
+Trainer.train_metrics = []
+
+# Budget: 100 docked modes/cycle (hub arms) / 100 unique samples (policy, random).
+ScentActiveLearningLoop.n_rounds = 5
+ScentActiveLearningLoop.query_batch_size = 100
+ScentActiveLearningLoop.top_k = 100
+
+# --- LSD-Flow acquisition knobs. The MODE hit-bar defaults to the sEH docking oracle_threshold
+#     (-8.0 kcal/mol, mapped into M's standardized output space by the selector); pre-select-K=20
+#     ranks over SCENT's frozen ~1600-fragment library. Enumeration cost ≈ n_candidate_hubs ×
+#     max_children (the reward-gen axis, tracked in acquisition_timings). ---
+# mode_reward_threshold left unset (None) → NO pre-dock hit gate: the acquisition docks the most
+# promising, diverse, synthesis-cheap candidates that fit the budget; "modes" (real dvina ≤ the -8.0
+# oracle_threshold, Tanimoto-diverse) are counted POST-dock as the deliverable outcome (Q3). Set it
+# to a value to gate pre-dock instead.
+ScentActiveLearningLoop.lam = 1.0
+ScentActiveLearningLoop.prebuild_k = 20
+ScentActiveLearningLoop.mode_similarity = 0.5
+ScentActiveLearningLoop.child_policy = 'free_frag'
+ScentActiveLearningLoop.n_candidate_hubs = 100
+ScentActiveLearningLoop.max_children_per_hub = 200
+ScentActiveLearningLoop.n_sample_trajectories = 2000

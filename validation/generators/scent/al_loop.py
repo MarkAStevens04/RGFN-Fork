@@ -162,6 +162,23 @@ class ScentActiveLearningLoop:
         seed: int = 42,
         oracle_threshold: float = -2.0,
         oracle_higher_is_better: bool = False,
+        # --- acquisition arm (docs/AL_PIPELINE_ARCHITECTURE.md) -------------------
+        acquisition: str = "policy",
+        # warm-start (hub arms): sEH checkpoint + guidance sidecar + frozen library snapshot
+        warm_start_checkpoint: Optional[str] = None,
+        warm_start_guidance: Optional[str] = None,
+        freeze_snapshot: Optional[str] = None,
+        # LSD-Flow acquisition knobs (hub_batching / best_candidate)
+        lam: float = 1.0,
+        prebuild_k: int = 20,
+        mode_reward_threshold: Optional[
+            float
+        ] = None,  # modes hit-bar (M units); default oracle_threshold
+        mode_similarity: float = 0.5,
+        child_policy: str = "free_frag",
+        n_candidate_hubs: int = 100,
+        max_children_per_hub: int = 200,
+        n_sample_trajectories: int = 2000,
         # --- oracle bridge (cross-env scoring under the rgfn env) ----------------
         conda_exe: str = "conda",
         oracle_env: str = "rgfn",
@@ -206,6 +223,43 @@ class ScentActiveLearningLoop:
         self.oracle_threshold = oracle_threshold
         self.oracle_higher_is_better = oracle_higher_is_better
 
+        _ARMS = ("policy", "random", "hub_batching", "best_candidate")
+        if acquisition not in _ARMS:
+            raise ValueError(f"acquisition must be one of {_ARMS}, got {acquisition!r}")
+        self.acquisition = acquisition
+        self.warm_start_checkpoint = warm_start_checkpoint
+        self.warm_start_guidance = warm_start_guidance
+        self.freeze_snapshot = freeze_snapshot
+        self._chosen_set: set = set()
+        self._random_sampler = None
+        self._last_acq_stats: dict = {}
+        self._hub_acq = None
+        if acquisition in ("hub_batching", "best_candidate"):
+            from hub_acquisition import ScentHubAcquisition  # scent sibling
+
+            self._hub_acq = ScentHubAcquisition(
+                acquisition,
+                snapshot=freeze_snapshot,
+                repo_root=str(self.repo_root),
+                budget_modes=query_batch_size,
+                # None (default) = NO pre-dock hit gate: dock the most-promising diverse candidates
+                # that fit the budget and count "modes" (real dvina past the target bar) as the
+                # post-dock OUTCOME (the Q3 framing) — a strict pre-dock gate is circular (docking is
+                # how we learn if a molecule is a hit) and starves early rounds (M regresses novel
+                # molecules to the mean). Set mode_reward_threshold explicitly to gate pre-dock.
+                reward_threshold=mode_reward_threshold,
+                similarity=mode_similarity,
+                higher_is_better=oracle_higher_is_better,
+                lam=lam,
+                prebuild_k=prebuild_k,
+                child_policy=child_policy,
+                n_candidate_hubs=n_candidate_hubs,
+                max_children_per_hub=max_children_per_hub,
+                n_sample_trajectories=n_sample_trajectories,
+                oracle_env=oracle_env,
+                conda_exe=conda_exe,
+            )
+
         if proxy.higher_is_better != oracle_higher_is_better:
             raise ValueError(
                 f"Sign mismatch: proxy.higher_is_better={proxy.higher_is_better} but "
@@ -243,8 +297,26 @@ class ScentActiveLearningLoop:
         if len(self.dataset) < 2:
             raise ValueError("SCENT AL needs a seed D_0 (>=2 labelled molecules).")
         print(
-            f"[SCENT-AL] start: {self.n_rounds} rounds, seed |D_0|={len(self.dataset)}", flush=True
+            f"[SCENT-AL] start: {self.n_rounds} rounds, acquisition={self.acquisition}, "
+            f"seed |D_0|={len(self.dataset)}",
+            flush=True,
         )
+
+        # Warm-start (hub arms): load the sEH checkpoint (forward policy + logZ + guidance P_B) and
+        # freeze the promoted-fragment library ONCE before round 1, so pre-select-K ranks over a stable
+        # ~1600-fragment set and every round's enumeration is well-defined (AL_PIPELINE_ARCHITECTURE.md).
+        if self.warm_start_checkpoint:
+            from hub_acquisition import warm_start  # scent sibling
+
+            self._chosen_set = warm_start(
+                self.trainer,
+                self.warm_start_checkpoint,
+                self.warm_start_guidance or "",
+                self.freeze_snapshot or "",
+            )
+
+        trace_path = out_dir / "oracle_calls.csv"
+        self._init_trace(trace_path)
 
         for rnd in range(1, self.n_rounds + 1):
             t0 = time.time()
@@ -268,9 +340,21 @@ class ScentActiveLearningLoop:
             self._save_guidance_models()
             t_train = time.time()
 
-            # 3. sample a query batch B ~ π_θ (keeping each molecule's route)
-            batch, routes = self._sample_query_batch()
-            print(f"[SCENT-AL] round {rnd}: sampled {len(batch)} unique candidates", flush=True)
+            # 3. acquire the query batch (AL_PIPELINE_ARCHITECTURE.md acquisition arms)
+            self._last_acq_stats = {}
+            if self._hub_acq is not None:  # hub_batching / best_candidate
+                batch, routes, self._last_acq_stats = self._hub_acq.select(
+                    self.trainer, self._chosen_set, sug_dir / f"round_{rnd:03d}_acq"
+                )
+            elif self.acquisition == "random":
+                batch, routes = self._random_query_batch()
+            else:  # policy — the learned SCENT forward sampler
+                batch, routes = self._sample_query_batch()
+            print(
+                f"[SCENT-AL] round {rnd}: acquired {len(batch)} candidates "
+                f"({self.acquisition}) {self._last_acq_stats}",
+                flush=True,
+            )
             t_sample = time.time()
 
             # 4. label B with O via the oracle bridge (also writes standard format +
@@ -287,6 +371,9 @@ class ScentActiveLearningLoop:
                 if valid
                 else float("nan")
             )
+            # Per-round trace (the top-k-vs-oracle-calls curve substrate; same schema as the RGFN
+            # loop's oracle_calls.csv so validation/harness/acquisition_curve.py reads all arms).
+            self._trace_row(trace_path, rnd, n_oracle=len(batch), n_labelled=len(valid))
             print(
                 f"[SCENT-AL] round {rnd}: |D|={len(self.dataset)} (+{n_added}); "
                 f"oracle mean={sum(valid)/len(valid):.3f} best={best:.3f} "
@@ -347,6 +434,94 @@ class ScentActiveLearningLoop:
                 if len(batch) >= self.query_batch_size:
                     return batch, routes
         return batch, routes
+
+    def _random_query_batch(self) -> Tuple[List[str], List[Dict]]:
+        """Uniform-policy baseline over SCENT's *same* reaction blocks (the Fig.7 floor) — mirrors the
+        RGFN loop's ``random`` arm; still synthesizable-by-construction, no proxy/flow used."""
+        if self._random_sampler is None:
+            from rgfn.shared.policies.uniform_policy import UniformPolicy
+            from rgfn.shared.samplers.random_sampler import RandomSampler
+
+            base = self.trainer.train_forward_sampler
+            self._random_sampler = RandomSampler(policy=UniformPolicy(), env=base.env, reward=None)
+        sampler = self._random_sampler
+        n_sample = int(self.query_batch_size * self.sample_oversample)
+        seen, batch, routes = set(), [], []
+        for trajectories in sampler.get_trajectories_iterator(
+            n_sample, self.trainer.train_batch_size
+        ):
+            for i, state in enumerate(trajectories.get_last_states_flat()):
+                if not isinstance(state, ReactionStateTerminal):
+                    continue
+                canon = _canonical(state.molecule.smiles)
+                if canon is None or canon in seen:
+                    continue
+                seen.add(canon)
+                batch.append(canon)
+                routes.append(
+                    extract_route(trajectories._states_list[i], trajectories._actions_list[i])
+                )
+                if len(batch) >= self.query_batch_size:
+                    return batch, routes
+        return batch, routes
+
+    # --------------------------------------------------------------- trace (curve substrate)
+    _TRACE_COLS = [
+        "round",
+        "acquisition",
+        "seed",
+        "oracle_calls_round",
+        "oracle_calls_cumulative",
+        "reward_gen_calls_round",
+        "reward_gen_calls_cumulative",
+        "n_hubs_used",
+        "avg_mols_per_hub",
+        "n_labelled_round",
+        "dataset_size",
+        "top_k",
+        "topk_mean",
+        "topk_best",
+        "topk_best_smiles",
+    ]
+
+    def _init_trace(self, path: Path) -> None:
+        """Truncate + header the per-round trace; write the round-0 (D_0) baseline row."""
+        self._oracle_cum = 0
+        self._rewardgen_cum = 0
+        with open(path, "w", newline="") as fh:
+            csv.writer(fh).writerow(self._TRACE_COLS)
+        self._trace_row(path, 0, n_oracle=0, n_labelled=0)
+
+    def _trace_row(self, path: Path, rnd: int, n_oracle: int, n_labelled: int) -> None:
+        self._oracle_cum += n_oracle
+        rg = int(self._last_acq_stats.get("reward_gen_calls", 0) or 0)
+        self._rewardgen_cum += rg
+        top = self.dataset.top_k(self.top_k)  # [(smiles, label)] best-first for this oracle's sign
+        labels = [l for _, l in top]
+        topk_mean = sum(labels) / len(labels) if labels else float("nan")
+        topk_best, topk_best_smiles = (top[0][1], top[0][0]) if top else (float("nan"), "")
+        avg_mph = self._last_acq_stats.get("avg_mols_per_hub", "")
+        if isinstance(avg_mph, float) and avg_mph != avg_mph:
+            avg_mph = ""
+        row = [
+            rnd,
+            self.acquisition,
+            self.seed,
+            n_oracle,
+            self._oracle_cum,
+            rg,
+            self._rewardgen_cum,
+            self._last_acq_stats.get("n_hubs_used", ""),
+            avg_mph,
+            n_labelled,
+            len(self.dataset),
+            len(top),
+            topk_mean,
+            topk_best,
+            topk_best_smiles,
+        ]
+        with open(path, "a", newline="") as fh:
+            csv.writer(fh).writerow(row)
 
     def _score_via_bridge(
         self, batch: List[str], routes: List[Dict], rnd: int, sug_dir: Path
