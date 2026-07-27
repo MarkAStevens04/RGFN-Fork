@@ -1,36 +1,36 @@
 [
   {
-    "cell": "rxnflow_seh",
+    "cell": "scent_seh",
     "n_hubs": 200,
     "estimators": {
       "pick_hubs": {
-        "n_hubs": 200,
-        "median_bias": 0.427,
-        "spearman": 0.665
+        "n_hubs": 193,
+        "median_bias": 0.277,
+        "spearman": 0.608
       },
       "samp_mean": {
         "n_hubs": 200,
-        "median_bias": -0.186,
-        "spearman": 0.646
+        "median_bias": -0.771,
+        "spearman": 0.501
       },
       "enum_mean": {
         "n_hubs": 200,
-        "median_bias": 6.35,
-        "spearman": 0.438
+        "median_bias": -3.736,
+        "spearman": 0.238
       },
       "enum_wmean": {
         "n_hubs": 200,
-        "median_bias": -1.687,
-        "spearman": 0.882
+        "median_bias": -3.239,
+        "spearman": 0.075
       },
       "flow_conservation": {
-        "n": 200,
-        "median_stop_logprob_gap": -6.049,
-        "median_logF_A_minus_B": -0.0005
+        "n": 198,
+        "median_stop_logprob_gap": -14.032,
+        "median_logF_A_minus_B": -0.0003
       },
       "R_check": {
-        "n": 9,
-        "median_diff": 6.49
+        "n": 2,
+        "median_diff": 4.76
       }
     }
   }
