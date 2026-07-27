@@ -26,7 +26,6 @@ import csv
 import json
 import sys
 import time
-from collections import defaultdict
 from pathlib import Path
 
 # _artifacts is stdlib-only; import it by path (the shared-worker convention) so this file matches
@@ -126,20 +125,33 @@ def main() -> None:
             raise SystemExit("[rgfn_worker] --mode enumerate requires --hubs-file")
         hubs = _read_hubs(args.hubs_file)
         _s0 = time.perf_counter()
-        records, per_hub = adapter.enumerate_hub_children(hubs, max_children=args.enum_max_children)
-        # Group child records back to their hub by (stereo key, depth) — the unique hub identity.
-        by_hub = defaultdict(list)
-        for r in records:
-            by_hub[(r.hub_stereo_key, r.hub_depth)].append(_rec_to_dict(r))
-        enum_hubs = []
-        for smiles, depth in hubs:
-            recs = by_hub.get((smiles, depth), [])
-            hub_key = recs[0]["hub_key"] if recs else smiles
-            enum_hubs.append(
-                A.build_enum_hub(hub_input=smiles, hub_key=hub_key, depth=depth, recs=recs)
+        # Enumerate ONE hub at a time (not a single bulk call) so progress is observable: RGFN's
+        # in-process enumerate is slow for high-fanout sEH hubs, and a multi-hour job needs a visible
+        # per-hub rate to size walltime / detect stalls. Output is identical (each hub's records are
+        # a disjoint group). enum_children.json is rewritten every 10 hubs so a timeout leaves a
+        # usable partial (whatever hubs finished), not nothing.
+        all_records, per_hub, enum_hubs = [], [], []
+        for i, (smiles, depth) in enumerate(hubs):
+            recs_r, ph = adapter.enumerate_hub_children(
+                [(smiles, depth)], max_children=args.enum_max_children
             )
+            rows = [_rec_to_dict(r) for r in recs_r]
+            all_records.extend(rows)
+            per_hub.extend(ph)
+            hub_key = rows[0]["hub_key"] if rows else smiles
+            enum_hubs.append(
+                A.build_enum_hub(hub_input=smiles, hub_key=hub_key, depth=depth, recs=rows)
+            )
+            print(
+                f"[rgfn_worker]   hub {i + 1}/{len(hubs)} depth={depth} -> {len(rows)} children "
+                f"({time.perf_counter() - _s0:.0f}s elapsed)  {smiles[:44]}",
+                flush=True,
+            )
+            if (i + 1) % 10 == 0:  # periodic partial flush (timeout-safe)
+                A.write_enum_children(out_dir / "enum_children.json", enum_hubs)
+        records = all_records
         A.write_enum_children(out_dir / "enum_children.json", enum_hubs)
-        A.write_records(out_dir / "enumerated_records.csv", [_rec_to_dict(r) for r in records])
+        A.write_records(out_dir / "enumerated_records.csv", all_records)
         A.write_json(out_dir / "enum_per_hub.json", {"per_hub": per_hub})
         meta.update(
             {
