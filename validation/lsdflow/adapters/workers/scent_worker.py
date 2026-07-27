@@ -74,7 +74,7 @@ _REC_COLS = [
 
 def _parse_args():
     p = argparse.ArgumentParser(description="SCENT LSD-Flow worker (sample | enumerate).")
-    p.add_argument("--mode", choices=["sample", "enumerate"], default="sample")
+    p.add_argument("--mode", choices=["sample", "enumerate", "probe_hubs"], default="sample")
     p.add_argument(
         "--config",
         required=True,
@@ -300,6 +300,76 @@ def extract_flow_records(
 
 
 # ----------------------------------------------------------------- enumeration (vendored from rgfn_enumerate)
+def _make_hub_prober(Trajectories, RST, torch):
+    """Measure R(h) and P_F(stop|h) AT each hub — the two quantities the dimensionless
+    flow-conservation test needs (``experiments/lsd_hubs/matrix16/hub_flow_estimators.py``).
+
+    Eliminating F(h) from ``F(h) = R(h) + N(h)`` and ``R(h) = F(h) P_F(stop|h)`` gives
+    ``R(h)/(R(h)+N(h)) == P_F(stop|h)`` — no near-1 cancellation, and independent of the
+    enumeration normalizer. SCENT is the informative case for it: unlike RxnFlow (heuristic P_B,
+    S(h)~=0.999 so the test is near-tautological) SCENT has a TRAINED P_B and real stop-mass
+    (S(h) 5th percentile ~0.40), so the identity has power here.
+
+    One single-step trajectory per hub, ``StateA(h,k) -[stop]-> Terminal(h)``, scored by the same
+    ``objective.assign_log_probs`` the flow extraction uses. Returns a list aligned with
+    ``hub_states``; ``None`` where the policy cannot terminate at that hub."""
+
+    def _is_stop(action):
+        return getattr(action, "anchored_reaction", None) is None
+
+    def build_hub_stop_trajectory(env, hub_state):
+        fas = env.get_forward_action_spaces([hub_state])[0]
+        if not hasattr(fas, "get_possible_actions_indices"):
+            return None
+        stop_act = None
+        for idx in fas.get_possible_actions_indices():
+            a = fas.get_action_at_idx(idx)
+            if _is_stop(a):
+                stop_act = a
+                break
+        if stop_act is None:
+            return None  # the env forbids terminating here (e.g. below min reactions)
+        terminal = env.apply_forward_actions([hub_state], [stop_act])[0]
+        if not isinstance(terminal, RST):
+            return None
+        traj = Trajectories()
+        traj.add_source_states([hub_state])
+        bas = env.get_backward_action_spaces([terminal])[0]
+        traj.add_actions_states([stop_act], [terminal], [fas], [bas], not_terminated_mask=None)
+        return traj
+
+    def probe(env, objective, reward, hub_states, chunk=32):
+        out = [None] * len(hub_states)
+        idx_ok, trajs = [], []
+        for i, hs in enumerate(hub_states):
+            t = build_hub_stop_trajectory(env, hs) if hs is not None else None
+            if t is not None:
+                idx_ok.append(i)
+                trajs.append(t)
+        with torch.no_grad():
+            for st in range(0, len(trajs), chunk):
+                blk, blk_idx = trajs[st : st + chunk], idx_ok[st : st + chunk]
+                big = Trajectories.from_trajectories(blk) if len(blk) > 1 else blk[0]
+                terminals = big.get_last_states_flat()
+                big.set_reward_outputs(reward.compute_reward_output(terminals))
+                objective.assign_log_probs(big)
+                # exactly ONE action per trajectory -> fwd is 1:1 with the block
+                fwd = big.get_forward_log_probs_flat().detach().cpu().tolist()
+                ro = big.get_reward_outputs()
+                proxy = ro.proxy.detach().cpu().tolist()
+                log_r = ro.log_reward.detach().cpu().tolist()
+                for j, i in enumerate(blk_idx):
+                    out[i] = {
+                        "allow_stop": True,
+                        "log_pf_stop_h": float(fwd[j]),
+                        "reward_h": float(proxy[j]),
+                        "log_reward_h": float(log_r[j]),
+                    }
+        return out
+
+    return probe
+
+
 def _make_enumerator(rgfn_api, Trajectories, RSA, RSB, RSC, RST, RAC, Molecule):
     """Build the enumeration closures bound to SCENT's fork classes (mirror of rgfn_enumerate)."""
 
@@ -737,6 +807,32 @@ def main():
         json.dump(meta, open(out_dir / "meta.json", "w"), indent=2)
         print(
             f"[scent_worker] wrote records.csv + visit_counts.json + compositions.json + routes.json + meta.json -> {out_dir}",
+            flush=True,
+        )
+
+    elif args.mode == "probe_hubs":
+        _, hub_state_from_smiles = _make_enumerator(
+            rgfn,
+            Trajectories,
+            ReactionStateA,
+            ReactionStateB,
+            ReactionStateC,
+            ReactionStateTerminal,
+            ReactionActionC,
+            Molecule,
+        )
+        probe = _make_hub_prober(Trajectories, ReactionStateTerminal, torch)
+        hubs = _read_hubs(args.hubs_file)
+        states = [hub_state_from_smiles(smi, depth) for smi, depth in hubs]
+        results = probe(env, objective, reward, states)
+        probe_out = {}
+        for (smi, depth), r in zip(hubs, results):
+            probe_out[smi] = {"depth": int(depth), **(r or {"allow_stop": False})}
+        json.dump(probe_out, open(out_dir / "hub_terminal.json", "w"), indent=2)
+        n_ok = sum(1 for v in probe_out.values() if v.get("allow_stop"))
+        print(
+            f"[scent_worker] probe_hubs: {n_ok}/{len(hubs)} hubs measured (R(h) + P_F(stop|h)) -> "
+            f"{out_dir / 'hub_terminal.json'}",
             flush=True,
         )
 
