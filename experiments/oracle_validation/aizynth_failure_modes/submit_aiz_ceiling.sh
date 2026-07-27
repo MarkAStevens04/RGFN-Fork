@@ -15,5 +15,9 @@ export AIZ_IT=1000 AIZ_TL=300 AIZ_MT=9
 source /home/markymoo/miniconda3/etc/profile.d/conda.sh
 conda activate aizynth
 DIR=/scratch/markymoo/rgfn_runs/lsdflow_sparrow/scent_rawpool
+# Inputs overridable so a "finish" run can route only the molecules a prior timed-out run missed.
+UNION_SMI=${UNION_SMI:-$DIR/full_union.smi}
+CTRL_SMI=${CTRL_SMI:-$DIR/control300.smi}
+OUT=${OUT:-$DIR/aiz_fullpool_ceiling.json}
 python experiments/oracle_validation/aizynth_failure_modes/aiz_fullpool.py \
-    "$DIR/full_union.smi" "$DIR/control300.smi" "$DIR/aiz_fullpool_ceiling.json" "${SLURM_CPUS_ON_NODE:-32}"
+    "$UNION_SMI" "$CTRL_SMI" "$OUT" "${SLURM_CPUS_ON_NODE:-32}"

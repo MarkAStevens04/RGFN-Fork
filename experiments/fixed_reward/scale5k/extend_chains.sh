@@ -6,15 +6,15 @@
 # chain tails until the live submit budget (CAP - HEADROOM - my current jobs) is spent. It targets
 # ONLY the docking cells (6TD3/ClpP), because those are the ones that actually churn through many
 # 3-day links (~4-17 days); the surrogate cells (sEH/DRD2) finish inside one link, so a deep chain
-# on them would just be no-op links — launch those with orchestrate.sh instead. All links are
-# --nice'd (campaign stays below any fresh job) and resume-or-no-op via the per-link submit scripts.
+# on them would just be no-op links — launch those with orchestrate.sh instead. Links use NICE
+# (default 0 = normal priority; set NICE=10000000 to deprioritize) and resume-or-no-op via the submit scripts.
 #
 #   bash experiments/fixed_reward/scale5k/extend_chains.sh [--dry-run]
 set -uo pipefail
 DRY=0; [ "${1:-}" = "--dry-run" ] && DRY=1
 D="$HOME/projects/RGFN_Fork/RGFN-Fork/experiments/fixed_reward/scale5k"
 FR="$SCRATCH/rgfn_runs/experiments/fixed_reward"
-CAP=${CAP:-60}; HEADROOM=${HEADROOM:-2}; NICE=${NICE:-10000000}
+CAP=${CAP:-60}; HEADROOM=${HEADROOM:-2}; NICE=${NICE:-0}   # 0 = normal priority (full fair share); set 10000000 to deprioritize
 
 if [ -n "${SLURM_JOB_ID:-}" ]; then echo "FATAL: run from a LOGIN node."; exit 1; fi
 

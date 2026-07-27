@@ -272,7 +272,9 @@
       "Bash(pgrep -fc \"recover-routes\\\\|validate.py\")",
       "Bash(sacctmgr -n show assoc user=markymoo format=Account,User,Partition,MaxJobs,MaxSubmit,GrpJobs,GrpSubmit)",
       "Bash(sacctmgr -n show qos format=Name,MaxJobsPU,MaxSubmitPU,MaxJobsPA,MaxSubmitPA,GrpJobs)",
-      "Bash(grep -viE \"^\\\\s*$\")"
+      "Bash(grep -viE \"^\\\\s*$\")",
+      "Bash(sacct -j 71522,71523,71529,71531,71534,71536 --format=JobID,JobName%20,State,Elapsed,ExitCode -n)",
+      "Bash(sacct -j 71525,71526,71528,71562,71563,71564 --format=JobID,JobName%22,State,Elapsed,End -n)"
     ]
   }
 }
