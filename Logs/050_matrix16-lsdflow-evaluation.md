@@ -41,8 +41,10 @@ exhaustive and that we are reading the model's policy correctly.
 how sharply the model concentrates its choices, not by any genuine uncertainty about molecule quality —
 and the cheap version we would compute during an active-learning run is 40–55× smaller than the true
 value and undefined for most scaffolds, which undercuts the uncertainty-driven scaffold-selection plan
-before it is built. Separately, the trained models **violate their own flow-conservation law at these
-scaffolds by a wide margin**, terminating there far more often than their reward would justify.
+before it is built. Separately, **both** trained models we tested **violate their own flow-conservation law at these
+scaffolds by a wide margin**, terminating there far more often than their reward would justify — and the
+violation is *larger* in the model whose backward policy is properly trained, so it is a property of the
+trained models rather than of one model's approximations.
 Encouragingly, the estimate we actually ship for picking scaffolds is nearly unbiased despite all this —
 though it is too noisy to *rank* scaffolds reliably, which explains an earlier puzzling near-tie
 (entry `025`) between flow-based selection and a trivial control.
@@ -73,6 +75,9 @@ assumption.
 **Next steps in project**
 - Settle what the scaffold-uncertainty signal should actually weight before building the
   uncertainty-driven acquisition step — the current definition is measuring the wrong thing.
+- Explain the termination-behaviour violation now that it is confirmed on two generators — it is the
+  largest single inconsistency we have measured in these trained models, and it sits in the one channel
+  our scaffold estimate ignores.
 - Reconstruct the scaffold flow from the *other* end of the model's balance equation (anchored on the
   model's learned total-flow scalar rather than on measured molecule quality). The two reconstructions
   must agree if the model is internally consistent, so their disagreement is a direct measure of training
@@ -318,16 +323,24 @@ Eliminating `F(h)` from `F(h) = R(h) + N(h)` and `R(h) = F(h)·P_F(stop|h)` give
 identity, `R(h)/(R(h)+N(h)) = P_F(stop|h)`, with both sides measured independently (`probe_hubs` supplies
 the hub's own reward and stop-probability).
 
-| quantity | rxnflow_seh, 200/200 hubs |
-|---|---|
-| log `P_F(stop\|h)`: implied − measured | median **−6.05** nats (p5 −9.45, p95 −1.65) |
-| log F via `(R+N)` vs via `(N/S)` | median −0.001 nats (p5 −0.003) |
+| quantity | rxnflow_seh (heuristic P_B), 200/200 hubs | scent_seh (trained P_B), 198/200 hubs |
+|---|---|---|
+| log `P_F(stop\|h)`: implied − measured | median **−6.05** (p5 −9.45, p95 −1.65) | median **−14.03** (p5 −29.52, p95 −2.21) |
+| log F via `(R+N)` vs via `(N/S)` | median −0.001 (p5 −0.003) | median −0.000 (p5 −0.912) |
 
-The model terminates at hubs ~430× more often than its own reward justifies — about 0.75 sEH units at
-β=8. The second row confirms `F_true` is not an artifact of the normalization, but is near-tautological
-here (`R/N ≈ 1e-6`, `S ≈ 0.999`, so both forms reduce to `N`). Note the violation lives in the
-**stop channel**, which the shipped estimator never touches for cap-truncated children — which is why
-that estimator can be unbiased while conservation fails.
+Both models terminate at hubs far more often than their own reward justifies — RxnFlow by ~430×
+(≈0.75 sEH units at β=8), SCENT by ~1.2×10⁶. **The violation is therefore not an artifact of RxnFlow's
+untrained retro backward policy**: it is *larger* in the model whose backward policy is trained and
+recovered exactly (entry `024`). The second row also shows the test gains power on SCENT — its 5th
+percentile departs from 0 (−0.912) because SCENT has genuine stop-mass at some hubs, whereas on RxnFlow
+both forms reduce to `N` (`R/N ≈ 1e-6`, `S ≈ 0.999`) and agree tautologically.
+
+Note the violation lives in the **stop channel**, which the shipped estimator never touches for
+cap-truncated children — which is why that estimator can be unbiased while conservation fails.
+
+*(One untested reading, recorded as a hypothesis only: SCENT is explicitly cost-aware — cost-guided
+backward policy plus an exploitation penalty — so a preference for terminating early is what its training
+objective rewards, and it is the more cost-tilted of the two models. We have not tested this.)*
 
 **Learned total-flow scalars.** rxnflow_seh `log Z` = 53.07, which is *below* both its own maximum
 single-molecule reward (63.69) and one hub's child-flow sum (58.71) — internally inconsistent, so it is
