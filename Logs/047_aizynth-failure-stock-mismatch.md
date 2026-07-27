@@ -58,8 +58,9 @@ honest comparison, and it directly motivates the chemistry-homogenization experi
   reached 39/50 = 78% there).
 - Show the same stock effect for the other three generators (RGFN/RxnFlow/FragGFN), to confirm the
   from-scratch confound is not specific to SCENT.
-- A cleaner residual taxonomy figure (scaffold-in-blocks-different-form vs specialized-reagent),
-  which makes the "not bad molecules" point visually.
+- ~~A cleaner residual taxonomy figure~~ **DONE 2026-07-27** (`residual_taxonomy.py`, table + figure
+  above): 51% of the residual leaves are the reaction-GFN's own core in another terminal form, 42%
+  standard reagents/protecting groups, only 7% unclassified.
 
 **Next steps in project**
 - Fold this into the benchmark's framing: present native-route pricing as primary and treat
@@ -88,6 +89,11 @@ read-only against the from-scratch route cache; no benchmark code was modified.
 - `aiz_stock_diag.py` — 2×2 of {zinc, zinc+blocks} × {current, high budget} on the failed sample.
 - `aiz_fullpool.py` — headline: full 4,749-molecule mode-union route-success with `zinc+blocks` at
   production budget, plus a zinc-only control sample; writes incrementally (wall-clock safe).
+- `residual_taxonomy.py` — rule-based classification of the residual open leaves (block-stereo-only /
+  block-core-other-form / partial-assembly / tiny-reagent / reagent-or-PG / other) + the two-panel
+  figure; emits `results/residual_taxonomy.{png,pdf,csv}`. Rules are deliberately conservative
+  against our own claim, and one SMARTS bug was caught here: `O=C1c2ccccc2C1=O` is a 4-membered ring,
+  so phthalimide needs `O=C1[#7]C(=O)c2ccccc12`.
 - `README.md` — directory guide + reproduce steps.
 
 **Datasets / inputs**
@@ -184,6 +190,26 @@ scaffold, mismatch.
 |---|---|---|---|
 | current | 0/50 | 6/50 | **24/50** |
 | high | 9/50 | 22/50 | **39/50** |
+
+**Residual taxonomy (follow-up, 2026-07-27).** The 43 open leaves of the 42 high-budget failures,
+classified by rule (`experiments/oracle_validation/aizynth_failure_modes/residual_taxonomy.py`;
+figure + CSV in its `results/`):
+
+| category | leaves | share |
+|---|---|---|
+| block core, other form (THIQ/proline/azetidine as ester, aldehyde, N-carbamate) | 14 | 33% |
+| block, stereo only (exact flat match to a SMALL block) | 4 | 9% |
+| partial assembly of block cores (two cores already coupled) | 4 | 9% |
+| **→ the reaction-GFN's own core** | **22** | **51%** |
+| reagent / protecting group (poly-halide ester, Boc, SEM, trityl, phthalimide, pinacol boronate, phosphonium) | 13 | 30% |
+| tiny reagent (HCN, methanol) | 5 | 12% |
+| **→ standard reagent / protecting group** | **18** | **42%** |
+| other | 3 | 7% |
+
+Only **7%** resist classification, and the 43 leaves collapse to just **26 distinct species** (top 10 =
+63%) — so a handful of stock entries account for most of the residual. The rules are deliberately
+conservative against our own claim (N-benzyl/N-acyl proline esters fall to "other" because
+pyrrolidine is not a distinctive core), so 51% is a floor.
 
 **Full-pool headline — all 4,749 mode-union molecules, production budget (job 71436).**
 

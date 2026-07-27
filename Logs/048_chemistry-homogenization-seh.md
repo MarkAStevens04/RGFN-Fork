@@ -12,15 +12,33 @@ Entry [047] showed that the reaction-GFN's molecules only *looked* hard to make 
 
 ## Answer
 
-The reaction-GFN's route economy is **not** reproducible by a SMILES generator handed the same blocks, and only partly by a SOTA planner. Given only the 418 blocks, S3-GFN cannot find a *single* synthesizable molecule — its training never leaves the ground and it emits an empty pool (Exp A); even with its best stock *plus* the blocks it trains normally but still produces flat, per-molecule outputs (Exp B). A convergent planner (MultiAiZ) does far better than plain retrosynthesis — it pulls the reaction-GFN's from-scratch cost from 2.74 down to ~1.85 reactions/mode — but still cannot match the reaction-GFN's own by-construction routes (1.22), and hub-batching stays ~1.5× cheaper than best-candidate under *every* pricing. So the from-scratch penalty was mostly a weak planner plus the stock mismatch, not the molecules; and the reaction-GFN's shared-route structure is doing work no post-hoc method fully recovers. The synthesizability ceiling (blocks in stock + generous search) reaches ~92%, confirming the molecules are overwhelmingly makeable from the reaction-GFN's own blocks.
+**Exp C is the solid result; Exp A turned out to be inconclusive and must not be cited as a
+synthesizability claim** (a follow-up falsification test, below, changed its interpretation — see
+"The Exp A correction"). A convergent planner (MultiAiZ) does far better than plain retrosynthesis —
+it pulls the reaction-GFN's from-scratch cost from 2.74 down to ~1.85 reactions/mode — but still
+cannot match the reaction-GFN's own by-construction routes (1.22), and hub-batching stays ~1.5×
+cheaper than best-candidate under *every* pricing regime. So the from-scratch penalty was mostly a
+weak planner plus the stock mismatch, not the molecules; and the reaction-GFN's shared-route
+structure is doing work that no post-hoc method fully recovers. The synthesizability ceiling (blocks
+in stock + generous search) reaches ~92%, confirming the molecules are overwhelmingly makeable from
+the reaction-GFN's own blocks. What Exp A/B *did* establish is methodological: **a fragments-only
+transfer cannot homogenize a template-based synthesizability signal** — S3-GFN's retro-solver judges
+molecules with its own curated template set, and that set cannot reverse the reaction-GFN's
+chemistry no matter how many blocks it is given, so "give it the same blocks" is not a well-posed
+fairness test for this baseline (it is for AiZynth's broad USPTO templates, which is why [047] worked).
 
 ## Relevance to our Publication
 
-This is the direct rebuttal panel for the two objections a NeurIPS reviewer will raise about the reactions-per-mode headline. "The reaction-GFN just makes less-synthesizable molecules" is answered by Exp A/B + the ~92% ceiling (the molecules are makeable; a SMILES model handed the same blocks simply can't produce them). "The from-scratch route-cost penalty is a real synthesizability cost" is answered by Exp C (a SOTA planner recovers most of it, and native routes still win) — which is why we report **native-route pricing as primary and from-scratch as the deliberately-unfair floor**. It also explains the otherwise-awkward T3.2 result (S3-GFN looks competitive at from-scratch pricing *because* it emits ZINC-native molecules while the reaction-GFN is penalized by the stock mismatch) — turning a confound into evidence for the pricing choice.
+This is the direct rebuttal panel for the two objections a NeurIPS reviewer will raise about the reactions-per-mode headline. "The reaction-GFN just makes less-synthesizable molecules" is answered by the ~92% ceiling together with [047] (the molecules are overwhelmingly makeable from the generator's own blocks; the shortfall is catalogue + search budget). "The from-scratch route-cost penalty is a real synthesizability cost" is answered by Exp C (a SOTA planner recovers most of it, and native routes still win) — which is why we report **native-route pricing as primary and from-scratch as the deliberately-unfair floor**. Exp A/B contribute a narrower but useful methodological point (fragments-only transfer can't homogenize a template-based synthesizability signal) and **must not be cited as evidence about molecule synthesizability**. It also explains the otherwise-awkward T3.2 result (S3-GFN looks competitive at from-scratch pricing *because* it emits ZINC-native molecules while the reaction-GFN is penalized by the stock mismatch) — turning a confound into evidence for the pricing choice.
 
 ## Next Experiments
 
 **Refining for publication**
+- **Re-pose the Exp A question properly.** Since a fragments-only transfer can't homogenize S3-GFN's
+  template-based signal, the fair version needs *either* the reaction-GFN's 112 templates transferred
+  alongside its blocks (requires retraining S3-GFN's retro env — the cost we were avoiding) *or* a
+  general-template retro-solver (AiZynth/USPTO, as in [047]) as S3-GFN's synthesizability signal.
+  Decide which before re-running; the current Exp A should not be reported as a result.
 - Full τ-sweep of Exp C (cutoffs 0.3/0.7/0.9, both stocks) for the complete reactions/mode-vs-diversity curve in homogenized chemistry (the cutoff-0.5 point is in hand).
 - Repeat the [047] stock test on the other reaction-GFN generators (RGFN/RxnFlow) once the campaign regenerates their sEH pools, to show the confound is not SCENT-specific.
 - Right-size wall-clocks: the MultiAiZ and high-budget-ceiling runs need ~20 h and ~13 h respectively (they timed out at 14 h / 10 h; results were recovered because both write incrementally).
@@ -41,6 +59,14 @@ Root: `./experiments/` unless noted. All committed at `3888c35` ("Experiments A/
 - `lsd_hubs/campaign/submit_multiaiz_headline.sh` — Exp C driver; gained `AICONFIG`/`STOCK` overrides to point MultiAiZ→SPARROW at the merged stock.
 - `lsd_hubs/campaign/submit_s3gfn_frontier.sh` + `s3gfn_frontier.py` — T3.2 (S3-GFN on the frontier, from-scratch AiZynth→SPARROW).
 - `oracle_validation/aizynth_failure_modes/{aiz_fullpool.py,submit_aiz_ceiling.sh,build_block_stock.py}` — the [047] ceiling (env-parametrized budget `AIZ_IT/TL/MT`; inputs overridable for the finish run).
+- `oracle_validation/s3gfn_retro_signal/{probe_retro_env_coverage.py,probe_depth_and_steps.py,probe_small_block_usage.py}` + `README.md` — the Exp A falsification probes (read-only, login node) that corrected Exp A's interpretation: they call S3-GFN's own `SynthesizabilityEvaluator` on SMALL blocks / SCENT molecules / Exp B molecules across both retro envs and `max_steps` settings.
+
+**Figures (committed)**
+- `lsd_hubs/campaign/make_pricing_panel.py` + `results/paper_pricing_panel/pricing_panel.{png,pdf,csv}`
+  — the consolidated paper panel: reactions/mode by pricing regime x strategy, modes-priced coverage,
+  and the [047] route-success ladder. Every value transcribed from a result file (sources in the CSV).
+- `oracle_validation/aizynth_failure_modes/residual_taxonomy.py` + `results/residual_taxonomy.{png,pdf,csv}`
+  — what the stubborn residual leaves actually are (see [047]).
 
 **Data (scratch)** — root `/scratch/markymoo/rgfn_runs/lsdflow_sparrow/`
 - `zinc_plus_small_stock.hdf5` (+ `config_zincsmall.yml`) — ZINC ∪ SMALL merged stock for Exp C (single `zincsmall` key; only **77 keys new** to ZINC = the reactive-handle blocks). `config_rgfnlib_flat.yml` — the union stock for the ceiling.
@@ -56,7 +82,7 @@ Root: `./experiments/` unless noted. All committed at `3888c35` ("Experiments A/
 
 ### Relevant Versions
 
-Experiment infra committed at **`3888c35`** ("Experiments A/B/C running") on branch `Hub-Analysis`. This log + the `submit_aiz_ceiling.sh` input-override tweak (for the finish run) are uncommitted — please commit `Logs/048_*.md`, `docs/RESEARCH_CONTEXT.md`, and `experiments/oracle_validation/aizynth_failure_modes/submit_aiz_ceiling.sh`, then tell me the hash. `[TODO — add commit hash after pushing]` Scratch stock/pool/result artifacts are large and regenerated from the committed builders.
+Experiment infra committed at **`3888c35`** ("Experiments A/B/C running"); this log + the `submit_aiz_ceiling.sh` input-override tweak committed at **`b27c6f5`** ("LSD-Benchmark ZINCuSMALL") on branch `Hub-Analysis`. Scratch stock/pool/result artifacts are large and regenerated from the committed builders.
 
 ### Relevant Resources
 
@@ -80,8 +106,32 @@ All on Balam. Exp A/B GPU (s3gfn env), 5000 steps, seed 42, same frozen sEH prox
 
 | Exp | Retro stock | synth_ratio | Candidates emitted |
 |---|---|---|---|
-| A | 418 SMALL blocks only | **0.0** (loss = nan, empty positive buffer) | **0** |
+| A | 418 SMALL blocks only | **0.0** (loss = nan; positive buffer stalled at 15 items) | **0** |
 | B | ZINCFrag ∪ SMALL (179,011) | ~0.81–0.90 | 2,000 |
+
+**The Exp A correction (falsification test, login node, `s3gfn` env).** Exp A's 0.0 admits two
+explanations: (H1) GP-MolFormer's molecules genuinely aren't reachable from 389 small blocks, or (H2)
+the `hb105` templates cannot reverse that chemistry, so *nothing* could score. We probed S3-GFN's
+actual `SynthesizabilityEvaluator` (the same object the training loop calls, `max_steps=3` as
+configured):
+
+| Probe | `small_hb105` | `zincfrag_hb105` | Reading |
+|---|---|---|---|
+| Raw SMALL blocks (in-stock sanity) | **20/20 = 100%** | 9/20 = 45% | env loads + indexes correctly — **not a plumbing bug** |
+| S3-GFN's own molecules (Exp B pool) | 0/30 | **28/30 = 93%** | templates work; a 389-block stock is too small for its molecules |
+| SCENT molecules by hub_depth 0/1/2/3 | 7% / 0 / 0 / 0 | 7% / 0 / 0 / 0 | **`hb105` cannot reverse SCENT chemistry even with 178k blocks** |
+| `max_steps` 3 → 6 | identical | identical | step budget is **not** the cause |
+
+So H2 dominates: Exp A cannot distinguish "blocks insufficient" from "templates incompatible", and is
+**inconclusive as a claim about molecule synthesizability**. The 418-block library is inseparable
+from the 112 reaction templates it was designed with; stripping the templates removes what makes
+those fragments productive. (Contrast [047]: AiZynth's broad USPTO templates *did* productively
+terminate at the same blocks, +25 pts — narrow curated template sets are the special case.)
+
+Exp B, however, is **not** inert — the SMALL blocks are genuinely reachable there: of 59 solved Exp B
+molecules, **14 (24%) have at least one route using a SMALL block, and 6.5% of all block-uses
+(3,666/56,098 across the exhaustive retro trees) are SMALL blocks**. Exp B remains a valid
+"best chance" arm; only Exp A's interpretation changed.
 
 **Exp C — reactions per mode (lower = better), SCENT sEH, cutoff 0.5.**
 
