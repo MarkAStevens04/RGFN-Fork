@@ -120,7 +120,20 @@ Note `targets.py` now carries the **calibrated ClpP gate −8.0** (Logs/045) tha
    That is deliberate and defensible — pre-select-K needs promoted fragments, which only SCENT has
    (it prebuilds 0 for the others) — but it is **not** an apples-to-apples generator comparison. For
    that, use the `*_naive/` dirs (SCENT naive: 1.22×/1.38×, i.e. in line with RxnFlow's 1.23×/1.60×).
-3. **The sEH-7.0 gate starves weak-reward pools.** Only 1.2% of RxnFlow-sEH's 232k enumerated children
+3. **⚠️ The FragGFN results come from the DEPRECATED `max_nodes=9` model.** While we were running, the
+   other branch fixed FragGFN's fragment cap (9 → the paper's 6; Logs/046: cap-9 gave MW ~664 and
+   collapsed DRD2 to ~0 reward) and **renamed the seed-42 run dirs `seed42` → `seed42_maxnodes9`**. Our
+   `fraggfn_{seh,drd2}` numbers were computed against those cap-9 checkpoints — the manifest now points
+   explicitly at `seed42_maxnodes9` so the results stay reproducible and the cells resolve, but:
+   - **`fraggfn_drd2` should be re-run** against the corrected cap-6 model, which is complete and waiting
+     at `$SCRATCH/rgfn_runs/experiments/fixed_reward/fraggfn_drd2_maxfrag6/2026-07-23_16-56-06/`
+     (1000 candidates). Its cap-9 predecessor is the one Logs/046 showed was broken on DRD2, so treat the
+     committed `fraggfn_drd2` row as provisional.
+   - **`fraggfn_seh` has no cap-6 re-run yet** (`fraggfn_seh_maxfrag6` does not exist), so there is
+     nothing to re-point it at today.
+   Re-running a FragGFN cell means sample + enumerate again (its `hub_graphs.pkl` is checkpoint-specific).
+
+4. **The sEH-7.0 gate starves weak-reward pools.** Only 1.2% of RxnFlow-sEH's 232k enumerated children
    clear 7.0 → 70% of its hubs yield exactly 1 mode. At the Logs/034-calibrated bars it recovers
    normally (gate 6 → 2.07×, gate 5 → 2.31×). **Report the sEH column as a gate sweep**, via
    `gate_sweep.sh` → `results/<cell>_thr<gate>/` + `results/gate_sweep/summary.csv`.
