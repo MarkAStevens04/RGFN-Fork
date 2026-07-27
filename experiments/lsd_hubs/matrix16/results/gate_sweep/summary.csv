@@ -1,8 +1,8 @@
 cell,gate,child_policy,prebuild_k,best_modes,best_rxn_per_mode,hub_modes,hub_rxn_per_mode,edge,hub_reward_gen_calls,source_dir
-fraggfn_drd2,0.5,reward,0,19,8.0,183,3.984,2.008,265545,fraggfn_drd2
-fraggfn_seh,5.0,reward,0,300,8.0,300,1.84,4.348,86205,fraggfn_seh_thr5
-fraggfn_seh,6.0,reward,0,300,8.0,300,1.933,4.139,93765,fraggfn_seh_thr6
-fraggfn_seh,7.0,reward,0,300,8.0,300,2.307,3.468,129255,fraggfn_seh
+fraggfn_cap9_drd2,0.5,reward,0,19,8.0,183,3.984,2.008,265545,fraggfn_cap9_drd2
+fraggfn_cap9_seh,5.0,reward,0,300,8.0,300,1.84,4.348,86205,fraggfn_cap9_seh_thr5
+fraggfn_cap9_seh,6.0,reward,0,300,8.0,300,1.933,4.139,93765,fraggfn_cap9_seh_thr6
+fraggfn_cap9_seh,7.0,reward,0,300,8.0,300,2.307,3.468,129255,fraggfn_cap9_seh
 rxnflow_drd2,0.5,reward,0,277,2.935,300,1.833,1.601,108373,rxnflow_drd2_thr0.5
 rxnflow_drd2,0.7,reward,0,232,2.944,300,2.08,1.415,153281,rxnflow_drd2_thr0.7
 rxnflow_drd2,0.9,reward,0,147,2.98,190,2.516,1.184,162042,rxnflow_drd2_thr0.9

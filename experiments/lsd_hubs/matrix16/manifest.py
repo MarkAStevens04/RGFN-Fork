@@ -121,16 +121,28 @@ class Cell:
 
     @property
     def n_candidates(self) -> int:
-        """Max candidates any candidates.csv under the training run dir holds — a cheap
-        training-completion proxy (surrogate target ~1000, docking ~200 when done)."""
-        cell_dir = f"/scratch/markymoo/rgfn_runs/experiments/fixed_reward/{self.tag}_5k"
+        """Max candidates any candidates.csv in THIS checkpoint's own run dir holds — a cheap
+        training-completion proxy (surrogate ~1000, docking ~200 when done).
+
+        Derived from the checkpoint path, not a guessed ``<tag>_5k`` dir, so a cell may point at any
+        run location (e.g. the cap-6 re-run ``fraggfn_drd2_maxfrag6/<timestamp>/``) and still resolve.
+        Walks up from ``.../checkpoints/last_gfn.pt`` — the run root is 1 level up for
+        fraggfn/rxnflow and 2 for rgfn/scent (which nest a ``train/`` dir)."""
+        if not self.checkpoint:
+            return 0
+        ck = Path(self.checkpoint)
         best = 0
-        for h in glob.glob(f"{cell_dir}/**/candidates.csv", recursive=True):
-            try:
-                with open(h) as fh:
-                    best = max(best, sum(1 for _ in fh) - 1)
-            except OSError:
-                pass
+        for up in (2, 3, 4):  # checkpoints/ -> run root, allowing the extra train/ level
+            if len(ck.parents) <= up:
+                break
+            for h in glob.glob(f"{ck.parents[up]}/**/candidates.csv", recursive=True):
+                try:
+                    with open(h) as fh:
+                        best = max(best, sum(1 for _ in fh) - 1)
+                except OSError:
+                    pass
+            if best:
+                break
         return best
 
     @property

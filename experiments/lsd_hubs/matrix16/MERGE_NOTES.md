@@ -120,7 +120,25 @@ Note `targets.py` now carries the **calibrated ClpP gate −8.0** (Logs/045) tha
    That is deliberate and defensible — pre-select-K needs promoted fragments, which only SCENT has
    (it prebuilds 0 for the others) — but it is **not** an apples-to-apples generator comparison. For
    that, use the `*_naive/` dirs (SCENT naive: 1.22×/1.38×, i.e. in line with RxnFlow's 1.23×/1.60×).
-3. **⚠️ The FragGFN results come from the DEPRECATED `max_nodes=9` model.** While we were running, the
+3. **✅ RESOLVED 2026-07-27 (post-merge) — FragGFN cap-9 → cap-6.** The merge brought in configs where
+   **all four fraggfn `*_5k.yaml` were switched to `max_nodes: 6`** (commit `e226ed1`), while our manifest
+   still pointed at the archived **cap-9** checkpoints — i.e. every fraggfn cell paired a cap-6 config with
+   cap-9 weights, which is neither model. Fixed:
+   - `fraggfn_drd2` → the **complete cap-6 re-run** (`fraggfn_drd2_maxfrag6/2026-07-23_16-56-06` +
+     `fraggfn_drd2_maxfrag6.yaml`, matched pair). LSD-Flow cell re-running as **job 71795**.
+   - `fraggfn_seh` → back to the standard `seed42` slot that the queued cap-6 re-run (**job 71742**,
+     `c5_fraggfn_seh_s42`) will fill. Absent today, so the cell honestly reports `no-checkpoint` and is
+     auto-skipped by `launch_surrogates.sh`; it becomes ready by itself when that job lands.
+   - All cap-9 artifacts **preserved and renamed** `results/fraggfn_cap9_*` (and scratch
+     `.../matrix16/fraggfn_{seh,drd2}_cap9/`) so the old numbers stay auditable but can never be mistaken
+     for current ones. `gate_sweep/summary.csv` regenerated with the new names.
+   - `manifest.py::n_candidates` now derives from the **checkpoint's own run dir** instead of a guessed
+     `<tag>_5k` path, so a cell may point at any run location (like the cap-6 timestamped dir) and still
+     resolve. 6TD3/ClpP fraggfn cells have the same latent config/weight mismatch but are `deferred`, and
+     their cap-6 re-runs (`c5_fraggfn_6td3_s4*`) are training now — re-check before activating them.
+
+   *Historical note (what the caveat used to say):* the FragGFN results came from the DEPRECATED
+   `max_nodes=9` model. While we were running, the
    other branch fixed FragGFN's fragment cap (9 → the paper's 6; Logs/046: cap-9 gave MW ~664 and
    collapsed DRD2 to ~0 reward) and **renamed the seed-42 run dirs `seed42` → `seed42_maxnodes9`**. Our
    `fraggfn_{seh,drd2}` numbers were computed against those cap-9 checkpoints — the manifest now points
