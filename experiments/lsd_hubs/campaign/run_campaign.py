@@ -358,7 +358,13 @@ def main() -> None:
     ap.add_argument(
         "--enum-children", required=True, help="enum_children.json from the scent worker"
     )
-    ap.add_argument("--snapshot", required=True, help="fragments_<N>.json with smiles_to_route")
+    ap.add_argument(
+        "--snapshot",
+        default="",
+        help="SCENT fragments_<N>.json (promoted-fragment recipes) for the nested cost model. "
+        "Omit for generators with no dynamic library (RGFN/FragGFN/RxnFlow) -> the cost model "
+        "falls back to min_num_reactions (no promoted fragments to nest).",
+    )
     ap.add_argument("--reward-threshold", type=float, required=True)
     ap.add_argument(
         "--similarity", type=float, default=0.5
@@ -400,12 +406,18 @@ def main() -> None:
         help="pick_hubs_timing.json (Stage-2 hub-pick wall-clock); default = beside --enum-children.",
     )
     ap.add_argument("--tag", required=True)
+    ap.add_argument(
+        "--out-dir",
+        default="",
+        help="results dir (default: <campaign>/results/<tag>); matrix16 routes cells to "
+        "experiments/lsd_hubs/matrix16/results/<tag>",
+    )
     a = ap.parse_args()
 
     adir = Path(a.analysis_dir)
     cands, comps = _load_candidates(adir, a.higher_is_better)
     enum_hubs = _load_enumerated_hubs(Path(a.enum_children), comps)
-    snapshot = json.load(open(a.snapshot))
+    snapshot = json.load(open(a.snapshot)) if a.snapshot else {}
     cost_table = load_cost_table_from_snapshot(snapshot)
     print(
         f"[campaign] {len(cands)} candidates, {len(enum_hubs)} enumerated hubs, "
@@ -465,7 +477,7 @@ def main() -> None:
             f"({a.budget_reactions}); raise --budget-modes for a valid Case-1 readout."
         )
 
-    out = HERE / "results" / a.tag  # results/<target>/ — untagged names (the dir carries the tag)
+    out = Path(a.out_dir) if a.out_dir else HERE / "results" / a.tag  # dir carries the tag
     out.mkdir(parents=True, exist_ok=True)
     _write_curve(out / "curve_best_candidate.csv", bc)
     _write_curve(out / "curve_hub_batching.csv", hb)

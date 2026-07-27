@@ -1,0 +1,50 @@
+[
+  {
+    "cell": "rxnflow_seh",
+    "n_records": 22786,
+    "n_candidates": 21506,
+    "top_k": 1000,
+    "children_with_multiple_parent_hubs": "8/1000",
+    "distinct_hubs_available": {
+      "flow": 787,
+      "flow_no_pb": 787,
+      "reward": 793
+    },
+    "vs_flow_no_pb": {
+      "overlap_top200": "175/200",
+      "overlap_pct": 87.5,
+      "jaccard": 0.778,
+      "spearman_on_common": 0.895
+    },
+    "vs_reward": {
+      "overlap_top200": "147/200",
+      "overlap_pct": 73.5,
+      "jaccard": 0.581,
+      "spearman_on_common": 0.739
+    }
+  },
+  {
+    "cell": "scent_seh",
+    "n_records": 29997,
+    "n_candidates": 25918,
+    "top_k": 1000,
+    "children_with_multiple_parent_hubs": "369/1000",
+    "distinct_hubs_available": {
+      "flow": 635,
+      "flow_no_pb": 629,
+      "reward": 1013
+    },
+    "vs_flow_no_pb": {
+      "overlap_top200": "141/200",
+      "overlap_pct": 70.5,
+      "jaccard": 0.544,
+      "spearman_on_common": 0.747
+    },
+    "vs_reward": {
+      "overlap_top200": "66/200",
+      "overlap_pct": 33.0,
+      "jaccard": 0.198,
+      "spearman_on_common": 0.248
+    }
+  }
+]

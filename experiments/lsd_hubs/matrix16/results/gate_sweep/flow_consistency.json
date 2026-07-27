@@ -1,0 +1,20 @@
+[
+  {
+    "cell": "rxnflow_seh",
+    "n_hubs": 200,
+    "median_S": 0.9994053268573647,
+    "hubs_S_gt_1": 0,
+    "median_bias_nats": 6.350330189412428,
+    "median_U_enumerated": 156.54072795813758,
+    "median_U_sampled": 2.9591040338369226
+  },
+  {
+    "cell": "scent_seh",
+    "n_hubs": 200,
+    "median_S": 0.999637754607152,
+    "hubs_S_gt_1": 0,
+    "median_bias_nats": -3.7357216730884666,
+    "median_U_enumerated": 40.970525643997235,
+    "median_U_sampled": 1.0395206655597113
+  }
+]

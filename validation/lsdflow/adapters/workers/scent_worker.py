@@ -318,6 +318,8 @@ def _make_enumerator(rgfn_api, Trajectories, RSA, RSB, RSC, RST, RAC, Molecule):
             # enum: some hub's DFS reached an early-terminal before any hub was written). Those are
             # dead-ends for enumeration anyway: valid one-reaction children are collected at RSC below,
             # and build_child_trajectory only keeps paths that STOP to a proper RST. So skip them.
+            # (SCENT's env raises; RGFN returns a degenerate space instead -- hence the guard is needed
+            # here specifically. Both branches hit this independently; see matrix16 MERGE_NOTES §1.)
             if not isinstance(state, (RSA, RSB, RSC)):
                 return
             fas = env.get_forward_action_spaces([state])[0]

@@ -1,0 +1,43 @@
+{
+  "tag": "rxnflow_seh_thr6",
+  "reward_threshold": 6.0,
+  "similarity": 0.5,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "rank_by": null,
+  "best_candidate": {
+    "strategy": "best_candidate",
+    "total_modes": 300,
+    "total_reactions": 891,
+    "reactions_per_mode": 2.97,
+    "total_reward_gen_calls": 0,
+    "reward_gen_calls_per_mode": 0.0,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 296,
+    "n_scaffolds": 300,
+    "best_reward": 7.618,
+    "median_reward": 6.881,
+    "case1_modes_at_100rxn": 33,
+    "case2_reactions_at_300modes": 891,
+    "stop_reason": "modes"
+  },
+  "hub_batching": {
+    "strategy": "hub_batching",
+    "total_modes": 300,
+    "total_reactions": 431,
+    "reactions_per_mode": 1.437,
+    "total_reward_gen_calls": 84555,
+    "reward_gen_calls_per_mode": 281.85,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 66,
+    "n_scaffolds": 299,
+    "best_reward": 7.856,
+    "median_reward": 6.645,
+    "case1_modes_at_100rxn": 69,
+    "case2_reactions_at_300modes": 431,
+    "stop_reason": "modes"
+  },
+  "compute_time": null
+}

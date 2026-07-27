@@ -1,0 +1,37 @@
+[
+  {
+    "cell": "rxnflow_seh",
+    "n_hubs": 200,
+    "estimators": {
+      "pick_hubs": {
+        "n_hubs": 200,
+        "median_bias": 0.427,
+        "spearman": 0.665
+      },
+      "samp_mean": {
+        "n_hubs": 200,
+        "median_bias": -0.186,
+        "spearman": 0.646
+      },
+      "enum_mean": {
+        "n_hubs": 200,
+        "median_bias": 6.35,
+        "spearman": 0.438
+      },
+      "enum_wmean": {
+        "n_hubs": 200,
+        "median_bias": -1.687,
+        "spearman": 0.882
+      },
+      "flow_conservation": {
+        "n": 200,
+        "median_stop_logprob_gap": -6.049,
+        "median_logF_A_minus_B": -0.0005
+      },
+      "R_check": {
+        "n": 9,
+        "median_diff": 6.49
+      }
+    }
+  }
+]
