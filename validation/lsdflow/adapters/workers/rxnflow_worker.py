@@ -414,6 +414,73 @@ def _read_hubs(path):
     return hubs
 
 
+def _run_probe_hubs(args, trainer, beta, clip, out_dir):
+    """Measure R(h) and P_F(stop|h) AT each hub — the two quantities needed to test flow
+    conservation at h without any near-1 cancellation.
+
+    Flow conservation says F(h) = R(h) + N(h) (terminating flow + edge flows to children) and the
+    terminating-flow identity says R(h) = F(h) P_F(stop|h). Eliminating F(h) gives a pure,
+    dimensionless test that needs no enumeration normalizer:
+
+        R(h) / (R(h) + N(h))  ==  P_F(stop|h)
+
+    LHS comes from the hub's own reward + the enumerated N(h); RHS is read straight off the policy
+    here. Cheap: one proxy call + one single-step (hub -[stop]-> terminal) policy score per hub."""
+    if not args.hubs_file:
+        raise SystemExit("[rxnflow_worker] --mode probe_hubs requires --hubs-file")
+    env, task = trainer.env, trainer.task
+    min_len = int(trainer.cfg.algo.min_len)
+    stop_proto = env.stop_list[0].name
+    hubs = _read_hubs(args.hubs_file)
+
+    smis = [s for s, _d in hubs]
+    values = task.proxy.predict(smis)  # raw proxy value of the HUB molecule itself
+
+    out = {}
+    B = 64
+    for start in range(0, len(hubs), B):
+        block = hubs[start : start + B]
+        trajs, keep = [], []
+        for smi, depth in block:
+            g = MolGraph(smi)
+            if g.mol is None:
+                continue
+            g.graph["sample_idx"] = 0
+            g.graph["allow_stop"] = depth + 1 >= min_len
+            if not g.graph["allow_stop"]:
+                out[smi] = {"allow_stop": False}
+                continue
+            trajs.append(
+                {
+                    "traj": [(g, RxnAction(RxnActionType.Stop, stop_proto))],
+                    "bck_logprobs": torch.tensor([0.0]),
+                    "is_valid": True,
+                    "result": g,
+                }
+            )
+            keep.append((smi, depth))
+        if not trajs:
+            continue
+        fwd_lists = _score_child_trajs(trainer, trajs)  # one step each -> log P_F(stop|h)
+        for (smi, depth), fl in zip(keep, fwd_lists):
+            out[smi] = {"allow_stop": True, "depth": depth, "log_pf_stop_h": float(fl[0])}
+        print(f"[rxnflow_worker]   probed {min(start + B, len(hubs))}/{len(hubs)} hubs", flush=True)
+
+    for (smi, _d), v in zip(hubs, values):
+        rec = out.setdefault(smi, {})
+        rec["reward_h"] = float(v) if v == v else float("nan")
+        rec["log_reward_h"] = float(
+            max(beta * min(max(v, -clip), clip), ILLEGAL) if v == v else ILLEGAL
+        )
+    A.write_json(out_dir / "hub_terminal.json", out)
+    n_ok = sum(1 for r in out.values() if "log_pf_stop_h" in r)
+    print(
+        f"[rxnflow_worker] probe_hubs: {n_ok}/{len(hubs)} hubs measured -> "
+        f"{out_dir / 'hub_terminal.json'}",
+        flush=True,
+    )
+
+
 def _run_enumerate(args, trainer, beta, clip, out_dir):
     if not args.hubs_file:
         raise SystemExit("[rxnflow_worker] --mode enumerate requires --hubs-file")
@@ -478,7 +545,7 @@ def _run_enumerate(args, trainer, beta, clip, out_dir):
 
 def _parse_args():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--mode", choices=["sample", "enumerate"], default="sample")
+    p.add_argument("--mode", choices=["sample", "enumerate", "probe_hubs"], default="sample")
     p.add_argument("--config", required=True, help="rxnflow *_fixed_stdlib_5k.yaml")
     p.add_argument("--checkpoint", required=True)
     p.add_argument("--reward-name", default="seh")
@@ -523,6 +590,8 @@ def main():
     try:
         if args.mode == "sample":
             _run_sample(args, trainer, beta, clip, out_dir, device)
+        elif args.mode == "probe_hubs":
+            _run_probe_hubs(args, trainer, beta, clip, out_dir)
         else:
             _run_enumerate(args, trainer, beta, clip, out_dir)
     finally:

@@ -99,6 +99,8 @@ def _true_flow(d: dict) -> dict | None:
     out = {
         "n_children": n,
         "S": math.exp(logS),
+        "logS": logS,
+        "logN": logN,
         "log_F_true": logF_true,
         "enum_mean": st.fmean(fhat),
         "enum_wmean": math.fsum(w[i] * fhat[i] for i in range(n)) / tw if tw else float("nan"),
@@ -204,6 +206,52 @@ def analyze(cell_tag: str) -> dict:
             "median_bias": round(st.median(bias), 3),
             "spearman": round(rho, 3) if rho else None,
         }
+
+    # WELL-CONDITIONED flow-conservation test (needs `--mode probe_hubs` output). Eliminating F(h)
+    # from  F(h) = R(h) + N(h)  and  R(h) = F(h) P_F(stop|h)  gives a dimensionless identity with no
+    # near-1 cancellation:   R(h)/(R(h)+N(h)) == P_F(stop|h).
+    probe_p = cell.enum_dir / "hub_terminal.json"
+    if probe_p.exists():
+        probe = json.load(open(probe_p))
+        rows_p = []
+        for h, t in truth.items():
+            pr = probe.get(h)
+            if not pr or "log_pf_stop_h" not in pr or "log_reward_h" not in pr:
+                continue
+            lR, lN = pr["log_reward_h"], t["logN"]
+            logF_A = max(lR, lN) + math.log1p(math.exp(-abs(lR - lN)))  # log(R + N), stable
+            rows_p.append(
+                {
+                    "implied_log_pf_stop": lR - logF_A,  # log R(h) - log(R(h)+N(h))
+                    "measured_log_pf_stop": pr["log_pf_stop_h"],
+                    "logF_A": logF_A,  # R(h) + N(h)
+                    "logF_B": t["log_F_true"],  # N/S
+                }
+            )
+        print("\n-- WELL-CONDITIONED flow conservation at h:  R/(R+N)  vs  P_F(stop|h) --")
+        if rows_p:
+            d = [r["implied_log_pf_stop"] - r["measured_log_pf_stop"] for r in rows_p]
+            fa = [r["logF_A"] - r["logF_B"] for r in rows_p]
+            print(f"  hubs probed: {len(rows_p)}/{len(truth)}")
+            print(
+                f"  log P_F(stop|h): implied - measured   median={st.median(d):>8.2f}  "
+                f"p5={_pct(d, .05):>8.2f}  p95={_pct(d, .95):>8.2f} nats   (0 => conservation holds)"
+            )
+            print(
+                f"  log F: (R+N) vs (N/S)                 median={st.median(fa):>8.3f}  "
+                f"p5={_pct(fa, .05):>8.3f}  p95={_pct(fa, .95):>8.3f} nats"
+            )
+            rows["flow_conservation"] = {
+                "n": len(rows_p),
+                "median_stop_logprob_gap": round(st.median(d), 3),
+                "median_logF_A_minus_B": round(st.median(fa), 4),
+            }
+        else:
+            print("  probe file present but no hub joined (key mismatch?)")
+    else:
+        print(
+            f"\n-- WELL-CONDITIONED test skipped: no {probe_p.name} (run worker --mode probe_hubs) --"
+        )
 
     # INDEPENDENT validation of F_true: does the implied R(h) match the hub's own measured reward?
     checks = [
