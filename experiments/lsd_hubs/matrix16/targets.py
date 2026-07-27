@@ -65,8 +65,9 @@ TARGETS: Dict[str, Target] = {
         higher_is_better=True,
         mode_reward_threshold=0.5,
         reward_type="surrogate",
-        threshold_variants=[0.5],
-        reward_note="activity probability in [0,1] (Logs/028)",
+        threshold_variants=[0.5, 0.7, 0.9],
+        reward_note="activity probability in [0,1]; 0.5 = calibrated active cutoff (Logs/028), "
+        "0.7/0.9 = stricter bars for the gate-sensitivity sweep (symmetric to sEH 5/6/7)",
     ),
     "6td3": Target(
         name="6td3",
@@ -82,10 +83,16 @@ TARGETS: Dict[str, Target] = {
         name="clpp",
         reward_name="clpp",
         higher_is_better=False,
-        mode_reward_threshold=-2.0,
+        mode_reward_threshold=-8.0,
         reward_type="docking",
-        threshold_variants=[-2.0],
-        reward_note="PROVISIONAL: docking score, lower-is-better; confirm on activation",
+        threshold_variants=[-8.0, -9.0],
+        reward_note="CALIBRATED (Logs/045): raw QuickVina2-GPU Vina energy vs human ClpP "
+        "(7UVU), lower-is-better. Gate on the RAW docking value (candidates.csv `raw_score` / "
+        "snapshot `term_raw_score`), NOT the `score`=ReLU(-raw) reward column. -8.0 is the "
+        "Youden-optimal cutoff separating 183 ChEMBL ClpP binders from property-matched decoys "
+        "(AUROC 0.895, TPR 88%/FPR 23%); the old -2.0 was non-binding (~100% of every generator "
+        "cleared it). -9.0 = the 95%-decoy-specificity variant (TPR 48%/FPR 6%). "
+        "experiments/oracle_validation/docking_clpp/.",
     ),
 }
 
