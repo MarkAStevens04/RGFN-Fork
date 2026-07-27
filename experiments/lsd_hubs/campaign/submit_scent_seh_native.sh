@@ -36,7 +36,10 @@ K=${K:-100}                                      # top-K candidates -> their par
 N_HUBS=${N_HUBS:-200}                            # match campaign_enum_seh_70363 (200-hub)
 ENUM_MAX=${ENUM_MAX:-12000}                      # per-hub cap on the frozen 2,018-frag library
 REWARD=${REWARD:-seh}
-OUT_DIR=${OUT_DIR:-$SCRATCH/rgfn_runs/lsdflow/scent_seh_native_${SLURM_JOB_ID}}
+# Name the output by $REWARD, NOT hardcoded "seh": this script is target-agnostic (CKPT/CFG/REWARD are
+# all overridable) and was reused for DRD2 in entry 049, which would otherwise have written a DRD2 run
+# into a directory called "scent_seh_native_*" — silent provenance corruption.
+OUT_DIR=${OUT_DIR:-$SCRATCH/rgfn_runs/lsdflow/scent_${REWARD}_native_${SLURM_JOB_ID}}
 SAMPLE_DIR="$OUT_DIR/sample"
 ENUM_DIR="$OUT_DIR/enum"
 

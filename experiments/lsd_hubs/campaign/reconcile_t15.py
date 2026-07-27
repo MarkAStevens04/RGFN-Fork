@@ -150,6 +150,13 @@ def main() -> None:
     )
     ap.add_argument("--tag", default="recon_smoke")
     ap.add_argument("--sparrow-env", default="sparrow")
+    ap.add_argument(
+        "--min-recipe-coverage",
+        type=float,
+        default=0.95,
+        help="fraction of the snapshot's promoted fragments that must carry a `smiles_to_route` "
+        "recipe for this cell to be auditable at all (see the guard below). Set 0 to force.",
+    )
     a = ap.parse_args()
 
     recon = Path(a.recon_dir)
@@ -159,6 +166,31 @@ def main() -> None:
     recipes = snapshot.get("smiles_to_route") or {}
     promoted = set(snapshot.get("chosen_smiles", []))
     cost_table = load_cost_table_from_snapshot(snapshot)
+
+    # GUARD (entry 049) — this cell must be AUDITABLE before we report a unit gap.
+    # count-once charges every promoted fragment's BUILD (campaign.py `_charge_promoted`), but SPARROW
+    # can only charge it when the snapshot carries that fragment's recipe (`expand_route_with_recipes`
+    # needs `smiles_to_route`). A snapshot without recipes makes the two sides price DIFFERENT
+    # assumptions — SPARROW buys what count-once builds — and the run reports a huge bogus "unit gap"
+    # that looks like a cost-model defect. Real case: scent_drd2_5k/seed42 has 0/1600 recipes and
+    # produced rel_diff 62.7%, while sEH's recipe-logging re-run (job 70180) has 1600/1600 and
+    # reconciles at 3.1%. Fail fast with the actual remedy instead of emitting the number.
+    recipe_cov = (sum(1 for s in promoted if s in recipes) / len(promoted)) if promoted else 1.0
+    if promoted and recipe_cov < a.min_recipe_coverage:
+        raise SystemExit(
+            f"[t15] ABORT: snapshot has recipes for only {recipe_cov:.1%} of its {len(promoted)} "
+            f"promoted fragments ({len(recipes)} `smiles_to_route` entries) — below "
+            f"--min-recipe-coverage {a.min_recipe_coverage:.0%}.\n"
+            f"       {Path(a.snapshot)}\n"
+            "       This cell CANNOT be audited: SPARROW would treat promoted fragments as bought "
+            "while count-once builds them, so the resulting rel_diff is an assumptions mismatch, not "
+            "a reaction-unit gap. Fix: re-run this generator with recipe logging enabled (the sEH "
+            "precedent is the 2026-07-10 re-run, job 70180) and point --snapshot at the new "
+            "fragments_<N>.json. Override with --min-recipe-coverage 0 only to reproduce entry 049."
+        )
+    print(
+        f"[t15] recipe coverage {recipe_cov:.1%} of {len(promoted)} promoted fragments — auditable"
+    )
 
     cands, comps = _load_candidates(sample_dir, a.higher_is_better)
     enum_hubs = _load_enumerated_hubs(enum_children, comps)
