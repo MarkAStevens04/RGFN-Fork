@@ -11,9 +11,12 @@ count-once cost in `validation/lsdflow/`; the strategy comparison in
 `experiments/lsd_hubs/campaign/`. `matrix16/` adds no new science — it just resolves every cell's
 spec and fans the existing per-cell pipeline across all 16.
 
-> **Status: in bring-up (branch `matrix16-lsdflow`, a worktree).** Surrogate cells (sEH/DRD2) are the
-> active target now; docking cells (6TD3/ClpP) are wired-but-deferred (they need the GPU-docking
-> enumeration path + their training to finish). See **Build status** below for what runs today.
+> **Status (2026-07-27): 6/8 surrogate cells complete; branch `matrix16-lsdflow` is fully committed and
+> READY TO MERGE into `Hub-Analysis` — not yet merged.**
+> → **Read [`MERGE_NOTES.md`](MERGE_NOTES.md) first.** It carries the commit-by-commit map, the single
+> (trivial, identical-fix) merge conflict + resolution, live run state with job IDs, the three caveats
+> that must travel with the numbers, and the open threads. Docking cells (6TD3/ClpP) are
+> wired-but-deferred (they need the GPU-docking enumeration path).
 
 ---
 
@@ -128,15 +131,29 @@ natural comparison. Both run without error on all four.
 - ✅ `link_worktree_data.sh` — symlinks gitignored `data/` payloads into the worktree (required —
   `git worktree` omits gitignored files the pipeline reads).
 - ✅ `submit_cell.sh` / `launch_surrogates.sh` / `run_cell_campaign.sh` — parameterized launchers
-  (`N_TRAJ` / `N_HUBS` / `STAGE`).
-- ✅ **RGFN sEH cell validated end-to-end** (300-traj/10-hub smoke): sample → pick_hubs → enumerate →
-  count-once campaign → `results/rgfn_seh/`. FragGFN + RxnFlow sEH **sample** validated (N=40).
-- ⏳ SCENT/FragGFN/RxnFlow sEH full-pipeline smokes; the enumerate design decision (below).
-- ⏳ FragGFN/RxnFlow LSD-Flow *adapters* (`get_adapter`) — the matrix uses workers directly, so these
-  are only needed for the harness severe-test path; deferred.
+  (`N_TRAJ` / `N_HUBS` / `STAGE` / `TIME`).
+- ✅ **6/8 surrogate cells COMPLETE at the real scale** (30k trajectories / 200 hubs) with committed
+  campaign readouts in `results/<cell>/`: `scent_{seh,drd2}`, `rxnflow_{seh,drd2}`, `fraggfn_{seh,drd2}`.
+- ⏳ **The 2 RGFN cells** — jobs **71766** (`rgfn_seh`, enum-only on its saved sample) and **71767**
+  (`rgfn_drd2`, full) queued with 3-day walltimes. RGFN's enumerate is the slow one (two 24h timeouts →
+  hence the per-hub progress logging + partial flush). Run `run_cell_campaign.sh rgfn {seh,drd2}` after.
+- ⏳ FragGFN/RxnFlow LSD-Flow *adapters* (`get_adapter`) — the matrix calls workers directly, so these
+  are only needed for the harness severe-test path; deferred by design.
 
-**Cell readiness** (`manifest.py`): 7/8 surrogate cells ready (rgfn_drd2 still training); all 4 sEH
-cells ready (the smoke set). Docking cells partial → deferred.
+**Live status any time:** `python experiments/lsd_hubs/matrix16/manifest.py`.
+Docking cells (6TD3/ClpP) remain `run_stage=deferred` and are auto-excluded by `launch_surrogates.sh`.
+
+### Analysis tools (all pure-CPU / login-safe, per cell)
+
+| script | question |
+|---|---|
+| `gate_sweep.sh` | both strategies re-scored at each target's `threshold_variants` over the cached enumeration → `results/<cell>_thr<gate>/` + `results/gate_sweep/summary.csv` |
+| `hub_rank_sensitivity.py` | does the (heuristic, for RxnFlow) `P_B` drive hub selection? |
+| `flow_consistency.py` | enumeration-derived `F_true(h)` vs per-child `F̂`; `Σ_x P_F(x\|h)` normalization; variance decomposition; sampled-vs-enumerated `U(h)` |
+| `hub_flow_estimators.py` | four `F(h)` estimators scored on bias **and** rank correlation vs `F_true`; well-conditioned flow-conservation test (needs `<gen>_worker --mode probe_hubs`) |
+
+Findings live in `results/gate_sweep/*.json` and the commit messages; the headline caveats are in
+[`MERGE_NOTES.md`](MERGE_NOTES.md) §5 and the key ones are summarized below.
 
 ## The enumerate question — RESOLVED (option 2: exhaustive for all four)
 

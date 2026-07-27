@@ -30,8 +30,19 @@ done
 SIMILARITY=${SIMILARITY:-0.5}
 BUDGET_REACTIONS=${BUDGET_REACTIONS:-100}
 BUDGET_MODES=${BUDGET_MODES:-300}
-CHILD_POLICY=${CHILD_POLICY:-reward}
-PREBUILD_K=${PREBUILD_K:-0}
+# Per-generator child-policy DEFAULTS (kept identical to gate_sweep.sh so the two drivers can never
+# disagree, and so re-running this script reproduces the committed result instead of silently
+# overwriting it with a different policy's number):
+#   SCENT has a dynamic library -> free_frag + pre-select-K=20 is the hero (Logs/037).
+#   The baselines have no promoted fragments (pre-select-K would pre-build 0) -> naive `reward`.
+# Override either via env, e.g. CHILD_POLICY=reward PREBUILD_K=0 for SCENT's naive control.
+if [ "$GEN" = scent ]; then
+    CHILD_POLICY=${CHILD_POLICY:-free_frag}
+    PREBUILD_K=${PREBUILD_K:-20}
+else
+    CHILD_POLICY=${CHILD_POLICY:-reward}
+    PREBUILD_K=${PREBUILD_K:-0}
+fi
 
 # SCENT: nested cost needs the promoted-fragment snapshot (fragments_<N>.json). Auto-discover it
 # beside the checkpoint unless SNAPSHOT is given. Other generators: no snapshot (min_num_reactions).
