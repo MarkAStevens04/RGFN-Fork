@@ -1,0 +1,11 @@
+[
+  {
+    "cell": "matrix16_prefixsmoke",
+    "n": 40,
+    "log_z": 74.65266418457031,
+    "median_log_F_prefix": 65.19,
+    "median_log_F_suffix": 63.327,
+    "median_tb_residual": 1.651,
+    "residual_sd": 2.867
+  }
+]

@@ -276,6 +276,13 @@ def extract_flow_records(
         log_pf_move = float(sum(traj_fwd[p:idx_stop]))
         log_pb_move = float(sum(traj_bwd[p:idx_stop]))
         log_pf_stop = float(traj_fwd[idx_stop])
+        # Z-anchored half of the SAME trajectory: source -> hub. Chaining detailed balance forward
+        # from F(s_0)=Z gives log F_prefix(h) = logZ + sum_{t<=p}[logP_F - logP_B], an exact second
+        # estimate of F(h) sharing no terms with the R-anchored one above. Their product is exactly
+        # trajectory balance, so the log-difference IS the per-trajectory TB residual (logZ is in
+        # meta.json). Written to the prefix_terms.csv sidecar, not into _REC_COLS.
+        log_pf_prefix = float(sum(traj_fwd[:p]))
+        log_pb_prefix = float(sum(traj_bwd[:p]))
         # Z-anchored half: source -> hub (steps before the hub). See
         # _artifacts.write_prefix_terms — log F_prefix(h) = logZ + log_pf_prefix - log_pb_prefix,
         # an exact second estimate of F(h) sharing no terms with the R-anchored one above.
@@ -295,6 +302,8 @@ def extract_flow_records(
                 "log_reward": float(log_rewards[t]),
                 "log_pf_move": log_pf_move,
                 "log_pb_move": log_pb_move,
+                "log_pf_prefix": log_pf_prefix,
+                "log_pb_prefix": log_pb_prefix,
                 "log_pf_prefix": log_pf_prefix,
                 "log_pb_prefix": log_pb_prefix,
                 "log_pf_stop": log_pf_stop,

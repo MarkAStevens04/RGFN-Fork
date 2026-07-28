@@ -194,14 +194,22 @@ planned UCB hub-acquisition signal** in the AL phase; and flow conservation at t
 
 ## 7. Open threads (nothing half-built left behind)
 
-- **Prefix / Z-anchored F(h) reconstruction — designed, NOT built.** `F(h) = Z·∏_{s_0→h} P_F/P_B` is
-  exact and its disagreement with our R-anchored estimator *is* the per-trajectory TB residual. We already
-  store `log_z`; the missing piece is two columns (`log_pf_prefix`, `log_pb_prefix`) — the workers compute
-  the full per-step arrays and discard all but the last move. Needs a re-sample per cell. ⚠️ Caveat found:
-  **RxnFlow's learned `logZ` (53.07) is *smaller* than its own single-molecule rewards (max log R 63.7) and
-  than one hub's child-flow sum (58.71)** — internally inconsistent, so the Z-anchor is unreliable for that
-  cell. SCENT (74.65 > 68.10) and FragGFN (97.17) look sane. Suspect either an under-fit `Z` or the
-  untrained retro `P_B` inflating `N(h)`; the prefix-vs-suffix pattern would discriminate (constant offset ⇒ Z).
+- **Prefix / Z-anchored F(h) reconstruction — BUILT (c63c789), awaiting data.** `F(h) = Z·∏_{s_0→h} P_F/P_B`
+  is exact, and multiplying it by our R-anchored estimator reproduces trajectory balance, so their
+  log-difference *is* the per-trajectory TB residual — no frequency estimate anywhere. The per-step arrays
+  were already computed in every worker and discarded; the prefix sums now go to a sidecar
+  `prefix_terms.csv` (join on `child_stereo_key`+`hub_stereo_key`); `log_z` is already in `meta.json`.
+  Wired for **scent / rxnflow / fraggfn**; **RGFN is excluded on purpose** — it extracts via shared
+  `glue/samplers/lsdflow/rgfn_extract.py`, outside the ownership split, so it needs coordination.
+  Validated end-to-end on a real 40-trajectory rxnflow_seh run: sidecar written, `records.csv` schema
+  unchanged, residual computes. **Preliminary only** (n=40 smoke): `log F_prefix − log F_suffix` median
+  **−3.62** nats, range −9.98…+7.89. The ~18-nat spread means it is *not* a constant offset, so it is not
+  purely a `logZ` scale error — but do not quote this until a 30k run produces it.
+  ⚠️ RxnFlow's learned `logZ` (53.07) is *below* both its own max single-molecule reward (63.69) and one
+  hub's child-flow sum (58.71), so that anchor is unreliable for that cell; SCENT (74.65 > 68.10) and
+  FragGFN (97.17) look sane. FragGFN caveat: its prefix ends at the last-AddNode *skeleton* state, which
+  is also where its suffix estimator is anchored — self-consistent, but neither refers to the
+  reconstructed hub molecule.
 - **`probe_hubs` exists only on `rxnflow_worker`.** Porting it to `scent_worker` is the highest-value next
   step: SCENT's `S(h)` has real spread (p5 = 0.40), so the `(R+N)` vs `(N/S)` check has genuine power there
   (on RxnFlow it is near-tautological, `R/N ~ 1e-6`).
