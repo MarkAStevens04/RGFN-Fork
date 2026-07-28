@@ -428,6 +428,10 @@ def _plot(
     xsub=None,
     ideal=None,
 ):
+    """``ideal`` names the good direction of the panel's metric(s) for the title marker: "higher",
+    "lower", or a tuple of (direction, name) pairs when both axes are metrics. There is deliberately
+    NO default inferred from invert_x/invert_y -- pareto (y = modes discovered, higher) and
+    fixed_modes (y = reactions required, lower) are both inverted but want opposite arrows."""
     try:
         import matplotlib
 
@@ -465,7 +469,11 @@ def _plot(
             color="0.5",
         )
     ax.set_ylabel(ylabel)
-    ax.set_title(title)
+    # Ideal direction goes in the TITLE, in parentheses — never drawn inside the axes
+    # (validation.lsdflow.plot_style). ``ideal`` names the y-metric's good direction: these panels
+    # invert axes, and the glyph describes the METRIC ("↓" = fewer reactions is better) so it stays
+    # correct regardless. Defaults to "higher" on the Pareto-style panels the inversions below set up.
+    ax.set_title(title_with_ideal(title, *(ideal if isinstance(ideal, tuple) else (ideal,))))
     # Flip axes so the "desired" corner is top-right (Pareto convention): more-diverse (stricter,
     # lower-Tanimoto) cutoffs on the right, and for the cost plot fewer reactions at the top.
     if invert_x:
@@ -473,18 +481,6 @@ def _plot(
     if invert_y:
         ax.invert_yaxis()
     ax.legend()
-    # Stamp the ideal direction explicitly. These panels are exactly where a reader needs it: the axes
-    # are deliberately flipped, so "which way is good" cannot be inferred from the numbers. Defaults to
-    # the top-right convention the inversions above establish; pass ideal="down" (etc.) where lower is
-    # better, e.g. the compute-time panel. ideal=False opts out.
-    arrow = "up-right" if ideal is None and (invert_x or invert_y) else ideal
-    if arrow:
-        try:
-            from validation.lsdflow.plot_style import ideal_arrow
-
-            ideal_arrow(ax, arrow, loc="upper left" if arrow == "up-right" else "upper right")
-        except Exception as exc:  # noqa: BLE001
-            print(f"[sweep] ideal-direction arrow skipped ({exc})")
     fig.tight_layout()
     fig.savefig(path, dpi=130, bbox_inches="tight" if xsub else None)
     print(f"[sweep] wrote {path}")
@@ -758,6 +754,7 @@ def main() -> None:
         invert_x=True,  # stricter/more-diverse (low cutoff) -> right
         invert_y=True,  # fewer reactions (cheaper) -> up; desired = top-right
         xsub=XSUB,
+        ideal="lower",  # y = reactions REQUIRED -- opposite of the pareto panel above
     )
 
     # ---- Plot 3: budget vs efficiency (modes vs reaction budget) at the default cutoff ----
@@ -808,6 +805,7 @@ def main() -> None:
         "reaction budget (cumulative, true nested cost)",
         "modes obtained",
         f"SCENT {a.tag}: budget vs efficiency (cutoff {base})",
+        ideal=(("higher", "modes"), ("lower", "reactions")),  # both axes are metrics here
     )
 
     # ---- Compute-time vs diversity cutoff (Logs/039) — how much longer the computer works ----
@@ -854,7 +852,7 @@ def main() -> None:
             vline=base,
             invert_x=True,  # stricter/more-diverse (low cutoff) -> right
             xsub=XSUB,
-            ideal="down",  # unlike the Pareto panels, LESS compute is better here
+            ideal="lower",  # unlike the pareto panel, LESS compute is better here
         )
         compute_time = {
             "enum_timings_meta": enum_timings.meta,
