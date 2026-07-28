@@ -219,6 +219,9 @@ def _extract_batch(trainer, reward, beta, clip, enc, trajs):
                 "hub_depth": int((n_x - 1) - 1),
                 "hub_stereo_key": hub_stereo,
                 "child_stereo_key": child_stereo,
+                # Z-anchored half: source -> anchor state (see _artifacts.write_prefix_terms).
+                "log_pf_prefix": float(sum(pf[:add_idx])),
+                "log_pb_prefix": float(sum(pb[:add_idx])),
             }
         )
         for k in {hub_key, child_key}:
@@ -258,6 +261,7 @@ def _run_sample(args, trainer, reward, beta, clip, out_dir, device):
         else 0.0
     )
     A.write_records(out_dir / "records.csv", all_records)
+    A.write_prefix_terms(out_dir / "prefix_terms.csv", all_records)
     json.dump(visit_counts, open(out_dir / "visit_counts.json", "w"))
     # No promoted fragments, but charge each molecule its flat fragment-attachment count so the
     # count-once cost is internally consistent (best-candidate not undercounted to 1). NOTE: for

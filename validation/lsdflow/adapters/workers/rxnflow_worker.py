@@ -206,6 +206,9 @@ def _extract_batch(trainer, beta, clip, enc, data):
                 "hub_depth": int(total_rxn - 1),
                 "hub_stereo_key": hub_stereo,
                 "child_stereo_key": child_stereo,
+                # Z-anchored half: source -> hub (see _artifacts.write_prefix_terms).
+                "log_pf_prefix": float(sum(tfwd[:move_idx])),
+                "log_pb_prefix": float(sum(tbwd[:move_idx])),
             }
         )
     return records, visit_counts
@@ -235,6 +238,7 @@ def _run_sample(args, trainer, beta, clip, out_dir, device):
         log_z = 0.0
 
     A.write_records(out_dir / "records.csv", all_records)
+    A.write_prefix_terms(out_dir / "prefix_terms.csv", all_records)
     json.dump(visit_counts, open(out_dir / "visit_counts.json", "w"))
     # No promoted fragments; charge each molecule its flat reaction depth so the count-once cost
     # charges best-candidate correctly (not the =1 fallback). RxnFlow reactions are real steps.

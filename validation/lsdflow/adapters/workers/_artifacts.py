@@ -68,9 +68,45 @@ def hub_uncertainty(recs: Sequence[Dict]) -> Tuple[float, int]:
 
 
 def write_records(path, rows: Sequence[Dict]) -> None:
-    """Write records.csv / enumerated_records.csv (DictWriter over :data:`REC_COLS`)."""
+    """Write records.csv / enumerated_records.csv (DictWriter over :data:`REC_COLS`).
+
+    ``extrasaction="ignore"`` so a row may carry additional keys (e.g. the Z-anchored prefix terms,
+    written separately by :func:`write_prefix_terms`) without changing this file's schema — every
+    downstream reader parses records.csv by column NAME, so the contract stays fixed."""
     with open(path, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=REC_COLS)
+        w = csv.DictWriter(fh, fieldnames=REC_COLS, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
+
+
+PREFIX_COLS = ["child_key", "child_stereo_key", "hub_stereo_key", "log_pf_prefix", "log_pb_prefix"]
+
+
+def write_prefix_terms(path, rows: Sequence[Dict]) -> None:
+    """Write prefix_terms.csv — the source->hub half of the trajectory, for the Z-ANCHORED flow
+    reconstruction.
+
+    Chaining detailed balance forward from the source (``F(s_0) = Z``) gives an exact second estimate
+    of a hub's flow that shares no terms with the R-anchored one we ship:
+
+        log F_prefix(h) = log Z + sum_{t<=k} [ logP_F(s_t|s_{t-1}) - logP_B(s_{t-1}|s_t) ]
+
+    Multiplying it by the suffix (R-anchored) estimate reproduces trajectory balance exactly, so the
+    two agree **iff** TB holds on that trajectory — their log-difference IS the per-trajectory TB
+    residual, with no frequency/visitation estimate anywhere. ``log Z`` is already persisted in
+    ``meta.json``.
+
+    Kept in a SIDECAR rather than added to ``REC_COLS`` so records.csv's schema (and every existing
+    reader) is untouched. Join on ``child_stereo_key`` + ``hub_stereo_key``.
+
+    NOTE (FragGFN): its prefix ends at the last-AddNode *skeleton* state, which is also what its
+    suffix estimator is anchored at — so the prefix-vs-suffix comparison is self-consistent, even
+    though neither refers to the reconstructed hub *molecule*."""
+    rows = [r for r in rows if r]
+    if not rows:
+        return
+    with open(path, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=PREFIX_COLS, extrasaction="ignore")
         w.writeheader()
         w.writerows(rows)
 

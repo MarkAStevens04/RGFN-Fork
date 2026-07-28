@@ -276,6 +276,11 @@ def extract_flow_records(
         log_pf_move = float(sum(traj_fwd[p:idx_stop]))
         log_pb_move = float(sum(traj_bwd[p:idx_stop]))
         log_pf_stop = float(traj_fwd[idx_stop])
+        # Z-anchored half: source -> hub (steps before the hub). See
+        # _artifacts.write_prefix_terms — log F_prefix(h) = logZ + log_pf_prefix - log_pb_prefix,
+        # an exact second estimate of F(h) sharing no terms with the R-anchored one above.
+        log_pf_prefix = float(sum(traj_fwd[:p]))
+        log_pb_prefix = float(sum(traj_bwd[:p]))
         if strip_stereo:
             hub_key, hub_stereo = _stripped_key(Chem, state_h.molecule)
             child_key, child_stereo = _stripped_key(Chem, state_x.molecule)
@@ -290,6 +295,8 @@ def extract_flow_records(
                 "log_reward": float(log_rewards[t]),
                 "log_pf_move": log_pf_move,
                 "log_pb_move": log_pb_move,
+                "log_pf_prefix": log_pf_prefix,
+                "log_pb_prefix": log_pb_prefix,
                 "log_pf_stop": log_pf_stop,
                 "hub_depth": int(state_h.num_reactions),
                 "hub_stereo_key": hub_stereo,
@@ -772,6 +779,7 @@ def main():
             flush=True,
         )
         _write_records(out_dir / "records.csv", all_records)
+        _write_prefix_terms(out_dir / "prefix_terms.csv", all_records)
         json.dump(visit_counts, open(out_dir / "visit_counts.json", "w"))
         json.dump(compositions, open(out_dir / "compositions.json", "w"))
         json.dump(routes, open(out_dir / "routes.json", "w"))
@@ -974,9 +982,26 @@ def main():
         )
 
 
+_PREFIX_COLS = ["child_key", "child_stereo_key", "hub_stereo_key", "log_pf_prefix", "log_pb_prefix"]
+
+
+def _write_prefix_terms(path, rows):
+    """prefix_terms.csv — the source->hub half for the Z-anchored reconstruction (sidecar, so
+    records.csv's schema and all its readers stay untouched)."""
+    rows = [r for r in rows if r.get("log_pf_prefix") is not None]
+    if not rows:
+        return
+    with open(path, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=_PREFIX_COLS, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
+
+
 def _write_records(path, rows):
     with open(path, "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=_REC_COLS)
+        # extrasaction=ignore: rows also carry the Z-anchored prefix terms, which go to
+        # prefix_terms.csv instead -- records.csv's schema stays fixed for all readers.
+        w = csv.DictWriter(fh, fieldnames=_REC_COLS, extrasaction="ignore")
         w.writeheader()
         w.writerows(rows)
 
