@@ -449,3 +449,61 @@ first measurement of this quantity at full scale. Caveats: FragGFN's prefix ends
 *skeleton* state (which is also where its suffix estimator is anchored, so the comparison is internally
 consistent), and the 3 depth-0 trajectories are a degenerate outlier (empty prefix ⇒ log F_prefix = log Z
 exactly, median residual +49.56).
+
+### The TB residual on SCENT — the cell where both anchors are sound
+
+FragGFN's residual is reassuring but it is the *control* model: uniform `P_B`, and a prefix that ends at a
+skeleton state. SCENT is the cell that actually tests the reconstruction — a genuinely **trained**,
+cost-guided backward policy recovered exactly from the `guidance_models.pt` sidecar (entry `024`), and a
+learned `log Z` = 74.653 that sits *above* its own maximum single-molecule log-reward (68.10), so the
+Z-anchor is self-consistent (unlike RxnFlow, whose 53.07 < 63.69 makes its prefix unusable). Job **71859**
+re-sampled the cell with the prefix capture on the `debug` partition — 30,000 trajectories → 29,997 records
+in 27 min (1,303 s sampling + 293 s flow extraction), writing `prefix_terms.csv` alongside the usual
+artifacts at no extra model cost.
+
+| scent_seh, n=29,997, log Z = 74.653 | median | p5 | p95 |
+|---|---|---|---|
+| log F_prefix (Z-anchored) | 64.04 | 57.22 | 69.32 |
+| log F_suffix (R-anchored, what we ship) | 62.31 | 52.64 | 67.89 |
+| **TB residual (prefix − suffix)** | **+1.42** | −2.84 | +9.78 |
+
+Three things this establishes.
+
+**1. The shipped estimator is not systematically broken.** Two reconstructions that share *no terms* — one
+walking down from the learned partition function, one walking up from the reward — land 1.42 nats apart in
+the median. Put next to the ~65-nat spread *across children of a single hub* (section above), the choice of
+anchor contributes roughly **1/45th** of the disagreement we already tolerate. The estimator's problem is
+child variance, not anchoring. This is the direct answer to "is our heuristic `F(h)` the right number":
+it is the right *quantity*; the open question is only which child to trust.
+
+**2. The imbalance is local and accumulates per step — now visible cleanly.** The residual by hub depth:
+
+| hub depth | n | median residual |
+|---|---|---|
+| 0 (degenerate, empty prefix) | 185 | +3.38 |
+| 1 | 4,834 | +0.70 |
+| 2 | 7,770 | +1.25 |
+| 3 | 17,208 | +1.76 |
+
+Depths 1→3 drift almost perfectly linearly: **+0.55, +0.51 nats per additional step**. A global `log Z`
+scale error would show up as a *constant* offset at every depth; a per-step `P_F`/`P_B` imbalance shows up
+as exactly this ramp. So the sd of 4.50 nats is not noise around a good model — it is ≈0.53 nats of
+one-directional bias compounding once per reaction step. That also explains the sign flip against FragGFN
+(−0.86): with uniform `P_B` there is no learned backward policy to drift, whereas SCENT's cost-guided `P_B`
+is trained against a different objective than plain TB and accumulates a consistent tilt.
+
+**3. It corroborates severe test 4 independently.** The flow-conservation violation measured at the hub
+(−14.03 nats on this same SCENT cell, trained `P_B`) and this per-step ramp are two views of one defect:
+the model's forward and backward policies do not balance locally. Two methods sharing no machinery — one
+enumerative and conservation-based, one per-trajectory and anchor-based — agree that the failure is local
+rather than global. Neither is a bug in our extraction; both are properties of the trained model.
+
+Depth 0 (n=185) remains degenerate by construction — an empty prefix makes log F_prefix = log Z exactly —
+but note it is +3.38 here versus +49.56 for FragGFN, i.e. SCENT's depth-0 hubs really do carry a large
+share of total flow, as a single-fragment hub should.
+
+`tb_residual.py`'s writer was changed to **upsert by cell** rather than overwrite
+`results/gate_sweep/tb_residual.json`. Cells land one at a time (each needs its own prefix-capable
+re-sample) and two agents share that file, so a plain overwrite silently dropped every cell not named in
+the current invocation — it discarded the `fraggfn_drd2` row when the SCENT row was written. The file now
+holds both.

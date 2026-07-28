@@ -7,5 +7,14 @@
     "median_log_F_suffix": 50.295,
     "median_tb_residual": -0.862,
     "residual_sd": 3.852
+  },
+  {
+    "cell": "scent_seh",
+    "n": 29997,
+    "log_z": 74.65266418457031,
+    "median_log_F_prefix": 64.043,
+    "median_log_F_suffix": 62.312,
+    "median_tb_residual": 1.419,
+    "residual_sd": 4.503
   }
 ]

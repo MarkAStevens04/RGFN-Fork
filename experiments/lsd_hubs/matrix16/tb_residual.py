@@ -143,8 +143,20 @@ def main() -> None:
     if out:
         p = HERE / "results" / "gate_sweep" / "tb_residual.json"
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(out, indent=2))
-        print(f"\nwrote {p}")
+        # UPSERT by cell, don't clobber: cells land one at a time (each needs its own
+        # prefix-capable re-sample), and two agents share this file. A plain overwrite
+        # silently drops every cell not named in *this* invocation.
+        merged = {}
+        if p.exists():
+            try:
+                for r in json.loads(p.read_text()):
+                    merged[r["cell"]] = r
+            except (ValueError, KeyError, TypeError):
+                pass  # unreadable/legacy -> start fresh rather than lose this run
+        for r in out:
+            merged[r["cell"]] = r
+        p.write_text(json.dumps([merged[k] for k in sorted(merged)], indent=2) + "\n")
+        print(f"\nwrote {p}  ({len(merged)} cell(s): {', '.join(sorted(merged))})")
 
 
 if __name__ == "__main__":
