@@ -66,9 +66,10 @@ assumption.
 **Refining for publication**
 - Finish the two RGFN cells (jobs `71766`/`71767`) so the reaction-grounded comparison covers all three
   synthesizable generators rather than two.
-- Re-run the FragGFN cells against the corrected fragment cap. The numbers in this entry come from the
-  superseded 9-fragment configuration that entry `046` showed collapses on the DRD2 target; the corrected
-  DRD2 model is already re-running (job `71795`).
+- Re-run the remaining FragGFN cell against the corrected fragment cap. **DRD2 is done** (see the Update
+  below: 3.99× at cap-6, versus 2.01× at the superseded cap-9 that entry `046` showed collapses DRD2).
+  The sEH cap-6 model does not exist yet, so that cell is correctly marked not-ready until its training
+  lands.
 - Complete the threshold sweep for the one cell that is missing intermediate bars.
 - Additional random seeds, so the per-cell margins carry error bars.
 
@@ -220,8 +221,9 @@ gate that are Tanimoto-<0.5 (Morgan r=3) from every already-selected member.
 | scent_drd2 (>0.5) | 3.673 | **1.160** | 3.17× | free_frag + pre-select-K=20 |
 | rxnflow_seh (>7.0) | 3.000 | 2.446 | 1.23× | naive `reward` |
 | rxnflow_drd2 (>0.5) | 2.935 | 1.833 | 1.60× | naive `reward` |
-| fraggfn_cap9_seh (>7.0) | 8.000 | 2.307 | 3.47× | naive `reward` |
-| fraggfn_cap9_drd2 (>0.5) | 8.000 | 3.984 | 2.01× | naive `reward` |
+| fraggfn_cap9_seh (>7.0) | 8.000 | 2.307 | 3.47× | naive `reward` — ⚠️ deprecated cap-9 |
+| fraggfn_cap9_drd2 (>0.5) | 8.000 | 3.984 | 2.01× | naive `reward` — ⚠️ deprecated cap-9 |
+| **fraggfn_drd2 (>0.5)** | **4.680** | **1.173** | **3.99×** | naive `reward` — **corrected cap-6** |
 
 Apples-to-apples (naive policy for every generator): SCENT 1.22× (sEH) / 1.38× (DRD2) — preserved in
 `results/scent_*_naive/` — versus RxnFlow 1.23× / 1.60×. The larger SCENT numbers in the table come from
@@ -361,3 +363,37 @@ Found only at real scale on compute nodes; none were visible in login-node smoke
 Jobs: the successful 200-hub run is `71344`–`71350`; enumerate-only re-runs `71417`/`71421`/`71422`/
 `71423`/`71537`. RGFN cells `71766`/`71767` and the corrected-cap FragGFN DRD2 cell `71795` are queued.
 Earlier batches `71115`–`71121`, `71262`–`71268`, `71270`–`71276` failed on bugs 1–3 and are superseded.
+
+### Update (same day) — the corrected cap-6 FragGFN DRD2 cell, and the first full-scale TB residual
+
+The cap-6 re-run completed (job **71856**, `debug` partition, 24 min: 30,000 trajectories → 200 hubs →
+198,765 enumerated children). It replaces the deprecated cap-9 row and changes that cell materially:
+
+| FragGFN DRD2 | best-candidate | hub-batching | edge | modes reached |
+|---|---|---|---|---|
+| cap-9 (deprecated, entry `046`) | 8.000 | 3.984 | 2.01× | **19** / 183 |
+| **cap-6 (corrected)** | 4.680 | **1.173** | **3.99×** | **300 / 300** |
+
+At cap-9 the pool was degraded enough that best-candidate could assemble only **19** diverse hits; at the
+paper-faithful cap-6 both strategies reach the full 300-mode target. This is entry `046`'s finding
+reproduced at the library-assembly level. The absolute reactions/mode also drops because a cap-6 molecule
+carries fewer fragment attachments — so the FragGFN caveat above still stands: these are attachments, not
+synthesis steps, and this cell remains a **control**.
+
+**First full-scale trajectory-balance residual.** Because the Z-anchored prefix capture landed before this
+job ran, it emitted `prefix_terms.csv` (30,000 rows) at no extra compute. Scoring the two independent
+reconstructions against each other (`tb_residual.py`):
+
+| fraggfn_drd2, n=30,000, log Z = 63.925 | median | p5 | p95 |
+|---|---|---|---|
+| log F_prefix (Z-anchored) | 49.57 | 43.45 | 55.99 |
+| log F_suffix (R-anchored, what we ship) | 50.30 | 42.36 | 57.41 |
+| **TB residual (prefix − suffix)** | **−0.86** | −4.11 | +4.52 |
+
+The two anchors nearly agree in the median (−0.86 nats) with real per-trajectory scatter (sd 3.85) — so
+the disagreement is a *local* P_F/P_B imbalance rather than a global `log Z` scale error. That is a
+markedly healthier picture than the n=40 smokes suggested (RxnFlow −3.62, SCENT +1.65), and it is the
+first measurement of this quantity at full scale. Caveats: FragGFN's prefix ends at the last-AddNode
+*skeleton* state (which is also where its suffix estimator is anchored, so the comparison is internally
+consistent), and the 3 depth-0 trajectories are a degenerate outlier (empty prefix ⇒ log F_prefix = log Z
+exactly, median residual +49.56).
