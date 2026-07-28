@@ -274,6 +274,58 @@ RxnFlow's scaffold choice is effectively independent of its backward policy: its
 SCENT control confirms the test has power — with a trained backward policy and 37% multi-parent
 candidates, ablating it moves 30% of the set.
 
+### How the hub-flow estimator works — and why one hub yields many answers
+
+Worth stating plainly, because it is the crux of every severe test below and it is easy to assume the
+difficulty is *computing* `F(h)`. It is not. Detailed balance (`[malkin2022trajectorybalance]` Eq. 7)
+rearranges directly to
+
+```
+F(h) = F(x) · P_B(h|x) / P_F(x|h)        with   F(x) = R(x) / P_F(stop|x)
+```
+
+and we hold every term: `R(x)` is a direct proxy call, `P_F(x|h)` is the trained forward policy scored
+exactly (`sampling_ratio=1.0`), `P_B(h|x)` is the model's backward policy, `P_F(stop|x)` the terminating
+factor. **This is the estimator the pipeline ships.** Nothing blocks it, and for RxnFlow the common
+simplification `F(x) = R(x)` is not an approximation but *exact*: on a representative hub, **1799/1799**
+children sit at the reaction cap, so `P_F(stop|x) = 1`. (We keep the `/P_F(stop|x)` term only for
+generality — non-cap children and other generators.)
+
+The difficulty is that **the formula is per-child, and the children disagree.** Applying it to each of one
+hub's 1,799 enumerated children — all estimating the same `F(h)` — gives:
+
+| | log F(h) from that child |
+|---|---|
+| min | 48.5 |
+| median | 68.2 |
+| max | 113.5 |
+| **spread** | **65 nats** (a factor of e⁶⁵) |
+
+Under a converged GFlowNet all 1,799 would be identical; that is what detailed balance asserts. So the
+question is never "can we compute `F(h)`" but **"which of the 1,799 is it?"** — and that disagreement is
+exactly what `U(h)` measures.
+
+**Where the spread comes from.** Across a hub's children `log R(x)` moves only ~8 nats while
+`log P_F(x|h)` moves ~20 (and far more across the full set). Because the estimator *divides* by `P_F`,
+the policy's uneven allocation of probability — not the rewards — dominates the answer. Hence the
+variance decomposition (`Var[log P_F]` 214 vs `Var[log F(x)]` 23 vs `Var[log P_B]` 0.36 for rxnflow_seh).
+
+**Conservation picks the weighting, we do not.** Summing the same identity over all children,
+`F(h)·Σ_x P_F(x|h) = Σ_x F(x)·P_B(h|x)`, so `F(h)` is the **P_F-weighted** mean of the per-child
+estimates. That is why the *unweighted* mean over all children is biased (+6.35 nats) while the
+single-sampled-child value we ship is nearly unbiased (+0.43): sampling visits high-`P_F` children, which
+are the ones the weighting favours anyway.
+
+**One RxnFlow-specific caveat.** Its `P_B` is an untrained retro heuristic, not a policy fitted to
+satisfy detailed balance against `P_F` — 432/1,799 children have `P_B = 1` exactly and it takes only ~6
+discrete values. We apply the formula faithfully, but *the model does not honour the equation the formula
+is derived from*. That is a property of RxnFlow (and why its hub ranking is P_B-insensitive: 87.5%
+identical hubs with the term deleted), not a defect in the extraction.
+
+**The Z-anchored form is a second opinion, not a replacement.** `F(h) = Z·∏(P_F/P_B)` from the source
+shares *no terms* with the above, so the two disagreeing measures trajectory-balance violation directly.
+The R-anchored estimator above remains the one we ship.
+
 ### Severe test 2 — reconstructing `F(h)` from conservation, and scoring our estimators
 
 Reconstruction: `F_true(h) = Σ_x F(x)·P_B(h|x) / Σ_x P_F(x|h)` with `F(x) = R(x)/P_F(stop|x)`
