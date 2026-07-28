@@ -70,6 +70,25 @@ mkdir -p "$SAMPLE_DIR" "$ENUM_DIR" "$RUN_DIR" "$TORCH_HOME" "$HF_HOME"
 
 module load cuda/11.8.0 2>/dev/null || true    # dgl graphbolt on compute nodes (absent on Trillium)
 conda activate "$CONDA_ENV"                     # switch from the bootstrap base env to the cell's env
+
+# HARD GUARD: refuse to run in the wrong conda env. `sbatch --export=ALL` inherits the submitting
+# shell's PATH, and any entry pointing at another env's bin can shadow the one we just activated.
+# That is not a crash-level bug -- it is worse: scent_worker does `import rgfn`, which in OUR rgfn env
+# silently resolves to the WRONG package (our RGFN instead of SCENT's fork) and would produce
+# plausible-looking numbers from the wrong model. Prepend defensively, then verify and hard-fail.
+ENV_PREFIX="/home/markymoo/miniconda3/envs/$CONDA_ENV"
+export PATH="$ENV_PREFIX/bin:$PATH"
+PY_REAL="$(command -v python || true)"
+case "$PY_REAL" in
+    "$ENV_PREFIX"/*) : ;;
+    *)
+        echo "ERROR: python resolved to '${PY_REAL:-<none>}', not '$ENV_PREFIX/bin/python'."
+        echo "       The inherited PATH is shadowing the '$CONDA_ENV' env; refusing to run rather than"
+        echo "       silently importing the wrong package. Resubmit from a shell without a conda"
+        echo "       env-bin entry on PATH, or use 'sbatch --export=NONE,...'."
+        exit 1
+        ;;
+esac
 # dgl/graphbolt need torch's bundled CUDA libs on LD_LIBRARY_PATH (cluster-agnostic; the
 # ~/bin/rgfn-smoke-env.sh trick, applied to whichever env this cell's worker runs in).
 export LD_LIBRARY_PATH="$(ls -d /home/markymoo/miniconda3/envs/$CONDA_ENV/lib/python*/site-packages/nvidia/*/lib 2>/dev/null | paste -sd:):${LD_LIBRARY_PATH:-}"
