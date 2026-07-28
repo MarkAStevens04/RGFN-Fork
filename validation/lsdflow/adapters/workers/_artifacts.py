@@ -24,6 +24,8 @@ from __future__ import annotations
 import csv
 import json
 import math
+import time
+from contextlib import contextmanager
 from typing import Dict, List, Optional, Sequence, Tuple
 
 # records.csv / enumerated_records.csv columns — MUST match scent_worker._REC_COLS and the
@@ -184,3 +186,120 @@ def compositions_from_records(records: Sequence[Dict]) -> Dict[str, dict]:
 
 def write_json(path, obj) -> None:
     json.dump(obj, open(path, "w"), indent=2)
+
+
+# ===================================================== measured compute time (Logs/039)
+# The paper's third cost axis is MEASURED wall-clock, differentiated per component, not a model
+# (see the lsdflow-compute-time-measured-not-modeled note). ``scent_worker`` inlined this first;
+# these two helpers are the portable version so every generator emits the SAME enum_timings.json
+# that ``validation/lsdflow/metrics/cost/compute_time.EnumTimings`` reads back.
+
+TIMING_COMPONENTS = ("enumeration_s", "reward_gen_s", "flow_extract_s", "unattributed_s")
+
+
+class ComponentTimer:
+    """Accumulates per-hub wall-clock split across the enumeration pipeline's components.
+
+    The three real components are the ones a strategy's compute is attributed to:
+
+      * ``enumeration_s``  — building the hub's one-step children (RDKit/graph ops, CPU),
+      * ``reward_gen_s``   — the reward generator scoring them (proxy now, docking oracle later —
+                             the axis that explodes for docking because it *actually* takes longer),
+      * ``flow_extract_s`` — the policy forward/backward passes giving P_F / P_B (mostly GPU).
+
+    ``unattributed_s`` is the honest escape hatch for a generator whose enumeration is a single
+    opaque call (RGFN goes through ``glue/samplers/lsdflow/rgfn_enumerate``): the total is still
+    measured correctly, but we refuse to invent a split. It plots as its own labelled segment.
+
+    ``sync`` is a no-arg callable invoked at both ends of every tracked block — pass
+    ``torch.cuda.synchronize`` on GPU so async kernel time lands on the component that launched it,
+    and ``None`` on CPU. Without it, GPU work drifts onto whichever component next forces a sync.
+
+    Usage::
+
+        t = ComponentTimer(sync=torch.cuda.synchronize if cuda else None)
+        with t.track("enumeration_s"):
+            children = build(hub)
+        with t.track("reward_gen_s"):
+            rewards = proxy.predict(children)
+        per_hub.append({..., **t.snapshot()})   # then t.reset() for the next hub
+    """
+
+    KEYS = TIMING_COMPONENTS
+
+    def __init__(self, sync=None):
+        self._sync = sync if callable(sync) else (lambda: None)
+        self.totals: Dict[str, float] = {k: 0.0 for k in self.KEYS}
+
+    @contextmanager
+    def track(self, key: str):
+        if key not in self.totals:
+            raise KeyError(f"unknown timing component {key!r}; expected one of {self.KEYS}")
+        self._sync()
+        t0 = time.perf_counter()
+        try:
+            yield
+        finally:
+            self._sync()
+            self.totals[key] += time.perf_counter() - t0
+
+    def add(self, key: str, seconds: float) -> None:
+        """Fold in a duration measured elsewhere (e.g. inside a helper that already timed itself)."""
+        self.totals[key] = self.totals.get(key, 0.0) + float(seconds)
+
+    def merge(self, other: Dict[str, float]) -> None:
+        for k, v in (other or {}).items():
+            if k in self.totals:
+                self.totals[k] += float(v)
+
+    def snapshot(self) -> Dict[str, float]:
+        """The accumulated components, rounded — drops always-zero keys so a fully-attributed
+        generator's file has no confusing empty ``unattributed_s`` column."""
+        return {k: round(v, 6) for k, v in self.totals.items() if v}
+
+    def reset(self) -> None:
+        for k in self.totals:
+            self.totals[k] = 0.0
+
+
+def write_enum_timings(
+    path,
+    *,
+    per_hub: Sequence[Dict],
+    setup_s: float,
+    device: str = "",
+    reward_name: str = "",
+    model: str = "",
+    cuda_synchronized: bool = False,
+    component_split: str = "full",
+    extra_meta: Optional[Dict] = None,
+) -> Dict:
+    """Write enum_timings.json — the measured compute-time sidecar, joined to enum_children by hub.
+
+    ``per_hub`` rows MUST carry ``hub_input`` (the stereo-aware join key ``EnumTimings._hub_id``
+    prefers, so stereoisomeric hubs that share a stripped ``hub_key`` stay distinct), ``hub_key``,
+    ``depth``, ``n_children``, and whichever of :data:`TIMING_COMPONENTS` were measured.
+
+    ``component_split="full"`` means all three real components were timed separately;
+    ``"lumped"`` means the generator could only measure a per-hub total (recorded as
+    ``unattributed_s``) — stated in the file rather than silently implied by a zero column.
+
+    When a 200-hub run is split across parallel jobs, merge the slices with
+    ``EnumTimings.merge`` (unions ``per_hub``, charges ``setup_s`` once).
+    """
+    keys = [k for k in TIMING_COMPONENTS if any(h.get(k) for h in per_hub)]
+    totals = {k: round(sum(float(h.get(k, 0.0)) for h in per_hub), 3) for k in keys}
+    meta = {
+        "setup_s": round(float(setup_s), 3),
+        "device": str(device),
+        "cuda_synchronized": bool(cuda_synchronized),
+        "reward_name": reward_name,
+        "model": model,
+        "component_split": component_split,
+        "n_hubs": len(per_hub),
+        "n_children": sum(int(h.get("n_children", 0)) for h in per_hub),
+        "totals_s": totals,
+    }
+    meta.update(extra_meta or {})
+    write_json(path, {"meta": meta, "per_hub": list(per_hub)})
+    return meta

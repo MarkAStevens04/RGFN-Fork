@@ -45,8 +45,12 @@ import json
 from dataclasses import asdict, dataclass, field
 from typing import Dict, List, Optional, Sequence
 
-# The three per-hub measured components the worker records.
-_HUB_COMPONENTS = ("enumeration_s", "reward_gen_s", "flow_extract_s")
+# The per-hub measured components a worker records. ``unattributed_s`` is a per-hub TOTAL reported by
+# a generator whose enumeration is a single opaque call (rgfn_worker, whose work happens inside
+# glue/samplers/lsdflow/rgfn_enumerate) — the total is exact, the split simply is not observable, and
+# we carry it as its own component rather than fabricating a breakdown. Absent from older files, so
+# every read uses ``.get(k, 0.0)``.
+_HUB_COMPONENTS = ("enumeration_s", "reward_gen_s", "flow_extract_s", "unattributed_s")
 
 
 @dataclass
@@ -143,6 +147,7 @@ class ComputeTimeBreakdown:
     enumeration_s: float = 0.0
     reward_gen_s: float = 0.0
     flow_extract_s: float = 0.0
+    unattributed_s: float = 0.0  # measured per-hub total with no observable split (RGFN)
     mode_selection_s: float = 0.0
     n_hubs_walked: int = 0
     n_children_scored: int = 0
@@ -154,6 +159,7 @@ class ComputeTimeBreakdown:
         "enumeration_s",
         "reward_gen_s",
         "flow_extract_s",
+        "unattributed_s",
         "mode_selection_s",
     )
 
@@ -192,6 +198,7 @@ def account_strategy(
         bd.enumeration_s = att["enumeration_s"]
         bd.reward_gen_s = att["reward_gen_s"]
         bd.flow_extract_s = att["flow_extract_s"]
+        bd.unattributed_s = att["unattributed_s"]
         bd.n_hubs_walked = att["n_hubs_walked"]
         bd.n_children_scored = att["n_children_scored"]
         bd.missing_hub_keys = att["missing_hub_keys"]

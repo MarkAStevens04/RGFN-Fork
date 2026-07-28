@@ -131,16 +131,36 @@ def main() -> None:
         # a disjoint group). enum_children.json is rewritten every 10 hubs so a timeout leaves a
         # usable partial (whatever hubs finished), not nothing.
         all_records, per_hub, enum_hubs = [], [], []
+        # Measured per-hub compute time (Logs/039). RGFN differs from the other three workers: its
+        # enumeration + reward + flow-extraction all happen inside ONE adapter call
+        # (glue/samplers/lsdflow/rgfn_enumerate.enumerate_terminal_children), so the per-component
+        # split is not observable from here. We record the true per-hub TOTAL under
+        # ``unattributed_s`` and mark component_split="lumped" rather than fabricating a breakdown —
+        # the head-to-head total stays exact, only the stacked breakdown is coarser for this cell.
+        # Splitting it properly means timing inside glue/, which is shared code (coordinate first).
+        hub_timings = []
+        _use_cuda = str(getattr(adapter, "device", args.device)).startswith("cuda")
         for i, (smiles, depth) in enumerate(hubs):
+            _h0 = time.perf_counter()
             recs_r, ph = adapter.enumerate_hub_children(
                 [(smiles, depth)], max_children=args.enum_max_children
             )
+            _hub_s = time.perf_counter() - _h0
             rows = [_rec_to_dict(r) for r in recs_r]
             all_records.extend(rows)
             per_hub.extend(ph)
             hub_key = rows[0]["hub_key"] if rows else smiles
             enum_hubs.append(
                 A.build_enum_hub(hub_input=smiles, hub_key=hub_key, depth=depth, recs=rows)
+            )
+            hub_timings.append(
+                {
+                    "hub_input": smiles,  # stereo-aware join key (EnumTimings._hub_id)
+                    "hub_key": hub_key,
+                    "depth": int(depth),
+                    "n_children": len(rows),
+                    "unattributed_s": round(_hub_s, 6),
+                }
             )
             print(
                 f"[rgfn_worker]   hub {i + 1}/{len(hubs)} depth={depth} -> {len(rows)} children "
@@ -149,10 +169,36 @@ def main() -> None:
             )
             if (i + 1) % 10 == 0:  # periodic partial flush (timeout-safe)
                 A.write_enum_children(out_dir / "enum_children.json", enum_hubs)
+                A.write_enum_timings(
+                    out_dir / "enum_timings.json",
+                    per_hub=hub_timings,
+                    setup_s=setup_s,
+                    device=str(args.device),
+                    reward_name=args.reward_name,
+                    model=args.model_name,
+                    cuda_synchronized=_use_cuda,
+                    component_split="lumped",
+                )
         records = all_records
         A.write_enum_children(out_dir / "enum_children.json", enum_hubs)
         A.write_records(out_dir / "enumerated_records.csv", all_records)
         A.write_json(out_dir / "enum_per_hub.json", {"per_hub": per_hub})
+        tmeta = A.write_enum_timings(
+            out_dir / "enum_timings.json",
+            per_hub=hub_timings,
+            setup_s=setup_s,
+            device=str(args.device),
+            reward_name=args.reward_name,
+            model=args.model_name,
+            cuda_synchronized=_use_cuda,
+            component_split="lumped",
+        )
+        print(
+            f"[rgfn_worker] compute-time: setup {tmeta['setup_s']:.1f}s | "
+            f"per-hub total {tmeta['totals_s'].get('unattributed_s', 0):.1f}s (lumped — no component "
+            f"split available) over {len(hub_timings)} hubs -> enum_timings.json",
+            flush=True,
+        )
         meta.update(
             {
                 "n_hubs": len(hubs),

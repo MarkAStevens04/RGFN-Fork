@@ -281,6 +281,9 @@ COMPUTE_COMPONENTS = [
     ("enumeration_s", "enumeration", "#2a9d8f"),
     ("reward_gen_s", "reward-gen", "#b23a48"),
     ("flow_extract_s", "flow-extract", "#e9a20c"),
+    # RGFN's enumeration is one opaque adapter call -> exact per-hub total, no observable split.
+    # Grey so it reads as "measured but unsplit" rather than as a named pipeline stage.
+    ("unattributed_s", "enum+reward+flow (unsplit)", "#9aa0a6"),
     ("mode_selection_s", "mode-select", "#2a6f97"),
 ]
 

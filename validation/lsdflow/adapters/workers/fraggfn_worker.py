@@ -343,9 +343,14 @@ def _enumerate_children(ctx, env, hub_g, max_children):
     return out
 
 
-def _score_children(trainer, reward, beta, clip, paths, chunk=256):
+def _score_children(trainer, reward, beta, clip, paths, chunk=256, timer=None):
     """§2 flow terms per enumerated child (construct_batch + model, chunked for memory).
-    Returns (records, added_by_child, reaction_by_child)."""
+    Returns (records, added_by_child, reaction_by_child).
+
+    ``timer`` (an ``_artifacts.ComponentTimer``) splits the measured wall-clock (Logs/039): the graph
+    -> RDKit -> SMILES conversion and batch assembly are CPU book-keeping charged to
+    ``enumeration_s``, the proxy call to ``reward_gen_s``, and the model forward (P_F) plus the
+    uniform ``log_p_B`` to ``flow_extract_s``."""
     model, algo, ctx, task, dev = (
         trainer.model,
         trainer.algo,
@@ -354,6 +359,7 @@ def _score_children(trainer, reward, beta, clip, paths, chunk=256):
         trainer.device,
     )
     env = algo.env
+    _t = timer or A.ComponentTimer()
 
     def shaped(v):
         return beta * (-clip if v != v else float(np.clip(v, -clip, clip)))
@@ -361,31 +367,36 @@ def _score_children(trainer, reward, beta, clip, paths, chunk=256):
     records, added_by_child, reaction_by_child = [], {}, {}
     for start in range(0, len(paths), chunk):
         block = paths[start : start + chunk]
-        traj_dicts, xg = [], []
-        for hub_g, a1, g1, a2, g2, a3, g3 in block:
-            traj = [(hub_g, a1), (g1, a2), (g2, a3), (g3, GraphAction(STOP))]
-            bck = torch.tensor(
-                [
-                    math.log(1.0 / env.count_backward_transitions(g1)),
-                    math.log(1.0 / env.count_backward_transitions(g2)),
-                    math.log(1.0 / env.count_backward_transitions(g3)),
-                    0.0,  # Stop reverse deterministic
-                ],
-                dtype=torch.float,
-            )
-            traj_dicts.append({"traj": traj, "bck_logprobs": bck, "result": g3, "is_valid": True})
-            xg.append(g3)
-        x_smis = [Chem.MolToSmiles(ctx.graph_to_obj(g)) for g in xg]
-        vals = reward.predict(x_smis)
-        log_rewards = torch.tensor([shaped(v) for v in vals], dtype=torch.float, device=dev)
-        enc = torch.zeros(len(traj_dicts), task.num_cond_dim, device=dev)
-        batch = algo.construct_batch(traj_dicts, enc, log_rewards).to(dev)
-        n = len(traj_dicts)
-        bidx = torch.arange(n, device=dev).repeat_interleave(batch.traj_lens.to(dev))
-        with torch.no_grad():
-            fwd_cat, _ = model(batch, batch.cond_info[bidx])
-            pf = fwd_cat.log_prob(batch.actions).detach().cpu().tolist()
-        pb = batch.log_p_B.detach().cpu().tolist()
+        with _t.track("enumeration_s"):
+            traj_dicts, xg = [], []
+            for hub_g, a1, g1, a2, g2, a3, g3 in block:
+                traj = [(hub_g, a1), (g1, a2), (g2, a3), (g3, GraphAction(STOP))]
+                bck = torch.tensor(
+                    [
+                        math.log(1.0 / env.count_backward_transitions(g1)),
+                        math.log(1.0 / env.count_backward_transitions(g2)),
+                        math.log(1.0 / env.count_backward_transitions(g3)),
+                        0.0,  # Stop reverse deterministic
+                    ],
+                    dtype=torch.float,
+                )
+                traj_dicts.append(
+                    {"traj": traj, "bck_logprobs": bck, "result": g3, "is_valid": True}
+                )
+                xg.append(g3)
+            x_smis = [Chem.MolToSmiles(ctx.graph_to_obj(g)) for g in xg]
+        with _t.track("reward_gen_s"):
+            vals = reward.predict(x_smis)
+        with _t.track("flow_extract_s"):
+            log_rewards = torch.tensor([shaped(v) for v in vals], dtype=torch.float, device=dev)
+            enc = torch.zeros(len(traj_dicts), task.num_cond_dim, device=dev)
+            batch = algo.construct_batch(traj_dicts, enc, log_rewards).to(dev)
+            n = len(traj_dicts)
+            bidx = torch.arange(n, device=dev).repeat_interleave(batch.traj_lens.to(dev))
+            with torch.no_grad():
+                fwd_cat, _ = model(batch, batch.cond_info[bidx])
+                pf = fwd_cat.log_prob(batch.actions).detach().cpu().tolist()
+            pb = batch.log_p_B.detach().cpu().tolist()
         offs = np.cumsum([0] + batch.traj_lens.detach().cpu().tolist())
         for t, (hub_g, a1, g1, a2, g2, a3, g3) in enumerate(block):
             s, e = offs[t], offs[t + 1]
@@ -468,6 +479,10 @@ def _run_enumerate(args, trainer, reward, beta, clip, out_dir):
         )
     hubs = _read_hubs(args.hubs_file)
     all_records, enum_hubs, per_hub = [], [], []
+    # Measured per-hub compute time (Logs/039); CUDA synchronized at component boundaries.
+    _use_cuda = str(getattr(trainer, "device", "")).startswith("cuda")
+    timer = A.ComponentTimer(sync=torch.cuda.synchronize if _use_cuda else None)
+    hub_timings = []
     for hub_stereo, depth in hubs:
         hub_key = (
             Chem.MolToSmiles(Chem.MolFromSmiles(hub_stereo), isomericSmiles=False)
@@ -480,8 +495,10 @@ def _run_enumerate(args, trainer, reward, beta, clip, out_dir):
                 {"hub": hub_stereo, "depth": depth, "n_records": 0, "error": "no_hub_graph"}
             )
             continue
-        paths = _enumerate_children(ctx, env, hub_g, args.enum_max_children)
-        recs, added, reactions = _score_children(trainer, reward, beta, clip, paths)
+        timer.reset()
+        with timer.track("enumeration_s"):
+            paths = _enumerate_children(ctx, env, hub_g, args.enum_max_children)
+        recs, added, reactions = _score_children(trainer, reward, beta, clip, paths, timer=timer)
         all_records.extend(recs)
         enum_hubs.append(
             A.build_enum_hub(
@@ -493,12 +510,37 @@ def _run_enumerate(args, trainer, reward, beta, clip, out_dir):
                 reaction_by_child=reactions,
             )
         )
+        hub_timings.append(
+            {
+                "hub_input": hub_stereo,  # stereo-aware join key (EnumTimings._hub_id)
+                "hub_key": recs[0]["hub_key"] if recs else hub_key,
+                "depth": int(depth),
+                "n_children": len(recs),
+                **timer.snapshot(),
+            }
+        )
         per_hub.append({"hub": hub_stereo, "depth": depth, "n_records": len(recs)})
         print(
             f"[fraggfn_worker]   hub depth={depth} -> {len(recs)} children  {hub_stereo[:48]}",
             flush=True,
         )
 
+    tmeta = A.write_enum_timings(
+        out_dir / "enum_timings.json",
+        per_hub=hub_timings,
+        setup_s=getattr(args, "_setup_s", 0.0),
+        device=str(getattr(trainer, "device", "")),
+        reward_name=args.reward_name,
+        model=args.model_name,
+        cuda_synchronized=_use_cuda,
+    )
+    _tt = tmeta["totals_s"]
+    print(
+        f"[fraggfn_worker] compute-time: setup {tmeta['setup_s']:.1f}s | "
+        f"enum {_tt.get('enumeration_s', 0):.1f}s reward {_tt.get('reward_gen_s', 0):.1f}s "
+        f"flow {_tt.get('flow_extract_s', 0):.1f}s over {len(hub_timings)} hubs -> enum_timings.json",
+        flush=True,
+    )
     A.write_records(out_dir / "enumerated_records.csv", all_records)
     A.write_enum_children(out_dir / "enum_children.json", enum_hubs)
     A.write_json(out_dir / "enum_per_hub.json", {"per_hub": per_hub})
@@ -545,6 +587,9 @@ def _parse_args():
 
 
 def main():
+    import time
+
+    _t_setup = time.perf_counter()
     args = _parse_args()
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -563,6 +608,9 @@ def main():
     model.load_state_dict(state["model"])
     model.eval()
     args._it = state.get("it", "?")
+    # One-time cost of being able to hub-batch at all (fragment env + checkpoint load); charged once
+    # to hub-batching in the compute-time head-to-head, never to best-candidate.
+    args._setup_s = time.perf_counter() - _t_setup
     print(
         f"[fraggfn_worker] loaded checkpoint it={args._it} reward={args.reward_name} "
         f"mode={args.mode} device={device}",

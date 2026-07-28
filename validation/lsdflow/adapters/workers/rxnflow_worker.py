@@ -298,11 +298,27 @@ def _score_child_trajs(trainer, child_trajs):
 
 
 def _enumerate_hub(
-    trainer, beta, clip, hub_smi, hub_depth, max_children, max_rxn, min_len, stop_proto
+    trainer,
+    beta,
+    clip,
+    hub_smi,
+    hub_depth,
+    max_children,
+    max_rxn,
+    min_len,
+    stop_proto,
+    timer=None,
 ):
     """All one-reaction terminal children of a hub (approach a: MolGraph from SMILES).
-    Returns (records, n_paths, added_by_child, reaction_by_child)."""
+    Returns (records, n_paths, added_by_child, reaction_by_child).
+
+    ``timer`` (an ``_artifacts.ComponentTimer``) accumulates this hub's measured wall-clock split
+    into enumeration / reward-gen / flow-extract (Logs/039). Note the attribution choice: RxnFlow's
+    ``_pb_retro`` retro-synthesis analysis is charged to **flow_extract_s**, not enumeration — it
+    exists solely to produce P_B, and it is this generator's dominant per-child cost (a FRESH
+    RetroSyntheticAnalyzer per child, by necessity)."""
     ctx, env, task = trainer.ctx, trainer.env, trainer.task
+    _t = timer or A.ComponentTimer()
     child_depth = hub_depth + 1
     if child_depth > max_rxn:
         return [], 0, {}, {}  # a hub at/after the cap has no one-reaction terminal children
@@ -313,56 +329,64 @@ def _enumerate_hub(
     hub_g.graph["allow_stop"] = hub_depth + 1 >= min_len
     is_cap = child_depth == max_rxn
 
-    mask = ctx.create_masks(hub_g).tolist()
-    enum = []  # (reaction_action, child_g)
-    for pidx, m in enumerate(mask):
-        if not m:
-            continue
-        proto = ctx.protocols[pidx]
-        if proto.action is RxnActionType.UniRxn:
-            act = RxnAction(RxnActionType.UniRxn, proto.name)
-            try:
-                child_g = env.step(hub_g, act)
-            except Exception:
+    with _t.track("enumeration_s"):
+        mask = ctx.create_masks(hub_g).tolist()
+        enum = []  # (reaction_action, child_g)
+        for pidx, m in enumerate(mask):
+            if not m:
                 continue
-            if child_g.mol is not None:
-                enum.append((act, child_g))
-        elif proto.action is RxnActionType.BiRxn:
-            for bidx in env.birxn_block_indices[proto.name].tolist():
-                act = RxnAction(RxnActionType.BiRxn, proto.name, env.blocks[bidx], int(bidx))
+            proto = ctx.protocols[pidx]
+            if proto.action is RxnActionType.UniRxn:
+                act = RxnAction(RxnActionType.UniRxn, proto.name)
                 try:
                     child_g = env.step(hub_g, act)
                 except Exception:
                     continue
                 if child_g.mol is not None:
                     enum.append((act, child_g))
-                if len(enum) >= max_children:
-                    break
-        if len(enum) >= max_children:
-            break
+            elif proto.action is RxnActionType.BiRxn:
+                for bidx in env.birxn_block_indices[proto.name].tolist():
+                    act = RxnAction(RxnActionType.BiRxn, proto.name, env.blocks[bidx], int(bidx))
+                    try:
+                        child_g = env.step(hub_g, act)
+                    except Exception:
+                        continue
+                    if child_g.mol is not None:
+                        enum.append((act, child_g))
+                    if len(enum) >= max_children:
+                        break
+            if len(enum) >= max_children:
+                break
     n_paths = len(enum)
     if not enum:
         return [], 0, {}, {}
 
     child_trajs, meta = [], []
-    for act, child_g in enum:
-        child_g.graph["sample_idx"] = 0
-        child_g.graph["allow_stop"] = True
-        rev = env.reverse(hub_g, act)
-        logpb = _pb_retro(trainer, hub_smi, hub_depth, child_g.smi, child_depth, rev)
-        if is_cap:
-            traj, bck = [(hub_g, act)], [logpb]  # Case B: forced termination
-        else:
-            stop = RxnAction(RxnActionType.Stop, stop_proto)
-            traj, bck = [(hub_g, act), (child_g, stop)], [logpb, 0.0]  # Case A: explicit Stop
-        child_trajs.append(
-            {"traj": traj, "bck_logprobs": torch.tensor(bck), "is_valid": True, "result": child_g}
-        )
-        meta.append((act, child_g, logpb))
+    with _t.track("flow_extract_s"):  # P_B via the retro heuristic — this generator's long pole
+        for act, child_g in enum:
+            child_g.graph["sample_idx"] = 0
+            child_g.graph["allow_stop"] = True
+            rev = env.reverse(hub_g, act)
+            logpb = _pb_retro(trainer, hub_smi, hub_depth, child_g.smi, child_depth, rev)
+            if is_cap:
+                traj, bck = [(hub_g, act)], [logpb]  # Case B: forced termination
+            else:
+                stop = RxnAction(RxnActionType.Stop, stop_proto)
+                traj, bck = [(hub_g, act), (child_g, stop)], [logpb, 0.0]  # Case A: explicit Stop
+            child_trajs.append(
+                {
+                    "traj": traj,
+                    "bck_logprobs": torch.tensor(bck),
+                    "is_valid": True,
+                    "result": child_g,
+                }
+            )
+            meta.append((act, child_g, logpb))
 
-    fwd_lists = _score_child_trajs(trainer, child_trajs)
+        fwd_lists = _score_child_trajs(trainer, child_trajs)  # P_F (model forward)
     x_smis = [cg.smi for _a, cg, _lpb in meta]
-    rewards = task.proxy.predict(x_smis)
+    with _t.track("reward_gen_s"):
+        rewards = task.proxy.predict(x_smis)
 
     def shaped(v):
         return max(beta * min(max(v, -clip), clip), ILLEGAL) if v == v else ILLEGAL
@@ -495,7 +519,13 @@ def _run_enumerate(args, trainer, beta, clip, out_dir):
     stop_proto = env.stop_list[0].name
     hubs = _read_hubs(args.hubs_file)
     all_records, enum_hubs, per_hub = [], [], []
+    # Measured per-hub compute time (Logs/039). CUDA is synchronized at every component boundary so
+    # the async model forward is charged to flow-extract rather than drifting onto the next component.
+    _use_cuda = str(getattr(trainer, "device", "")).startswith("cuda")
+    timer = A.ComponentTimer(sync=torch.cuda.synchronize if _use_cuda else None)
+    hub_timings = []
     for hub_stereo, depth in hubs:
+        timer.reset()
         recs, n_paths, added, reactions = _enumerate_hub(
             trainer,
             beta,
@@ -506,17 +536,28 @@ def _run_enumerate(args, trainer, beta, clip, out_dir):
             max_rxn,
             min_len,
             stop_proto,
+            timer=timer,
         )
         all_records.extend(recs)
+        hub_key = recs[0]["hub_key"] if recs else _stripped_key(hub_stereo)[0]
         enum_hubs.append(
             A.build_enum_hub(
                 hub_input=hub_stereo,
-                hub_key=recs[0]["hub_key"] if recs else _stripped_key(hub_stereo)[0],
+                hub_key=hub_key,
                 depth=depth,
                 recs=recs,
                 added_by_child=added,
                 reaction_by_child=reactions,
             )
+        )
+        hub_timings.append(
+            {
+                "hub_input": hub_stereo,  # stereo-aware join key (EnumTimings._hub_id)
+                "hub_key": hub_key,
+                "depth": int(depth),
+                "n_children": len(recs),
+                **timer.snapshot(),
+            }
         )
         per_hub.append(
             {"hub": hub_stereo, "depth": depth, "n_paths": n_paths, "n_records": len(recs)}
@@ -526,6 +567,22 @@ def _run_enumerate(args, trainer, beta, clip, out_dir):
             flush=True,
         )
 
+    tmeta = A.write_enum_timings(
+        out_dir / "enum_timings.json",
+        per_hub=hub_timings,
+        setup_s=getattr(args, "_setup_s", 0.0),
+        device=str(getattr(trainer, "device", "")),
+        reward_name=args.reward_name,
+        model=args.model_name,
+        cuda_synchronized=_use_cuda,
+    )
+    _tt = tmeta["totals_s"]
+    print(
+        f"[rxnflow_worker] compute-time: setup {tmeta['setup_s']:.1f}s | "
+        f"enum {_tt.get('enumeration_s', 0):.1f}s reward {_tt.get('reward_gen_s', 0):.1f}s "
+        f"flow {_tt.get('flow_extract_s', 0):.1f}s over {len(hub_timings)} hubs -> enum_timings.json",
+        flush=True,
+    )
     A.write_records(out_dir / "enumerated_records.csv", all_records)
     A.write_enum_children(out_dir / "enum_children.json", enum_hubs)
     A.write_json(out_dir / "enum_per_hub.json", {"per_hub": per_hub})
@@ -566,8 +623,11 @@ def _parse_args():
 
 
 def main():
+    import time
+
     import numpy as np
 
+    _t_setup = time.perf_counter()
     args = _parse_args()
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -585,6 +645,9 @@ def main():
     trainer.model.to(device).eval()
     trainer.sampling_model.to(device).eval()
     args._it = state.get("it", "?")
+    # One-time cost of being able to hub-batch at all (env build + block library + checkpoint load);
+    # charged once to hub-batching in the compute-time head-to-head, never to best-candidate.
+    args._setup_s = time.perf_counter() - _t_setup
     print(
         f"[rxnflow_worker] loaded checkpoint it={args._it} reward={args.reward_name} "
         f"mode={args.mode} device={device}",

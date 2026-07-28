@@ -75,16 +75,20 @@ def main() -> None:
 
     fig, (axc, axr) = plt.subplots(1, 2, figsize=(13, 5.2))
 
-    # ---- Panel A: stacked per-component compute (log y) --------------------
+    # ---- Panel A: stacked per-component compute (LINEAR y) -----------------
+    # A stacked bar MUST be linear: on a log axis a segment's drawn length depends on where in the
+    # stack it starts, so equal durations render at wildly different heights and the segments no
+    # longer sum to the bar. (This panel was briefly log-scaled, which made it unreadable as a
+    # stack -- and needed a 1e-3 floor hack just to stack off zero.) The ~3000x spread between
+    # best-candidate and the hub strategies is not a plotting problem to hide: best-candidate doing
+    # essentially no marginal compute IS the finding. It gets a value label so it stays legible.
     bottoms = [0.0] * len(strategies)
     for col, label, colour in COMPONENTS:
         vals = d[col].fillna(0.0).tolist()
-        # log axis can't stack from 0; use a tiny floor only for the bar base.
-        plot_bottoms = [max(b, 1e-3) for b in bottoms]
         axc.bar(
             list(x),
             vals,
-            bottom=plot_bottoms,
+            bottom=bottoms,
             label=label,
             color=colour,
             width=0.62,
@@ -93,16 +97,16 @@ def main() -> None:
         )
         bottoms = [b + v for b, v in zip(bottoms, vals)]
 
-    axc.set_yscale("log")
-    axc.set_ylim(0.5, max(bottoms) * 2.2)
-    axc.set_ylabel("compute time (s, log scale)")
+    axc.set_ylim(0, max(bottoms) * 1.16)
+    axc.set_ylabel("compute time (s)")
     axc.set_title("Where the time goes (measured, per component)")
     axc.set_xticks(list(x))
     axc.set_xticklabels(strategies, rotation=25, ha="right")
+    pad = max(bottoms) * 0.012
     for xi, tot in zip(x, bottoms):
         axc.text(
             xi,
-            tot * 1.15,
+            tot + pad,
             f"{tot:,.0f} s" if tot >= 5 else f"{tot:.1f} s",
             ha="center",
             va="bottom",
