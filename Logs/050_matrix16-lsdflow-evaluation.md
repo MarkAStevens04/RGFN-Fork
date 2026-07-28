@@ -507,3 +507,91 @@ share of total flow, as a single-fragment hub should.
 re-sample) and two agents share that file, so a plain overwrite silently dropped every cell not named in
 the current invocation — it discarded the `fraggfn_drd2` row when the SCENT row was written. The file now
 holds both.
+
+### Compute-time instrumentation ported to all four generators
+
+SCENT was the only worker recording per-component wall-clock, so 12 of the 16 cells reported
+`compute_time: null` — the paper's third cost axis (**measured**, per the
+compute-time-measured-not-modeled directive) existed for exactly one generator. The portable version now
+lives in `_artifacts` (`ComponentTimer` + `write_enum_timings`) and emits the same `enum_timings.json`
+that `EnumTimings` already reads, so **every future enumeration records timings with no extra flag**.
+
+One attribution choice is load-bearing: RxnFlow's `_pb_retro` is charged to **flow-extract**, not
+enumeration — it exists solely to produce `P_B`. RGFN is the exception: its enumeration is a single
+opaque call into `glue/samplers/lsdflow/rgfn_enumerate`, so the split is not observable from the worker.
+It records the exact per-hub *total* as `unattributed_s` with `component_split: "lumped"` rather than
+fabricating a breakdown — the head-to-head total stays exact, only the stacked bar is coarser. Splitting
+it properly means timing inside shared `glue/` code.
+
+The measured profiles differ far more across generators than expected — this is not one pipeline with a
+scaling constant:
+
+| cell | enumeration | reward-gen | flow-extract | ms/child | full-enum total |
+|---|---|---|---|---|---|
+| `scent_seh` (438,984 children) | **78.8%** | 5.6% | 15.6% | 22.6 | 9,935 s |
+| `fraggfn_drd2` (198,765 children) | 35.4% | **56.9%** | 7.4% | 5.3 | 1,054 s |
+| `rxnflow_seh` (3-hub smoke) | 1.2% | 0.9% | **97.9%** | **140.0** | ~9 h projected |
+
+RxnFlow costs **26× more per child than FragGFN**, and ~98% of it is the retro-`P_B` analysis — the
+term severe test 1 showed its hub *ranking* is insensitive to (175/200 hubs identical with `P_B`
+ablated). Keeping `P_B` is the right call for a clean story, but it is worth stating that RxnFlow's
+enumeration cost is almost entirely a term that does not change its answer.
+
+`fraggfn_drd2` head-to-head (job 71861, 20 min, 200/200 hubs): hub-batching **74.0 s** vs
+best-candidate **0.4 s** over the 13 hubs it actually walked. Compare `scent_seh`'s 3,484 s over 60
+hubs — FragGFN's whole advantage in compute comes from needing 13 hubs where SCENT needs 60.
+
+Two scripts collect this for cells enumerated before the instrumentation existed: `submit_timing.sh`
+(re-enumerates into an isolated tree, disjoint round-robin hub slices) and `merge_timings.sh` (unions
+slices via `EnumTimings.merge`, charging `setup_s` once, and **refuses to publish** unless every
+enumerated hub has a timing row — an untimed-but-walked hub contributes 0 s and would silently
+under-report). RxnFlow's ~9 h serial re-run becomes 3 parallel ~3 h jobs (71862-71867).
+
+### Reward-gate curve — the gate, not the method, decides whether hub-batching looks good
+
+The coarse 3-point sweep left the most important question open: is `rxnflow_seh`'s weak 1.23× edge a
+property of RxnFlow, or of where we put the hit bar? A 9-point sweep from 4.0 to 8.0 answers it. **No
+re-enumeration, no GPU, no job** — `gate_curve.py` loads the 232,213-child enumeration ONCE and loops
+the bars in-process, so the whole curve is **68 s on the login node**. Gate 7.0 reproduces the committed
+numbers bit-for-bit (83/186 modes, 3.000/2.446 r/m, 1.226×), which is the check that the fast path is
+the same computation.
+
+| gate | best-cand modes | best r/m | hub modes | hub r/m | edge | hubs used | children passing |
+|---|---|---|---|---|---|---|---|
+| 4.0 | 300 | 2.970 | 300 | **1.277** | **2.33×** | 42 | 98.25% |
+| 4.5 | 300 | 2.970 | 300 | 1.277 | 2.33× | 42 | 90.65% |
+| 5.0 | 300 | 2.970 | 300 | 1.283 | 2.32× | 43 | 67.56% |
+| 5.5 | 300 | 2.970 | 300 | 1.317 | 2.26× | 48 | 38.51% |
+| 6.0 | 300 | 2.970 | 300 | 1.437 | 2.07× | 66 | 17.63% |
+| 6.5 | 300 | 2.970 | 300 | 1.760 | 1.69× | 116 | 5.99% |
+| 7.0 | **83** | 3.000 | **186** | 2.446 | 1.23× | 135 | 1.15% |
+| 7.5 | **1** | 3.000 | **19** | 2.895 | 1.04× | 18 | 0.03% |
+| 8.0 | 0 | — | 0 | — | — | 0 | **0.00%** |
+
+Three things this settles.
+
+**1. The 1.23× headline is an artifact of a starving gate, not a property of RxnFlow.** The edge is a
+monotone function of the bar: 2.33× where the pool is healthy, decaying smoothly to 1.04× as the pool
+empties. Nothing about the *method* changes across this sweep — only how many children survive the gate.
+
+**2. Best-candidate degrades in a completely different currency than hub-batching.** Its reactions/mode
+is **flat at 2.97 from 4.0 through 6.5** and then barely moves (3.000 at 7.0 and 7.5) — it never gets
+more expensive, it just *stops finding modes*: 300 → 83 → 1. Hub-batching does the opposite: it keeps
+filling the library (300 → 186 → 19) and pays for it in rising reactions/mode. So at strict gates the
+ratio **understates** hub-batching, because the two strategies are failing along different axes. At
+7.0 hub-batching delivers **2.24× more modes** than best-candidate; the 1.23× cost ratio hides that
+entirely. Any single-number comparison at a strict bar is misleading — this is why both panels are
+reported together (`results/gate_curve/rxnflow_seh/gate_curve.png`, shaded where the pool is limited).
+
+**3. The pool has a hard ceiling at 7.961.** Zero of 232,213 enumerated children clear 8.0, so the
+sEH-8.0 bar is unreachable for this cell by construction rather than by strategy — consistent with
+Logs/034 (0/2315 real ChEMBL actives reach 8.0 either). The 7.0 bar sits where only 1.15% of children
+survive; 4.0–5.0 is where the comparison is measured on a non-starved pool.
+
+**Avoiding redundant compute — what is now free.** Every post-hoc knob re-scores one enumeration:
+the gate, the diversity cutoff τ, the child policy (naive / free-frag), pre-select-K, and both budgets.
+None of them needs a GPU or a job submission, and `gate_curve.py`'s load-once-loop-many pattern is the
+template (`gate_sweep.sh` still reloads per gate — worth folding into this driver). What genuinely costs
+compute is exactly two things: **sampling** (once per cell) and **enumeration** (once per cell).
+`submit_cell.sh` now auto-skips a stage whose output already exists (`RESUME=0` to force), so a requeue
+after a timeout or a late-stage bug fix can never silently redo a finished 30k-trajectory sample.

@@ -39,5 +39,65 @@
     "case2_reactions_at_300modes": 352,
     "stop_reason": "modes"
   },
-  "compute_time": null
+  "compute_time": {
+    "enum_timings_meta": {
+      "setup_s": 0.534,
+      "device": "cuda",
+      "cuda_synchronized": true,
+      "reward_name": "drd2",
+      "model": "fraggfn",
+      "component_split": "full",
+      "n_hubs": 200,
+      "n_children": 198765,
+      "totals_s": {
+        "enumeration_s": 374.119,
+        "reward_gen_s": 601.695,
+        "flow_extract_s": 78.252
+      }
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "setup_s": 0.534,
+      "hub_pick_s": 0.173,
+      "enumeration_s": 25.7118,
+      "reward_gen_s": 35.5244,
+      "flow_extract_s": 5.8843,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 6.1503,
+      "n_hubs_walked": 13,
+      "n_children_scored": 13755,
+      "missing_hub_keys": [],
+      "total_s": 73.978
+    },
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "setup_s": 0.0,
+      "hub_pick_s": 0.0,
+      "enumeration_s": 0.0,
+      "reward_gen_s": 0.0,
+      "flow_extract_s": 0.0,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.4133,
+      "n_hubs_walked": 0,
+      "n_children_scored": 0,
+      "missing_hub_keys": [],
+      "total_s": 0.4133
+    },
+    "head_to_head": {
+      "hub_total_s": 73.978,
+      "best_total_s": 0.4133,
+      "extra_compute_s": 73.5647,
+      "ratio_hub_over_best": 179.0,
+      "per_component_delta_s": {
+        "setup_s": 0.534,
+        "hub_pick_s": 0.173,
+        "enumeration_s": 25.7118,
+        "reward_gen_s": 35.5244,
+        "flow_extract_s": 5.8843,
+        "unattributed_s": 0.0,
+        "mode_selection_s": 5.7371
+      },
+      "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+    }
+  }
 }

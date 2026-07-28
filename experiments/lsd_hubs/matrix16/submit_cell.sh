@@ -97,6 +97,16 @@ echo "host=$(hostname)  python=$(which python)"; nvidia-smi -L 2>/dev/null | hea
 # SCENT carries a trained-P_B sidecar (entry 024); pass it when present. Other generators: none.
 GUIDANCE_ARG=(); [ -n "${GUIDANCE:-}" ] && GUIDANCE_ARG=(--guidance "$GUIDANCE")
 
+# Auto-skip a stage whose output already exists, so re-submitting a cell (after a timeout, a bug fix
+# in the LATER stage, or a requeue) never redoes finished GPU work. Sampling 30k trajectories is
+# ~20-40 min and enumeration is hours, so the accidental redo is the single most expensive mistake
+# available here. Set RESUME=0 to force a clean re-run of both stages.
+RESUME=${RESUME:-1}
+if [ "$RESUME" = 1 ] && [ "$STAGE" = all ] && [ -s "$SAMPLE_DIR/records.csv" ]; then
+    echo "=== [$CELL_TAG] SKIP sample — $SAMPLE_DIR/records.csv exists ($(($(wc -l < "$SAMPLE_DIR/records.csv") - 1)) records). RESUME=0 to redo. ==="
+    STAGE=enum
+fi
+
 if [ "$STAGE" = all ] || [ "$STAGE" = sample ]; then
     echo "=== [$CELL_TAG] SAMPLE ($N_TRAJ traj) -> $SAMPLE_DIR ==="
     python "$WORKER" --mode sample \
