@@ -417,7 +417,16 @@ def _run(
 
 
 def _plot(
-    path, series, xlabel, ylabel, title, vline=None, invert_x=False, invert_y=False, xsub=None
+    path,
+    series,
+    xlabel,
+    ylabel,
+    title,
+    vline=None,
+    invert_x=False,
+    invert_y=False,
+    xsub=None,
+    ideal=None,
 ):
     try:
         import matplotlib
@@ -464,6 +473,18 @@ def _plot(
     if invert_y:
         ax.invert_yaxis()
     ax.legend()
+    # Stamp the ideal direction explicitly. These panels are exactly where a reader needs it: the axes
+    # are deliberately flipped, so "which way is good" cannot be inferred from the numbers. Defaults to
+    # the top-right convention the inversions above establish; pass ideal="down" (etc.) where lower is
+    # better, e.g. the compute-time panel. ideal=False opts out.
+    arrow = "up-right" if ideal is None and (invert_x or invert_y) else ideal
+    if arrow:
+        try:
+            from validation.lsdflow.plot_style import ideal_arrow
+
+            ideal_arrow(ax, arrow, loc="upper left" if arrow == "up-right" else "upper right")
+        except Exception as exc:  # noqa: BLE001
+            print(f"[sweep] ideal-direction arrow skipped ({exc})")
     fig.tight_layout()
     fig.savefig(path, dpi=130, bbox_inches="tight" if xsub else None)
     print(f"[sweep] wrote {path}")
@@ -833,6 +854,7 @@ def main() -> None:
             vline=base,
             invert_x=True,  # stricter/more-diverse (low cutoff) -> right
             xsub=XSUB,
+            ideal="down",  # unlike the Pareto panels, LESS compute is better here
         )
         compute_time = {
             "enum_timings_meta": enum_timings.meta,
