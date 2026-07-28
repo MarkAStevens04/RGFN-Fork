@@ -61,11 +61,12 @@
       "enumeration_s": 1883.6099,
       "reward_gen_s": 328.4549,
       "flow_extract_s": 330.0938,
-      "mode_selection_s": 2.9125,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 2.9198,
       "n_hubs_walked": 29,
       "n_children_scored": 100538,
       "missing_hub_keys": [],
-      "total_s": 2587.9452
+      "total_s": 2587.9525
     },
     "best_candidate": {
       "strategy": "best_candidate",
@@ -74,24 +75,26 @@
       "enumeration_s": 0.0,
       "reward_gen_s": 0.0,
       "flow_extract_s": 0.0,
-      "mode_selection_s": 0.4031,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.4071,
       "n_hubs_walked": 0,
       "n_children_scored": 0,
       "missing_hub_keys": [],
-      "total_s": 0.4031
+      "total_s": 0.4071
     },
     "head_to_head": {
-      "hub_total_s": 2587.9452,
-      "best_total_s": 0.4031,
-      "extra_compute_s": 2587.5421,
-      "ratio_hub_over_best": 6420.564,
+      "hub_total_s": 2587.9525,
+      "best_total_s": 0.4071,
+      "extra_compute_s": 2587.5453,
+      "ratio_hub_over_best": 6356.277,
       "per_component_delta_s": {
         "setup_s": 42.698,
         "hub_pick_s": 0.176,
         "enumeration_s": 1883.6099,
         "reward_gen_s": 328.4549,
         "flow_extract_s": 330.0938,
-        "mode_selection_s": 2.5094
+        "unattributed_s": 0.0,
+        "mode_selection_s": 2.5126
       },
       "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
     }

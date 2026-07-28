@@ -112,14 +112,22 @@ def ideal_arrow(
         zorder=6,
     )
     if label:
-        # Offset the text opposite the arrow so it never sits under the shaft.
+        # Offset the text opposite the arrow so it never sits under the shaft, then clamp it inside
+        # the axes. Alignment is chosen from where the label ACTUALLY lands, not from the arrow
+        # direction: anchoring at x=0.90 and aligning left pushes the text off the right edge (it
+        # clipped "ideal ↖" on the count-once curve before this).
+        ox, oy = -dx * 0.055, -dy * 0.055
+        if dy == 0.0:  # a horizontal arrow: offsetting along -x lands the text ON the shaft
+            ox, oy = -dx * 0.015, -0.075  # so drop it below instead
+        xl = min(max(x0 + ox, 0.04), 0.96)
+        yl = min(max(y0 + oy, 0.04), 0.96)
         ax.text(
-            x0 - dx * 0.055,
-            y0 - dy * 0.055,
+            xl,
+            yl,
             f"{label} {_GLYPH[direction]}",
             transform=ax.transAxes,
-            ha="right" if dx >= 0 else "left",
-            va="top" if dy >= 0 else "bottom",
+            ha="right" if xl > 0.5 else "left",
+            va="top" if yl > 0.5 else "bottom",
             fontsize=fontsize,
             color=color,
             alpha=alpha,
