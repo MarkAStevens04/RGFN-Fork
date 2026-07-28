@@ -35,6 +35,7 @@ from validation.lsdflow.metrics.cost.compute_time import account_strategy, head_
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
 )
+from validation.lsdflow.plot_style import title_with_ideal
 
 HERE = Path(__file__).resolve().parent
 
@@ -251,17 +252,6 @@ def _write_curve(path: Path, result) -> None:
             )
 
 
-def _ideal(ax, direction: str, **kw) -> None:
-    """Stamp the "ideal direction" arrow (:mod:`validation.lsdflow.plot_style`), tolerating its
-    absence so a plot never fails over furniture. Direction is SCREEN-space, not data-space."""
-    try:
-        from validation.lsdflow.plot_style import ideal_arrow
-
-        ideal_arrow(ax, direction, **kw)
-    except Exception as exc:  # noqa: BLE001
-        print(f"[campaign] ideal-direction arrow skipped ({exc})")
-
-
 def _plot(path: Path, results, tag: str) -> None:
     try:
         import matplotlib
@@ -278,10 +268,16 @@ def _plot(path: Path, results, tag: str) -> None:
         ax.plot(xs, ys, marker=".", ms=3, lw=1.5, label=res.strategy)
     ax.set_xlabel("cumulative reactions (true nested cost, count-once)")
     ax.set_ylabel("cumulative modes (diverse hits)")
-    ax.set_title(f"SCENT {tag}: hub-batching vs best-candidate")
+    # Both axes are metrics here, so the marker names them (see plot_style: title-only, never drawn
+    # inside the axes).
+    ax.set_title(
+        title_with_ideal(
+            f"SCENT {tag}: hub-batching vs best-candidate",
+            ("higher", "modes"),
+            ("lower", "reactions"),
+        )
+    )
     ax.legend()
-    # More modes for fewer reactions = up-and-left.
-    _ideal(ax, "up-left", loc="lower right")
     fig.tight_layout()
     fig.savefig(path, dpi=130)
     print(f"[campaign] wrote {path}")
@@ -342,9 +338,9 @@ def plot_compute_time(path: Path, section: dict, tag: str) -> None:
     if extra is not None:
         sub = f"  (+{extra:.0f}s"
         sub += f", {ratio:g}× vs best-candidate)" if ratio else ")"
-    ax.set_title(f"{tag}: measured compute time by component{sub}", fontsize=10)
-    # Horizontal bars of wall-clock: shorter (leftward) is better.
-    _ideal(ax, "left", label="ideal (less compute)", loc="upper right")
+    ax.set_title(
+        title_with_ideal(f"{tag}: measured compute time by component{sub}", "lower"), fontsize=10
+    )
     ax.legend(fontsize=7, ncol=6, loc="upper center", bbox_to_anchor=(0.5, -0.22), framealpha=0.9)
     fig.tight_layout()
     fig.savefig(path, dpi=130)

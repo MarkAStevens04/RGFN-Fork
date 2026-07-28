@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from validation.lsdflow.plot_style import ideal_arrow  # noqa: E402
+from validation.lsdflow.plot_style import title_with_ideal  # noqa: E402
 
 # Pipeline components, in the order they stack, with labels + colours.
 # setup + hub_pick are folded together (hub_pick ~= 0.16 s, one-off).
@@ -104,7 +104,7 @@ def main() -> None:
 
     axc.set_ylim(0, max(bottoms) * 1.16)
     axc.set_ylabel("compute time (s)")
-    axc.set_title("Where the time goes (measured, per component)")
+    axc.set_title(title_with_ideal("Where the time goes (measured, per component)", "lower"))
     axc.set_xticks(list(x))
     axc.set_xticklabels(strategies, rotation=25, ha="right")
     pad = max(bottoms) * 0.012
@@ -119,13 +119,12 @@ def main() -> None:
             fontweight="bold",
         )
     axc.grid(axis="y", ls=":", alpha=0.4)
-    ideal_arrow(axc, "down", label="ideal (less compute)", loc="upper right")
 
     # ---- Panel B: reward-gen (oracle) calls --------------------------------
     calls = d["reward_gen_calls"].fillna(0).astype(int).tolist()
     bars = axr.bar(list(x), calls, color="#f0883e", width=0.62, edgecolor="white", linewidth=0.4)
     axr.set_ylabel("reward-gen calls  (≈ oracle calls in the AL loop)")
-    axr.set_title("How many reward calls")
+    axr.set_title(title_with_ideal("How many reward calls", "lower"))
     axr.set_xticks(list(x))
     axr.set_xticklabels(strategies, rotation=25, ha="right")
     for b, c in zip(bars, calls):
@@ -140,7 +139,6 @@ def main() -> None:
         )
     axr.grid(axis="y", ls=":", alpha=0.4)
     axr.set_ylim(0, max(calls) * 1.15 if max(calls) else 1)
-    ideal_arrow(axr, "down", label="ideal (fewer calls)", loc="upper right")
 
     from matplotlib.patches import Patch
 

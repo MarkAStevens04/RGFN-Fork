@@ -256,7 +256,7 @@ def _plot(path: Path, rows, cells, missing, a) -> None:
     except Exception as exc:  # noqa: BLE001
         print(f"[tau] plot skipped ({exc})")
         return
-    from validation.lsdflow.plot_style import ideal_arrow
+    from validation.lsdflow.plot_style import ideal_marker
 
     fig, ax = plt.subplots(figsize=(8.2, 5.4))
     for cell in cells:
@@ -290,17 +290,17 @@ def _plot(path: Path, rows, cells, missing, a) -> None:
     ax.set_xlabel("Diversity cutoff (Tanimoto similarity)      similar modes → diverse modes")
     ax.set_ylabel(f"modes discovered within {a.budget_reactions} reactions")
     gate = rows[0]["gate"]
+    # Marker in the TITLE (plot_style convention) — the y metric is modes found, higher is better.
+    # It reads correctly despite the inverted x because the glyph describes the metric, not the screen.
     ax.set_title(
-        f"{a.target} — diverse hits per fixed synthesis budget, all generators\n"
+        f"{a.target} — diverse hits per fixed synthesis budget, all generators "
+        f"{ideal_marker('higher')}\n"
         f"gate {gate} · {a.budget_reactions}-reaction budget · 200-hub enumeration reused\n"
         f"solid = hub-batching, dashed = best-candidate",
         fontsize=10,
     )
     ax.grid(ls=":", alpha=0.45)
     ax.legend(fontsize=8, ncol=2, framealpha=0.92, loc="lower left")
-    # x is INVERTED, so "more diverse" is to the RIGHT: ideal = up-and-right in screen space. The
-    # top-right corner is empty here (every curve decays toward it), so the arrow sits clear of data.
-    ideal_arrow(ax, "up-right", loc="upper right")
     if missing:
         fig.text(
             0.5,

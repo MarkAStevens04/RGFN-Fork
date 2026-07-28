@@ -183,7 +183,7 @@ def _plot(path: Path, rows, cell, a) -> None:
     except Exception as exc:  # noqa: BLE001
         print(f"[gate_curve] plot skipped ({exc})")
         return
-    from validation.lsdflow.plot_style import ideal_arrow
+    from validation.lsdflow.plot_style import title_with_ideal
 
     gates = [r["gate"] for r in rows]
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.4, 4.9))
@@ -209,11 +209,10 @@ def _plot(path: Path, rows, cell, a) -> None:
         ax2.axvspan(min(lim) - 1e-9, max(gates), color="#c0392b", alpha=0.07)
     ax1.set_xlabel(f"{cell.target_name} reward gate (hit bar)")
     ax1.set_ylabel(f"modes reached (budget {a.budget_modes})")
-    ax1.set_title("Can the pool still fill the library?")
+    ax1.set_title(title_with_ideal("Can the pool still fill the library?", "higher"))
     ax1.set_ylim(0, a.budget_modes * 1.12)
     ax1.grid(ls=":", alpha=0.45)
     ax1.legend(fontsize=8)
-    ideal_arrow(ax1, "up", label="ideal (more modes)", loc="upper center")
 
     # ---- Panel 2: reactions/mode vs gate -----------------------------------
     ax2.plot(gates, [r["best_rxn_per_mode"] for r in rows], "o-", color=BC, label="best-candidate")
@@ -231,11 +230,10 @@ def _plot(path: Path, rows, cell, a) -> None:
             )
     ax2.set_xlabel(f"{cell.target_name} reward gate (hit bar)")
     ax2.set_ylabel("reactions per mode  (lower = cheaper library)")
-    ax2.set_title("Synthesis cost per distinct mode")
+    ax2.set_title(title_with_ideal("Synthesis cost per distinct mode", "lower"))
     ax2.set_ylim(0, None)
     ax2.grid(ls=":", alpha=0.45)
     ax2.legend(fontsize=8)
-    ideal_arrow(ax2, "down", label="ideal (cheaper)", loc="upper right")
 
     pol = a.child_policy + (f" K={a.prebuild_k}" if a.prebuild_k else "")
     fig.suptitle(
