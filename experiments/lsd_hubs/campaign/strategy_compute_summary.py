@@ -26,8 +26,13 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+import sys
+
 import matplotlib.pyplot as plt
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from validation.lsdflow.plot_style import ideal_arrow  # noqa: E402
 
 # Pipeline components, in the order they stack, with labels + colours.
 # setup + hub_pick are folded together (hub_pick ~= 0.16 s, one-off).
@@ -114,6 +119,7 @@ def main() -> None:
             fontweight="bold",
         )
     axc.grid(axis="y", ls=":", alpha=0.4)
+    ideal_arrow(axc, "down", label="ideal (less compute)", loc="upper right")
 
     # ---- Panel B: reward-gen (oracle) calls --------------------------------
     calls = d["reward_gen_calls"].fillna(0).astype(int).tolist()
@@ -134,6 +140,7 @@ def main() -> None:
         )
     axr.grid(axis="y", ls=":", alpha=0.4)
     axr.set_ylim(0, max(calls) * 1.15 if max(calls) else 1)
+    ideal_arrow(axr, "down", label="ideal (fewer calls)", loc="upper right")
 
     from matplotlib.patches import Patch
 

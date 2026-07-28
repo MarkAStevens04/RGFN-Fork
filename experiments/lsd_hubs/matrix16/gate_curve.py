@@ -183,6 +183,7 @@ def _plot(path: Path, rows, cell, a) -> None:
     except Exception as exc:  # noqa: BLE001
         print(f"[gate_curve] plot skipped ({exc})")
         return
+    from validation.lsdflow.plot_style import ideal_arrow
 
     gates = [r["gate"] for r in rows]
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12.4, 4.9))
@@ -212,6 +213,7 @@ def _plot(path: Path, rows, cell, a) -> None:
     ax1.set_ylim(0, a.budget_modes * 1.12)
     ax1.grid(ls=":", alpha=0.45)
     ax1.legend(fontsize=8)
+    ideal_arrow(ax1, "up", label="ideal (more modes)", loc="upper center")
 
     # ---- Panel 2: reactions/mode vs gate -----------------------------------
     ax2.plot(gates, [r["best_rxn_per_mode"] for r in rows], "o-", color=BC, label="best-candidate")
@@ -233,6 +235,7 @@ def _plot(path: Path, rows, cell, a) -> None:
     ax2.set_ylim(0, None)
     ax2.grid(ls=":", alpha=0.45)
     ax2.legend(fontsize=8)
+    ideal_arrow(ax2, "down", label="ideal (cheaper)", loc="upper right")
 
     pol = a.child_policy + (f" K={a.prebuild_k}" if a.prebuild_k else "")
     fig.suptitle(
