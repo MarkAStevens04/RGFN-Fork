@@ -336,8 +336,11 @@ def plot_compute_time(path: Path, section: dict, tag: str) -> None:
     if extra is not None:
         sub = f"  (+{extra:.0f}s"
         sub += f", {ratio:g}× vs best-candidate)" if ratio else ")"
+    # These are HORIZONTAL bars (barh), so the metric lives on the x-axis: axis="x" gives (<-),
+    # "shorter bars are better". A (v) here would have no vertical axis to refer to.
     ax.set_title(
-        title_with_ideal(f"{tag}: measured compute time by component{sub}", "lower"), fontsize=10
+        title_with_ideal(f"{tag}: measured compute time by component{sub}", "lower", axis="x"),
+        fontsize=10,
     )
     ax.legend(fontsize=7, ncol=6, loc="upper center", bbox_to_anchor=(0.5, -0.22), framealpha=0.9)
     fig.tight_layout()

@@ -371,8 +371,14 @@ def plot_compute_frontier(path, frontier, tag, lab_hours_per_reaction):
     ax.set_yticks(range(len(strategies)))
     ax.set_yticklabels([s[1] for s in strategies])
     ax.set_xlabel("measured compute time (s) to produce the library")
+    # HORIZONTAL bars -> the metric is on the x-axis, so axis="x" gives (<-) not (v).
     ax.set_title(
-        f"{tag}: compute frontier by stage (lab_hours_per_reaction={lab_hours_per_reaction:g})",
+        title_with_ideal(
+            f"{tag}: compute frontier by stage "
+            f"(lab_hours_per_reaction={lab_hours_per_reaction:g})",
+            "lower",
+            axis="x",
+        ),
         fontsize=10,
     )
     ax.legend(fontsize=7, ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.22), framealpha=0.9)

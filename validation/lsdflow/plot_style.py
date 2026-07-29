@@ -11,22 +11,30 @@ standard publication practice ("FID ↓", "Accuracy ↑") — it costs no plot a
 data or the legend, survives cropping, and reads correctly in a figure list or a caption. Do not add
 arrows, shaded "better" regions, or corner annotations to the plotting area.
 
-Two flavours, and picking the right one matters for readability:
+**The rule in one line: the caller names the METRIC's good direction; this module resolves that into a
+glyph against the panel's GEOMETRY.** Those two steps must stay separate. A caller who hand-picks a
+glyph gets it wrong in three distinct ways we have already hit: on a flipped axis (diversity sweeps run
+0.9 -> 0.3, so "lower cutoff is better" points *right*), on a horizontally-oriented chart (a ``↓`` on a
+horizontal bar chart has no vertical axis to refer to), and on a Pareto panel (two arrows where one
+diagonal is clearer). So always pass ``"lower"``/``"higher"`` plus the panel's shape, never a direction
+you worked out yourself.
 
-* **One objective** -> :func:`ideal_marker` gives an axis-aligned ``(↓)`` / ``(↑)``. The glyph describes
-  the METRIC, not the screen: ``↓`` always means "lower values are better" even where the axis is
-  flipped, so ``fixed_modes`` (reactions on an inverted y) is correctly ``(↓)``.
-* **Both axes are objectives** (every Pareto panel) -> :func:`pareto_marker` gives a single DIAGONAL
-  ``(↗)`` pointing at the desirable corner. Prefer this over two arrows: ``(↑ modes, ↓ reactions)``
-  makes the reader resolve two axes before judging a curve, whereas one diagonal says "we want to be
-  over here, and here is how close each model gets" immediately. Because a diagonal names a *corner*,
-  it is the one case that must know about axis inversion — so its API takes the metric directions plus
-  the ``invert_*`` flags and derives the corner itself.
+Pick by panel shape:
+
+* **One objective on the y-axis** (line plots, vertical bars) -> :func:`ideal_marker` -> ``(↓)``/``(↑)``.
+* **One objective on the x-axis** (HORIZONTAL bars) -> ``ideal_marker(..., axis="x")`` -> ``(←)``/``(→)``.
+* **A flipped axis** -> add ``invert=True`` so the glyph points at the good side of the panel.
+* **Both axes are objectives** (every Pareto panel) -> :func:`pareto_marker` -> a single DIAGONAL
+  ``(↗)`` at the desirable corner. Prefer this over two arrows: ``(↑ modes, ↓ reactions)`` makes the
+  reader resolve two axes before judging a curve, whereas one diagonal says "we want to be over here,
+  and here is how close each model gets" immediately.
 
     from validation.lsdflow.plot_style import ideal_marker, pareto_marker
 
     ax.set_title(f"cost per mode {ideal_marker('lower')}")             # -> "... (↓)"
     ax.set_title(f"modes found {ideal_marker('higher')}")              # -> "... (↑)"
+    ax.barh(...)                                                       # horizontal bars!
+    ax.set_title(f"compute time {ideal_marker('lower', axis='x')}")    # -> "... (←)"
     ax.set_title("count-once curve " + pareto_marker(                  # x = reactions, y = modes
         x="lower", y="higher"))                                        # -> "(↖)"
     ax.set_title("diversity pareto " + pareto_marker(                  # x flipped: 0.9 -> 0.3
@@ -39,46 +47,66 @@ from __future__ import annotations
 
 from typing import Sequence, Tuple, Union
 
-# "lower"/"higher" describe the METRIC's good direction, never a screen direction.
-_GLYPH = {"lower": "↓", "higher": "↑", "down": "↓", "up": "↑"}
+# The caller always names the METRIC's good direction ("lower"/"higher"); the glyph is then resolved
+# against the plot's geometry. Keeping those two steps separate is what makes the marker correct on
+# flipped axes and on horizontally-oriented charts without the caller reasoning about pixels.
+_IS_HIGHER = {"higher": True, "lower": False, "up": True, "down": False}
+
+# (axis carrying the metric, good direction is toward larger values on screen) -> glyph.
+_AXIS_GLYPH = {
+    ("y", True): "↑",
+    ("y", False): "↓",
+    ("x", True): "→",
+    ("x", False): "←",
+}
 
 Spec = Union[str, Tuple[str, str]]
 
 
-def _one(spec: Spec) -> str:
+def _one(spec: Spec, axis: str, invert: bool) -> str:
     if isinstance(spec, str):
         direction, name = spec, ""
     else:
         direction, name = spec
     key = direction.strip().lower()
-    if key not in _GLYPH:
+    if key not in _IS_HIGHER:
         raise ValueError(f"direction must be 'lower' or 'higher', got {direction!r}")
-    return f"{_GLYPH[key]} {name}".strip()
+    if axis not in ("x", "y"):
+        raise ValueError(f"axis must be 'x' or 'y', got {axis!r}")
+    # Good points toward larger on-screen values iff the metric wants larger AND the axis is not
+    # flipped (or both are reversed).
+    toward_larger = _IS_HIGHER[key] != bool(invert)
+    return f"{_AXIS_GLYPH[(axis, toward_larger)]} {name}".strip()
 
 
-def ideal_marker(*specs: Spec) -> str:
+def ideal_marker(*specs: Spec, axis: str = "y", invert: bool = False) -> str:
     """The parenthesised ideal-direction marker to append to a panel title.
 
     Args:
         *specs: one entry per metric. Either ``"lower"``/``"higher"``, or a
             ``(direction, metric_name)`` pair when a panel has more than one metric and the arrows
             would otherwise be ambiguous.
+        axis: which axis carries the metric — ``"y"`` (default: vertical bars, line plots) or
+            ``"x"``. **Horizontal bar charts must pass ``axis="x"``**, which yields ``←``/``→``: a
+            ``↓`` on a horizontal bar chart has no vertical axis to refer to and reads as a mistake.
+        invert: pass ``True`` if that axis was flipped (``ax.invert_yaxis()``), so the glyph still
+            points at the good side of the panel.
 
     Returns:
-        e.g. ``"(↓)"``, ``"(↑)"``, ``"(↑ modes, ↓ reactions)"``. Empty string if no specs are given,
-        so a caller can pass through unconditionally.
+        e.g. ``"(↓)"``, ``"(↑)"``, ``"(←)"``, ``"(↑ modes, ↓ reactions)"``. Empty string if no specs
+        are given, so a caller can pass through unconditionally.
     """
     # Drop empty/None entries so a caller can pass an optional value straight through without
     # branching (a bare `ideal or ""` must not raise).
     kept = [s for s in specs if s]
     if not kept:
         return ""
-    return "(" + ", ".join(_one(s) for s in kept) + ")"
+    return "(" + ", ".join(_one(s, axis, invert) for s in kept) + ")"
 
 
-def title_with_ideal(title: str, *specs: Spec) -> str:
+def title_with_ideal(title: str, *specs: Spec, axis: str = "y", invert: bool = False) -> str:
     """``title`` with the marker appended — the one-call form for ``ax.set_title``."""
-    marker = ideal_marker(*specs)
+    marker = ideal_marker(*specs, axis=axis, invert=invert)
     return f"{title} {marker}" if marker else title
 
 
@@ -120,12 +148,12 @@ def pareto_marker(
     And the count-once curve (x = reactions spent, y = modes gained, neither inverted) to ``"(↖)"``.
     """
     for name, val in (("x", x), ("y", y)):
-        if val.strip().lower() not in _GLYPH:
+        if val.strip().lower() not in _IS_HIGHER:
             raise ValueError(f"{name} must be 'lower' or 'higher', got {val!r}")
     # "Good is rightward" iff the good direction is toward larger x AND x is not flipped (or the
     # reverse of both). Same for up.
-    rightward = (_GLYPH[x.strip().lower()] == "↑") != bool(invert_x)
-    upward = (_GLYPH[y.strip().lower()] == "↑") != bool(invert_y)
+    rightward = _IS_HIGHER[x.strip().lower()] != bool(invert_x)
+    upward = _IS_HIGHER[y.strip().lower()] != bool(invert_y)
     glyph = _CORNER[(rightward, upward)]
     return f"({glyph} {note})" if note else f"({glyph})"
 
@@ -149,6 +177,6 @@ def describe(*specs: Sequence[Spec]) -> str:
     parts = []
     for spec in specs:
         direction, name = (spec, "") if isinstance(spec, str) else spec
-        word = "lower" if _GLYPH[direction.strip().lower()] == "↓" else "higher"
+        word = "higher" if _IS_HIGHER[direction.strip().lower()] else "lower"
         parts.append(f"{word} {name}".strip() + " is better")
     return "; ".join(parts)
