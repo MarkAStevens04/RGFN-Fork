@@ -54,6 +54,7 @@ from validation.lsdflow.metrics.cost.compute_time import account_strategy
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
 )
+from validation.lsdflow.plot_style import pareto_marker, title_with_ideal
 
 HERE = Path(__file__).resolve().parent
 STRATS = ("hub_batching", "best_candidate")
@@ -428,10 +429,14 @@ def _plot(
     xsub=None,
     ideal=None,
 ):
-    """``ideal`` names the good direction of the panel's metric(s) for the title marker: "higher",
-    "lower", or a tuple of (direction, name) pairs when both axes are metrics. There is deliberately
-    NO default inferred from invert_x/invert_y -- pareto (y = modes discovered, higher) and
-    fixed_modes (y = reactions required, lower) are both inverted but want opposite arrows."""
+    """``ideal`` drives the title's direction marker (never drawn in the axes; see
+    validation.lsdflow.plot_style):
+      * "higher" / "lower" -> an axis-aligned (up-arrow)/(down-arrow) for a single objective;
+      * a dict of pareto_marker kwargs -> ONE diagonal at the desirable corner, for panels where both
+        axes are objectives. Pass the same invert_x/invert_y given above so the corner is right.
+    There is deliberately NO default inferred from invert_x/invert_y -- pareto (y = modes discovered,
+    higher) and fixed_modes (y = reactions required, lower) are both inverted but want different
+    markers, so guessing would mislabel one of them."""
     try:
         import matplotlib
 
@@ -473,7 +478,10 @@ def _plot(
     # (validation.lsdflow.plot_style). ``ideal`` names the y-metric's good direction: these panels
     # invert axes, and the glyph describes the METRIC ("↓" = fewer reactions is better) so it stays
     # correct regardless. Defaults to "higher" on the Pareto-style panels the inversions below set up.
-    ax.set_title(title_with_ideal(title, *(ideal if isinstance(ideal, tuple) else (ideal,))))
+    if isinstance(ideal, dict):  # both axes are objectives -> one diagonal at the good corner
+        ax.set_title(f"{title} {pareto_marker(**ideal)}")
+    else:
+        ax.set_title(title_with_ideal(title, ideal))
     # Flip axes so the "desired" corner is top-right (Pareto convention): more-diverse (stricter,
     # lower-Tanimoto) cutoffs on the right, and for the cost plot fewer reactions at the top.
     if invert_x:
@@ -724,6 +732,8 @@ def main() -> None:
         vline=base,
         invert_x=True,  # stricter/more-diverse (low cutoff) -> right; more modes -> up; desired = top-right
         xsub=XSUB,
+        # Both axes are objectives: more diverse (lower cutoff) AND more modes -> one diagonal.
+        ideal=dict(x="lower", y="higher", invert_x=True),
     )
 
     # ---- Plot 2: reactions to reach fixed mode target vs diversity cutoff ----
@@ -754,7 +764,8 @@ def main() -> None:
         invert_x=True,  # stricter/more-diverse (low cutoff) -> right
         invert_y=True,  # fewer reactions (cheaper) -> up; desired = top-right
         xsub=XSUB,
-        ideal="lower",  # y = reactions REQUIRED -- opposite of the pareto panel above
+        # More diverse AND fewer reactions; both axes inverted, so this too resolves to up-right.
+        ideal=dict(x="lower", y="lower", invert_x=True, invert_y=True),
     )
 
     # ---- Plot 3: budget vs efficiency (modes vs reaction budget) at the default cutoff ----
@@ -805,7 +816,7 @@ def main() -> None:
         "reaction budget (cumulative, true nested cost)",
         "modes obtained",
         f"SCENT {a.tag}: budget vs efficiency (cutoff {base})",
-        ideal=(("higher", "modes"), ("lower", "reactions")),  # both axes are metrics here
+        ideal=dict(x="lower", y="higher"),  # spend fewer reactions, obtain more modes
     )
 
     # ---- Compute-time vs diversity cutoff (Logs/039) — how much longer the computer works ----
