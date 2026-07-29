@@ -11,17 +11,26 @@ standard publication practice ("FID ↓", "Accuracy ↑") — it costs no plot a
 data or the legend, survives cropping, and reads correctly in a figure list or a caption. Do not add
 arrows, shaded "better" regions, or corner annotations to the plotting area.
 
-**The glyph describes the METRIC, not the screen.** ``↓`` always means "lower values are better",
-regardless of whether the axis happens to be inverted. That is what makes it unambiguous on our flipped
-panels: ``fixed_modes`` plots reactions on an inverted y-axis, and its marker is still ``(↓)`` because
-fewer reactions is better.
+Two flavours, and picking the right one matters for readability:
 
-    from validation.lsdflow.plot_style import ideal_marker
+* **One objective** -> :func:`ideal_marker` gives an axis-aligned ``(↓)`` / ``(↑)``. The glyph describes
+  the METRIC, not the screen: ``↓`` always means "lower values are better" even where the axis is
+  flipped, so ``fixed_modes`` (reactions on an inverted y) is correctly ``(↓)``.
+* **Both axes are objectives** (every Pareto panel) -> :func:`pareto_marker` gives a single DIAGONAL
+  ``(↗)`` pointing at the desirable corner. Prefer this over two arrows: ``(↑ modes, ↓ reactions)``
+  makes the reader resolve two axes before judging a curve, whereas one diagonal says "we want to be
+  over here, and here is how close each model gets" immediately. Because a diagonal names a *corner*,
+  it is the one case that must know about axis inversion — so its API takes the metric directions plus
+  the ``invert_*`` flags and derives the corner itself.
 
-    ax.set_title(f"cost per mode {ideal_marker('lower')}")            # -> "... (↓)"
-    ax.set_title(f"modes found {ideal_marker('higher')}")             # -> "... (↑)"
-    ax.set_title("count-once curve " + ideal_marker(                  # two metrics at once
-        ("higher", "modes"), ("lower", "reactions")))                 # -> "(↑ modes, ↓ reactions)"
+    from validation.lsdflow.plot_style import ideal_marker, pareto_marker
+
+    ax.set_title(f"cost per mode {ideal_marker('lower')}")             # -> "... (↓)"
+    ax.set_title(f"modes found {ideal_marker('higher')}")              # -> "... (↑)"
+    ax.set_title("count-once curve " + pareto_marker(                  # x = reactions, y = modes
+        x="lower", y="higher"))                                        # -> "(↖)"
+    ax.set_title("diversity pareto " + pareto_marker(                  # x flipped: 0.9 -> 0.3
+        x="lower", y="higher", invert_x=True))                         # -> "(↗)"
 
 Import contract: pure stdlib (no matplotlib, no torch), so it loads in every analysis env and in tests.
 """
@@ -71,6 +80,59 @@ def title_with_ideal(title: str, *specs: Spec) -> str:
     """``title`` with the marker appended — the one-call form for ``ax.set_title``."""
     marker = ideal_marker(*specs)
     return f"{title} {marker}" if marker else title
+
+
+# Screen corner -> glyph, keyed by (good direction is rightward?, good direction is upward?).
+_CORNER = {
+    (True, True): "↗",
+    (False, True): "↖",
+    (True, False): "↘",
+    (False, False): "↙",
+}
+
+
+def pareto_marker(
+    *, x: str, y: str, invert_x: bool = False, invert_y: bool = False, note: str = ""
+) -> str:
+    """A single DIAGONAL marker for a panel where both axes are objectives — ``"(↗)"``.
+
+    Use this instead of ``ideal_marker("higher", "lower")`` on Pareto-style panels. Two arrows make a
+    reader resolve "up on this axis, down on that one" before they can judge a curve; one diagonal
+    says "we want to be in this corner — here is how close each model gets" at a glance.
+
+    Unlike the axis-aligned markers, a diagonal necessarily names a *corner of the plot*, so it must
+    account for inverted axes. The API stays METRIC-based — you say which direction is good for the
+    quantity on each axis, plus whether that axis is flipped — and the corner is derived. Never
+    hand-pick a glyph: on our diversity sweeps (x runs 0.9 -> 0.3) the naive choice is backwards.
+
+    Args:
+        x: good direction for the x-axis quantity — ``"lower"`` or ``"higher"``.
+        y: good direction for the y-axis quantity.
+        invert_x: pass ``True`` if the caller called ``ax.invert_xaxis()``.
+        invert_y: likewise for the y-axis.
+        note: optional short gloss placed after the glyph, e.g. ``"more diverse, more modes"``.
+
+    Example — the diversity Pareto (x = Tanimoto cutoff, inverted, lower = more diverse; y = modes
+    discovered, higher better) resolves to ``"(↗)"``::
+
+        pareto_marker(x="lower", y="higher", invert_x=True)
+
+    And the count-once curve (x = reactions spent, y = modes gained, neither inverted) to ``"(↖)"``.
+    """
+    for name, val in (("x", x), ("y", y)):
+        if val.strip().lower() not in _GLYPH:
+            raise ValueError(f"{name} must be 'lower' or 'higher', got {val!r}")
+    # "Good is rightward" iff the good direction is toward larger x AND x is not flipped (or the
+    # reverse of both). Same for up.
+    rightward = (_GLYPH[x.strip().lower()] == "↑") != bool(invert_x)
+    upward = (_GLYPH[y.strip().lower()] == "↑") != bool(invert_y)
+    glyph = _CORNER[(rightward, upward)]
+    return f"({glyph} {note})" if note else f"({glyph})"
+
+
+def title_with_pareto_ideal(title: str, **kw) -> str:
+    """``title`` with a diagonal Pareto marker appended (see :func:`pareto_marker`)."""
+    return f"{title} {pareto_marker(**kw)}"
 
 
 def axis_label_with_ideal(label: str, direction: str) -> str:

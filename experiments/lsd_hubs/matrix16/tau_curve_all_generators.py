@@ -256,7 +256,7 @@ def _plot(path: Path, rows, cells, missing, a) -> None:
     except Exception as exc:  # noqa: BLE001
         print(f"[tau] plot skipped ({exc})")
         return
-    from validation.lsdflow.plot_style import ideal_marker
+    from validation.lsdflow.plot_style import pareto_marker
 
     fig, ax = plt.subplots(figsize=(8.2, 5.4))
     for cell in cells:
@@ -290,11 +290,12 @@ def _plot(path: Path, rows, cells, missing, a) -> None:
     ax.set_xlabel("Diversity cutoff (Tanimoto similarity)      similar modes → diverse modes")
     ax.set_ylabel(f"modes discovered within {a.budget_reactions} reactions")
     gate = rows[0]["gate"]
-    # Marker in the TITLE (plot_style convention) — the y metric is modes found, higher is better.
-    # It reads correctly despite the inverted x because the glyph describes the metric, not the screen.
+    # A true Pareto panel: both axes are objectives (more diversity = lower cutoff, more modes), so it
+    # gets ONE diagonal at the desirable corner. x is inverted, which pareto_marker accounts for —
+    # "lower cutoff is better" on a flipped axis resolves to rightward, giving up-right.
     ax.set_title(
         f"{a.target} — diverse hits per fixed synthesis budget, all generators "
-        f"{ideal_marker('higher')}\n"
+        f"{pareto_marker(x='lower', y='higher', invert_x=True)}\n"
         f"gate {gate} · {a.budget_reactions}-reaction budget · 200-hub enumeration reused\n"
         f"solid = hub-batching, dashed = best-candidate",
         fontsize=10,

@@ -35,7 +35,7 @@ from validation.lsdflow.metrics.cost.compute_time import account_strategy, head_
 from validation.lsdflow.metrics.cost.dynamic_amortization import (
     load_cost_table_from_snapshot,
 )
-from validation.lsdflow.plot_style import title_with_ideal
+from validation.lsdflow.plot_style import pareto_marker, title_with_ideal
 
 HERE = Path(__file__).resolve().parent
 
@@ -268,15 +268,13 @@ def _plot(path: Path, results, tag: str) -> None:
         ax.plot(xs, ys, marker=".", ms=3, lw=1.5, label=res.strategy)
     ax.set_xlabel("cumulative reactions (true nested cost, count-once)")
     ax.set_ylabel("cumulative modes (diverse hits)")
-    # Both axes are metrics here, so the marker names them (see plot_style: title-only, never drawn
-    # inside the axes).
-    ax.set_title(
-        title_with_ideal(
-            f"SCENT {tag}: hub-batching vs best-candidate",
-            ("higher", "modes"),
-            ("lower", "reactions"),
-        )
-    )
+    # Both axes are objectives (spend reactions, gain modes), so this gets ONE diagonal pointing at
+    # the desirable corner rather than two arrows the reader has to combine. Neither axis is inverted
+    # here, so cheaper-and-more-diverse resolves to up-left.
+    # The "SCENT" prefix here was hardcoded from when this driver only ever ran SCENT; the tag already
+    # names the generator, and keeping it labelled 12 of the 16 matrix cells wrongly ("SCENT
+    # fraggfn_drd2").
+    ax.set_title(f"{tag}: hub-batching vs best-candidate " + pareto_marker(x="lower", y="higher"))
     ax.legend()
     fig.tight_layout()
     fig.savefig(path, dpi=130)
