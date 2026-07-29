@@ -1,0 +1,242 @@
+{
+  "tag": "hubord_cand_order_fixedset",
+  "reward_threshold": 7.0,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "baseline_cutoff": 0.5,
+  "child_policy": "free_frag",
+  "prebuild_k": 20,
+  "rank_by": "build_score",
+  "evaluator": "count_once",
+  "snapshot_schedule": "all",
+  "lab_hours_per_reaction": 1.0,
+  "cutoffs": [
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9
+  ],
+  "pareto_modes_at_R": {
+    "hub_batching": [
+      38,
+      46,
+      55,
+      64,
+      71,
+      72,
+      76,
+      76,
+      76,
+      76,
+      78,
+      78,
+      78
+    ],
+    "best_candidate": [
+      25,
+      26,
+      26,
+      28,
+      29,
+      30,
+      32,
+      32,
+      33,
+      34,
+      34,
+      34,
+      34
+    ]
+  },
+  "fixed_modes_reactions_at_M": {
+    "hub_batching": [
+      null,
+      null,
+      477,
+      417,
+      379,
+      356,
+      343,
+      334,
+      331,
+      328,
+      327,
+      327,
+      327
+    ],
+    "best_candidate": [
+      1123,
+      1080,
+      1018,
+      955,
+      929,
+      866,
+      835,
+      823,
+      793,
+      751,
+      722,
+      730,
+      728
+    ]
+  },
+  "budget_efficiency_endpoint": {
+    "hub_batching": {
+      "reactions": 379,
+      "modes": 300
+    },
+    "best_candidate": {
+      "reactions": 929,
+      "modes": 300
+    }
+  },
+  "compute_time": {
+    "enum_timings_meta": {
+      "merged_from": [
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_70363/enum_timings.json"
+      ],
+      "n_slices": 1,
+      "setup_s": 26.689,
+      "slice_setups_s": [
+        26.689
+      ],
+      "device": "cuda",
+      "reward_name": "seh",
+      "cuda_synchronized": true,
+      "arm": "cand_order_fixedset",
+      "n_hubs": 200,
+      "n_children": 828448,
+      "totals_s": {
+        "enumeration_s": 15612.231,
+        "reward_gen_s": 960.321,
+        "flow_extract_s": 2997.706,
+        "unattributed_s": 0.0
+      }
+    },
+    "hub_pick_s": 0.191,
+    "baseline_cutoff": 0.5,
+    "at_baseline": {
+      "enum_timings_meta": {
+        "merged_from": [
+          "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_70363/enum_timings.json"
+        ],
+        "n_slices": 1,
+        "setup_s": 26.689,
+        "slice_setups_s": [
+          26.689
+        ],
+        "device": "cuda",
+        "reward_name": "seh",
+        "cuda_synchronized": true,
+        "arm": "cand_order_fixedset",
+        "n_hubs": 200,
+        "n_children": 828448,
+        "totals_s": {
+          "enumeration_s": 15612.231,
+          "reward_gen_s": 960.321,
+          "flow_extract_s": 2997.706,
+          "unattributed_s": 0.0
+        }
+      },
+      "hub_batching": {
+        "strategy": "hub_batching",
+        "setup_s": 26.689,
+        "hub_pick_s": 0.191,
+        "enumeration_s": 2640.3953,
+        "reward_gen_s": 170.2678,
+        "flow_extract_s": 526.0478,
+        "unattributed_s": 0.0,
+        "mode_selection_s": 0.3686,
+        "n_hubs_walked": 42,
+        "n_children_scored": 145490,
+        "missing_hub_keys": [],
+        "total_s": 3363.9595
+      },
+      "best_candidate": {
+        "strategy": "best_candidate",
+        "setup_s": 0.0,
+        "hub_pick_s": 0.0,
+        "enumeration_s": 0.0,
+        "reward_gen_s": 0.0,
+        "flow_extract_s": 0.0,
+        "unattributed_s": 0.0,
+        "mode_selection_s": 0.1731,
+        "n_hubs_walked": 0,
+        "n_children_scored": 0,
+        "missing_hub_keys": [],
+        "total_s": 0.1731
+      },
+      "head_to_head": {
+        "hub_total_s": 3363.9595,
+        "best_total_s": 0.1731,
+        "extra_compute_s": 3363.7865,
+        "ratio_hub_over_best": 19439.191,
+        "per_component_delta_s": {
+          "setup_s": 26.689,
+          "hub_pick_s": 0.191,
+          "enumeration_s": 2640.3953,
+          "reward_gen_s": 170.2678,
+          "flow_extract_s": 526.0478,
+          "unattributed_s": 0.0,
+          "mode_selection_s": 0.1955
+        },
+        "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+      }
+    },
+    "hub_total_s_by_cutoff": [
+      19603.7009,
+      19598.9349,
+      15076.5646,
+      5781.8995,
+      3363.9595,
+      1803.132,
+      1072.3758,
+      910.3482,
+      670.2181,
+      540.8895,
+      329.0917,
+      329.087,
+      329.0854
+    ],
+    "best_total_s_by_cutoff": [
+      7.0026,
+      0.2965,
+      0.2373,
+      0.1995,
+      0.1731,
+      0.158,
+      0.15,
+      0.1456,
+      0.1424,
+      0.1416,
+      0.137,
+      0.1384,
+      0.1372
+    ],
+    "extra_compute_s_by_cutoff": [
+      19596.6982,
+      19598.6384,
+      15076.3273,
+      5781.7,
+      3363.7865,
+      1802.974,
+      1072.2258,
+      910.2026,
+      670.0757,
+      540.7479,
+      328.9547,
+      328.9485,
+      328.9482
+    ]
+  },
+  "compute_frontier": null
+}
