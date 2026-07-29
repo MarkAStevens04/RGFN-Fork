@@ -84,7 +84,11 @@ class DiverseThresholdModeSelector(ModeSelector):
         fp = ecfp(smiles)
         if fp is None:
             return False
-        if any(DataStructs.TanimotoSimilarity(fp, a) > self.similarity for a in self._fps):
+        # One BulkTanimotoSimilarity call instead of a Python loop over the accepted modes. Same
+        # metric, same values, so the accept/reject decision (and hence every campaign number) is
+        # unchanged — but the inner loop runs in C++. This test is the dominant cost of a
+        # best-candidate run, which walks the whole pool against a growing accepted set.
+        if self._fps and max(DataStructs.BulkTanimotoSimilarity(fp, self._fps)) > self.similarity:
             return False
         self._fps.append(fp)
         return True

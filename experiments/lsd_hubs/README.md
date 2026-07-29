@@ -26,6 +26,7 @@ re-sampling or re-enumerating.
 | sub-dir | question |
 |---|---|
 | [`campaign/`](campaign/) | **Hub-batching vs best-candidate under a budget** — two swappable selection strategies for building a diverse library of hits (modes), scored on the count-once synthesis cost (reactions/mode), reward-gen (≈ oracle) calls, and measured compute time. The main comparison; Logs 028–039. |
+| [`reward_diversity/`](reward_diversity/) | **Is intrinsic diversity coupled to the reward cutoff?** A pool diagnostic (no strategies, no cost model): sweep the reward bar over the sampled and enumerated molecule sets and measure how similar the survivors are, at a fixed subsample size. The precondition for reading any threshold-conditioned cost comparison; Logs/051. |
 | [`dropoff/`](dropoff/) | Per-hub **filter funnel**: how many one-reaction children survive each stage — raw → binding gate → Tanimoto-dissimilar modes — and which filter dominates per hub. |
 
 (More sub-dirs as we address further hub-quality questions.)

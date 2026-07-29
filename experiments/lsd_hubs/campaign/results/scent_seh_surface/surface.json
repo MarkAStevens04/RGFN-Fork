@@ -1,0 +1,79 @@
+{
+  "tag": "scent_seh_surface",
+  "analysis_dir": "/scratch/markymoo/rgfn_runs/lsdflow/scent_seh_70189",
+  "enum_children": "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_70363/enum_children.json",
+  "snapshot": "/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh/2026-07-10_17-28-06/additional_fragments/fragments_4000.json",
+  "taus": [
+    4.0,
+    4.25,
+    4.5,
+    4.75,
+    5.0,
+    5.25,
+    5.5,
+    5.75,
+    6.0,
+    6.25,
+    6.5,
+    6.75,
+    7.0,
+    7.25,
+    7.5,
+    7.75,
+    8.0
+  ],
+  "similarities": [
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9
+  ],
+  "budget_reactions": 300,
+  "child_policy": "free_frag",
+  "prebuild_k": 20,
+  "rank_by": "build_score",
+  "wall_s": 639.2,
+  "summary": {
+    "budget_reactions": 300,
+    "n_grid_cells": 221,
+    "n_comparable_cells": 206,
+    "n_pool_limited_cells": 15,
+    "hub_wins_cells": 206,
+    "ratio_min": {
+      "tau": 8.0,
+      "similarity": 0.55,
+      "hub": 1.9351,
+      "best": 3.0825,
+      "ratio": 1.5929,
+      "hub_modes": 154,
+      "best_modes": 97
+    },
+    "ratio_max": {
+      "tau": 4.0,
+      "similarity": 0.4,
+      "hub": 1.1494,
+      "best": 3.4767,
+      "ratio": 3.0248,
+      "hub_modes": 261,
+      "best_modes": 86
+    },
+    "at_operating_point": {
+      "tau": 7.0,
+      "similarity": 0.5,
+      "hub": 1.2245,
+      "best": 3.1263,
+      "ratio": 2.5531,
+      "hub_modes": 245,
+      "best_modes": 95
+    }
+  }
+}

@@ -52,7 +52,8 @@ enumeration is NOT here — it stays on `$SCRATCH` (`campaign_enum_<tag>_<jobid>
 
 ```
 campaign/
-  pick_hubs.py  run_campaign.py  sweep_campaign.py  preselect_sweep.py  batch_size_distribution.py
+  pick_hubs.py  run_campaign.py  sweep_campaign.py  tau_similarity_surface.py  preselect_sweep.py
+  batch_size_distribution.py
   hub_stats.py  diversity_pairs.py  route_trees.py  synthesis_routes.py
   submit_scent_seh_enum.sh  submit_scent_seh_enum_timed.sh  merge_enum_timings.py
   results/<tag>/  summary.json curve*.csv curve.png  sweep_summary.json
@@ -81,9 +82,19 @@ campaign/
    **cost** (reactions for M* modes vs cutoff), **budget-vs-efficiency** (modes vs reaction budget at
    a fixed cutoff) → `results/<tag>/{pareto,fixed_modes,budget_efficiency}.{csv,png}` +
    `sweep_summary.json`. ~44 s for sEH (26 runs).
-5. **`hub_stats.py`** (CPU) — per-hub table (depth, #children, `U(h)`, mean `F_hat`, reward summary)
+5. **`tau_similarity_surface.py`** (CPU) — the same comparison over **both** quality knobs at once:
+   reactions/mode on a (reward bar τ) x (diversity cutoff) grid at a FIXED reaction budget, so the
+   robustness claim is a surface rather than the two 1-D slices `sweep_campaign.py` (cutoff at fixed τ)
+   and `matrix16/gate_curve.py` (τ at fixed cutoff) give separately. Reuses this file's own
+   `_load_candidates` / `_load_enumerated_hubs` / `build_strategy`, so each cell is the same computation
+   as a `run_campaign.py` run at that (τ, cutoff). Cells where a strategy exhausts its library before
+   spending the budget are marked `pool_limited` and hatched — never counted as wins.
+   → `results/<tag>/surface.{csv,json,png,pdf}`. 221 cells ≈ 11 min; `submit_tau_similarity_surface.sh`
+   runs it on `debug` (writes to `$SCRATCH`, since `$HOME` is read-only on compute). See Logs/052.
+
+6. **`hub_stats.py`** (CPU) — per-hub table (depth, #children, `U(h)`, mean `F_hat`, reward summary)
    from the enumeration → `results/<tag>/hub_stats.csv`.
-6. **`diversity_pairs.py`** (CPU) — a visual read on what each diversity cutoff *means*: for every
+7. **`diversity_pairs.py`** (CPU) — a visual read on what each diversity cutoff *means*: for every
    cutoff in the sweep, rebuild the hub-batching library and draw the two accepted modes with the
    **highest** pairwise Tanimoto (the closest still-distinct pair, shared MCS highlighted) →
    `results/<tag>/diversity_pairs/{gallery.png,pairs.csv}`. Reads only `enum_children.json` (acceptance

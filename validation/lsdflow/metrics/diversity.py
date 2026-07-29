@@ -13,9 +13,18 @@ Candidates are processed **best-reward-first**, so each mode's representative is
 highest-reward member — the molecule you would actually synthesize. This makes "modes" here
 directly comparable to the generative-model mode counts RGFN/SCENT report.
 
-Secondary: unique Bemis-Murcko scaffolds. Lives on the validation axis (needs RDKit); the
+Secondary: unique Bemis-Murcko scaffolds, :func:`mean_pairwise_similarity` (mean Tanimoto over all
+pairs — the set-level "how alike is this library?" readout, on the same ECFP recipe as the mode
+definition so the two are directly comparable), and :func:`count_butina_clusters` (the same
+"how many families?" question with reward taken *out* of the clustering order). Lives on the validation axis (needs RDKit); the
 production ``most_modes`` strategy takes an injected ``mode_counter`` so it can use this without
 importing it.
+
+**Reusing fingerprints across many calls.** A sweep that re-scores overlapping subsets of the same
+pool (e.g. ``experiments/lsd_hubs/reward_diversity/``) would otherwise re-fingerprint the same
+molecule dozens of times. Every function here accepts a ``fps=`` sequence aligned with ``keys``
+(``None`` entries = unparseable, same treatment as a failed parse), and :func:`ecfp` /
+:func:`murcko_scaffold` expose the exact recipes so a caller can build and cache them itself.
 """
 
 from __future__ import annotations
@@ -26,8 +35,10 @@ try:
     from rdkit import Chem, DataStructs
     from rdkit.Chem import AllChem
     from rdkit.Chem.Scaffolds import MurckoScaffold
+    from rdkit.ML.Cluster import Butina
 except Exception:  # pragma: no cover - RDKit present in-env
     Chem = None
+    Butina = None
 
 # ECFP recipe identical to rgfn TanimotoSimilarityModes + glue.metrics.dataset_metrics (r=3, 2048).
 _FP_RADIUS = 3
@@ -35,7 +46,10 @@ _FP_BITS = 2048
 _MODE_SIMILARITY_THRESHOLD = 0.7
 
 
-def _ecfp(smiles: str):
+def ecfp(smiles: str):
+    """The canonical fingerprint for every diversity/mode number in this project (Morgan r=3,
+    2048 bits, no features/chirality). Public so callers can pre-compute and cache them; ``None``
+    for an empty/unparseable SMILES or a missing RDKit."""
     if Chem is None or not smiles:
         return None
     mol = Chem.MolFromSmiles(smiles)
@@ -44,6 +58,30 @@ def _ecfp(smiles: str):
     return AllChem.GetMorganFingerprintAsBitVect(
         mol, radius=_FP_RADIUS, nBits=_FP_BITS, useFeatures=False, useChirality=False
     )
+
+
+_ecfp = ecfp  # back-compat alias for the pre-public name
+
+
+def murcko_scaffold(smiles: str) -> Optional[str]:
+    """Bemis-Murcko scaffold SMILES, or ``None`` if it can't be derived. Public for the same
+    caching reason as :func:`ecfp`; :func:`unique_scaffolds` is this plus a ``set``."""
+    if Chem is None or not smiles:
+        return None
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return None
+    try:
+        return MurckoScaffold.MurckoScaffoldSmiles(mol=mol)
+    except Exception:
+        return None
+
+
+def _fp_at(keys: Sequence[str], fps: Optional[Sequence], i: int):
+    """Fingerprint for ``keys[i]`` — from the caller's cache when supplied, else computed."""
+    if fps is not None:
+        return fps[i]
+    return ecfp(keys[i])
 
 
 def _passes_gate(reward, reward_threshold, higher_is_better) -> bool:
@@ -64,6 +102,7 @@ def mode_representatives(
     reward_threshold: Optional[float] = None,
     similarity_threshold: float = _MODE_SIMILARITY_THRESHOLD,
     max_modes: Optional[int] = None,
+    fps: Optional[Sequence] = None,
 ) -> List[int]:
     """Indices (into ``keys``) of the mode representatives — the paper's greedy definition.
 
@@ -73,6 +112,11 @@ def mode_representatives(
     ``<= similarity_threshold``. The accepted molecule is that mode's representative (its
     highest-reward member, by the best-first order). Without ``rewards`` it degrades to
     structure-only modes in input order (no gate, no sort).
+
+    ``fps``: optional pre-computed :func:`ecfp` fingerprints aligned with ``keys``. The
+    accept/reject test uses ``BulkTanimotoSimilarity`` against the accepted set, which returns the
+    same values as the per-pair call — identical modes, one C++ call per candidate instead of one
+    per accepted mode.
     """
     idxs = [i for i, k in enumerate(keys) if k]
     if rewards is not None:
@@ -84,14 +128,15 @@ def mode_representatives(
     reps: List[int] = []
     rep_fps: List[object] = []
     for i in idxs:
-        fp = _ecfp(keys[i])
+        fp = _fp_at(keys, fps, i)
         if fp is None:
             continue
-        if all(DataStructs.TanimotoSimilarity(fp, m) <= similarity_threshold for m in rep_fps):
-            reps.append(i)
-            rep_fps.append(fp)
-            if max_modes and len(reps) >= max_modes:
-                break
+        if rep_fps and max(DataStructs.BulkTanimotoSimilarity(fp, rep_fps)) > similarity_threshold:
+            continue
+        reps.append(i)
+        rep_fps.append(fp)
+        if max_modes and len(reps) >= max_modes:
+            break
     return reps
 
 
@@ -102,6 +147,7 @@ def count_modes(
     higher_is_better: bool = True,
     reward_threshold: Optional[float] = None,
     similarity_threshold: float = _MODE_SIMILARITY_THRESHOLD,
+    fps: Optional[Sequence] = None,
 ) -> int:
     """Number of paper-comparable modes (see :func:`mode_representatives`). RDKit-unavailable
     fallback: distinct-SMILES count."""
@@ -114,25 +160,86 @@ def count_modes(
             higher_is_better=higher_is_better,
             reward_threshold=reward_threshold,
             similarity_threshold=similarity_threshold,
+            fps=fps,
         )
     )
 
 
-def unique_scaffolds(smiles: Sequence[str]) -> int:
-    """Number of distinct Bemis-Murcko scaffolds (secondary diversity metric, §11)."""
+def mean_pairwise_similarity(
+    keys: Sequence[str], *, fps: Optional[Sequence] = None
+) -> Optional[float]:
+    """Mean Tanimoto similarity over **all distinct pairs** in the set, on the :func:`ecfp` recipe.
+
+    The set-level counterpart to :func:`count_modes`: modes ask "how many distinct families are
+    here?", this asks "how alike is an average pair?". Molecules whose fingerprint is unavailable
+    are dropped; returns ``None`` for fewer than two usable molecules (no pairs to average).
+
+    Note this is a *pair* average, so it is unbiased under uniform subsampling of the set — an
+    estimate from a random size-N subsample targets the same quantity as the full set — but it is
+    also insensitive by construction: adding one tight cluster to a diverse set moves it very
+    little. Read it alongside a clustering readout, never alone.
+    """
+    if Chem is None:
+        return None
+    usable = [f for f in (_fp_at(keys, fps, i) for i in range(len(keys))) if f is not None]
+    if len(usable) < 2:
+        return None
+    total, n_pairs = 0.0, 0
+    for i in range(len(usable) - 1):
+        sims = DataStructs.BulkTanimotoSimilarity(usable[i], usable[i + 1 :])
+        total += sum(sims)
+        n_pairs += len(sims)
+    return total / n_pairs
+
+
+def count_butina_clusters(
+    keys: Sequence[str],
+    *,
+    fps: Optional[Sequence] = None,
+    similarity_threshold: float = _MODE_SIMILARITY_THRESHOLD,
+) -> Optional[int]:
+    """Taylor-Butina cluster count — the **reward-blind** counterpart to :func:`count_modes`.
+
+    Why both exist. :func:`count_modes` is greedy sphere exclusion fed **best-reward-first**, which is
+    what makes each mode's representative the molecule you would synthesise and what makes our numbers
+    comparable to the RGFN/SCENT tables. But greedy exclusion is *order-dependent*, and that order is
+    the reward — so it is the wrong instrument for asking whether diversity itself tracks reward.
+    Butina picks cluster centres by **neighbourhood density** (most-neighbours-first), never looking at
+    reward, so it answers the same "how many distinct families?" question with reward outside the
+    procedure. ``docs/paper_planning/lsd-flow-publication-strategy.md`` §2.3 asks for exactly this.
+
+    ``similarity_threshold`` is given as a *similarity* for symmetry with the rest of this module and
+    converted to Butina's distance cutoff (``1 - similarity``); the two algorithms are not identical,
+    so treat this as a second instrument rather than a drop-in replacement for the mode count.
+
+    Cost: needs the **full lower-triangular distance list** up front, so memory is O(n²) — fine for a
+    few thousand molecules (n=2,500 → 3.1M distances, ~0.5 s), impractical for tens of thousands.
+    Returns ``None`` when RDKit/Butina is unavailable or fewer than two molecules are usable.
+    """
+    if Chem is None or Butina is None:
+        return None
+    usable = [f for f in (_fp_at(keys, fps, i) for i in range(len(keys))) if f is not None]
+    if len(usable) < 2:
+        return None
+    dists: List[float] = []
+    for i in range(1, len(usable)):
+        dists.extend(1.0 - s for s in DataStructs.BulkTanimotoSimilarity(usable[i], usable[:i]))
+    return len(
+        Butina.ClusterData(
+            dists, len(usable), 1.0 - similarity_threshold, isDistData=True, reordering=False
+        )
+    )
+
+
+def unique_scaffolds(smiles: Sequence[str], *, scaffolds: Optional[Sequence] = None) -> int:
+    """Number of distinct Bemis-Murcko scaffolds (secondary diversity metric, §11). ``scaffolds``:
+    optional pre-computed :func:`murcko_scaffold` values aligned with ``smiles``."""
     valid = [s for s in smiles if s]
     if not valid or Chem is None:
         return len(set(valid))
-    scaffolds = set()
-    for smi in valid:
-        mol = Chem.MolFromSmiles(smi)
-        if mol is None:
-            continue
-        try:
-            scaffolds.add(MurckoScaffold.MurckoScaffoldSmiles(mol=mol))
-        except Exception:
-            continue
-    return len(scaffolds)
+    if scaffolds is not None:
+        return len({s for s in scaffolds if s})
+    return len({s for s in (murcko_scaffold(smi) for smi in smiles) if s})
 
 
 def mode_counter(similarity_threshold: float = _MODE_SIMILARITY_THRESHOLD):
