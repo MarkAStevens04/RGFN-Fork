@@ -1,0 +1,124 @@
+{
+  "tag": "hubord_flow_top",
+  "reward_threshold": 7.0,
+  "similarity": 0.5,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "child_policy": "free_frag",
+  "prebuild_k": 20,
+  "rank_by": "build_score",
+  "best_candidate": {
+    "strategy": "best_candidate",
+    "total_modes": 300,
+    "total_reactions": 929,
+    "reactions_per_mode": 3.097,
+    "total_reward_gen_calls": 0,
+    "reward_gen_calls_per_mode": 0.0,
+    "distinct_promoted_fragments": 205,
+    "distinct_hubs_used": 254,
+    "n_scaffolds": 300,
+    "best_reward": 8.404,
+    "median_reward": 8.103,
+    "case1_modes_at_100rxn": 29,
+    "case2_reactions_at_300modes": 929,
+    "stop_reason": "modes"
+  },
+  "hub_batching": {
+    "strategy": "hub_batching",
+    "total_modes": 300,
+    "total_reactions": 357,
+    "reactions_per_mode": 1.19,
+    "total_reward_gen_calls": 244685,
+    "reward_gen_calls_per_mode": 815.62,
+    "distinct_promoted_fragments": 30,
+    "distinct_hubs_used": 41,
+    "n_scaffolds": 296,
+    "best_reward": 8.404,
+    "median_reward": 7.348,
+    "case1_modes_at_100rxn": 73,
+    "case2_reactions_at_300modes": 357,
+    "stop_reason": "modes"
+  },
+  "compute_time": {
+    "enum_timings_meta": {
+      "merged_from": [
+        "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_70363/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/hub_order/enum/probe00_mixed/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/hub_order/enum/step01_flow_top/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/hub_order/enum/step02_flow_top/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/hub_order/enum/step03_flow_top/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/hub_order/enum/step04_flow_top/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/hub_order/enum/step05_flow_top/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/hub_order/enum/step06_flow_top/enum_timings.json"
+      ],
+      "n_slices": 8,
+      "setup_s": 29.052,
+      "slice_setups_s": [
+        26.689,
+        29.462,
+        28.876,
+        28.702,
+        29.81,
+        29.227,
+        29.247,
+        28.346
+      ],
+      "device": "cuda",
+      "reward_name": "seh",
+      "cuda_synchronized": true,
+      "arm": "flow_top",
+      "n_hubs": 200,
+      "n_children": 1077049,
+      "totals_s": {
+        "enumeration_s": 20110.255,
+        "reward_gen_s": 1227.862,
+        "flow_extract_s": 3935.753,
+        "unattributed_s": 0.0
+      }
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "setup_s": 29.052,
+      "hub_pick_s": 0.173,
+      "enumeration_s": 4469.8099,
+      "reward_gen_s": 275.9398,
+      "flow_extract_s": 871.8312,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.9947,
+      "n_hubs_walked": 43,
+      "n_children_scored": 244685,
+      "missing_hub_keys": [],
+      "total_s": 5647.8005
+    },
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "setup_s": 0.0,
+      "hub_pick_s": 0.0,
+      "enumeration_s": 0.0,
+      "reward_gen_s": 0.0,
+      "flow_extract_s": 0.0,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.9645,
+      "n_hubs_walked": 0,
+      "n_children_scored": 0,
+      "missing_hub_keys": [],
+      "total_s": 0.9645
+    },
+    "head_to_head": {
+      "hub_total_s": 5647.8005,
+      "best_total_s": 0.9645,
+      "extra_compute_s": 5646.836,
+      "ratio_hub_over_best": 5855.655,
+      "per_component_delta_s": {
+        "setup_s": 29.052,
+        "hub_pick_s": 0.173,
+        "enumeration_s": 4469.8099,
+        "reward_gen_s": 275.9398,
+        "flow_extract_s": 871.8312,
+        "unattributed_s": 0.0,
+        "mode_selection_s": 0.0302
+      },
+      "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+    }
+  }
+}
