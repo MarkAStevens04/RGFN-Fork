@@ -1,6 +1,6 @@
 # SCENT / sEH — does sorting hubs by flow actually buy anything?
 
-**Date:** 2026-07-29, ~3pm
+**Date:** 2026-07-29, ~3pm (enumeration ran overnight; analysis completed 2026-07-30 ~00:45)
 
 ## Question
 
@@ -36,9 +36,29 @@ it take to build a 300-molecule diverse library — across the full range of wha
 
 ## Answer
 
-[TODO — fill in at END. Expected shape: whether flow order beats random/reverse, whether the reward
-pre-filter is load-bearing, and whether the best-candidate ordering matches flow (the key control
-for "a great molecule implies a great hub").]
+**The flow field is doing real work, but the honest statement is about *neighbourhood*, not rank
+order.** Reversing the sort breaks the method outright — lowest-flow-first cannot build the
+300-molecule library at all, running out of all 200 scaffolds at 279, while burning more compute than
+any other arm. A random order does complete, but costs 1.53× the reactions of flow order. Yet the
+three arms that all draw on *good* scaffolds — flow over everything, flow over the reward-filtered
+pool, and ordering by best-molecule score — land within 9% of each other. So flow reliably identifies
+which region of the scaffold space is worth building in; it is not finely calibrated within that
+region.
+
+**The sharpest result is on the two cost axes together.** Reactions (bench cost) and compute
+(enumeration cost) trade against each other, and *every* point on the resulting frontier is a
+flow-informed or reward-informed ordering: flow-first is cheapest in reactions (357) but most
+expensive in compute (5,648 s), while ordering by best-molecule score costs 9% more reactions (389)
+for **2.3× less compute** (2,481 s). Both no-signal controls are strictly dominated — random is beaten
+on *both* axes simultaneously by the candidate ordering, and reverse-flow is beaten by everything. The
+mechanism is visible in what each ordering selects: flow prefers shallow scaffolds (11 depth-0 /
+150 depth-1), which have thousands of children each — more reaction savings per scaffold, but a much
+bigger enumeration bill.
+
+**Two caveats we should state ourselves.** The advantage of every arm collapses to ~1.04× by a
+diversity cutoff of 0.9, where "distinct" is loose enough that almost any scaffold's children qualify
+and scaffold quality stops binding. And the whole comparison is one model on one target with one
+random draw, so it establishes the effect exists, not its size across models.
 
 ## Relevance to our Publication
 
@@ -131,7 +151,8 @@ Root: `./` = repo root; `/scratch/markymoo/rgfn_runs/` for run artifacts.
 ## Relevant Versions
 
 Branch `Hub-Analysis`, worktree branch `worktree-hub-order-ablation` off `7d99b27`.
-[TODO — add commit hash after pushing]
+Infrastructure `1a6dcb7`, index row `21247f1`, per-arm results `e04f85a` / `6de1deb` / `b846552` + the final commit carrying this write-up.
+**Not pushed** — no git credentials / `gh` in the run environment; the branch is local to the worktree at `.claude/worktrees/hub-order-ablation`.
 
 ## Relevant Resources
 
@@ -160,7 +181,63 @@ Branch `Hub-Analysis`, worktree branch `worktree-hub-order-ablation` off `7d99b2
 
 ## Results
 
-[TODO — fill in at END]
+**Operating point (τ=7.0, cutoff 0.5, budget 300 modes, `free_frag` + `prebuild_k=20`).** n=1 model,
+1 target, 1 random draw. "Compute" is measured hub-batching wall-clock attributed over the hubs each
+arm actually walked (Logs/039), not modelled.
+
+| arm | rxn/mode | modes | reactions | hubs walked | reward-gen calls | compute (s) | status |
+|---|---|---|---|---|---|---|---|
+| `flow_top` | **1.190** | 300 | 357 | 41 | 244,685 | 5,648 | Pareto frontier |
+| `incumbent` | 1.217 | 300 | 365 | 43 | 241,158 | 5,685 | dominated by `flow_top` |
+| `cand_order_fixedset` | 1.263 | 300 | 379 | 41 | 145,490 | 3,365 | Pareto frontier |
+| `cand_order` | 1.297 | 300 | 389 | 41 | 109,897 | **2,481** | Pareto frontier |
+| `random` | 1.820 | 300 | 546 | 94 | 184,159 | 4,332 | **dominated on both axes** |
+| `flow_bottom` | 2.050 | **279** | 572 | 108 | 283,363 | 6,580 | **pool-exhausted** |
+| best-candidate (ref) | 3.097 | 300 | 929 | 254 (accidental) | 0 | — | reference |
+
+**Reactions to reach 300 modes, across the diversity cutoff.** `pool-lim` = the arm exhausted its 200
+hubs before reaching 300 modes; those cells are excluded from ratios, never counted as wins.
+
+| cutoff | flow_top | incumbent | cand_order_fixedset | cand_order | random | flow_bottom | best-cand |
+|---|---|---|---|---|---|---|---|
+| 0.30 | pool-lim | pool-lim | pool-lim | pool-lim | pool-lim | pool-lim | 1123 |
+| 0.35 | pool-lim | pool-lim | pool-lim | pool-lim | pool-lim | pool-lim | 1080 |
+| 0.40 | **466** | 484 | 477 | 521 | pool-lim | pool-lim | 1018 |
+| 0.45 | **396** | 396 | 417 | 440 | 625 | pool-lim | 955 |
+| 0.50 | **357** | 365 | 379 | 389 | 546 | pool-lim | 929 |
+| 0.55 | **345** | 348 | 356 | 362 | 466 | 486 | 866 |
+| 0.60 | 337 | 341 | 343 | **341** | 433 | 437 | 835 |
+| 0.65 | **331** | 336 | 334 | 334 | 393 | 405 | 823 |
+| 0.70 | 329 | 330 | 331 | **330** | 363 | 388 | 793 |
+| 0.75 | **327** | 327 | 328 | 328 | 356 | 364 | 751 |
+| 0.80 | 327 | **325** | 327 | 327 | 345 | 343 | 722 |
+| 0.90 | 326 | **325** | 327 | 327 | 343 | 340 | 728 |
+
+Ratio to `flow_top` where both complete: `random` 1.58× (0.45) → 1.53× (0.50) → 1.19× (0.65) → 1.05×
+(0.90); `flow_bottom` 1.41× (0.55) → 1.22× (0.65) → 1.04× (0.90).
+
+**Pool-limitation is itself monotone in flow quality** — the cutoff below which an arm can no longer
+build the library: flow arms and `cand_order` < 0.40, `random` < 0.45, `flow_bottom` < 0.55. The flow
+arms' 0.30/0.35 failure reproduces Logs/052's strict-corner finding on the same substrate.
+
+**What each ordering selects (the mechanism behind the compute axis).**
+
+| arm | depth mix (0/1/2/3) | children enumerated |
+|---|---|---|
+| `flow_top` | 11/150/37/2 | 1,077,049 |
+| `incumbent` / `cand_order_fixedset` | 2/104/84/10 | 828,448 |
+| `cand_order` | 0/59/89/52 | 535,476 |
+| `random` | 2/19/51/128 | 350,764 |
+| `flow_bottom` | 7/5/34/154 | 283,363 |
+
+Flow prefers shallow scaffolds (~7,100 children each at depth 1 vs ~700 at depth 3): more reaction
+savings per scaffold, a much larger enumeration bill. That is the trade the frontier expresses — and
+note it runs *opposite* to naive intuition, since the arm that enumerates the FEWEST children
+(`flow_bottom`, 283k) is also the one that fails.
+
+**Enumeration cost.** 16 `debug` slices, 15:17 → 00:31 (~9.2 h wall clock) for 598 new hubs; 402 of
+the 1,000 arm-hub slots were served from cache. The self-refitting slice planner had zero wall-clock
+failures; measured slice times ran 33–50 min against a 2 h limit.
 
 **Arm sizing (from `plan_arms.py`, before enumeration):**
 
@@ -175,14 +252,6 @@ Branch `Hub-Analysis`, worktree branch `worktree-hub-order-ablation` off `7d99b2
 
 598 of the 1,000 arm-hub slots are new work; the rest is shared cache.
 
-**Operating point (τ=7.0, cutoff 0.5, 300 modes, `free_frag` + `prebuild_k=20`)** — the two arms that
-needed no new enumeration, run first as an end-to-end validation:
-
-| arm | rxn/mode | modes | reactions | hubs walked | reward-gen calls | measured compute (s) |
-|---|---|---|---|---|---|---|
-| `incumbent` | 1.217 | 300 | 365 | 43 | 241,158 | 5,685 |
-| `cand_order_fixedset` | 1.263 | 300 | 379 | 41 | 145,490 | 3,365 |
-| best-candidate (ref) | 3.097 | 300 | 929 | 254 | 0 | — |
-
-best-candidate reproduces entry `033`'s 929 reactions / 3.097 exactly, and is identical across arms
-(it never reads hub data) — the built-in consistency check.
+best-candidate reproduces entry `033`'s 929 reactions / 3.097 exactly and is byte-identical across
+all six arms (it never reads hub data) — the built-in consistency check, asserted by
+`compare_hub_order.py` on every run.
