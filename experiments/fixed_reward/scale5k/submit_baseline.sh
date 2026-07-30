@@ -112,8 +112,14 @@ if [ "$GEN" = scent ]; then
   SOVR=()
   [ -n "${N_ITERS_OVERRIDE:-}" ] && SOVR+=(--n-iterations "$N_ITERS_OVERRIDE")
   [ -n "${N_SAMPLES_OVERRIDE:-}" ] && SOVR+=(--n-samples "$N_SAMPLES_OVERRIDE")
+  # --log-recipes: log every promoted dynamic-library fragment's synthesis route into the
+  # fragments_<N>.json snapshot, so LSD-Flow can charge nested fragment builds EXACTLY instead of
+  # falling back to min_num_reactions (entry 027/028). Only observable during training, so a run
+  # without it can never be fixed after the fact. Redundant with the runner's default (on since
+  # 2026-07-29) — passed explicitly so this script states the campaign's intent on its own.
   conda run --no-capture-output -n "$ENVNAME" python "$RUNNER" \
-      --cfg "$CFG" --seed "$SEED" --root-dir "$FR_ROOT_DIR" --run-dir "$RUN_DIR" "${SOVR[@]}"
+      --cfg "$CFG" --seed "$SEED" --root-dir "$FR_ROOT_DIR" --run-dir "$RUN_DIR" \
+      --log-recipes "${SOVR[@]}"
 else
   conda run --no-capture-output -n "$ENVNAME" python "$RUNNER" \
       --cfg "$CFG" --seed "$SEED" --run-dir "$RUN_DIR" "${OVR[@]}"

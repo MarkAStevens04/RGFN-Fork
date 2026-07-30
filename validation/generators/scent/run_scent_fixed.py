@@ -55,12 +55,29 @@ def main() -> None:
         "resumes from it (forward policy + logZ + optimizer; guidance sidecar recovers P_B). "
         "Overrides --root-dir + the config-stem run name.",
     )
+    # ON BY DEFAULT since 2026-07-29. Recipes are only observable *during* training (once a
+    # fragment is promoted the model uses it atomically), so a run without them can never be
+    # retro-fitted — it is permanently stuck on the `min_num_reactions` cost approximation. The
+    # default flipped here rather than in the submit scripts on purpose: SLURM snapshots a batch
+    # script at submit time, so editing a `submit_*.sh` cannot reach an already-queued chain link,
+    # while this file is resolved from the repo at job start and therefore is inherited by every
+    # link that has not run yet (campaign Logs/030 chains). `--no-log-recipes` opts out.
     ap.add_argument(
         "--log-recipes",
+        dest="log_recipes",
         action="store_true",
+        default=True,
         help="log each promoted dynamic-library fragment's synthesis route into the "
         "fragments_<N>.json snapshot (for exact nested LSD-Flow cost + chemist routes, entry 027). "
-        "Monkeypatches DynamicLibrary; SCENT clone untouched.",
+        "Monkeypatches DynamicLibrary; SCENT clone untouched. DEFAULT ON.",
+    )
+    ap.add_argument(
+        "--no-log-recipes",
+        dest="log_recipes",
+        action="store_false",
+        help="disable route logging (the pre-2026-07-29 default). Training is unaffected either "
+        "way — capture is a read-only post-hook that consumes no RNG — so this is only for "
+        "reproducing a route-free snapshot exactly.",
     )
     ap.add_argument(
         "--n-iterations", type=int, default=None, help="override Trainer.n_iterations (smoke)"
@@ -126,6 +143,40 @@ def main() -> None:
         import recipe_logging  # sibling module (validation/generators/scent)
 
         recipe_logging.enable_recipe_logging()
+
+        # Partial-coverage warning. A fragment's route is observable only while it is still being
+        # *built* from smaller pieces; once promoted, the model consumes it atomically, so it never
+        # reappears as a reaction product. Enabling capture partway through a chain (earlier links
+        # ran route-free) therefore recovers routes ONLY for fragments promoted from here on — the
+        # final snapshot mixes exact routes with min_num_reactions fallbacks. Say so loudly rather
+        # than let a downstream reader read "has smiles_to_route" as "fully routed"
+        # (reconcile_t15.py --min-recipe-fraction is the gate that checks coverage).
+        def _has_routes(path: Path, needle: bytes = b'"smiles_to_route"') -> bool:
+            """Is the key present? Chunked scan — these snapshots are ~100 MB (386k reward entries)
+            and ``state_dict`` appends the key LAST, so neither a full read nor a prefix check will
+            do. Overlap by ``len(needle)-1`` so a match spanning a chunk boundary is still found."""
+            tail = b""
+            with open(path, "rb") as fh:
+                while chunk := fh.read(1 << 20):
+                    if needle in tail + chunk:
+                        return True
+                    tail = chunk[-(len(needle) - 1) :]
+            return False
+
+        _prior = sorted((run_dir / "additional_fragments").glob("fragments_*.json"))
+        _routeless = [p.name for p in _prior if not _has_routes(p)]
+        if _routeless:
+            print(
+                f"[SCENT-FR] WARNING resuming a run whose earlier snapshots have no routes "
+                f"({', '.join(_routeless)}): only fragments promoted from THIS link on can be "
+                f"routed, so this run's final fragments_<N>.json may be partially routed. Cost "
+                f"accounting stays valid either way (min_num_reactions per unrouted fragment), but "
+                f"measure coverage with reconcile_t15.py --min-recipe-fraction before claiming "
+                f"exact nested cost. (Coverage can also come out complete: the library state is not "
+                f"checkpointed, so a resume resets it — see the 2026-07-29 REFACTOR_LOG entry — and "
+                f"the surviving fragments are then exactly the ones promoted after capture began.)",
+                flush=True,
+            )
 
     bindings = [
         f'user_root_dir="{root_dir}"',

@@ -328,3 +328,225 @@ T4.4 (ablation), T4.5 (seeds), T5 (glue artifacts).
 - [ ] Budgets/targets applied at read-time; selection emits an ordering, not a fixed set.
 - [ ] Ignore the stale `glue/chemistry/__init__.py` "non-functional stubs" docstring.
 - [ ] pre-select-K set explicitly for benchmark runs.
+
+---
+
+# 11. EXTENSION (post-Phase-3): information-theoretic AL — the BALD / BatchGFN family
+
+> **⛔ DO NOT BUILD until the Phase-3 spine (T3.2) is complete.** This section is a *plan*, written
+> so it can be picked up cold. Everything §11 is **live active-learning** work, not fixed-pool
+> benchmarking — it is the AL-loop counterpart of §0–§9 and its natural sibling doc is
+> `docs/AL_PIPELINE_ARCHITECTURE.md`. It lives here because that is where the implementable
+> T-task convention lives. **When implementation starts**, add cross-refs: a row in
+> `AL_PIPELINE_ARCHITECTURE.md` §2's batching-paradigm table (information-theoretic batching) and a
+> resolution note on its §7 **Q2** (retrosynthesis-batching's `U(h)`-analogue) — §11's ensemble
+> posterior is the principled answer that question was deferred waiting for.
+
+## 11.1 Objective and the claim
+
+**What we are benchmarking against.** [`malik2023batchgfn`] (BatchGFN, ICML 2023 SPIGM workshop)
+does pool-based active learning by training a GFlowNet whose *state* is a partially-built **batch**
+and whose actions **add a pool point**, with reward `exp(I(y_{1:B}; θ)/T)` — the BatchBALD **joint
+mutual information (JMI)**, computed in closed form under an exact GP: `½·log|I + σ⁻²K_B|`.
+Its successor [`zhang2025baldgfn`] (BALD-GFlowNet — Zhang, Pandey, Cherkasov & Ester, *Why Pool When You Can
+Flow? Active Learning with GFlowNets*, arXiv:2509.00704) makes the same idea
+*generative* — it trains a GFlowNet to **produce** high-BALD molecules rather than select them —
+and evaluates on JAK2 virtual screening. **BALD-GFlowNet is the stronger comparison target**;
+BatchGFN is the origin of the objective.
+
+**These are not competitors on our axis, and the plan must say so plainly.** They optimize
+information per *label*; a synthesis campaign is bound by information per *bench reaction*. Neither
+has a cost model — every pool point costs the same to label. The claim §11 exists to support:
+
+> BatchGFN-family methods optimize information per *label*. In a synthesis campaign the binding
+> constraint is information per *reaction*. On matched oracle budget, JMI-optimal batches cost N×
+> more bench reactions than hub-batching for comparable information.
+
+**The second, equally important objective — and the reason this is instrumentation, not just a
+baseline.** JMI is computed for **every arm's batch, every round**, including `random`. That turns
+"are LSD-Flow's proposed batches actually information-rich?" into a measured number rather than an
+argument, and it enables the study that validates the metric itself:
+
+> **Does JMI predict campaign efficiency?** Rounds-to-N-modes is noisy; JMI is a per-round scalar.
+> Do they agree — i.e. is JMI a usable *leading indicator* of how long a campaign takes to deliver
+> N modes? A negative answer is publishable and is the honest thing to check before leaning on it.
+
+## 11.2 Decisions already made (do not re-litigate)
+
+| # | Decision | Rationale |
+|---|---|---|
+| 1 | **Live AL loop only.** No fixed-pool/post-hoc variant. | A log-det computed on a delivered library with no model being updated is a *kernel diversity* measure, not information. Rejected deliberately. |
+| 2 | **Generator = SCENT. Target = 6TD3 differential.** | SCENT is the paper's spine; 6TD3 has the calibrated hit bar (−1.5), the config, and post-fix checkpoints (§11.3). |
+| 3 | **`M` becomes a K-member deep ensemble.** | The loop's proxy is a single deterministic MPNN with *no* uncertainty — JMI/BALD is undefined against it. Ensembling `M` itself means the information we measure is information about the model we are actually training, and the generative arm (T6.7) needs uncertainty inside the reward path anyway. |
+| 4 | **Both expected and realized information.** | Expected IG (pre-label, against the posterior on `D_{i-1}`) is the acquisition-time quantity and the *predictor* for §11.1's second study. Realized contraction (post-label) is the check. Their gap is a reportable calibration result. |
+| 5 | **Arms at both levels**: selection (`bald`, `batchbald`) then generative (`bald_gfn`). | Selection-level arms are a prerequisite for the generative one (same posterior, same information module) and give a cheap intermediate checkpoint. |
+| 6 | **Greedy BatchBALD, not a subset-GFlowNet.** | BatchGFN's own contribution is *amortizing* the greedy objective, which it matches but does not beat — so greedy BatchBALD **upper-bounds** it. State this in one cited sentence rather than building a GFlowNet over subsets that cannot exceed it. |
+| 7 | **Primary information baseline is reward-weighted (composite).** | Pure BALD is exploration-only; hub-batching is reward-gated. Comparing them head-to-head on hits beats a strawman. BALD-GFlowNet itself uses a composite MI + drug-likeness reward — direct precedent. Pure BALD reported as a reference point. |
+| 8 | **Downstream held-out metric is primary; JMI is the mechanism check.** | BatchBALD maximizes JMI by construction, so a JMI-primary headline can only ever report a ratio. Held-out AUROC/BEDROC is task-level and rigged for neither side. This finally builds `LSD_FLOW_PROPOSAL.md` §11's planned-never-built Information metric. |
+| 9 | **Accept the ensemble tax and report it.** | Hub-batching scores the most molecules of any arm (measured: **20,000 reward-gen calls/round**), so K=5 makes that ~100k proxy evaluations/round. `reward_gen_s` is already a published timing component; the tax falls hardest on the arm we advocate, which makes reporting it a credibility asset. **All arms must be re-run under the ensemble `M` — existing single-`M` results are not comparable.** |
+| 10 | **Mode (AL definition)**: a molecule with a **real oracle label** clearing the calibrated bar (6TD3: `≤ −1.5`), Tanimoto `< 0.5` (Morgan r=3/2048) from every mode already counted, **cumulative over `D`**. | Oracle truth, not proxy prediction; applies identically to every arm including `random`; matches the existing mode machinery. Report the paper-comparable 0.7 cutoff alongside where cheap. |
+| 11 | **Pilot before committing compute.** | 1 seed × all arms at full length, then size seeds/rounds/N from measured JMI variance (T6.9). |
+
+## 11.3 Current state — verified on disk, not inferred from docs
+
+Checked 2026-07-30. **`AL_PIPELINE_ARCHITECTURE.md` §6 calling the SCENT AL loop "in progress" is
+stale** — it has run to completion:
+
+- `validation/generators/scent/al_loop.py` implements `_ARMS = ("policy","random","hub_batching","best_candidate")`
+  with warm-start + `ScentHubAcquisition`; `validation/configs/scent_seh_lsdflow{,_smoke}.gin` exist.
+- **Completed runs**: `$SCRATCH/rgfn_runs/experiments/active_learning/scent_seh_lsdflow/{hub_batching,best_candidate,random}_seed42/`
+  — 5 rounds × 100 oracle calls, all three arms, full `oracle_calls.csv` + per-round `dataset_round_*.csv`.
+- **6TD3 prerequisites present**: `$SCRATCH/.../experiments/fixed_reward/scent_6td3_5k/seed{42,43,44,999}/train/checkpoints/guidance_models.pt`
+  — post-fix sidecars, so `P_B` is exactly recoverable for warm-start (Logs/024).
+- **The chosen cell needs one config**: `validation/configs/scent_6td3_lsdflow.gin`. By inspection
+  `scent_seh_lsdflow.gin` is a **4-line overlay** on `scent_seh.gin`; the 6TD3 equivalent is the same
+  overlay on the existing `scent_6td3.gin`. Config bring-up, **not new code**.
+
+**⚠ Open dependency (researcher-owned, not this plan's work).** In those seed-42 sEH runs the
+`random` arm **beats both learned arms on top-k** (−10.65 vs −9.06 hub_batching / −9.19
+best_candidate; lower better). Partly not apples-to-apples — the learned arms enforce a Tanimoto-0.5
+diversity filter and a hit bar, so top-k is structurally unfair to them — and it is n=1 seed with
+`warm_start_policy=False` at 500 iters/round. A molecular-weight artifact was **ruled out** (random's
+molecules are *smaller*: MW 557 vs 598/575). The researcher is investigating a possible AL-loop bug.
+**§11 assumes that resolves.** Note that §11's instrumentation is itself an independent diagnostic
+for it: if the learned arms' batches do not score as more informative either, that is evidence about
+the loop rather than about the metric.
+
+## 11.4 Tasks
+
+### T6.1 — Give `M` a posterior: `EnsembleProxy`
+`glue/proxies/ensemble_proxy.py` (shared math, production side) + the mirrored SCENT-side class in
+`validation/generators/scent/proxy.py` (SCENT cannot `import glue` — its package is also named
+`rgfn`; this file **already** deliberately duplicates `LearnedGlueProxy` for that reason, so extend
+the existing pattern, do not invent a new one). K members, different seeds + bootstrap resamples,
+`fit()` trains all K; `predict` returns the ensemble mean (this **is** the new `M`); new
+`predict_members(smiles) -> (K, N)` exposes the raw member predictions. **K = 5** unless the pilot
+says otherwise; note in the code that ensemble MI estimates are sensitive at small K.
+**Acceptance:** K-member fit on the 6TD3 seed CSV; `predict_members` returns `(K, N)`; ensemble-mean
+predictions match the single-model distribution; per-round fit wall-clock measured and reported
+against GFN-training wall-clock in the same round.
+
+### T6.2 — The information math: `glue/metrics/information.py`
+A **pure** module in the shape of `glue/metrics/lsdflow_flow.py` / `uncertainty.py` — takes a `(K, N)`
+member-prediction matrix, returns floats; knows nothing about RGFN internals or RDKit.
+- `bald(preds) -> per-molecule MI`
+- `joint_mutual_information(preds_batch, sigma2) -> ½log|I + σ⁻²Σ|` under the Gaussian/rank-K
+  approximation to the ensemble posterior
+- `greedy_batchbald(preds_pool, B) -> indices` — the cost-benefit greedy, (1−1/e) on a monotone
+  submodular objective
+- `realized_contraction(...)` — posterior entropy change after labels arrive
+
+> **Placement note.** `LSD_FLOW_PROPOSAL.md` §3b sketched a single `validation/lsdflow/metrics/information.py`.
+> Split it: **acquisition-time math lives in `glue/`** (the arms import it — one-way rule), the
+> **downstream held-out evaluation** stays validation-side (T6.8).
+
+**Acceptance:** rank-K covariance matches a dense reference on a synthetic case; JMI of B *identical*
+molecules ≈ JMI of one (the redundancy penalty works); JMI monotone non-decreasing in B.
+
+### T6.3 — Instrument **every** arm (the measurement, decoupled from acquisition) ★
+The piece §11.1's second objective rests on. Per round, for the batch each arm *actually selected*,
+compute and log **expected IG** (against the posterior on `D_{i-1}`, before labelling) and **realized
+contraction** (after labels). Add `jmi_expected`, `jmi_realized`, `bald_mean`, `bald_max` to
+`AcquisitionTrace.COLUMNS`; both loops (`glue/active_learning/loop.py`,
+`validation/generators/scent/al_loop.py`) already forward an accounting object per round, so this is
+**additive and arm-agnostic** — no arm-specific branching.
+**Acceptance:** every arm **including `random` and `policy`** emits finite JMI every round;
+`oracle_calls.csv` carries the columns; `validation/harness/acquisition_curve.py` plots them.
+
+### T6.4 — Cross-env contract: ship the K member predictions
+`enum_children.json` children and `records.csv` gain `preds` (K floats) beside the scalar `reward`.
+**This is what makes BatchBALD computable across the conda boundary**: the ensemble covariance is
+**rank-K and exactly reconstructible** from the `(K, N)` matrix, so we never ship an N×N matrix
+(K=5, N=20,000 → 100k floats, trivial). Backwards compatible: absent `preds` ⇒ information arms
+unavailable, existing arms byte-identical.
+**Acceptance:** `scent_worker` emits `preds`; `select_acquisition.py` reconstructs the covariance and
+matches an in-env reference computation bit-for-bit on a committed fixture.
+
+### T6.5 — Selection-level arms: `bald`, `batchbald`
+New entries in `_ARMS` (both loops) + `--arm` in `validation/lsdflow/select_acquisition.py`. The GFN
+trains as usual; only batch selection changes. **Pool parity is load-bearing** — give these arms the
+*same* candidate set the comparison arm sees, and state which in the run card (sampled terminals for
+parity with `best_candidate`; the enumerated hub children for the strictest same-pool comparison).
+Primary variant **reward-weighted** (decision 7); pure BALD/BatchBALD as reference.
+**Acceptance:** both arms return a full-size batch; greedy BatchBALD's selected JMI ≥ BALD-top-B's on
+the same pool (the batch-aware term earns its keep); a fixture where BatchBALD refuses near-duplicates
+that BALD takes.
+
+### T6.6 — Hybrid arm + the `U(h)` autopsy
+Register `ensemble_bald` in `UNCERTAINTY_FNS` (`glue/samplers/lsdflow/hub/ucb.py`) so
+`UcbHubStrategy` can score `z(reward) + λ·z(BALD(h))` instead of `z(reward) + λ·z(U(h))` — "LSD-Flow
+structure, their exploration signal", a one-line registration plus a scorer.
+**Plus the diagnostic:** per-hub scatter + Spearman ρ of `U(h)` against ensemble BALD, per round.
+This answers *with a number* whether flow-variance `U(h)` was ever measuring epistemic uncertainty —
+the open question left by the flow-consistency finding that `U(h)` is dominated by `Var[log P_F]`
+(policy peakedness).
+**Acceptance:** arm runs end-to-end; committed scatter + ρ per round; `hub_batching` with
+`uncertainty_fn='flow_variance'` is **byte-identical** to today (no regression).
+
+### T6.7 — Generative arm `bald_gfn` (the real BALD-GFlowNet) — gated on T6.5
+Replace the GFN's training reward with the composite information reward, so the model learns to
+*produce* high-information molecules. The ensemble must be callable per-molecule every training step;
+the seam is a `Reward`/proxy wrapper, **not** a loop change.
+**Acceptance:** trains without collapse; its pool's mean BALD exceeds the reward-trained policy's;
+per-iteration cost measured against the K=1 baseline. **Caveat to carry into the write-up:** this arm
+optimizes a different objective, so it is not comparable to the others on reward — compare it on
+information and on modes.
+
+### T6.8 — Downstream information metric (validation side)
+`validation/lsdflow/metrics/information.py`: after each round, evaluate the refit `M` on held-out
+**known actives + property-matched decoys** — AUROC, BEDROC, regression error, calibration
+(over/under-estimation). This is `LSD_FLOW_PROPOSAL.md` §11's Information metric, finally built.
+Sets exist and are wired by config: 6TD3 `experiments/oracle_validation/docking_6td3/`
+(**160 knowns + 248 decoys**), ClpP (183+183), sEH (2,315+2,315 proxy / 1,000+1,000 docking).
+**State the power limitation:** 6TD3's set gives wide AUROC CIs and an underpowered BEDROC at small
+α — if a second target is run, sEH is the well-powered one.
+**Acceptance:** per-round held-out metrics CSV per arm; curves render alongside the oracle-call curve.
+
+### T6.9 — Pilot (sizing, not evidence)
+Build `validation/configs/scent_6td3_lsdflow.gin` (the 4-line overlay, §11.3), warm-start from
+`scent_6td3_5k/seed42`. Run **1 seed × all arms at full length**. Measure: round-to-round JMI
+variance, whether and when N modes is reached, per-round wall-clock **with** the ensemble tax.
+**Acceptance:** all arms complete; a written sizing recommendation (seeds × arms × rounds, and the
+value of N) recorded in the Logs entry **before** the full campaign is submitted.
+
+### T6.10 — Full campaign + the two headline analyses
+1. **JMI per arm per round** — are LSD-Flow's batches information-rich, measured not asserted.
+2. **The predictive study** — does cumulative/mean JMI rank-correlate with rounds-to-N-modes?
+   Report ρ with CIs **and the campaign count n stated in the caption**; with a realistic arm × seed
+   grid n is small, so the honest readout may be "directionally consistent, n=18", not a hard claim.
+**Acceptance:** both figures; an explicit verdict on whether JMI is a usable leading indicator,
+including if the verdict is negative.
+
+### T6.11 — Side validation on the completed sEH runs (NOT a gate)
+Offline, zero GPU: refit the ensemble on each stored `dataset_round_*.csv` (= `D_{i-1}`) from the
+existing seed-42 `scent_seh_lsdflow` runs and score each arm's round-*i* batch.
+**Acceptance:** a JMI-per-arm table over those runs, labelled explicitly as an **offline** posterior
+(not the one that was live in the loop) and reported as a consistency check, never as evidence.
+
+## 11.5 Compute envelope
+
+The binding cost is **GFN training, not docking** — with the GPU oracle, docking is <2% of the loop
+(Logs/014). Anchor: the RGFN LSD-Flow AL config runs 150 iters/round at ~13 s/iter × 10 rounds ≈
+**~6 GPU-h/campaign**; the SCENT×6TD3 figure is T6.9's job to measure (its sEH sibling uses 500
+iters/round × 5 rounds). Consequence: **more seeds means more GFN training** — a cheaper oracle buys
+almost nothing. Budget the ensemble tax on top: K× the per-round proxy fit, and K× on reward-gen
+child scoring (hub_batching: 20,000 → ~100,000 proxy evaluations/round at K=5).
+
+## 11.6 Stated assumptions and risks
+- **AL-loop correctness** (§11.3) is assumed resolved. If it is not, §11's numbers inherit it.
+- **K=5** ensemble; MI estimates are sensitive at small K. Pilot may revise.
+- **Gaussian / rank-K approximation** to a NN ensemble's joint posterior. A Tanimoto-GP cross-check
+  (exact JMI, matching BatchGFN's own setting) is the named fallback if a reviewer challenges that
+  the arm ranking is an artifact of the posterior approximation — **architected-for, not built**.
+- **6TD3's held-out set is thin** (160/248) — see T6.8.
+- **All arms re-run under ensemble `M`**; pre-ensemble AL results are not comparable.
+
+## 11.7 Guardrails (in addition to §10)
+- [ ] Acquisition-time information math in `glue/`; held-out evaluation in `validation/`. One-way rule holds.
+- [ ] JMI logged for **every** arm, including `random` — measurement is decoupled from acquisition.
+- [ ] Cross-env boundary carries `(K, N)` member predictions, never a dense covariance.
+- [ ] Existing arms byte-identical when the new knobs are left at their defaults.
+- [ ] Greedy BatchBALD's status as an **upper bound** on BatchGFN is stated with a citation, not implied.
+- [ ] Cross-refs added to `AL_PIPELINE_ARCHITECTURE.md` §2 (paradigm table) and §7-Q2 when work starts.
+- [ ] `malik2023batchgfn` (Malik, Lahlou, Jesson, Jain, Malkin, Deleu, Bengio & Gal, arXiv:2306.15058)
+      and `zhang2025baldgfn` (arXiv:2509.00704) added to `Logs/references/references.bib` + its README.
