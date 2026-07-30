@@ -155,3 +155,56 @@
              reactions-per-mode vs plain AiZynth->SPARROW. Molecular AI / AstraZeneca (same group as
              AiZynthFinder). PDF: pdfs/ianez2026multiaiz.pdf.}
 }
+
+% --- Information-theoretic active learning: the BALD / BatchGFN family ---
+
+@inproceedings{malik2023batchgfn,
+  title     = {{BatchGFN}: Generative Flow Networks for Batch Active Learning},
+  author    = {Malik, Shreshth A. and Lahlou, Salem and Jesson, Andrew and Jain, Moksh and Malkin, Nikolay and Deleu, Tristan and Bengio, Yoshua and Gal, Yarin},
+  booktitle = {ICML Workshop on Structured Probabilistic Inference \& Generative Modeling (SPIGM)},
+  year      = {2023},
+  eprint    = {2306.15058},
+  archivePrefix = {arXiv},
+  url       = {https://github.com/s-a-malik/batchgfn},
+  note      = {Pool-based batch active learning with a GFlowNet whose STATE is the query batch under
+               construction and whose ACTIONS add pool points; reward = exp(JMI/T) where JMI is
+               BatchBALD's joint mutual information I[y_1:B, theta | x_1:B, D_train], computed in
+               CLOSED FORM under an exact GP. Sampling is O(B) (B forward passes) versus BatchBALD's
+               joint entropies over the whole pool. Evaluated ONLY on a toy 1D regression task (pool
+               2000, seed 10, query 10); baselines random / BALD / stochastic-BALD / BatchBALD.
+               KEY RESULT FOR US (their Sec. 4.2-4.3): BatchGFN is "on par with BatchBALD" and beats
+               BALD + random -- i.e. its contribution is AMORTIZING the greedy objective, not
+               improving it, so greedy BatchBALD UPPER-BOUNDS it. That is why docs/
+               LSD_FLOW_BENCHMARK_PLAN.md Sec. 11 implements greedy BatchBALD rather than a
+               subset-GFlowNet. Their own speed-up is modest in-setting (~10% for a single sample).
+               No cost model: every pool point costs the same to label -- the axis LSD-Flow owns.
+               ICML 2023 workshop paper (10pp), explicitly "early results".
+               PDF: pdfs/malik2023batchgfn.pdf.}
+}
+
+@misc{zhang2025baldgfn,
+  title         = {Why Pool When You Can Flow? Active Learning with {GFlowNets}},
+  author        = {Zhang, Renfei and Pandey, Mohit and Cherkasov, Artem and Ester, Martin},
+  year          = {2025},
+  eprint        = {2509.00704},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.LG},
+  note          = {BALD-GFlowNet: the GENERATIVE successor to pool-based information acquisition, and
+                   the stronger of the two benchmark targets for docs/LSD_FLOW_BENCHMARK_PLAN.md
+                   Sec. 11. Replaces "which pool point is most informative?" with "what does an
+                   informative sample LOOK like?" -- a GFlowNet is trained to sample proportional to
+                   the BALD reward, so acquisition cost is INDEPENDENT of pool size. NOTE it uses
+                   SINGLE-POINT BALD, I(y; omega | x, D) over an ensemble -- NOT BatchBALD's joint MI
+                   -- so it inherits BALD's batch-redundancy weakness and leans on GFlowNet diversity
+                   + a composite reward to offset it. That composite reward is MULTIPLICATIVE:
+                   Reward(x) = MI(x) * TPSA(x) * QED(x) * SAS(x) * Rings(x) -- our precedent for
+                   giving the information baseline a quality term so we are not beating a strawman
+                   (Sec. 11.2 decision 7). Surrogate = an ensemble binary classifier on an imbalanced
+                   docking-score task. Experiments: a 2D grid + JAK2 virtual screening (Enamine REAL),
+                   finetuning a pretrained ATOM-LEVEL graph-Transformer GFlowNet. Results: comparable
+                   F1 to the BALD baseline (>90% of BALD's max F1 at the oracle cost of one BALD
+                   iteration), 12.5% runtime reduction at a 12M library, more structurally diverse
+                   molecules. Its generator is atom-level with no reaction grounding and no synthesis
+                   cost, so it has the same library-economics blind spot as [kim2026s3gfn].
+                   SFU / UBC Vancouver Prostate Centre / Diagen AI. PDF: pdfs/zhang2025baldgfn.pdf.}
+}

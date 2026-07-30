@@ -130,6 +130,35 @@ Runs in its own conda env (`external/setup_s3gfn.sh`); pool ingested via
 `scripts/ingest_candidates.py` (`has_route=0`) and routed by T1.3. &nbsp;`pdfs/kim2026s3gfn.pdf` ·
 arXiv:2602.04119
 
+### `[malik2023batchgfn]` — BatchGFN: Generative Flow Networks for Batch Active Learning (ICML 2023 workshop)
+Where the **joint mutual information (JMI)** batch objective enters our world. A GFlowNet whose
+*state* is the query batch under construction and whose *actions* add pool points, trained to sample
+batches proportional to `exp(JMI/T)` — JMI being BatchBALD's `I[y₁:B, θ | x₁:B, D]`, closed-form
+under an exact GP. Read it for the objective, not the results: it is a **10-page workshop paper
+evaluated only on toy 1D regression** (pool 2000, query 10). **The line that matters for us** is
+their §4.2–4.3: BatchGFN is *"on par with BatchBALD"* and beats BALD/random — its contribution is
+**amortizing** the greedy objective, not improving it. Hence greedy BatchBALD **upper-bounds** it,
+which is why `docs/LSD_FLOW_BENCHMARK_PLAN.md` §11 implements greedy BatchBALD rather than a
+GFlowNet over subsets. Note it has **no cost model** — every pool point costs the same to label,
+which is precisely the axis LSD-Flow owns. &nbsp;`pdfs/malik2023batchgfn.pdf` · arXiv:2306.15058 ·
+[code](https://github.com/s-a-malik/batchgfn)
+
+### `[zhang2025baldgfn]` — BALD-GFlowNet: Why Pool When You Can Flow? (2025)
+The **stronger of the two information-theoretic benchmark targets** (`LSD_FLOW_BENCHMARK_PLAN.md`
+§11) — the *generative* successor to pool-based acquisition, and the one actually run on molecules.
+It swaps "which pool point is most informative?" for "what does an informative sample **look**
+like?": a GFlowNet is trained to sample proportional to the BALD reward, so acquisition cost becomes
+**independent of pool size**. Three details we build on: (1) it uses **single-point BALD**
+`I(y; ω | x, D)` over an **ensemble**, *not* BatchBALD's joint MI — so it inherits BALD's
+batch-redundancy weakness and offsets it with GFlowNet diversity; (2) its reward is
+**multiplicative** — `MI · TPSA · QED · SAS · Rings` — our precedent for giving the information
+baseline a quality term rather than beating a pure-exploration strawman (§11.2 decision 7); (3) the
+ensemble surrogate is why our `M` becomes an ensemble (§11.2 decision 3). Results: comparable F1 to
+the BALD baseline at a fraction of the oracle cost, 12.5% runtime reduction at a 12M library, more
+diverse molecules (JAK2 / Enamine REAL, atom-level graph-Transformer GFlowNet). Its generator is
+**atom-level with no reaction grounding and no synthesis cost** — the same library-economics blind
+spot as `[kim2026s3gfn]`. &nbsp;`pdfs/zhang2025baldgfn.pdf` · arXiv:2509.00704
+
 ---
 
 ## Evaluation — synthesizability metrics

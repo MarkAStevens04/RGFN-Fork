@@ -348,11 +348,18 @@ T4.4 (ablation), T4.5 (seeds), T5 (glue artifacts).
 does pool-based active learning by training a GFlowNet whose *state* is a partially-built **batch**
 and whose actions **add a pool point**, with reward `exp(I(y_{1:B}; θ)/T)` — the BatchBALD **joint
 mutual information (JMI)**, computed in closed form under an exact GP: `½·log|I + σ⁻²K_B|`.
-Its successor [`zhang2025baldgfn`] (BALD-GFlowNet — Zhang, Pandey, Cherkasov & Ester, *Why Pool When You Can
-Flow? Active Learning with GFlowNets*, arXiv:2509.00704) makes the same idea
-*generative* — it trains a GFlowNet to **produce** high-BALD molecules rather than select them —
-and evaluates on JAK2 virtual screening. **BALD-GFlowNet is the stronger comparison target**;
-BatchGFN is the origin of the objective.
+Its successor [`zhang2025baldgfn`] (BALD-GFlowNet, arXiv:2509.00704) makes acquisition *generative* —
+a GFlowNet is trained to **produce** informative molecules rather than select them, so acquisition
+cost stops scaling with pool size — and evaluates on JAK2 virtual screening (Enamine REAL).
+**BALD-GFlowNet is the stronger comparison target** (it is the one actually run on molecules);
+BatchGFN is the origin of the batch objective.
+
+> **Read the two papers before building — they do NOT use the same objective.** BatchGFN uses
+> BatchBALD's **joint** MI (batch-aware, submodular). BALD-GFlowNet uses **single-point BALD**
+> `I(y; ω | x, D)` over an ensemble, *not* joint MI — so it inherits BALD's batch-redundancy
+> weakness and offsets it with GFlowNet diversity plus a **multiplicative** composite reward
+> `MI · TPSA · QED · SAS · Rings`. Our arm ladder covers both: `bald` (single-point, their setting)
+> and `batchbald` (joint, BatchGFN's objective).
 
 **These are not competitors on our axis, and the plan must say so plainly.** They optimize
 information per *label*; a synthesis campaign is bound by information per *bench reaction*. Neither
@@ -380,8 +387,8 @@ argument, and it enables the study that validates the metric itself:
 | 3 | **`M` becomes a K-member deep ensemble.** | The loop's proxy is a single deterministic MPNN with *no* uncertainty — JMI/BALD is undefined against it. Ensembling `M` itself means the information we measure is information about the model we are actually training, and the generative arm (T6.7) needs uncertainty inside the reward path anyway. |
 | 4 | **Both expected and realized information.** | Expected IG (pre-label, against the posterior on `D_{i-1}`) is the acquisition-time quantity and the *predictor* for §11.1's second study. Realized contraction (post-label) is the check. Their gap is a reportable calibration result. |
 | 5 | **Arms at both levels**: selection (`bald`, `batchbald`) then generative (`bald_gfn`). | Selection-level arms are a prerequisite for the generative one (same posterior, same information module) and give a cheap intermediate checkpoint. |
-| 6 | **Greedy BatchBALD, not a subset-GFlowNet.** | BatchGFN's own contribution is *amortizing* the greedy objective, which it matches but does not beat — so greedy BatchBALD **upper-bounds** it. State this in one cited sentence rather than building a GFlowNet over subsets that cannot exceed it. |
-| 7 | **Primary information baseline is reward-weighted (composite).** | Pure BALD is exploration-only; hub-batching is reward-gated. Comparing them head-to-head on hits beats a strawman. BALD-GFlowNet itself uses a composite MI + drug-likeness reward — direct precedent. Pure BALD reported as a reference point. |
+| 6 | **Greedy BatchBALD, not a subset-GFlowNet.** | BatchGFN's own §4.2–4.3 reports it is *"on par with BatchBALD"* — its contribution is *amortizing* the greedy objective, not improving it, so greedy BatchBALD **upper-bounds** it. State that in one cited sentence rather than building a GFlowNet over subsets that cannot exceed it. |
+| 7 | **Primary information baseline is reward-weighted (composite).** | Pure BALD is exploration-only; hub-batching is reward-gated. Comparing them head-to-head on hits beats a strawman. Direct precedent: BALD-GFlowNet's own reward is the **multiplicative** `MI · TPSA · QED · SAS · Rings`. Mirror that form (MI × a quality term); report pure BALD as a reference point. |
 | 8 | **Downstream held-out metric is primary; JMI is the mechanism check.** | BatchBALD maximizes JMI by construction, so a JMI-primary headline can only ever report a ratio. Held-out AUROC/BEDROC is task-level and rigged for neither side. This finally builds `LSD_FLOW_PROPOSAL.md` §11's planned-never-built Information metric. |
 | 9 | **Accept the ensemble tax and report it.** | Hub-batching scores the most molecules of any arm (measured: **20,000 reward-gen calls/round**), so K=5 makes that ~100k proxy evaluations/round. `reward_gen_s` is already a published timing component; the tax falls hardest on the arm we advocate, which makes reporting it a credibility asset. **All arms must be re-run under the ensemble `M` — existing single-`M` results are not comparable.** |
 | 10 | **Mode (AL definition)**: a molecule with a **real oracle label** clearing the calibrated bar (6TD3: `≤ −1.5`), Tanimoto `< 0.5` (Morgan r=3/2048) from every mode already counted, **cumulative over `D`**. | Oracle truth, not proxy prediction; applies identically to every arm including `random`; matches the existing mode machinery. Report the paper-comparable 0.7 cutoff alongside where cheap. |
