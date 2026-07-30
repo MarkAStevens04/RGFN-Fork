@@ -118,6 +118,12 @@ measurement as completing the budget, and it is never plotted as a win.
 | `flow_bottom` | 2.050 | 572 | 6,580 | **279** ✗ | **pool-exhausted** |
 | best-candidate | 3.097 | 929 | — | 300 | reference |
 
+`flow_bottom_600` (same ordering, 3× pool) reaches 300 modes at **2.10 rxn/mode** — so its
+pool-limited cells were a budget artifact, but the ~1.8× cost penalty is real: 1.89×/1.83×/1.76× the
+flow ordering at cutoffs 0.40/0.45/0.50. Where 200 hubs already sufficed (≥0.55) it reproduces the
+200-hub numbers to 0.99–1.03×, the internal check that extra pool changes nothing it shouldn't. The
+`--prebuild-k 0` control (`results/comparison_k0/`) preserves every ratio.
+
 **Flow picks the right neighbourhood, not the right rank.** Reversing the sort breaks the method
 (can't build the library at all); randomising costs 1.53×; but the three good-hub arms sit within 9%
 of each other. On the two cost axes together, every frontier point is a flow- or reward-informed

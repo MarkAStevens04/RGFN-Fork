@@ -77,6 +77,15 @@ from sampling the *final* checkpoint, so no training-time signal enters. It matt
 consumes training-time signal — most concretely SCENT's dynamic library, whose promoted fragments are
 selected by a training-time utility and then frozen into all downstream analysis.
 
+**The reverse arm's failure was two separate things, and only one was a budget artifact.** Giving
+lowest-flow-first three times the enumeration pool (600 hubs) *does* let it finish: it now reaches
+300 modes at cutoffs 0.40–0.50 where 200 hubs could not. But it finishes **expensively** — 1.76×,
+1.83× and 1.89× the highest-flow arm's reactions at those cutoffs — so the cost penalty is real and
+now *measured* rather than a lower bound. The control that makes this trustworthy: at cutoffs ≥0.55,
+where 200 hubs already sufficed, the 600-hub run reproduces the 200-hub numbers to within 1–3%
+(0.99–1.03×), exactly as it should when the extra hubs are never walked. Reversing the sort is
+therefore not "impossible", it is "possible and ~1.8× worse".
+
 **Two caveats we should state ourselves.** The advantage of every arm collapses to ~1.04× by a
 diversity cutoff of 0.9, where "distinct" is loose enough that almost any scaffold's children qualify
 and scaffold quality stops binding. And the whole comparison is one model on one target with one
@@ -310,6 +319,33 @@ agree.
 | 1000–1250 | 12,507 | 15.6% | 4,822 | 16.8% |
 | 2500–2750 | 12,418 | 19.9% | 4,120 | 19.5% |
 | 4750–5000 | 11,941 | 24.2% | 3,438 | 22.1% |
+
+**Resolving `flow_bottom`'s pool limit — a 3× enumeration pool (600 hubs).** Ascending flow order
+makes the first 200 hubs byte-identical to `flow_bottom` (verified by diff), so this is purely
+additive. Same 300-mode budget, same everything else.
+
+| cutoff | flow_top | random | flow_bottom (200) | flow_bottom (600) | 600 vs 200 | 600 vs flow_top |
+|---|---|---|---|---|---|---|
+| 0.40 | 466 | pool-lim | pool-lim | **880** | rescued | **1.89×** |
+| 0.45 | 396 | 625 | pool-lim | **726** | rescued | **1.83×** |
+| 0.50 | 357 | 546 | pool-lim | **630** | rescued | **1.76×** |
+| 0.55 | 345 | 466 | 486 | 501 | 1.03× | 1.45× |
+| 0.60 | 337 | 433 | 437 | 431 | 0.99× | 1.28× |
+| 0.70 | 329 | 363 | 388 | 387 | 1.00× | 1.18× |
+| 0.90 | 326 | 343 | 340 | 340 | 1.00× | 1.04× |
+
+Two readings. (1) **The pool limit was a budget artifact** — with enough hubs the reverse ordering
+completes at every cutoff ≥0.40. (2) **The cost penalty was not** — it completes at 1.76–1.89× the
+flow ordering, so "reversing the sort is expensive" survives, upgraded from a lower bound to a
+measurement. The 0.99–1.03× agreement wherever 200 hubs already sufficed is the internal check that
+the extra pool changes nothing it should not. At the operating point: 300 modes, 630 reactions,
+**2.10 rxn/mode**, 124 hubs walked, 330,226 reward-gen calls, 7,631 s — i.e. it buys completion by
+walking and scoring even more. Cutoffs 0.30/0.35 stay pool-limited, but there *every* arm fails.
+
+**Control: `--prebuild-k 0` (removes the pool-coupling channel below).** Same ordering of arms, same
+ratios — `flow_top` 1.227, `random` 1.877 (**1.53×**), `flow_bottom_600` 2.233 (**1.82×**, vs 1.76×
+at K=20), `flow_bottom`@200 pool-exhausted at 211 modes. None of the conclusions rest on pre-select.
+Results in `results/comparison_k0/`.
 
 **Caveat found while sizing the deeper `flow_bottom` arm — pre-select-K couples the result to the
 whole enumeration pool.** The budget is 300 *modes*, and at cutoff 0.5 the completing arms stop
