@@ -276,7 +276,18 @@
       "Bash(sacct -j 71522,71523,71529,71531,71534,71536 --format=JobID,JobName%20,State,Elapsed,ExitCode -n)",
       "Bash(sacct -j 71525,71526,71528,71562,71563,71564 --format=JobID,JobName%22,State,Elapsed,End -n)",
       "Read(//home/markymoo/.claude/**)",
-      "Read(//home/markymoo/.claude/projects/**)"
+      "Read(//home/markymoo/.claude/projects/**)",
+      "Bash(sinfo -o \"%20P %5a %10l %6D %10T %N\")",
+      "Bash(git log *)",
+      "Bash(sacct -u markymoo --starttime 2026-07-13 -X -o State%14 -n)",
+      "Bash(awk '{print $1}')",
+      "Bash(sacct -u markymoo --starttime 2026-07-13 -X -o JobName%22,State%10,Timelimit,Elapsed -n)",
+      "Bash(awk '$2==\"COMPLETED\"')",
+      "Bash(awk '$2==\"TIMEOUT\"')",
+      "Bash(git -C .claude/worktrees/hub-order-ablation log --oneline -5)",
+      "Bash(git -C .claude/worktrees/hub-order-ablation status --short)",
+      "Bash(quota -s)",
+      "Bash(diskusage_report)"
     ]
   }
 }

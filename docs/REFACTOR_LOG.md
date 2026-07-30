@@ -1416,3 +1416,114 @@ passed:
 when nodes return; should now yield modes + a full timing breakdown). **Not yet run:** the full 3-arm
 × 10-round run (`launch_lsdflow_6td3.sh 42`, hold until 71114 confirms modes) and the SCENT cross-env
 path (pre-select-K live).
+
+## 2026-07-29 — SCENT recipe logging ON by default (so queued campaign links inherit it)
+
+**Why.** A promoted fragment's synthesis route is observable **only while training** — once the
+dynamic library promotes it, the policy consumes it atomically and it never reappears as a reaction
+product. So a SCENT run trained without `--log-recipes` is permanently stuck on the
+`min_num_reactions` cost approximation: `fragments_<N>.json` carries no `smiles_to_route`, and
+`dynamic_amortization` cannot charge nested fragment-of-fragment builds exactly (Logs/027/028). Only
+the two dedicated recipe re-runs (`scent_{seh,drd2}/2026-07-10_*`, jobs 70180/70184) ever passed the
+flag; **every publication-scale 5k cell** (`scent_{seh,drd2,6td3,clpp}_5k/seed*`) lacks routes.
+`experiments/fixed_reward/scale5k/submit_baseline.sh` was written 2026-07-14, one day *after* the flag
+landed (8ca901f, 07-13), and simply never wired it — checked with `git log -S`: the flag has **never**
+been removed from anything, and Logs/030 contains no decision to omit it.
+
+**Where the default lives, and why not in the submit script.** SLURM **snapshots a batch script at
+submit time** (`scontrol write batch_script <jobid>` proves it), so editing a `submit_*.sh` cannot
+reach an already-queued chain link — and the campaign pre-submits every link up front
+(`launch_chain.sh`, `--dependency=afterany`). The stored script does `cd $REPO` and runs
+`python validation/generators/scent/run_scent_fixed.py`, which is resolved from the working tree **at
+job start**. Flipping the default in that file therefore reaches every link that has not started yet,
+with no cancellation and no loss of queue position.
+
+- `validation/generators/scent/run_scent_fixed.py` — `--log-recipes` now `default=True`, with a new
+  `--no-log-recipes` opt-out (explicit store_true/store_false pair, not `BooleanOptionalAction`, so it
+  is Python-version agnostic). The two existing `submit_fixed_scent_*_recipes.sh` still pass
+  `--log-recipes` explicitly; `enable_recipe_logging()` is idempotent, so that is a no-op.
+- `experiments/fixed_reward/scale5k/submit_baseline.sh` — passes `--log-recipes` explicitly for
+  `GEN=scent`. Redundant with the new default, kept so the campaign script states its own intent.
+- Same file — a **partial-coverage warning**: when route logging is on and the run dir already holds
+  route-less `fragments_*.json` from earlier links, print that this run's final snapshot will mix
+  exact routes with `min_num_reactions` fallbacks. Detection is a chunked byte scan (the snapshots are
+  ~60 MB each and `state_dict` appends the key *last*, so neither a full read nor a prefix check
+  works); ~0.2 s for 240 MB. Prevents a downstream reader from taking "has `smiles_to_route`" as
+  "fully routed" — `reconcile_t15.py --min-recipe-fraction` is the gate that measures coverage.
+
+**Why this cannot perturb training** (the point of the review, since the flag lands on live campaign
+runs): `recipe_logging.enable_recipe_logging()` wraps two `DynamicLibrary` methods.
+(1) `on_end_sampling` — calls the original **first**, then `capture_routes` inside `try/except`;
+`capture_routes` only *reads* (`masked_select` builds a **new** `Trajectories` via
+`itertools.compress`, verified in `external/scent/rgfn/api/trajectories.py:337`) and it re-uses the
+exact same access pattern SCENT's own hook already performs on the same container. It draws no
+randomness, and it runs *after* `seed_everything`, so the RNG stream is unchanged.
+(2) `state_dict` — adds one key. That method is consumed in exactly **one** place
+(`trainer.py:391 → json.dump` into `fragments_<N>.json`); `DynamicLibrary` has **no**
+`load_state_dict` and is **not** part of the torch checkpoint (`make_checkpoint` saves only
+model/optimizer/lr_scheduler/metrics/replay_buffer), so the resume path cannot see the extra key.
+Cost: routes for ~395k seen molecules ≈ 0.2 GB of JSON-equivalent (nodes have 253 GB) and **+0.7 MB**
+per snapshot; the 07-10 recipe run finished *faster* than its route-free 07-07 sibling.
+
+**Pre-existing bug found while auditing, NOT fixed here — the dynamic library resets on requeue.**
+`DynamicLibrary` state is not checkpointed and nothing restores it, so a chain requeue restarts it
+empty. The promoted-fragment counts prove it happened (`chosen_smiles` per snapshot):
+
+| cell | 1000 | 2000 | 3000 | 4000 | |
+|---|---|---|---|---|---|
+| `scent_seh_5k/seed42` | 400 | 800 | 1200 | 1600 | clean |
+| `scent_drd2_5k/seed42` | 400 | 800 | 1200 | 1600 | clean |
+| `scent_clpp_5k/seed42` | 400 | 800 | 1200 | 1600 | clean |
+| `scent_6td3_5k/seed42` | 400 | 800 | **400** | 800 | **reset ×2** |
+| `scent_clpp_5k/seed43,44` | 400 | **400** | 800 | 1200 | **reset ×1** |
+| `scent_6td3_5k/seed43,44` | 400 | 800 | 1200 | *(running)* | clean so far |
+
+Consequences: (a) the final promoted library size varies with requeue timing (800 / 1200 / 1600) — a
+confound for any cross-seed cost comparison; (b) `FragmentOneHotEmbedding.weights` is pre-allocated to
+`418 + max_additional` and indexed by **position**, so after a reset the re-promoted fragments inherit
+the trained embedding rows of the *previous* occupants (no crash, and the content-based
+`FragmentFingerprintEmbedding.all_fingerprints` is a plain attribute so it rebuilds correctly — but
+the one-hot half carries stale identity). A real fix means persisting/restoring the library state,
+which changes training behaviour mid-campaign; left as a decision for the researcher.
+
+---
+
+## 2026-07-30 — Mode-definition ablation seam: `RewardOnlyModeSelector` + `mode_selector_factory` passthrough (Logs/054)
+
+**What changed (two small, additive edits).**
+
+1. `glue/samplers/lsdflow/mode_select.py` — added `RewardOnlyModeSelector` (the **diversity-filter
+   ablation**: reward gate + exact canonical-SMILES duplicate suppression, no Tanimoto test, and it
+   counts what it suppressed via `n_duplicates_suppressed`), and factored the reward gate out of
+   `DiverseThresholdModeSelector._passes_gate` into a module-level `passes_reward_gate()` that both
+   selectors call. The gate rule (None ⇒ admit all, NaN never passes, orientation-aware) is now
+   defined **once**, so the ablated and unablated arms provably differ only in the similarity test.
+   `DiverseThresholdModeSelector` is behaviourally unchanged — the method still exists and delegates.
+
+2. `experiments/lsd_hubs/campaign/run_campaign.py::build_strategy` — added an optional
+   `mode_selector_factory` passthrough. Both strategy classes in `glue/samplers/lsdflow/campaign.py`
+   have always accepted this argument; **no driver had ever used it**. Default `None` ⇒ each strategy
+   builds the canonical `DiverseThresholdModeSelector(reward_threshold, similarity)` exactly as before.
+
+**Why it's here rather than in the experiment dir.** The reward-only selector is a production
+component (`glue/`), reusable as a control arm by the AL loop's `LSDFlowAcquisition`, which consumes
+the same selector seam. The experiment driver (`experiments/lsd_hubs/filter_ablation/`) only *chooses*
+selectors.
+
+**Verified.**
+
+- Default path unchanged: re-ran `run_campaign.py` at the campaign operating point (SCENT×sEH anchor,
+  τ=7.0/cutoff 0.5, free_frag + prebuild-K 20) before and after the edit — `summary.json` identical and
+  both `curve_*.csv` **byte-identical**.
+- All **ten** `build_strategy` callers import cleanly (`sweep_campaign`, `tau_similarity_surface`,
+  `preselect_sweep`, `batch_size_distribution`, `dump_frontier_smiles`, `reconcile_t15`,
+  `s3gfn_frontier`, `matrix16/gate_curve`, `matrix16/tau_curve_all_generators`, `run_campaign`); every
+  one passes keyword arguments after `comps`, so a defaulted keyword is invisible to them.
+- Selector unit checks: reward-gate parity with the existing selector across `{7.0, None, −1.5}` ×
+  `{8.0, 7.0, 6.9, NaN}` and both orientations; accepts a near-identical molecule; rejects a re-spelled
+  duplicate, a below-gate molecule, an unparseable string, and an empty string.
+- The ablation driver self-checks the invariant that matters: at the operating point every member of
+  the delivered library must re-qualify under the canonical definition (300/300 for both strategies).
+
+**Not done.** No config/gin surface for the new selector (nothing needs it yet), and the AL loop was
+not switched over — `LSDFlowAcquisition` can pass the factory when a no-filter control arm is wanted.

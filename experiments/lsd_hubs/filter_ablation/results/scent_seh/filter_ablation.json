@@ -1,0 +1,241 @@
+{
+  "tag": "scent_seh",
+  "analysis_dir": "/scratch/markymoo/rgfn_runs/lsdflow/scent_seh_70189",
+  "enum_children": "/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_70363/enum_children.json",
+  "snapshot": "/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh/2026-07-10_17-28-06/additional_fragments/fragments_4000.json",
+  "taus": [
+    "off",
+    "4",
+    "4.5",
+    "5",
+    "5.5",
+    "6",
+    "6.5",
+    "7",
+    "7.5",
+    "8"
+  ],
+  "similarities": [
+    "off",
+    "0.3",
+    "0.4",
+    "0.5",
+    "0.6",
+    "0.7",
+    "0.8",
+    "0.9"
+  ],
+  "qualify_tau": 7.0,
+  "qualify_similarity": 0.5,
+  "budget_modes": 300,
+  "budget_reactions": 300,
+  "report_bars": [
+    5.0,
+    6.0,
+    7.0
+  ],
+  "child_policy": "free_frag",
+  "prebuild_k": 20,
+  "rank_by": "build_score",
+  "mode_similarities_reported": [
+    0.7,
+    0.5
+  ],
+  "diversity_off_semantics": "RewardOnlyModeSelector: no Tanimoto test, exact canonical-SMILES duplicates still suppressed (count reported per cell)",
+  "reward_off_semantics": "reward_threshold=None; best-reward-first ordering retained (that is the strategy, not the filter)",
+  "wall_s": 34.5,
+  "summary": {
+    "factorial": {
+      "hub_batching": {
+        "both_on": {
+          "library_size": 300,
+          "reactions": 365,
+          "reactions_per_mode": 1.2167,
+          "qualified_modes": 300,
+          "reactions_per_qualified_mode": 1.2167,
+          "reward_median": 7.3,
+          "reward_p10": 7.0382,
+          "mean_pairwise_similarity": 0.1606,
+          "modes_at_0.7": 300,
+          "butina_clusters_at_0.7": 300,
+          "modes_at_0.5": 300,
+          "butina_clusters_at_0.5": 300,
+          "unique_scaffolds": 296,
+          "depth_median": 2.0,
+          "duplicates_suppressed": null,
+          "stop_reason": "modes",
+          "cost_illusion_vs_both_on": 1.0,
+          "true_cost_ratio_vs_both_on": 1.0
+        },
+        "reward_off": {
+          "library_size": 300,
+          "reactions": 323,
+          "reactions_per_mode": 1.0767,
+          "qualified_modes": 27,
+          "reactions_per_qualified_mode": 11.963,
+          "reward_median": 5.4698,
+          "reward_p10": 1.794,
+          "mean_pairwise_similarity": 0.137,
+          "modes_at_0.7": 300,
+          "butina_clusters_at_0.7": 300,
+          "modes_at_0.5": 300,
+          "butina_clusters_at_0.5": 300,
+          "unique_scaffolds": 219,
+          "depth_median": 1.0,
+          "duplicates_suppressed": null,
+          "stop_reason": "modes",
+          "cost_illusion_vs_both_on": 1.13,
+          "true_cost_ratio_vs_both_on": 9.8323
+        },
+        "diversity_off": {
+          "library_size": 300,
+          "reactions": 325,
+          "reactions_per_mode": 1.0833,
+          "qualified_modes": 39,
+          "reactions_per_qualified_mode": 8.3333,
+          "reward_median": 7.3687,
+          "reward_p10": 7.0907,
+          "mean_pairwise_similarity": 0.2977,
+          "modes_at_0.7": 153,
+          "butina_clusters_at_0.7": 144,
+          "modes_at_0.5": 39,
+          "butina_clusters_at_0.5": 31,
+          "unique_scaffolds": 226,
+          "depth_median": 2.0,
+          "duplicates_suppressed": 67,
+          "stop_reason": "modes",
+          "cost_illusion_vs_both_on": 1.1231,
+          "true_cost_ratio_vs_both_on": 6.8491
+        },
+        "both_off": {
+          "library_size": 300,
+          "reactions": 321,
+          "reactions_per_mode": 1.07,
+          "qualified_modes": 9,
+          "reactions_per_qualified_mode": 35.6667,
+          "reward_median": 4.7208,
+          "reward_p10": 1.3308,
+          "mean_pairwise_similarity": 0.1899,
+          "modes_at_0.7": 263,
+          "butina_clusters_at_0.7": 257,
+          "modes_at_0.5": 117,
+          "butina_clusters_at_0.5": 104,
+          "unique_scaffolds": 130,
+          "depth_median": 1.0,
+          "duplicates_suppressed": 63,
+          "stop_reason": "modes",
+          "cost_illusion_vs_both_on": 1.1371,
+          "true_cost_ratio_vs_both_on": 29.3143
+        }
+      },
+      "best_candidate": {
+        "both_on": {
+          "library_size": 300,
+          "reactions": 929,
+          "reactions_per_mode": 3.0967,
+          "qualified_modes": 300,
+          "reactions_per_qualified_mode": 3.0967,
+          "reward_median": 8.1033,
+          "reward_p10": 8.0338,
+          "mean_pairwise_similarity": 0.2022,
+          "modes_at_0.7": 300,
+          "butina_clusters_at_0.7": 300,
+          "modes_at_0.5": 300,
+          "butina_clusters_at_0.5": 300,
+          "unique_scaffolds": 300,
+          "depth_median": 4.0,
+          "duplicates_suppressed": null,
+          "stop_reason": "modes",
+          "cost_illusion_vs_both_on": 1.0,
+          "true_cost_ratio_vs_both_on": 1.0
+        },
+        "reward_off": {
+          "library_size": 300,
+          "reactions": 929,
+          "reactions_per_mode": 3.0967,
+          "qualified_modes": 300,
+          "reactions_per_qualified_mode": 3.0967,
+          "reward_median": 8.1033,
+          "reward_p10": 8.0338,
+          "mean_pairwise_similarity": 0.2022,
+          "modes_at_0.7": 300,
+          "butina_clusters_at_0.7": 300,
+          "modes_at_0.5": 300,
+          "butina_clusters_at_0.5": 300,
+          "unique_scaffolds": 300,
+          "depth_median": 4.0,
+          "duplicates_suppressed": null,
+          "stop_reason": "modes",
+          "cost_illusion_vs_both_on": 1.0,
+          "true_cost_ratio_vs_both_on": 1.0
+        },
+        "diversity_off": {
+          "library_size": 300,
+          "reactions": 729,
+          "reactions_per_mode": 2.43,
+          "qualified_modes": 50,
+          "reactions_per_qualified_mode": 14.58,
+          "reward_median": 8.2439,
+          "reward_p10": 8.203,
+          "mean_pairwise_similarity": 0.265,
+          "modes_at_0.7": 164,
+          "butina_clusters_at_0.7": 155,
+          "modes_at_0.5": 50,
+          "butina_clusters_at_0.5": 43,
+          "unique_scaffolds": 300,
+          "depth_median": 4.0,
+          "duplicates_suppressed": 0,
+          "stop_reason": "modes",
+          "cost_illusion_vs_both_on": 1.2744,
+          "true_cost_ratio_vs_both_on": 4.7082
+        },
+        "both_off": {
+          "library_size": 300,
+          "reactions": 729,
+          "reactions_per_mode": 2.43,
+          "qualified_modes": 50,
+          "reactions_per_qualified_mode": 14.58,
+          "reward_median": 8.2439,
+          "reward_p10": 8.203,
+          "mean_pairwise_similarity": 0.265,
+          "modes_at_0.7": 164,
+          "butina_clusters_at_0.7": 155,
+          "modes_at_0.5": 50,
+          "butina_clusters_at_0.5": 43,
+          "unique_scaffolds": 300,
+          "depth_median": 4.0,
+          "duplicates_suppressed": 0,
+          "stop_reason": "modes",
+          "cost_illusion_vs_both_on": 1.2744,
+          "true_cost_ratio_vs_both_on": 4.7082
+        }
+      }
+    },
+    "per_strategy": {
+      "hub_batching": {
+        "unablated_all_members_qualify": true,
+        "unablated_reactions_per_mode": 1.2167
+      },
+      "best_candidate": {
+        "unablated_all_members_qualify": true,
+        "unablated_reactions_per_mode": 3.0967
+      }
+    },
+    "pool_limited_cells": [
+      {
+        "strategy": "hub_batching",
+        "tau": "8",
+        "similarity": "0.5",
+        "library_size": 130,
+        "reactions": 285
+      },
+      {
+        "strategy": "hub_batching",
+        "tau": "7",
+        "similarity": "0.3",
+        "library_size": 98,
+        "reactions": 230
+      }
+    ]
+  }
+}
