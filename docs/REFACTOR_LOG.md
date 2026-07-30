@@ -1416,3 +1416,45 @@ passed:
 when nodes return; should now yield modes + a full timing breakdown). **Not yet run:** the full 3-arm
 × 10-round run (`launch_lsdflow_6td3.sh 42`, hold until 71114 confirms modes) and the SCENT cross-env
 path (pre-select-K live).
+
+---
+
+## 2026-07-30 — Mode-definition ablation seam: `RewardOnlyModeSelector` + `mode_selector_factory` passthrough (Logs/054)
+
+**What changed (two small, additive edits).**
+
+1. `glue/samplers/lsdflow/mode_select.py` — added `RewardOnlyModeSelector` (the **diversity-filter
+   ablation**: reward gate + exact canonical-SMILES duplicate suppression, no Tanimoto test, and it
+   counts what it suppressed via `n_duplicates_suppressed`), and factored the reward gate out of
+   `DiverseThresholdModeSelector._passes_gate` into a module-level `passes_reward_gate()` that both
+   selectors call. The gate rule (None ⇒ admit all, NaN never passes, orientation-aware) is now
+   defined **once**, so the ablated and unablated arms provably differ only in the similarity test.
+   `DiverseThresholdModeSelector` is behaviourally unchanged — the method still exists and delegates.
+
+2. `experiments/lsd_hubs/campaign/run_campaign.py::build_strategy` — added an optional
+   `mode_selector_factory` passthrough. Both strategy classes in `glue/samplers/lsdflow/campaign.py`
+   have always accepted this argument; **no driver had ever used it**. Default `None` ⇒ each strategy
+   builds the canonical `DiverseThresholdModeSelector(reward_threshold, similarity)` exactly as before.
+
+**Why it's here rather than in the experiment dir.** The reward-only selector is a production
+component (`glue/`), reusable as a control arm by the AL loop's `LSDFlowAcquisition`, which consumes
+the same selector seam. The experiment driver (`experiments/lsd_hubs/filter_ablation/`) only *chooses*
+selectors.
+
+**Verified.**
+
+- Default path unchanged: re-ran `run_campaign.py` at the campaign operating point (SCENT×sEH anchor,
+  τ=7.0/cutoff 0.5, free_frag + prebuild-K 20) before and after the edit — `summary.json` identical and
+  both `curve_*.csv` **byte-identical**.
+- All **ten** `build_strategy` callers import cleanly (`sweep_campaign`, `tau_similarity_surface`,
+  `preselect_sweep`, `batch_size_distribution`, `dump_frontier_smiles`, `reconcile_t15`,
+  `s3gfn_frontier`, `matrix16/gate_curve`, `matrix16/tau_curve_all_generators`, `run_campaign`); every
+  one passes keyword arguments after `comps`, so a defaulted keyword is invisible to them.
+- Selector unit checks: reward-gate parity with the existing selector across `{7.0, None, −1.5}` ×
+  `{8.0, 7.0, 6.9, NaN}` and both orientations; accepts a near-identical molecule; rejects a re-spelled
+  duplicate, a below-gate molecule, an unparseable string, and an empty string.
+- The ablation driver self-checks the invariant that matters: at the operating point every member of
+  the delivered library must re-qualify under the canonical definition (300/300 for both strategies).
+
+**Not done.** No config/gin surface for the new selector (nothing needs it yet), and the AL loop was
+not switched over — `LSDFlowAcquisition` can pass the factory when a no-filter control arm is wanted.

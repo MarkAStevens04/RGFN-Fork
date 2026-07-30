@@ -130,17 +130,25 @@ def build_strategy(
     assignment_policy=None,
     child_policy=None,
     prebuilt_fragments=None,
+    mode_selector_factory=None,
 ):
     """Construct either strategy on the ONE count-once cost model (Logs/033). Best-candidate gets the
     compositions (to cost shared parent hubs) + a swappable hub-assignment policy; hub-batching needs
     only its enumerated hubs + an optional within-hub ``child_policy`` (Logs/037: reward = naive /
     free_frag) and ``prebuilt_fragments`` (pre-select-K). Shared by ``run_campaign`` and
-    ``sweep_campaign``."""
+    ``sweep_campaign``.
+
+    ``mode_selector_factory`` overrides the mode definition itself (both strategies build one selector
+    per run from it) — the seam the filter ablation uses (Logs/054) to drop the reward gate or the
+    Tanimoto test. Left ``None``, both strategies build the canonical
+    ``DiverseThresholdModeSelector(reward_threshold, similarity)`` from the args above, so every
+    existing caller is unchanged."""
     common = dict(
         target=target,
         reward_threshold=reward_threshold,
         similarity=similarity,
         higher_is_better=higher_is_better,
+        mode_selector_factory=mode_selector_factory,
     )
     if name == "hub_batching":
         return HubBatchingStrategy(
