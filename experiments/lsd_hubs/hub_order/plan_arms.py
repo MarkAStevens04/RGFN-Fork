@@ -70,6 +70,17 @@ ARMS = [
         "label": "candidate-reward order (all hubs)",
         "args": ["--pool", "all", "--order", "candidate_reward"],
     },
+    # DIAGNOSTIC, not part of the equal-budget comparison. `flow_bottom` is pool-limited across
+    # cutoffs 0.30-0.50, so its cost there is only a lower bound; this triples its hub budget to
+    # separate "this ordering is bad" from "this ordering needed more hubs". Ascending flow order
+    # means the first 200 hubs are byte-identical to `flow_bottom` — the extension is purely
+    # additive, so the existing enumeration is reused and only the tail is new work.
+    {
+        "name": "flow_bottom_600",
+        "label": "lowest flow first, 3x hub budget (diagnostic)",
+        "args": ["--pool", "all", "--order", "flow_asc"],
+        "n_hubs": 600,
+    },
 ]
 
 DEFAULT_ANALYSIS = "/scratch/markymoo/rgfn_runs/lsdflow/scent_seh_70189"
@@ -193,6 +204,7 @@ def main() -> None:
     for arm in ARMS:
         adir = out_root / "arms" / arm["name"]
         (adir / "slices").mkdir(parents=True, exist_ok=True)
+        n_hubs = int(arm.get("n_hubs", a.n_hubs))  # per-arm override (the deeper diagnostic arm)
         cmd = [
             sys.executable,
             str(PICK_HUBS),
@@ -201,7 +213,7 @@ def main() -> None:
             "--out",
             str(adir / "hubs.csv"),
             "--n-hubs",
-            str(a.n_hubs),
+            str(n_hubs),
             "--top-k-candidates",
             str(a.top_k_candidates),
             *arm["args"],

@@ -39,7 +39,7 @@ for d in "$OUT_ROOT"/merged/*/; do
   ENUMDIR[$(basename "$d")]="${d%/}"
 done
 
-ARMS=${ARMS:-incumbent flow_top flow_bottom random cand_order_fixedset cand_order}
+ARMS=${ARMS:-incumbent flow_top flow_bottom random cand_order_fixedset cand_order flow_bottom_600}
 
 echo "[run_arms] thr=$THR sim=$SIM modes=$BUDGET_MODES child_policy=$CHILD_POLICY prebuild_k=$PREBUILD_K"
 for arm in $ARMS; do
