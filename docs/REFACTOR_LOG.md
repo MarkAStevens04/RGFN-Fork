@@ -1527,3 +1527,47 @@ selectors.
 
 **Not done.** No config/gin surface for the new selector (nothing needs it yet), and the AL loop was
 not switched over — `LSDFlowAcquisition` can pass the factory when a no-filter control arm is wanted.
+
+---
+
+## 2026-07-30 — INCIDENT: worktree `external/` symlinks were committed and destroyed the clones
+
+**What happened.** The hub-ordering ablation (Logs/053) ran in a git worktree. To give the worktree
+access to the upstream baseline clones, `experiments/lsd_hubs/matrix16/link_worktree_data.sh` creates
+`external/<repo>` symlinks pointing at the main checkout. A `git add -A` in that worktree committed
+six of them (`RxnFlow`, `gflownet`, `multiaiz`, `s3gfn`, `scent`, `sparrow`). Merging the branch then
+checked those links out **in the main checkout**, where they pointed at themselves — and git removed
+the real clone directories to make room. `external/` fell from ~300 MB to 50 KB, breaking the
+`scent` / `rxnflow` / `fraggfn` / `s3gfn` conda envs, whose editable installs (`*.pth`) point into
+those paths.
+
+**Why the ignore rule missed it.** The rule was `external/*/`. A trailing slash matches **directories
+only**, and a symlink is not a directory — so the links were never ignored. Replaced with a
+path-shaped rule that cannot be evaded by file type:
+
+```
+external/*
+!external/setup_*.sh
+```
+
+**Recovery (complete, verified).**
+1. Untracked + deleted the six symlinks; fixed `.gitignore` (commit `7b7df2c`).
+2. Re-cloned all six at the pinned refs from `external/setup_*.sh`
+   (scent `af1fee5`, gflownet `da99940`, RxnFlow/s3gfn/sparrow/multiaiz at `main`).
+3. **Re-cloning does not restore downloaded artifacts.** The sEH proxy weights
+   (`cache/bengio2021flow_proxy.pkl.gz`, fetched from GitHub at first use) live *inside* the clones
+   and were lost. Compute nodes have no internet, so this fails the job at startup with a
+   `ConnectTimeout`. Restored into all three copies that need it:
+   `external/scent/rgfn/gfns/reaction_gfn/proxies/cache/`,
+   `external/gflownet/src/gflownet/models/cache/`, `external/RxnFlow/src/gflownet/models/cache/`.
+   (`fpscores.pkl.gz` was unaffected — it is placed in the env's site-packages, not a clone.)
+4. Verified by re-running the real SCENT enumeration worker on a compute node (job 72014): output is
+   **byte-identical** to the same hubs enumerated before the deletion (474 and 1,399 children).
+
+**No jobs were harmed** — every queued `c5_*` campaign job was still PENDING through the ~11-minute
+window, confirmed via `sacct`.
+
+**For future agents.** Never `git add -A` in a worktree that has run `link_worktree_data.sh`; stage
+paths explicitly, or confirm `git status --porcelain` shows nothing under `external/`. If a clone
+ever has to be re-created, remember it carries first-use downloads that the setup scripts fetch but
+`git clone` does not.
