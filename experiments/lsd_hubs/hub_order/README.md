@@ -78,6 +78,19 @@ Only 598 of the 1,000 arm-hub slots are new work.
 
 Same triple as the Logs/052 τ×similarity surface, so these numbers sit alongside it directly.
 
+## A subtlety: pre-select-K reads the whole pool
+
+The budget is **300 modes**, not hubs — the 200 is an enumeration pool, and at cutoff 0.5 the
+completing arms stop having used only 17–52% of it. So pool size *should* be a no-op for them, which
+is what makes the 600-hub `flow_bottom` arm a fair comparison rather than a privileged one.
+
+It is not quite a no-op, because `rank_fragments` selects the pre-select-K stock by scanning **every
+enumerated hub, including ones the walk never reaches**. Measured on `flow_top`: 357 reactions with a
+200-hub pool vs 352 with 100 (1.4%), saturating below 100 hubs. Consequences: run the
+`--prebuild-k 0` control when the pool sizes differ (it removes the channel), and note the accounting
+mismatch — pre-select uses fan-out from hubs the compute-time axis never charges. See Logs/053's
+Next Experiments; the saturation may also be exploitable (a cheap "scout" enumeration to pick stock).
+
 ## Operating point
 
 τ (hit bar) 7.0, diversity cutoff 0.5, **budget = 300 modes** (Case 2: reactions needed to get

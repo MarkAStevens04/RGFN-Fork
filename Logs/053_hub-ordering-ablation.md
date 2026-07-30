@@ -107,6 +107,16 @@ the reward mass they capture").
 - `flow_bottom` is pool-limited across cutoffs 0.30-0.50, so its cost there is a lower bound. A
   larger scaffold budget for that arm alone would separate "this ordering is bad" from "this
   ordering needed more scaffolds" — worth doing before the number appears in a paper.
+- **Follow up the pre-select-K pool coupling (above).** Three threads, all cheap and CPU-only:
+  (a) *Fairness* — pre-select currently reads fan-out from hubs whose enumeration is not charged to
+  the strategy. Compare against an honest online variant that ranks fragments using only the hubs
+  walked so far, and against charging the full pool; if the gap is real, the online variant is the
+  defensible one to report. (b) *The saturation is an opportunity, not just a caveat* — if the top-K
+  fragments are already identifiable from ~100 hubs, a cheap "scout" enumeration could choose the
+  stock and a much smaller walk could then exploit it, cutting the enumeration bill that is
+  hub-batching's main cost (Logs/037's reactions↔calls dial, from the other end). (c) *Sensitivity* —
+  how does the coupling scale with K and with pool size? Measured here only at K=20 on one arm.
+
 - **Save periodic checkpoints in future training runs.** The drift measurement above is indirect —
   it infers movement from which hubs survive into the final sample, because only `last_gfn.pt` and
   `best_gfn.pt` exist. With checkpoints every ~1000 iterations the direct question becomes
@@ -300,6 +310,26 @@ agree.
 | 1000–1250 | 12,507 | 15.6% | 4,822 | 16.8% |
 | 2500–2750 | 12,418 | 19.9% | 4,120 | 19.5% |
 | 4750–5000 | 11,941 | 24.2% | 3,438 | 22.1% |
+
+**Caveat found while sizing the deeper `flow_bottom` arm — pre-select-K couples the result to the
+whole enumeration pool.** The budget is 300 *modes*, and at cutoff 0.5 the completing arms stop
+having consumed only 17–52% of their 200-hub pool (flow_top 22%, cand_order 20%, random 52%; only
+`flow_bottom` reaches 100%). So enlarging the pool should be a no-op for them — *except* that
+`rank_fragments` picks the pre-select-K fragments by scanning **every enumerated hub, including hubs
+the walk never reaches**. Measured on `flow_top` by truncating its pool and re-running:
+
+| pool | reactions to 300 modes | hubs walked | reward-gen calls |
+|---|---|---|---|
+| 200 hubs | 357 | 43 | 244,685 |
+| 100 hubs | 352 | 39 | 231,948 |
+| 60 hubs | 352 | 39 | 231,948 |
+
+A 1.4% effect that **saturates below 100 hubs**. Two consequences. (1) It is small enough that the
+600-hub `flow_bottom` arm remains a like-for-like comparison against the 200-hub arms, and the
+`--prebuild-k 0` control removes the channel entirely. (2) There is an accounting inconsistency
+worth naming: pre-select benefits from fan-out information across the *whole* pool, while the
+compute-time axis charges only the hubs actually walked. Nobody would notice this from the headline
+numbers — it surfaced only because the pool size changed.
 
 **Enumeration cost.** 16 `debug` slices, 15:17 → 00:31 (~9.2 h wall clock) for 598 new hubs; 402 of
 the 1,000 arm-hub slots were served from cache. The self-refitting slice planner had zero wall-clock
