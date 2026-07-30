@@ -65,6 +65,18 @@ matching the uniform-draw null of 10,437. So the three "good" arms agree *becaus
 selecting from the high-flow region by different routes*, which is a positive statement about the
 flow field rather than evidence that hub choice is unimportant.
 
+**Addendum — the flow field moves a lot during training, but that does not touch these results.**
+Prompted by the question "could hubs be high-flow early in training and low-flow by the end?",
+`flow_drift_over_training.py` reads the training log's per-molecule synthesis paths and locates each
+era's hubs in the final model's flow ranking. Only **7.3%** of the hubs visited in the first 250
+iterations still appear in the post-training sample, rising monotonically to **24.2%** for the last
+250; among the survivors, median final flow-rank improves from 6,192 to 3,438. Both curves step
+sharply at iteration ~1000 — exactly `DynamicLibrary.every_n_iterations`, the first fragment
+promotion. **This is not a confound for the ablation**: our candidate pool and every flow term come
+from sampling the *final* checkpoint, so no training-time signal enters. It matters for anything that
+consumes training-time signal — most concretely SCENT's dynamic library, whose promoted fragments are
+selected by a training-time utility and then frozen into all downstream analysis.
+
 **Two caveats we should state ourselves.** The advantage of every arm collapses to ~1.04× by a
 diversity cutoff of 0.9, where "distinct" is loose enough that almost any scaffold's children qualify
 and scaffold quality stops binding. And the whole comparison is one model on one target with one
@@ -95,6 +107,12 @@ the reward mass they capture").
 - `flow_bottom` is pool-limited across cutoffs 0.30-0.50, so its cost there is a lower bound. A
   larger scaffold budget for that arm alone would separate "this ordering is bad" from "this
   ordering needed more scaffolds" — worth doing before the number appears in a paper.
+- **Save periodic checkpoints in future training runs.** The drift measurement above is indirect —
+  it infers movement from which hubs survive into the final sample, because only `last_gfn.pt` and
+  `best_gfn.pt` exist. With checkpoints every ~1000 iterations the direct question becomes
+  answerable: recompute `F(h)` for a fixed hub set under each checkpoint and watch the ranking move.
+  Cheap to enable, and it would also let us ask whether the dynamic library's promotion decisions
+  still look right under the final flow field (the §8 hub-coincidence study).
 - **Test the sampling-concentration hypothesis properly.** The rank measurement above is consistent
   with "sampling routes molecules through high-flow hubs, so best-candidate order is a flow proxy",
   but it is correlational: high-flow hubs also tend to carry high-reward children, so the two
@@ -133,6 +151,9 @@ Root: `./` = repo root; `/scratch/markymoo/rgfn_runs/` for run artifacts.
   table; asserts best-candidate is identical across arms.
 - `./experiments/lsd_hubs/hub_order/hub_rank_overlap.py` — where each arm's 200 hubs fall in the
   all-hub flow ranking; the measurement behind the sampling-concentration explanation.
+- `./experiments/lsd_hubs/hub_order/flow_drift_over_training.py` — how far the flow field moves
+  during training, from the training log's per-molecule paths (`paths.csv`). Note `iteration` there
+  counts **molecules** (64 per training step), not steps.
 
 **Models**
 - `/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh/2026-07-10_17-28-06/train/checkpoints/last_gfn.pt`
@@ -268,6 +289,17 @@ sampling-concentration explanation above — and it is correlational, see Next E
 | `cand_order` | **546** | **2.62%** | **63%** | 97.5% |
 | `random` | 11,043 | 52.9% | 2.5% | 46% |
 | `flow_bottom` | 20,773 | 99.5% | 0% | 0% |
+
+**Flow drift over training** (`flow_drift_over_training.py`, 20 bins of 250 iterations). Survivorship
+is confounded by the finite post-training sample; median rank conditions on presence and is not. They
+agree.
+
+| training iters | distinct hubs | % still in final sample | median final rank | % in top 5% |
+|---|---|---|---|---|
+| 0–250 | 13,141 | 7.3% | 6,192 | 11.8% |
+| 1000–1250 | 12,507 | 15.6% | 4,822 | 16.8% |
+| 2500–2750 | 12,418 | 19.9% | 4,120 | 19.5% |
+| 4750–5000 | 11,941 | 24.2% | 3,438 | 22.1% |
 
 **Enumeration cost.** 16 `debug` slices, 15:17 → 00:31 (~9.2 h wall clock) for 598 new hubs; 402 of
 the 1,000 arm-hub slots were served from cache. The self-refitting slice planner had zero wall-clock

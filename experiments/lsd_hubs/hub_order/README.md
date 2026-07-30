@@ -119,17 +119,26 @@ is a flow proxy. Correlational, not causal — see Logs/053's Next Experiments f
 All arms converge to ~1.04× by cutoff 0.90, where loose distinctness stops making hub quality bind.
 Caveat: n=1 model, 1 target, 1 random draw.
 
+**The flow field moves during training** (`flow_drift_over_training.py`): only 7.3% of the hubs
+visited in the first 250 training iterations still appear in the post-training sample, rising to
+24.2% for the last 250, with median final flow-rank improving 6,192 → 3,438 and a step at iteration
+~1000 (the first dynamic-library promotion). This is **not** a confound here — our pool and flow
+terms all come from the final checkpoint — but it means any signal taken from *training-time*
+behaviour is stale, which is exactly how SCENT's dynamic library selects fragments.
+
 ## Layout
 
 ```
 hub_order/
   plan_arms.py   merge_enum.py   compare_hub_order.py     # python: plan / assemble / compare
   hub_rank_overlap.py                                     # where each arm sits in the flow ranking
+  flow_drift_over_training.py                             # how far the flow field moves in training
   chain.sh       submit_slice.sh   run_arms.sh            # slurm driver / one slice / cpu analysis
   results/hubord_<arm>/    summary.json sweep_summary.json *.png
   results/comparison/      cost_vs_cutoff.png     <- headline: reactions vs diversity cutoff
                            cost_pareto.png        <- the two cost axes + dominance
                            hub_rank_distribution.png/.csv
+                           flow_drift.png/.csv
                            compute_vs_cutoff.png  summary.csv
 ```
 
