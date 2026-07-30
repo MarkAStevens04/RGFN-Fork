@@ -43,10 +43,11 @@ ARMS = [
     ("cand_order_fixedset", "Best-candidate order (incumbent set)", "#b8860b", ":"),
     ("random", "Random order (all hubs)", "#9aa0a6", "--"),
     ("flow_bottom", "Lowest flow first (all hubs)", "#b23a48", "-"),
-    # Diagnostic, NOT part of the equal-budget comparison: same ordering, 3x the hub budget, to test
-    # whether flow_bottom's pool-limited cells are the ordering or just too few hubs. Its first 200
-    # hubs are byte-identical to flow_bottom's, so the curves are directly comparable.
-    ("flow_bottom_600", "Lowest flow first, 3× hubs (diagnostic)", "#d98a96", "-."),
+    # Same ordering, 3x the enumeration pool, testing whether flow_bottom's pool-limited cells are
+    # the ordering or just too few hubs. Still a fair comparison: the budget is 300 MODES, and the
+    # other arms stop having used 17-52% of their own pool, so 600 hubs would not move them (bar a
+    # ~1.4% prebuild-K coupling — see the k=0 control).
+    ("flow_bottom_600", "Lowest flow first, 600-hub pool", "#d98a96", "-."),
 ]
 BEST_COLOR = "#444444"
 

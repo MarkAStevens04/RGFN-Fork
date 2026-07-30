@@ -70,14 +70,20 @@ ARMS = [
         "label": "candidate-reward order (all hubs)",
         "args": ["--pool", "all", "--order", "candidate_reward"],
     },
-    # DIAGNOSTIC, not part of the equal-budget comparison. `flow_bottom` is pool-limited across
-    # cutoffs 0.30-0.50, so its cost there is only a lower bound; this triples its hub budget to
-    # separate "this ordering is bad" from "this ordering needed more hubs". Ascending flow order
-    # means the first 200 hubs are byte-identical to `flow_bottom` — the extension is purely
-    # additive, so the existing enumeration is reused and only the tail is new work.
+    # `flow_bottom` is pool-limited across cutoffs 0.30-0.50, so its cost there is only a lower
+    # bound. This triples the ENUMERATION POOL to separate "this ordering is bad" from "this
+    # ordering needed more hubs".
+    #
+    # This stays a fair comparison against the 200-hub arms, because the budget is 300 MODES, not
+    # hubs: at cutoff 0.5 the completing arms stop having used only 17-52% of their pool, so giving
+    # them 600 hubs too would leave their results unchanged. (Measured caveat: `prebuild_k` ranks
+    # fragments over the whole pool including unwalked hubs, so pool size leaks in at ~1.4% —
+    # flow_top is 357 reactions at 200 hubs vs 352 at 100. The `--prebuild-k 0` control removes
+    # that channel entirely.) Ascending flow order also makes the first 200 hubs byte-identical to
+    # `flow_bottom`, so only the tail is new GPU work.
     {
         "name": "flow_bottom_600",
-        "label": "lowest flow first, 3x hub budget (diagnostic)",
+        "label": "lowest flow first, 600-hub pool",
         "args": ["--pool", "all", "--order", "flow_asc"],
         "n_hubs": 600,
     },
