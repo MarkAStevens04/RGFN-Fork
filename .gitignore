@@ -8,7 +8,14 @@ Logs/references/pdfs/*
 # Cloned upstream baseline code — installed by external/setup_*.sh, NOT vendored
 # (e.g. external/gflownet for FragGFN). Keeps the setup scripts tracked, the heavy
 # upstream trees out. See docs/ARCHITECTURE.md + validation/generators/README.md.
-external/*/
+#
+# Ignore EVERYTHING here except the setup scripts. The previous rule was `external/*/`,
+# which matches directories only — so when a git worktree linked the clones in
+# (experiments/lsd_hubs/matrix16/link_worktree_data.sh), the resulting SYMLINKS did not match,
+# got committed, and on merge replaced the real clones in the main checkout with links pointing
+# at themselves. Path-shaped, not type-shaped, so a symlink can never slip through again.
+external/*
+!external/setup_*.sh
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
