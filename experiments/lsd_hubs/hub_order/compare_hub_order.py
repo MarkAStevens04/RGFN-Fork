@@ -105,6 +105,112 @@ def _plot_lines(path: Path, series, best_ref, cutoffs, ylabel, title):
     print(f"[hubord] wrote {path}")
 
 
+def _plot_pareto(path: Path, pts, budget_modes, cutoff):
+    """Reactions (bench cost) vs measured compute (enumeration cost) at the operating point.
+
+    The two costs trade against each other, so "which ordering is best" has no single answer — but
+    *dominance* does: a point beaten on both axes is strictly worse, no weighting required. That is
+    the strongest form of the result, so it gets its own figure.
+    """
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except Exception as exc:  # noqa: BLE001
+        print(f"[hubord] pareto plot skipped ({exc})")
+        return
+    fig, ax = plt.subplots(figsize=(7.4, 5.0))
+    ok = [p for p in pts if p["reactions"] is not None]
+    # Arms can sit almost on top of each other (flow_top and the incumbent differ by 8 reactions and
+    # 37 s), so labels are placed by scanning left-to-right and pushing each one clear of the last.
+    order = sorted(
+        range(len(pts)), key=lambda i: (pts[i]["reactions"] or pts[i]["reactions_at_exhaustion"])
+    )
+    offsets = {}
+    last_y, flip = None, 1
+    for i in order:
+        y = pts[i]["compute_s"]
+        close = last_y is not None and abs(y - last_y) < 0.08 * (
+            max(p["compute_s"] for p in pts) - min(p["compute_s"] for p in pts) or 1
+        )
+        offsets[i] = (10, 14 * flip) if close else (10, 0)
+        if close:
+            flip = -flip
+        last_y = y
+    for idx, p in enumerate(pts):
+        dominated = any(
+            q["reactions"] < p["reactions"] and q["compute_s"] < p["compute_s"]
+            for q in ok
+            if q is not p and p["reactions"] is not None
+        )
+        failed = p["reactions"] is None
+        x = p["reactions"] if not failed else p["reactions_at_exhaustion"]
+        ax.scatter(
+            x,
+            p["compute_s"],
+            s=150 if not failed else 170,
+            color=p["color"],
+            marker="X" if failed else ("o" if not dominated else "s"),
+            facecolors=p["color"] if not dominated or failed else "none",
+            edgecolors=p["color"],
+            linewidths=2.0,
+            zorder=4,
+        )
+        note = (
+            f"{p['label']}\n✗ only {p['modes']}/{budget_modes} modes"
+            if failed
+            else p["label"] + ("\n(dominated)" if dominated else "")
+        )
+        ax.annotate(
+            note,
+            (x, p["compute_s"]),
+            textcoords="offset points",
+            xytext=offsets[idx],
+            fontsize=7.6,
+            va="center",
+            ha="right" if offsets[idx][0] < 0 else "left",
+            color=p["color"],
+        )
+    front = sorted(
+        (
+            p
+            for p in ok
+            if not any(
+                q["reactions"] < p["reactions"] and q["compute_s"] < p["compute_s"]
+                for q in ok
+                if q is not p
+            )
+        ),
+        key=lambda p: p["reactions"],
+    )
+    if len(front) > 1:
+        ax.plot(
+            [p["reactions"] for p in front],
+            [p["compute_s"] for p in front],
+            color="#555",
+            lw=1.2,
+            ls="-",
+            alpha=0.55,
+            zorder=1,
+            label="Pareto frontier",
+        )
+    ax.set_xlabel(f"reactions to reach {budget_modes} modes  (bench cost, ↓)")
+    ax.set_ylabel("measured compute, seconds  (enumeration cost, ↓)")
+    ax.set_title(
+        f"Two cost axes at τ=7 / cutoff {cutoff}: every frontier point is a\n"
+        "flow- or reward-informed ordering; both no-signal controls are dominated",
+        fontsize=9.5,
+    )
+    ax.margins(x=0.22, y=0.12)
+    ax.grid(alpha=0.25, lw=0.6)
+    if len(front) > 1:
+        ax.legend(fontsize=7.5, loc="lower right")
+    fig.tight_layout()
+    fig.savefig(path, dpi=140)
+    print(f"[hubord] wrote {path}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--results", default=str(HERE / "results"))
@@ -208,6 +314,30 @@ def main() -> None:
                 "stop_reason": hb["stop_reason"],
             }
         )
+    # ---- the two-cost-axis Pareto view ---------------------------------------------------------
+    pts = []
+    for n, lb, c, _, d in have:
+        s = d["summary"]
+        if not s:
+            continue
+        hb = s["hub_batching"]
+        ct = (s.get("compute_time") or {}).get("hub_batching") or {}
+        reached = hb["stop_reason"] == "modes"
+        pts.append(
+            {
+                "arm": n,
+                "label": lb.split(":")[0],
+                "color": c,
+                "reactions": hb["total_reactions"] if reached else None,
+                "reactions_at_exhaustion": hb["total_reactions"],
+                "compute_s": float(ct.get("total_s", 0.0)),
+                "modes": hb["total_modes"],
+            }
+        )
+    if pts and any(p["compute_s"] for p in pts):
+        s0 = next(d["summary"] for _, _, _, _, d in have if d["summary"])
+        _plot_pareto(out / "cost_pareto.png", pts, s0["budget_modes"], s0.get("similarity", 0.5))
+
     ref_summary = next((d["summary"] for _, _, _, _, d in have if d["summary"]), None)
     if rows and ref_summary:
         bc = ref_summary["best_candidate"]

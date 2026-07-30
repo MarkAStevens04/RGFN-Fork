@@ -93,15 +93,52 @@ measurement as completing the budget, and it is never plotted as a win.
 `best_candidate` is recomputed per arm and must be identical everywhere (it never reads hub data);
 `compare_hub_order.py` asserts that and flags any drift.
 
+## Result (SCENT/sEH, τ=7, cutoff 0.5, 300 modes — Logs/053)
+
+| arm | rxn/mode | reactions | compute (s) | modes | |
+|---|---|---|---|---|---|
+| `flow_top` | **1.190** | 357 | 5,648 | 300 | Pareto frontier |
+| `incumbent` | 1.217 | 365 | 5,685 | 300 | dominated by `flow_top` |
+| `cand_order_fixedset` | 1.263 | 379 | 3,365 | 300 | Pareto frontier |
+| `cand_order` | 1.297 | 389 | **2,481** | 300 | Pareto frontier |
+| `random` | 1.820 | 546 | 4,332 | 300 | **dominated on both axes** |
+| `flow_bottom` | 2.050 | 572 | 6,580 | **279** ✗ | **pool-exhausted** |
+| best-candidate | 3.097 | 929 | — | 300 | reference |
+
+**Flow picks the right neighbourhood, not the right rank.** Reversing the sort breaks the method
+(can't build the library at all); randomising costs 1.53×; but the three good-hub arms sit within 9%
+of each other. On the two cost axes together, every frontier point is a flow- or reward-informed
+ordering and both no-signal controls are strictly dominated — that dominance is the strongest form
+of the claim, since it needs no weighting between bench and compute cost.
+
+**Why best-candidate order does so well** (`hub_rank_overlap.py`): it never reads flow, yet its 200
+hubs sit at median rank **546 of 20,874** (top 2.6%, 63% inside the top 1,000) versus 11,043 for the
+random arm. Sampling concentrates trajectories on high-flow hubs, so "parents of the best molecules"
+is a flow proxy. Correlational, not causal — see Logs/053's Next Experiments for the clean test.
+
+All arms converge to ~1.04× by cutoff 0.90, where loose distinctness stops making hub quality bind.
+Caveat: n=1 model, 1 target, 1 random draw.
+
 ## Layout
 
 ```
 hub_order/
   plan_arms.py   merge_enum.py   compare_hub_order.py     # python: plan / assemble / compare
+  hub_rank_overlap.py                                     # where each arm sits in the flow ranking
   chain.sh       submit_slice.sh   run_arms.sh            # slurm driver / one slice / cpu analysis
-  results/hubord_<arm>/         summary.json sweep_summary.json *.png
-  results/comparison/           cost_vs_cutoff.png compute_vs_cutoff.png summary.csv
+  results/hubord_<arm>/    summary.json sweep_summary.json *.png
+  results/comparison/      cost_vs_cutoff.png     <- headline: reactions vs diversity cutoff
+                           cost_pareto.png        <- the two cost axes + dominance
+                           hub_rank_distribution.png/.csv
+                           compute_vs_cutoff.png  summary.csv
 ```
 
 Heavy artifacts stay on `$SCRATCH` (`lsdflow/hub_order/`): `arms/` (hub sets + slice files),
 `enum/` (per-slice worker output), `merged/` (per-arm assembled enumeration), `chain.log`.
+
+## Re-running
+
+The enumeration is done and cached, so **everything above re-derives on CPU in ~5 min/arm** — you
+only need `chain.sh` again if you add an arm whose hubs aren't in `$SCRATCH/.../hub_order/enum/`.
+To add one: append it to `ARMS` in `plan_arms.py`, re-run `plan_arms.py` (it will report how much new
+GPU work it needs — possibly none), then `merge_enum.py` → `run_arms.sh`.

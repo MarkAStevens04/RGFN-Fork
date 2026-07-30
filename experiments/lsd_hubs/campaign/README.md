@@ -66,8 +66,15 @@ campaign/
 ## Pipeline
 
 1. **`pick_hubs.py`** (CPU) — from a SCENT analysis `records.csv`, take top-K candidates by reward →
-   their parent hubs → rank by single-candidate flow `F_hat` → `hubs.csv`. (The first hub strategy;
-   swap this file for others.)
+   their parent hubs → rank by single-candidate flow `F_hat` → `hubs.csv`. Hub-batching walks that
+   file top-to-bottom, so **the row order is the strategy**. Two knobs select a different strategy
+   without touching anything else (Logs/053; defaults reproduce the above byte-for-byte):
+   `--pool {topk_candidates,all}` (the reward pre-filter, or every observed hub) and
+   `--order {flow_desc,flow_asc,random,candidate_reward}`, plus `--restrict-to` to apply an order to
+   a fixed hub set. The ablation that exercises them lives in
+   [`../hub_order/`](../hub_order/) — and found the pre-filter is *not* load-bearing
+   (`--pool all --order flow_desc` is marginally better), while reversing or randomising the order
+   costs 1.7×/1.5×.
 2. **GPU enumeration** — `submit_scent_seh_enum.sh` runs `pick_hubs` then the scent-env worker
    (`--mode enumerate`) to exhaustively enumerate + reward-score each hub's children on the frozen
    full library, emitting `enum_children.json` (child + reward + fragment added in the final

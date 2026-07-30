@@ -55,6 +55,16 @@ mechanism is visible in what each ordering selects: flow prefers shallow scaffol
 150 depth-1), which have thousands of children each — more reaction savings per scaffold, but a much
 bigger enumeration bill.
 
+**Why the best-candidate ordering does so well has a concrete explanation, and it favours us.** A
+trained GFlowNet samples trajectories roughly in proportion to flow, so the molecules it produces
+have *already* been routed through high-flow intermediates. Taking the parents of the best sampled
+molecules is therefore an indirect way of selecting high-flow hubs. Measured directly: the
+candidate-ordered arm never reads the flow estimate, yet its 200 hubs sit at median rank **546 of
+20,874** — the top 2.6% — with 63% inside the top 1,000. The random arm sits at median 11,043,
+matching the uniform-draw null of 10,437. So the three "good" arms agree *because they are all
+selecting from the high-flow region by different routes*, which is a positive statement about the
+flow field rather than evidence that hub choice is unimportant.
+
 **Two caveats we should state ourselves.** The advantage of every arm collapses to ~1.04× by a
 diversity cutoff of 0.9, where "distinct" is loose enough that almost any scaffold's children qualify
 and scaffold quality stops binding. And the whole comparison is one model on one target with one
@@ -82,9 +92,15 @@ the reward mass they capture").
 - Extend to the incoming SCENT sEH seeds 43/44 (jobs 71732/71740) for a three-model version of the
   same ablation, which is a stronger generality statement than repeating one model with more random
   draws.
-- If an arm turns out pool-limited (runs out of its 200 scaffolds before reaching 300 molecules),
-  re-run that arm with a larger scaffold budget to separate "this ordering is bad" from "this
-  ordering needed more scaffolds."
+- `flow_bottom` is pool-limited across cutoffs 0.30-0.50, so its cost there is a lower bound. A
+  larger scaffold budget for that arm alone would separate "this ordering is bad" from "this
+  ordering needed more scaffolds" — worth doing before the number appears in a paper.
+- **Test the sampling-concentration hypothesis properly.** The rank measurement above is consistent
+  with "sampling routes molecules through high-flow hubs, so best-candidate order is a flow proxy",
+  but it is correlational: high-flow hubs also tend to carry high-reward children, so the two
+  explanations are not separated by this data. A clean test would compare the parent-hub flow
+  distribution of *sampled* molecules against that of *uniformly enumerated* molecules of matched
+  reward — if sampling is doing the concentrating, only the former should be flow-skewed.
 
 **Next steps in project**
 
@@ -115,6 +131,8 @@ Root: `./` = repo root; `/scratch/markymoo/rgfn_runs/` for run artifacts.
 - `./experiments/lsd_hubs/hub_order/run_arms.sh` — per-arm `run_campaign.py` + `sweep_campaign.py`.
 - `./experiments/lsd_hubs/hub_order/compare_hub_order.py` — the overlay figures + operating-point
   table; asserts best-candidate is identical across arms.
+- `./experiments/lsd_hubs/hub_order/hub_rank_overlap.py` — where each arm's 200 hubs fall in the
+  all-hub flow ranking; the measurement behind the sampling-concentration explanation.
 
 **Models**
 - `/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh/2026-07-10_17-28-06/train/checkpoints/last_gfn.pt`
@@ -142,8 +160,10 @@ Root: `./` = repo root; `/scratch/markymoo/rgfn_runs/` for run artifacts.
 **Results**
 - `./experiments/lsd_hubs/hub_order/results/hubord_<arm>/` — per-arm `summary.json` (operating
   point) + `sweep_summary.json` (the cutoff sweep) + figures.
-- `./experiments/lsd_hubs/hub_order/results/comparison/` — `cost_vs_cutoff.png`,
-  `compute_vs_cutoff.png`, `summary.csv`.
+- `./experiments/lsd_hubs/hub_order/results/comparison/` — `cost_vs_cutoff.png` (the headline:
+  reactions to 300 modes vs diversity cutoff, per arm), `cost_pareto.png` (the two cost axes and the
+  dominance structure), `hub_rank_distribution.png` (+ `.csv`), `compute_vs_cutoff.png`,
+  `summary.csv`.
 
 **Job Logs**
 - `/scratch/markymoo/rgfn_runs/hubord_enum-<jobid>.{out,err}` — one pair per slice.
@@ -178,6 +198,8 @@ Infrastructure `1a6dcb7`, index row `21247f1`, per-arm results `e04f85a` / `6de1
 4. **Enumerate the new hubs.** `chain.sh`, one `debug` job at a time.
 5. **Assemble + analyse.** `merge_enum.py`, then `run_arms.sh` (per-arm campaign + cutoff sweep),
    then `compare_hub_order.py`.
+6. **Explain the agreement between arms.** `hub_rank_overlap.py` — rank every observed hub by the
+   same `max_x F_hat(h;x)` the production ranker uses, then locate each arm's 200 hubs in it.
 
 ## Results
 
@@ -234,6 +256,18 @@ Flow prefers shallow scaffolds (~7,100 children each at depth 1 vs ~700 at depth
 savings per scaffold, a much larger enumeration bill. That is the trade the frontier expresses — and
 note it runs *opposite* to naive intuition, since the arm that enumerates the FEWEST children
 (`flow_bottom`, 283k) is also the one that fails.
+
+**Where each arm's hubs sit in the all-hub flow ranking** (`hub_rank_overlap.py`; 20,874 hubs,
+uniform-draw null = median 10,437, 5% in the top 5%). This is the evidence for the
+sampling-concentration explanation above — and it is correlational, see Next Experiments.
+
+| arm | median flow-rank | percentile | in top 1,000 | in top half |
+|---|---|---|---|---|
+| `flow_top` | 99 | 0.48% | 100% | 100% |
+| `incumbent` | 215 | 1.03% | 100% | 100% |
+| `cand_order` | **546** | **2.62%** | **63%** | 97.5% |
+| `random` | 11,043 | 52.9% | 2.5% | 46% |
+| `flow_bottom` | 20,773 | 99.5% | 0% | 0% |
 
 **Enumeration cost.** 16 `debug` slices, 15:17 → 00:31 (~9.2 h wall clock) for 598 new hubs; 402 of
 the 1,000 arm-hub slots were served from cache. The self-refitting slice planner had zero wall-clock

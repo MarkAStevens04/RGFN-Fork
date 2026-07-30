@@ -436,3 +436,11 @@ Independent top-k (no batching); random hub; parent-of-top-N (the control strate
 generated library at the library level on the shared SMALL substrate. The SCENT-library fairness
 knob (freeze its dynamic library to match vocabularies vs. let it explore a superset and frame
 accordingly) is a phase-2 decision, not a v1 blocker.
+
+> **Status (Logs/053).** The hub-selection baselines are **built and run** on SCENT/sEH:
+> `experiments/lsd_hubs/hub_order/` compares flow ↓ (over all hubs and over the reward-filtered
+> pool), flow ↑, random, and two parent-of-top-N variants, holding everything but the hub ordering
+> fixed. Headline: reversing the flow sort breaks the method (can't reach the mode budget),
+> randomising costs 1.53×, but orderings that all land in the high-flow region agree within 9% — so
+> flow selects the right *neighbourhood* rather than the exact rank. Independent top-k
+> (best-candidate) has been the standing comparator since Logs/029.

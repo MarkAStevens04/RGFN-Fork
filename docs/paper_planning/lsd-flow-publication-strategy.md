@@ -129,6 +129,8 @@ Same plot, opposite reviewer reaction. This also converts the Pareto front from 
 
 **Hub definition arbitrariness.** Why pre-terminal only? Why not depth-2 or deeper? Have the ablation ready; without it this is a free criticism.
 
+> **Partly answered (Logs/053).** The *hub-ordering* ablation is done on SCENT/sEH: reversing the flow sort makes the method fail to build the library at all, randomising it costs 1.53× the reactions, and both no-signal controls are strictly dominated on the (reactions, compute) plane while every frontier point is flow- or reward-informed. Two things to carry into the text: (a) the honest claim is that flow finds the right *neighbourhood* of hubs, not the exact rank — orderings that all land in the high-flow region agree within 9%; (b) ordering by a hub's best molecule is itself a flow proxy (its hubs sit in the top 2.6% of the flow ranking without ever reading flow), because sampling routes trajectories through high-flow intermediates. The *hub-depth* question is still open.
+
 **Baseline strength.** SPARROW is the sharpest foil since it is already synthesis-cost-aware. S3-GFN is the marquee comparison. If LSD-Flow cannot beat SPARROW on an axis it does not own by definition, that is a substantive problem to address before submission, not in rebuttal.
 
 **Oracle reliability.** The enrichment analysis (binders vs. property-matched decoys) does double duty: it justifies why diversity matters (§2.2) and preempts "your reward is meaningless." Make sure it is placed early enough to support both.
@@ -147,8 +149,10 @@ Same plot, opposite reviewer reaction. This also converts the Pareto front from 
 - [ ] Normalize mode counts for library size
 - [ ] Switch/supplement mode definition to sphere-exclusion clustering
 - [ ] Extend similarity sweep past the crossover point; report the number
+- [ ] Report the hub-ordering convergence point too: all orderings reach ~1.04× by cutoff 0.90 (Logs/053)
 - [ ] Rewrite Pareto section framing around the diversity/economy trade
 - [ ] Run LSD-Flow on both RGFN and SCENT for generality claim
+- [x] Hub-ordering ablation (Logs/053) — flow ↓/↑, random, parent-of-top-N ×2
 - [ ] Hub-depth ablation
 - [ ] Vendor-pricing translation of reactions/mode
 - [ ] Confirm theory footprint in main text < half a page
