@@ -287,7 +287,8 @@
       "Bash(git -C .claude/worktrees/hub-order-ablation log --oneline -5)",
       "Bash(git -C .claude/worktrees/hub-order-ablation status --short)",
       "Bash(quota -s)",
-      "Bash(diskusage_report)"
+      "Bash(diskusage_report)",
+      "Bash(timeout 20 claude agents --help)"
     ]
   }
 }
