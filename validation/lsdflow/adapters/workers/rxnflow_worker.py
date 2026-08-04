@@ -87,7 +87,7 @@ def _stripped_key(smi):
     return Chem.MolToSmiles(m, isomericSmiles=False), Chem.MolToSmiles(m)
 
 
-def _build_reward(reward_name, reward_c, device):
+def _build_reward(reward_name, reward_c, device, work_dir=None):
     if reward_name == "seh":
         return SEHFrozenReward(device=device, clip=float(reward_c.get("clip", 10.0)))
     if reward_name == "drd2":
@@ -105,6 +105,9 @@ def _build_reward(reward_name, reward_c, device):
         return DockingBridgeReward(
             oracle=reward_c["oracle"],
             repo_root=str(REPO_ROOT),
+            # MUST be on $SCRATCH: the bridge's default is <repo>/reward_bridge, and $HOME is
+            # READ-ONLY on compute nodes (Logs/012) -> PermissionError at construction.
+            workdir=str(work_dir) if work_dir else None,
             norm=float(reward_c.get("norm", 1.0)),
             clip=float(reward_c.get("clip", 10.0)),
             oracle_args=dict(reward_c.get("oracle_args", {}) or {}),
@@ -139,7 +142,7 @@ def _build_trainer(config_path, reward_name, device, seed, out_dir):
     beta = float(fr_c.get("beta", 8))
     clip = float(reward_c.get("clip", 10.0))
 
-    reward = _build_reward(reward_name, reward_c, device)
+    reward = _build_reward(reward_name, reward_c, device, work_dir=out_dir / "reward_bridge")
 
     gcfg = init_empty(Config())
     _set_if(gcfg, "log_dir", str(out_dir / "_rxn_scratch_logdir"))

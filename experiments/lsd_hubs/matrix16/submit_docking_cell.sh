@@ -81,6 +81,16 @@ PY
 ) || { echo "ERROR: could not resolve the oracle for $TGT"; exit 1; }
 [ -n "$ORACLE" ] || { echo "ERROR: empty oracle for $TGT"; exit 1; }
 
+# Force the measured-optimal QuickVina2 batch (Logs/036 Part A: batch 200 / one process is 3.3x
+# faster per molecule than batch 25, with batch-INVARIANT scores). DockingClpPOracle already
+# inherits 200, but the 6TD3 differential oracle still defaults to 25 -- without this override the
+# 6TD3 cells would run ~3x slower for no reason. Skipped if the cell's config already pins it.
+DOCK_BATCH=${DOCK_BATCH:-200}
+case "$ORACLE_ARGS" in
+    *docking_batch_size*) : ;;
+    *) ORACLE_ARGS="$ORACLE_ARGS --oracle-arg docking_batch_size=$DOCK_BATCH" ;;
+esac
+
 RUN="$ENUM_DIR/slice${SLICE_IDX}of${N_SLICES}"
 mkdir -p "$RUN"
 SOCK="$RUN/dock.sock"
@@ -117,6 +127,10 @@ echo "=== node=$(hostname)  run=$RUN ==="
 # ---- 1. persistent docking server (rgfn env; owns the GPU docker) --------------------------------
 conda activate rgfn
 source ~/bin/rgfn-smoke-env.sh >/dev/null 2>&1 || true   # LD_LIBRARY_PATH for QV2-GPU + gnina
+# Remember rgfn's interpreter: the cleanup trap fires AFTER we switch to the generator's env, and
+# that env cannot import glue (no gin) -- without this the clean shutdown degrades to a kill and we
+# lose the server's utilization stats.
+RGFN_PY="$(command -v python)"
 python -m glue.oracles.docking_server --oracle "$ORACLE" \
     --socket "$SOCK" --stats "$RUN/dock_server_stats.json" $ORACLE_ARGS \
     > "$RUN/dock_server.log" 2>&1 &
@@ -126,7 +140,7 @@ echo "[dock-cell] docking server pid=$SERVER_PID -> $RUN/dock_server.log"
 cleanup() {
     if kill -0 "$SERVER_PID" 2>/dev/null; then
         echo "[dock-cell] shutting down docking server"
-        python - "$SOCK" <<'PY' || kill "$SERVER_PID" 2>/dev/null
+        "$RGFN_PY" - "$SOCK" <<'PY' || kill "$SERVER_PID" 2>/dev/null
 import sys
 sys.path.insert(0, ".")
 from glue.oracles.docking_server import DockingServerClient
