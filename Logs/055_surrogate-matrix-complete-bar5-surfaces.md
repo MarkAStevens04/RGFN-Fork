@@ -122,14 +122,26 @@ three ways before use (see Method 4).
 ## Relevant Versions
 
 ```
+1701374 Logs/055: four-generator two-knob surfaces -- 380/380 comparable cells favour hub-batching
 02626ff sEH at the calibrated bar 5.0: the edge grows AND the comparison becomes fair
 b57b6b0 matrix16: fraggfn_seh cap-6 closes the surrogate matrix -- 8 of 8 cells
 03e391b matrix16: both RGFN cells land + RxnFlow measured timings -> 7 of 8 surrogate cells
 0aa7de2 Add scratch-purge backup for the irreplaceable artifacts
 ```
 
-Branch `Hub-Analysis`. The four surfaces, the `surface_all_generators.sh` driver and the
-`tau_similarity_surface.py` subtitle fix are **[TODO — add commit hash after pushing]**.
+Branch `Hub-Analysis`, all committed. Mapping of content to commit:
+
+| content | commit |
+|---|---|
+| the four two-knob surfaces + `surface_all_generators.sh` + this log + the index row + the `tau_similarity_surface.py` subtitle fix | `1701374` |
+| the 5/6/7 threshold sweep (20 points) + the bar-5 cross-generator panel | `02626ff` |
+| `fraggfn_seh` cap-6 cell + the 4-way control panel | `b57b6b0` |
+| both RGFN cells + merged RxnFlow timings + the 3-generator panel | `03e391b` |
+| `scripts/backup_scratch_critical.sh` | `0aa7de2` |
+
+Earlier supporting commits in this line: `4c7824b` (horizontal-bar direction marker), `dd9fce3`
+(diagonal Pareto marker), `88b2e94` (compute-time instrumentation ported to all four workers),
+`bbc16f7` (`submit_timing.sh`/`merge_timings.sh`).
 
 ## Relevant Resources
 
