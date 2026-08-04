@@ -43,10 +43,29 @@ class Target:
     reward_type: str  # "surrogate" (cheap proxy enum) | "docking" (GPU dock enum; deferred)
     threshold_variants: List[float] = field(default_factory=list)  # extra bars to sweep (Logs/035)
     reward_note: str = ""
+    # Docking targets only: the oracle name the persistent docking server / score_batch bridge
+    # registers (``glue.oracles.docking_server``'s registry). Declared HERE, beside the gate it is
+    # measured against, so adding a fifth target is a one-entry edit rather than a grep across
+    # drivers. Empty for surrogate targets, which score in-process with no oracle.
+    oracle: str = ""
 
     @property
     def is_docking(self) -> bool:
         return self.reward_type == "docking"
+
+    @property
+    def oracle_name(self) -> str:
+        """The oracle to serve for this target, failing loudly rather than silently scoring with
+        the wrong one. Oracle *constructor* args (num_modes, exhaustiveness) are NOT here — they
+        live in each cell's training config (``reward.oracle_args``), which is the only record of
+        what the checkpoint was actually trained against."""
+        if not self.is_docking:
+            raise ValueError(
+                f"target {self.name!r} is a surrogate target; it has no docking oracle"
+            )
+        if not self.oracle:
+            raise ValueError(f"docking target {self.name!r} has no oracle declared in targets.py")
+        return self.oracle
 
 
 TARGETS: Dict[str, Target] = {
@@ -75,6 +94,7 @@ TARGETS: Dict[str, Target] = {
         higher_is_better=False,
         mode_reward_threshold=-2.0,
         reward_type="docking",
+        oracle="docking_6td3_gpu",  # two-tier differential; num_modes/exhaustiveness from the cfg
         threshold_variants=[-2.0],
         reward_note="PROVISIONAL: neosubstrate differential (Vina T2-T1), lower-is-better; "
         "confirm recorded reward-column sign/scale when docking cells activate",
@@ -85,6 +105,7 @@ TARGETS: Dict[str, Target] = {
         higher_is_better=False,
         mode_reward_threshold=-8.0,
         reward_type="docking",
+        oracle="docking_clpp",  # single-target human ClpP 7UVU (Logs/045)
         threshold_variants=[-8.0, -9.0],
         reward_note="CALIBRATED (Logs/045): raw QuickVina2-GPU Vina energy vs human ClpP "
         "(7UVU), lower-is-better. Gate on the RAW docking value (candidates.csv `raw_score` / "

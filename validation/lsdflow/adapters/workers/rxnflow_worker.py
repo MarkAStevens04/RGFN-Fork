@@ -35,6 +35,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _artifacts as A  # noqa: E402
+import _docking  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 if str(REPO_ROOT) not in sys.path:
@@ -93,9 +94,41 @@ def _build_reward(reward_name, reward_c, device):
         return DRD2FrozenReward(
             model_path=reward_c["model_path"], clip=float(reward_c.get("clip", 10.0))
         )
-    raise SystemExit(
-        f"[rxnflow_worker] reward '{reward_name}' not wired. Docking targets (6td3/clpp) are deferred."
-    )
+    if reward_name in ("6td3", "clpp"):
+        # Docking: reach the oracle across the env boundary with the SAME bridge this generator
+        # trained against, so the recovered flow terms stay comparable to the sampled DAG. The
+        # bridge talks to the persistent docking server over RGFN_DOCK_SOCKET; _docking.require_socket
+        # makes a missing socket an error rather than a silent per-batch oracle re-construction.
+        from validation.generators.rxnflow.fixed_reward import DockingBridgeReward
+
+        _docking.require_socket()
+        return DockingBridgeReward(
+            oracle=reward_c["oracle"],
+            repo_root=str(REPO_ROOT),
+            norm=float(reward_c.get("norm", 1.0)),
+            clip=float(reward_c.get("clip", 10.0)),
+            oracle_args=dict(reward_c.get("oracle_args", {}) or {}),
+        )
+    raise SystemExit(f"[rxnflow_worker] reward '{reward_name}' not wired.")
+
+
+def _make_scorer(proxy, beta, clip):
+    """Return ``score(smiles) -> (gate_values, log_rewards)`` for either target class.
+
+    Surrogate: one proxy call; the gate value and the flow value are the same number.
+    Docking: the two columns DIVERGE — the gate is applied to the raw energy while the flow term
+    must use the training transform (see ``_docking``'s two-column contract). Routing both through
+    one function keeps the sample, enumerate and probe_hubs paths from drifting apart."""
+    if hasattr(proxy, "raw_scores"):  # DockingBridgeReward
+        ds = _docking.DockingChildScorer(proxy, beta=beta, clip=clip, illegal_log_reward=ILLEGAL)
+        return ds.score, ds
+
+    def score(smiles):
+        vals = list(proxy.predict(list(smiles)))
+        logr = [max(beta * min(max(v, -clip), clip), ILLEGAL) if v == v else ILLEGAL for v in vals]
+        return vals, logr
+
+    return score, None
 
 
 def _build_trainer(config_path, reward_name, device, seed, out_dir):
@@ -135,7 +168,7 @@ def _build_trainer(config_path, reward_name, device, seed, out_dir):
 
 
 # ============================================================ sample mode
-def _extract_batch(trainer, beta, clip, enc, data):
+def _extract_batch(trainer, beta, clip, enc, data, _score):
     """§2 flow records for one sampled batch (both terminal kinds). Returns (records, visit_counts)."""
     algo, task, dev = trainer.algo, trainer.task, trainer.device
     keep, keep_idx = [], []
@@ -152,11 +185,10 @@ def _extract_batch(trainer, beta, clip, enc, data):
         return [], {}
     enc_keep = enc[keep_idx]
     x_smis = [d["result"].smi for d in keep]
-    raw = task.proxy.predict(x_smis)
-    log_rewards = torch.tensor(
-        [max(beta * min(max(v, -clip), clip), ILLEGAL) if v == v else ILLEGAL for v in raw],
-        dtype=torch.float32,
-    )
+    # Two columns: `raw` is what the mode gate sees, log_rewards is what the policy trained on.
+    # Identical for a surrogate; divergent for docking (_docking's two-column contract).
+    raw, logr = _score(x_smis)
+    log_rewards = torch.tensor(logr, dtype=torch.float32)
     batch = algo.construct_batch(keep, enc_keep, log_rewards).to(dev)
     nt = int(batch.traj_lens.shape[0])
     bidx = torch.arange(nt, device=dev).repeat_interleave(batch.traj_lens)
@@ -215,6 +247,7 @@ def _extract_batch(trainer, beta, clip, enc, data):
 
 
 def _run_sample(args, trainer, beta, clip, out_dir, device):
+    _score, _dstats = _make_scorer(trainer.task.proxy, beta, clip)
     all_records, visit_counts, total = [], {}, 0
     remaining = args.n_trajectories
     enc = None
@@ -226,7 +259,7 @@ def _run_sample(args, trainer, beta, clip, out_dir, device):
             data = trainer.algo.graph_sampler.sample_from_model(
                 trainer.model, b, enc, random_action_prob=0.0
             )
-        recs, visits = _extract_batch(trainer, beta, clip, enc, data)
+        recs, visits = _extract_batch(trainer, beta, clip, enc, data, _score)
         all_records.extend(recs)
         for k, c in visits.items():
             visit_counts[k] = visit_counts.get(k, 0) + c
@@ -308,6 +341,7 @@ def _enumerate_hub(
     min_len,
     stop_proto,
     timer=None,
+    _score=None,
 ):
     """All one-reaction terminal children of a hub (approach a: MolGraph from SMILES).
     Returns (records, n_paths, added_by_child, reaction_by_child).
@@ -386,20 +420,17 @@ def _enumerate_hub(
         fwd_lists = _score_child_trajs(trainer, child_trajs)  # P_F (model forward)
     x_smis = [cg.smi for _a, cg, _lpb in meta]
     with _t.track("reward_gen_s"):
-        rewards = task.proxy.predict(x_smis)
-
-    def shaped(v):
-        return max(beta * min(max(v, -clip), clip), ILLEGAL) if v == v else ILLEGAL
+        rewards, log_rewards = _score(x_smis)
 
     hub_key, hub_stereo = _stripped_key(hub_smi)
     best, added_by_child, reaction_by_child = {}, {}, {}
-    for (act, child_g, logpb), fwdL, val in zip(meta, fwd_lists, rewards):
+    for (act, child_g, logpb), fwdL, val, lr in zip(meta, fwd_lists, rewards, log_rewards):
         child_key, child_stereo = _stripped_key(child_g.smi)
         rec = {
             "hub_key": hub_key,
             "child_key": child_key,
             "reward": float(val) if val == val else float("nan"),
-            "log_reward": float(shaped(val)),
+            "log_reward": float(lr),
             "log_pf_move": float(fwdL[0]),
             "log_pb_move": float(logpb),
             "log_pf_stop": 0.0 if is_cap else float(fwdL[1]),
@@ -510,6 +541,7 @@ def _run_probe_hubs(args, trainer, beta, clip, out_dir):
 
 
 def _run_enumerate(args, trainer, beta, clip, out_dir):
+    _score, _dstats = _make_scorer(trainer.task.proxy, beta, clip)
     if not args.hubs_file:
         raise SystemExit("[rxnflow_worker] --mode enumerate requires --hubs-file")
     env = trainer.env
@@ -537,6 +569,7 @@ def _run_enumerate(args, trainer, beta, clip, out_dir):
             min_len,
             stop_proto,
             timer=timer,
+            _score=_score,
         )
         all_records.extend(recs)
         hub_key = recs[0]["hub_key"] if recs else _stripped_key(hub_stereo)[0]
