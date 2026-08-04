@@ -39,5 +39,75 @@
     "case2_reactions_at_300modes": null,
     "stop_reason": "pool_exhausted"
   },
-  "compute_time": null
+  "compute_time": {
+    "enum_timings_meta": {
+      "merged_from": [
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_timing/rxnflow_seh/slice1of3/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_timing/rxnflow_seh/slice2of3/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_timing/rxnflow_seh/slice3of3/enum_timings.json"
+      ],
+      "n_slices": 3,
+      "n_hubs": 200,
+      "n_children": 232213,
+      "setup_s": 0.665,
+      "slice_setups_s": [
+        0.665,
+        0.751,
+        0.642
+      ],
+      "totals_s": {
+        "enumeration_s": 391.477,
+        "reward_gen_s": 282.352,
+        "flow_extract_s": 29345.432,
+        "unattributed_s": 0.0
+      },
+      "device": "cuda",
+      "reward_name": "seh",
+      "cuda_synchronized": true
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "setup_s": 0.665,
+      "hub_pick_s": 0.15,
+      "enumeration_s": 391.4769,
+      "reward_gen_s": 282.3516,
+      "flow_extract_s": 29345.4318,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.9391,
+      "n_hubs_walked": 200,
+      "n_children_scored": 232213,
+      "missing_hub_keys": [],
+      "total_s": 30021.0144
+    },
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "setup_s": 0.0,
+      "hub_pick_s": 0.0,
+      "enumeration_s": 0.0,
+      "reward_gen_s": 0.0,
+      "flow_extract_s": 0.0,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.102,
+      "n_hubs_walked": 0,
+      "n_children_scored": 0,
+      "missing_hub_keys": [],
+      "total_s": 0.102
+    },
+    "head_to_head": {
+      "hub_total_s": 30021.0144,
+      "best_total_s": 0.102,
+      "extra_compute_s": 30020.9124,
+      "ratio_hub_over_best": 294293.027,
+      "per_component_delta_s": {
+        "setup_s": 0.665,
+        "hub_pick_s": 0.15,
+        "enumeration_s": 391.4769,
+        "reward_gen_s": 282.3516,
+        "flow_extract_s": 29345.4318,
+        "unattributed_s": 0.0,
+        "mode_selection_s": 0.8371
+      },
+      "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+    }
+  }
 }
