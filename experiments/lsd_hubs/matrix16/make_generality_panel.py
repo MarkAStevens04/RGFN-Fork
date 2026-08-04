@@ -22,7 +22,9 @@ only assemble 19 modes. BOTH rows are plotted rather than swapped, because the c
 trained yet: swapping DRD2 alone would silently mix model versions across the two target blocks. Read
 cap-6 as the live control and cap-9 as superseded; drop the cap-9 row once cap-6 sEH lands.
 
-RGFN is absent: its two cells (jobs 71766/71767) were still enumerating at the time of writing.
+RGFN (upstream reaction-GFN, naive) is now IN (jobs 71981/71982, campaign'd 2026-08-04): sEH 2.993/4.000
+(1.34x), DRD2 1.197/3.843 (3.21x) — a third reaction-GFN backbone showing hub-batching wins under the
+common naive policy, which is the generality claim's core.
 
 Palette = the validated default instance (blue #2a78d6 hub-batching / orange #eb6834 best-candidate;
 six-checks validator: CVD dE 24.7 protan, normal-vision 33.6, contrast 4.30/3.12 - all PASS).
@@ -48,10 +50,12 @@ ROWS = [
     ("scent_seh", "SCENT  free-frag+K20", "sEH", False),
     ("scent_seh_naive", "SCENT  naive", "sEH", False),
     ("rxnflow_seh", "RxnFlow  naive", "sEH", False),
+    ("rgfn_seh", "RGFN  naive", "sEH", False),
     ("fraggfn_cap9_seh", "FragGFN  naive  (control)", "sEH", True),
     ("scent_drd2", "SCENT  free-frag+K20", "DRD2", False),
     ("scent_drd2_naive", "SCENT  naive", "DRD2", False),
     ("rxnflow_drd2", "RxnFlow  naive", "DRD2", False),
+    ("rgfn_drd2", "RGFN  naive", "DRD2", False),
     ("fraggfn_drd2", "FragGFN cap-6  naive  (control)", "DRD2", True),
     ("fraggfn_cap9_drd2", "FragGFN cap-9  naive  (superseded)", "DRD2", True),
 ]
@@ -249,12 +253,12 @@ def main():
     fig.text(
         0.012,
         0.022,
-        "Apples-to-apples (all naive): SCENT 1.22×/1.38× vs RxnFlow 1.23×/1.60×. SCENT's "
-        "free-frag+K20 rows need promoted dynamic-library fragments only it has.\n"
+        "Apples-to-apples (all naive): SCENT 1.22×/1.38× · RxnFlow 1.23×/1.60× · RGFN 1.34×/3.21×. "
+        "SCENT's free-frag+K20 rows need promoted dynamic-library fragments only it has.\n"
         'Hatched = FragGFN is a CONTROL, not a peer: its "reactions" are fragment attachments and '
         "has_route=0. Both FragGFN model versions are shown (Logs/046/050): cap-6 is the\n"
         "corrected model, cap-9 is superseded and kept only because the cap-6 sEH cell is not "
-        "trained yet, so swapping DRD2 alone would mix versions across blocks. RGFN cells pending.",
+        "trained yet, so swapping DRD2 alone would mix versions across blocks.",
         fontsize=7.4,
         color=INK2,
         ha="left",

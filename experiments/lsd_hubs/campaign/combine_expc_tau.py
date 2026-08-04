@@ -53,8 +53,13 @@ def collect(stock: str):
     for d in sorted(RESULTS.glob(f"scent_seh_multiaiz_{stock}*")):
         if "smoke" in d.name:
             continue
+        # launch_expc_tau_sweep.sh names dirs with the dot STRIPPED from "0.X" (τ=0.3 -> "_t03",
+        # τ=0.35 -> "_t035"), so the encoded string is "0" + the decimal digits. Invert by putting
+        # the dot back after the first char: "03"->0.3, "07"->0.7, "035"->0.35. The old
+        # float(f"0.{m}") read "03" as 0.03 and clustered the whole sweep near zero.
         m = re.search(r"_t(\d+)$", d.name)
-        tau = float(f"0.{m.group(1)}") if m else 0.5  # the un-suffixed dir is the τ=0.5 run
+        s = m.group(1) if m else None
+        tau = float(f"{s[0]}.{s[1:]}") if s else 0.5  # the un-suffixed dir is the τ=0.5 run
         be = d / "budget_efficiency.csv"
         if not be.exists():
             continue
