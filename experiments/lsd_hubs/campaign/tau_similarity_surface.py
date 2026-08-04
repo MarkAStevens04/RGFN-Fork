@@ -324,6 +324,28 @@ def _edges(vals):
     return out
 
 
+_GEN_LABEL = {"scent": "SCENT", "rgfn": "RGFN", "rxnflow": "RxnFlow", "fraggfn": "FragGFN"}
+_TGT_LABEL = {
+    "seh": "sEH surrogate",
+    "drd2": "DRD2 surrogate",
+    "6td3": "6TD3 docking",
+    "clpp": "ClpP docking",
+}
+
+
+def _pretty_cell(tag: str) -> str:
+    """'fraggfn_seh' -> 'FragGFN sEH surrogate'. The subtitle used to be the literal string
+    "SCENT sEH surrogate" because this driver was written for one cell; running the same grid on the
+    other three generators silently mislabelled every one of them. Falls back to the raw tag for any
+    name that does not parse, so an unknown tag is visibly unknown rather than wrongly attributed.
+    """
+    parts = tag.split("_")
+    if len(parts) >= 2 and parts[0] in _GEN_LABEL and parts[1] in _TGT_LABEL:
+        extra = " ".join(parts[2:])
+        return f"{_GEN_LABEL[parts[0]]} {_TGT_LABEL[parts[1]]}" + (f" ({extra})" if extra else "")
+    return tag
+
+
 def plot(path: Path, rows, tag: str, budget: int) -> None:
     """Three panels on the same grid: each strategy's reactions/mode, then the advantage ratio."""
     import matplotlib
@@ -360,7 +382,7 @@ def plot(path: Path, rows, tag: str, budget: int) -> None:
     fig.text(
         0.5,
         0.925,
-        f"SCENT sEH surrogate — fixed budget {budget} reactions",
+        f"{_pretty_cell(tag)} — fixed budget {budget} reactions",
         ha="center",
         fontsize=9.5,
         color=MUTED,

@@ -1,0 +1,63 @@
+{
+  "tag": "rxnflow_seh",
+  "analysis_dir": "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rxnflow_seh/sample",
+  "enum_children": "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rxnflow_seh/enum/enum_children.json",
+  "snapshot": "",
+  "taus": [
+    4.0,
+    4.5,
+    5.0,
+    5.5,
+    6.0,
+    6.5,
+    7.0,
+    7.5,
+    8.0
+  ],
+  "similarities": [
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9
+  ],
+  "budget_reactions": 300,
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "rank_by": null,
+  "wall_s": 221.7,
+  "summary": {
+    "budget_reactions": 300,
+    "n_grid_cells": 117,
+    "n_comparable_cells": 85,
+    "n_pool_limited_cells": 32,
+    "hub_wins_cells": 85,
+    "ratio_min": {
+      "tau": 6.0,
+      "similarity": 0.3,
+      "hub": 2.9216,
+      "best": 2.99,
+      "ratio": 1.0234,
+      "hub_modes": 102,
+      "best_modes": 100
+    },
+    "ratio_max": {
+      "tau": 5.5,
+      "similarity": 0.85,
+      "hub": 1.0067,
+      "best": 2.8037,
+      "ratio": 2.785,
+      "hub_modes": 298,
+      "best_modes": 107
+    },
+    "at_operating_point": null
+  }
+}
