@@ -162,6 +162,61 @@ def write_enum_children(path, enum_hubs: Sequence[Dict]) -> None:
     json.dump({"hubs": list(enum_hubs)}, open(path, "w"))
 
 
+class PartialFlusher:
+    """Periodically persist an in-progress enumeration so a walltime kill is not a total loss.
+
+    WHY THIS IS SHARED AND NOT PER-WORKER: ``rgfn_worker`` grew a hand-rolled ``if (i+1) % 10``
+    flush after its sEH cell timed out; the other three workers never got one. That was survivable
+    while enumeration was a fast surrogate call, but a DOCKING enumeration is 6-10 GPU-hours per hub
+    slice, so an unflushed timeout throws away most of a day of A100 time. It cost exactly that once
+    (rxnflow_clpp slices 72248-72253, cancelled with nothing on disk) before being lifted here.
+
+    Also flushes the timing sidecar, so a partial enumeration still carries the measured compute for
+    the hubs it DID finish — otherwise the surviving children look free.
+
+    Downstream already tolerates a partial file: ``tau_curve_all_generators`` and
+    ``surface_all_generators`` reject a cell whose enumeration covers <90% of its ``hubs.csv``, and
+    ``merge_docking_slices`` refuses to publish an incomplete slice set. So a flushed partial is
+    usable evidence, never silently mistaken for a complete cell.
+
+        flusher = PartialFlusher(out_dir, every=10, timing_meta=dict(...))
+        for i, hub in enumerate(hubs):
+            ...
+            flusher.maybe(i, enum_hubs, hub_timings)
+        flusher.final(enum_hubs, hub_timings)
+    """
+
+    def __init__(self, out_dir, *, every: int = 10, timing_meta: Optional[Dict] = None):
+        from pathlib import Path
+
+        self.out_dir = Path(out_dir)
+        self.every = max(1, int(every))
+        self.timing_meta = dict(timing_meta or {})
+        self.n_flushes = 0
+
+    def _write(self, enum_hubs, hub_timings) -> None:
+        write_enum_children(self.out_dir / "enum_children.json", enum_hubs)
+        if hub_timings:
+            write_enum_timings(
+                self.out_dir / "enum_timings.json", per_hub=hub_timings, **self.timing_meta
+            )
+        self.n_flushes += 1
+
+    def maybe(self, i: int, enum_hubs, hub_timings=None) -> bool:
+        """Flush if ``i`` (0-based hub index) lands on the interval. Returns whether it wrote."""
+        if (i + 1) % self.every:
+            return False
+        self._write(enum_hubs, hub_timings)
+        print(
+            f"[partial-flush] {len(enum_hubs)} hubs persisted to {self.out_dir}/enum_children.json",
+            flush=True,
+        )
+        return True
+
+    def final(self, enum_hubs, hub_timings=None) -> None:
+        self._write(enum_hubs, hub_timings)
+
+
 def compositions_from_records(records: Sequence[Dict]) -> Dict[str, dict]:
     """Build compositions.json for a generator with NO promoted fragments (RGFN/FragGFN/RxnFlow).
 

@@ -91,8 +91,17 @@ case "$ORACLE_ARGS" in
     *) ORACLE_ARGS="$ORACLE_ARGS --oracle-arg docking_batch_size=$DOCK_BATCH" ;;
 esac
 
+# Framework caches on $SCRATCH ($HOME read-only on compute nodes); offline W&B. Same as
+# submit_cell.sh -- a default cache path under $HOME fails on a compute node.
+export TORCH_HOME=$SCRATCH/.cache/torch HF_HOME=$SCRATCH/.cache/huggingface
+export WANDB_MODE=offline PYTHONUNBUFFERED=1
+
 RUN="$ENUM_DIR/slice${SLICE_IDX}of${N_SLICES}"
-mkdir -p "$RUN"
+# The run dir is PER-SLICE, not per-cell: slices run concurrently and SCENT's SaveSynthesisPaths
+# metric writes final_paths.csv under <run-dir>/<run_name>/, so a shared one would have slices
+# overwriting each other. Pre-create it (and the run_name child) -- the metric opens that file
+# during trainer construction and does NOT create parents.
+mkdir -p "$SAMPLE_DIR" "$ENUM_DIR" "$RUN" "$RUN/run/lsdflow_scent" "$TORCH_HOME" "$HF_HOME"
 SOCK="$RUN/dock.sock"
 SRC_HUBS=${HUBS_FILE:-$ENUM_DIR/hubs.csv}
 

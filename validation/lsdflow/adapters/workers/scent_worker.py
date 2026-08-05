@@ -50,6 +50,13 @@ import sys
 import time
 from pathlib import Path
 
+# This worker predates _artifacts and inlines its own writers, so it imports only what it needs:
+# _artifacts for the shared PartialFlusher, _docking for the socket guard. Both are stdlib-only and
+# safe to import from the scent env.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _artifacts as A  # noqa: E402
+import _docking  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parents[4]
 SCENT_ROOT = REPO_ROOT / "external" / "scent"
 GEN_DIR = REPO_ROOT / "validation" / "generators" / "scent"
@@ -167,6 +174,7 @@ def extract_flow_records(
     chosen_set=None,
     RAC=None,
     routes_out=None,
+    gate_component=None,
 ):
     """§2 terminal-transition flow records from a batch of trajectories -> list of dict rows.
 
@@ -187,6 +195,20 @@ def extract_flow_records(
         ro = trajectories.get_reward_outputs()
         log_rewards = ro.log_reward.detach().cpu().tolist()
         proxies = ro.proxy.detach().cpu().tolist()
+        if gate_component:
+            # DOCKING only. The proxy value a docking model trains on is ReLU(-raw/norm), never
+            # negative, while the calibrated bars are RAW energies (-8.0 ClpP). Recording the proxy
+            # value in `reward` would gate a never-negative column against a negative bar and
+            # qualify NOTHING -- an empty result, not a crash. log_reward is left alone so the flow
+            # terms still match training. Mirrors glue/samplers/lsdflow/rgfn_extract.
+            comps = getattr(ro, "proxy_components", None) or {}
+            if gate_component not in comps:
+                raise KeyError(
+                    f"gate_component={gate_component!r} not in proxy_components {sorted(comps)}; "
+                    "DockingBridgeProxy must emit 'raw_score'. Refusing to fall back to the proxy "
+                    "value, which would silently qualify nothing."
+                )
+            proxies = comps[gate_component].detach().cpu().tolist()
 
     states_list = trajectories._states_list
     actions_list = trajectories._actions_list
@@ -605,6 +627,19 @@ def main():
 
     seed_everything(args.seed)
     import fixed_reward  # noqa: F401  (registers @ScentFixedRewardRun)
+
+    # Docking configs reference @DockingBridgeProxy, which registers only when its module is
+    # imported -- exactly the failure mode CLAUDE.md warns about ("No configurable matching @X" ==
+    # the defining module was not on the startup path). run_scent_fixed.py imports it for training;
+    # the worker must too, or a docking cell dies in gin parsing before any GPU work.
+    try:
+        import docking_bridge_proxy  # noqa: F401  (registers @DockingBridgeProxy)
+    except ImportError as exc:
+        print(
+            f"[scent_worker] NOTE docking_bridge_proxy unavailable ({exc}); "
+            "surrogate cells are unaffected",
+            flush=True,
+        )
     from guidance_io import load_guidance_models
 
     import rgfn  # noqa: F401
@@ -624,16 +659,27 @@ def main():
     except Exception:
         Chem = None
 
+    _bindings = [
+        f'user_root_dir="{run_dir}"',
+        'run_name="lsdflow_scent"',
+        "Trainer.n_iterations=1",
+        f'ScentFixedRewardRun.run_dir="{run_dir}/run"',
+        f'ScentFixedRewardRun.repo_root="{REPO_ROOT}"',
+        f"ScentFixedRewardRun.seed={args.seed}",
+    ]
+    if args.reward_name in ("6td3", "clpp"):
+        # DockingBridgeProxy defaults its workdir to <repo>/reward_bridge_scent and mkdir()s it in
+        # __init__ -- and $HOME is READ-ONLY on compute nodes (Logs/012), so construction dies with
+        # PermissionError before we could mutate the attribute. It must therefore be a gin BINDING,
+        # applied before the trainer builds. (RxnFlow's twin takes workdir as a constructor arg, so
+        # it is fixed differently there -- same bug, two injection points.)
+        _bindings.append(f'DockingBridgeProxy.repo_root="{REPO_ROOT}"')
+        _bindings.append(f'DockingBridgeProxy.workdir="{run_dir}/reward_bridge_scent"')
+        _docking.require_socket()  # fail now, not after a 40 s oracle construction
+
     gin.parse_config_files_and_bindings(
         [config_path],
-        bindings=[
-            f'user_root_dir="{run_dir}"',
-            'run_name="lsdflow_scent"',
-            "Trainer.n_iterations=1",
-            f'ScentFixedRewardRun.run_dir="{run_dir}/run"',
-            f'ScentFixedRewardRun.repo_root="{REPO_ROOT}"',
-            f"ScentFixedRewardRun.seed={args.seed}",
-        ],
+        bindings=_bindings,
         finalize_config=False,
     )
 
@@ -712,6 +758,9 @@ def main():
         flush=True,
     )
 
+    # Docking targets gate on the RAW energy; surrogates gate on the proxy value itself.
+    _gate_component = "raw_score" if args.reward_name in ("6td3", "clpp") else None
+
     def _extract(obj, traj, routes_out=None):
         return extract_flow_records(
             obj,
@@ -724,6 +773,7 @@ def main():
             chosen_set,
             RAC=ReactionActionC,
             routes_out=routes_out,  # sample mode only; enumerate passes None (final rxn captured separately)
+            gate_component=_gate_component,
         )
 
     meta = {
@@ -874,7 +924,22 @@ def main():
         # Per-hub enumeration / reward-gen / flow-extract wall-clock (Logs/039); setup_s + _sync are
         # defined once above (shared with sample mode).
         hub_timings = []
-        for smiles, depth in hubs:
+        # Persist every 10 hubs. A docking enumeration is 6-20 GPU-hours per slice, so an unflushed
+        # walltime kill discards most of a day of A100 time (it did: rxnflow_clpp 72248-72253).
+        # Downstream rejects a <90%-coverage enumeration, so a partial is usable evidence and cannot
+        # be mistaken for a complete cell.
+        flusher = A.PartialFlusher(
+            out_dir,
+            every=10,
+            timing_meta=dict(
+                setup_s=setup_s,
+                device=str(device),
+                reward_name=args.reward_name,
+                model=args.model_name,
+                cuda_synchronized=_use_cuda,
+            ),
+        )
+        for _i, (smiles, depth) in enumerate(hubs):
             hub_state = hub_state_from_smiles(smiles, depth)
             if hub_state is None:
                 per_hub.append(
@@ -945,6 +1010,7 @@ def main():
                 f"[scent_worker]   hub depth={depth} -> {n_paths} paths / {len(recs)} records  {smiles[:48]}",
                 flush=True,
             )
+            flusher.maybe(_i, enum_hubs, hub_timings)
         _write_records(out_dir / "enumerated_records.csv", all_records)
         json.dump({"per_hub": per_hub}, open(out_dir / "enum_per_hub.json", "w"), indent=2)
         json.dump({"hubs": enum_hubs}, open(out_dir / "enum_children.json", "w"))

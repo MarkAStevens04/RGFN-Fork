@@ -559,7 +559,22 @@ def _run_enumerate(args, trainer, beta, clip, out_dir):
     _use_cuda = str(getattr(trainer, "device", "")).startswith("cuda")
     timer = A.ComponentTimer(sync=torch.cuda.synchronize if _use_cuda else None)
     hub_timings = []
-    for hub_stereo, depth in hubs:
+    # Persist progress every 10 hubs: a docking enumeration is 6-10 GPU-hours per slice, so an
+    # unflushed walltime kill throws away most of a day of A100 time (it did exactly that once --
+    # slices 72248-72253). Downstream rejects a <90%-coverage enumeration, so a partial is usable
+    # evidence rather than something that can be mistaken for a complete cell.
+    flusher = A.PartialFlusher(
+        out_dir,
+        every=10,
+        timing_meta=dict(
+            setup_s=getattr(args, "_setup_s", 0.0),
+            device=str(getattr(trainer, "device", "")),
+            reward_name=args.reward_name,
+            model=args.model_name,
+            cuda_synchronized=_use_cuda,
+        ),
+    )
+    for _i, (hub_stereo, depth) in enumerate(hubs):
         timer.reset()
         recs, n_paths, added, reactions = _enumerate_hub(
             trainer,
@@ -602,6 +617,7 @@ def _run_enumerate(args, trainer, beta, clip, out_dir):
             f"[rxnflow_worker]   hub depth={depth} -> {n_paths} paths / {len(recs)} children  {hub_stereo[:44]}",
             flush=True,
         )
+        flusher.maybe(_i, enum_hubs, hub_timings)
 
     tmeta = A.write_enum_timings(
         out_dir / "enum_timings.json",

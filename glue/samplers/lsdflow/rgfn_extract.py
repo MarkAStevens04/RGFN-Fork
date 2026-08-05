@@ -34,7 +34,7 @@ building block (``k=0``, the cheapest possible hub).
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import torch
 
@@ -75,6 +75,7 @@ def extract_flow_records(
     trajectories,
     *,
     strip_stereo: bool = True,
+    gate_component: Optional[str] = None,
 ) -> Tuple[List[FlowRecord], Dict[str, int], int]:
     """Extract §2 terminal-transition flow records from a batch of trajectories.
 
@@ -86,6 +87,14 @@ def extract_flow_records(
             produces them). Modified in place by ``assign_log_probs``.
         strip_stereo: use the stereo-stripped cross-model key as the primary node key
             (§6). Keep ``True`` for cross-model aggregation.
+        gate_component: name of a ``proxy_components`` entry to record in ``reward`` INSTEAD of the
+            proxy scalar. Needed for DOCKING targets and only for them: the proxy value a docking
+            model trains on is ``ReLU(-raw/norm)``, which is never negative, while the calibrated hit
+            bars are RAW energies (-8.0 ClpP, -2.0 6TD3). Recording the proxy value there would gate
+            a never-negative column against a negative bar and qualify NOTHING -- an empty result
+            rather than a crash. ``log_reward`` is untouched either way, so the flow terms keep
+            matching what the policy trained on. See
+            ``validation/lsdflow/adapters/workers/_docking`` for the full two-column contract.
 
     Returns:
         ``(records, visit_counts, n_trajectories)`` where ``visit_counts`` maps each
@@ -99,6 +108,16 @@ def extract_flow_records(
     reward_outputs = trajectories.get_reward_outputs()
     log_rewards = reward_outputs.log_reward.detach().cpu().tolist()
     proxies = reward_outputs.proxy.detach().cpu().tolist()
+    if gate_component:
+        comps = getattr(reward_outputs, "proxy_components", None) or {}
+        if gate_component not in comps:
+            raise KeyError(
+                f"gate_component={gate_component!r} not in proxy_components "
+                f"{sorted(comps)}; a docking proxy must expose it (DockingBridgeProxy emits "
+                "'raw_score'). Refusing to fall back to the proxy value, which would gate a "
+                "never-negative column against a negative bar and silently qualify nothing."
+            )
+        proxies = comps[gate_component].detach().cpu().tolist()
 
     states_list = trajectories._states_list
     actions_list = trajectories._actions_list
