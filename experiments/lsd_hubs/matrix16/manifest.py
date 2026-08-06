@@ -146,12 +146,39 @@ class Cell:
         return best
 
     @property
+    def docking_wired(self) -> bool:
+        """Whether this generator's worker can ACTUALLY score this target.
+
+        ``ready`` used to mean only "the checkpoint and its sidecar exist", which for a docking cell
+        is necessary but not sufficient: rgfn_worker and fraggfn_worker have no docking path at all
+        (fraggfn raises "reward not wired", rgfn never references a docking bridge). Those cells
+        still reported ``ready``, so ``submit_docking_cell.sh`` -- which gates on exactly that --
+        would launch, construct the oracle (~35-44 s), run a real preflight dock, and only then die
+        in the worker. Cheap, but it reads as a cluster problem rather than a missing feature, and it
+        misled a cross-cluster hand-off into planning 8 docking cells when only 4 can run.
+
+        Detected from the worker source rather than a hand-maintained list, so wiring a generator
+        flips it automatically. Surrogate targets are always wired (in-process proxy, no bridge)."""
+        if not self.target.is_docking:
+            return True
+        try:
+            src = (REPO_ROOT / self.worker).read_text()
+        except OSError:
+            return False
+        return any(k in src for k in ("DockingBridgeReward", "DockingBridgeProxy"))
+
+    @property
     def ready(self) -> bool:
         """Analysis-ready = trained checkpoint present + (SCENT) sidecar present + training has
         emitted candidates. NOTE: candidate-presence is a proxy for "training finished"; verify
         ``torch.load(ckpt)['metrics']['epoch']`` == target iters before a *headline* run
         (verify-checkpoint-trained memory)."""
-        return self.checkpoint_exists and self.guidance_ok and self.n_candidates > 0
+        return (
+            self.checkpoint_exists
+            and self.guidance_ok
+            and self.n_candidates > 0
+            and self.docking_wired
+        )
 
     def status(self) -> str:
         if not self.checkpoint_exists:
@@ -160,6 +187,8 @@ class Cell:
             return "missing-sidecar"
         if self.n_candidates == 0:
             return "training"
+        if not self.docking_wired:
+            return "worker-not-wired"  # trained + present, but this worker cannot dock
         return "ready"
 
 
