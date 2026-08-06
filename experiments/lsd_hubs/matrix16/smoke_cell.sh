@@ -118,20 +118,31 @@ if rtype == "docking":
         f"`reward` is RAW energy: {neg}/{len(finite)} negative, mean {mean:.2f} "
         f"(a ReLU'd column would be >=0 everywhere)")
 
-    # Two-column contract WITHOUT hard-coding beta/clip: those live in the cell's own training config,
-    # which is gin for scent/rgfn and unreadable by OmegaConf. Instead DERIVE the implied beta per row
-    # from log_reward / ReLU(-raw/norm) and require every row to agree. That is the property that
-    # matters -- the flow column is one consistent monotone transform of the gate column -- and it
-    # catches the real failure (wrong column => ratios scatter) without false-alarming on a clip we
-    # cannot read. Rows at a clip ceiling are excluded by taking the modal ratio.
-    ratios = [b / max(-a, 1e-9) for a, b in finite if -a > 1e-6 and b > 0]
-    if ratios:
-        ratios.sort()
-        med = ratios[len(ratios) // 2]
-        agree = sum(1 for x in ratios if abs(x - med) < 1e-3)
-        chk(agree / len(ratios) > 0.95,
-            f"two-column contract: log_reward == {med:g}*ReLU(-raw) on {agree}/{len(ratios)} rows "
-            f"(implied beta {med:g})")
+    # Two-column contract WITHOUT hard-coding beta/clip: both live in the cell's own training
+    # config, which is gin for scent/rgfn and unreadable by OmegaConf. FIT BOTH from the data.
+    #
+    # Deriving beta alone from log_reward/|raw| is not enough, and getting that wrong twice is why
+    # this is written out: SCENT's DockingBridgeProxy does NOT clip (its log_reward reached 56.8,
+    # so an assumed clip=10 flagged 168/200 good rows), while FragGFN's DockingBridgeReward DOES
+    # clip at 10 (so 60/200 rows sit at exactly beta*clip=40 and their ratio is < beta). Each
+    # matches ITS OWN training transform, which is what the flow terms require -- so the assertion
+    # has to accommodate both shapes rather than pick one.
+    #
+    # Fit: beta from the UNCAPPED rows (log_reward below its max), then clip = max(log_reward)/beta,
+    # then require log_reward == beta*min(ReLU(-raw), clip) everywhere.
+    pairs = [(a, b) for a, b in finite if -a > 1e-6 and b > 0]
+    if pairs:
+        lr_max = max(b for _, b in pairs)
+        unc = [(a, b) for a, b in pairs if b < lr_max - 1e-9]
+        ratios = sorted(b / -a for a, b in (unc or pairs))
+        beta = ratios[len(ratios) // 2]
+        clip = lr_max / beta if beta else float("inf")
+        bad = sum(1 for a, b in pairs if abs(b - beta * min(max(-a, 0.0), clip)) > 1e-3)
+        capped = sum(1 for _, b in pairs if abs(b - lr_max) < 1e-9)
+        chk(bad == 0,
+            f"two-column contract: log_reward == {beta:g}*min(ReLU(-raw), {clip:g}) on "
+            f"{len(pairs)-bad}/{len(pairs)} rows (fitted beta {beta:g}, clip {clip:g}; "
+            f"{capped} rows at the cap)")
     else:
         chk(False, "two-column contract: no rows with a positive transform to check")
 
