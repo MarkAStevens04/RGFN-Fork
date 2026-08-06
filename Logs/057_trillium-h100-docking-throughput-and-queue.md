@@ -524,6 +524,31 @@ code change**. The 44 pending 6TD3 slices were cancelled and resubmitted with `D
 `rxnflow_clpp` was already 166/200 hubs in and keeps batch 200 — its slices are the one cell in this
 campaign measured at the old setting.
 
+**6TD3 confirms it, and settles the gnina question empirically.** Same pool, job 722081: batch 200 →
+0.665 s/mol, 400 → 0.585, 800 → 0.547, **1600 → 0.530 = 1.25×** (ceiling 0.513, so within 1.03×);
+`ok=1536/1600` and VRAM 24,147 MiB identical at every batch. Because the bench's 6TD3 "batch" is the
+*call* size, batch 1600 genuinely built a Tier-2 SDF of 1600 × 9 = **14,400 poses** — the exact failure
+mode the code reading had argued away is now also measured not to happen. The ~1.16× predicted above
+was too low: 6TD3's per-process fixed cost is **~30 s** (27.3 / 30.3 / 31.9 s per added process),
+not ClpP's 21.1 s, so there is more to amortise. Measured saving on the queued work: **54.3 GPU-h**
+(rxnflow_6td3 10.6, scent_6td3 21.0, fraggfn_6td3 13.4, fraggfn_clpp 9.3); `rxnflow_clpp` forgoes ~7.3
+by keeping batch 200 mid-run.
+
+**Volume: fan-out is 43% higher than projected.** The live cell measures **1,412 children/hub** against
+the 986/hub of its own surrogate sibling, so docking cells enumerate far wider than the surrogate cells
+the projections were built from. Molecules docked per cell: `rxnflow_*` ~312k, `scent_*` ~572k,
+`fraggfn_*` ~388k → **~2.54M across the 6 runnable cells** (the SCENT/FragGFN figures carry the 1.43×
+as an assumption measured on RxnFlow only).
+
+**An open ~13% inefficiency, quantified but not diagnosed.** The docking server's counter reports
+235,268 molecules docked where the enumeration implies ~234,360 children — **~1.00 docks per child** —
+yet 13.2% of a slice's children are duplicate molecules, so a working cache would give 0.868.
+`DockingBridgeReward` does hold a persistent `self._cache` keyed on canonical SMILES with `_dock`
+filtering on it (`validation/generators/rxnflow/fixed_reward.py:182,227`), so either canonicalisation
+diverges between the enumeration output and `_dock`, or the cache is being reset. **13% of 2.54M is
+~330k redundant docks** — larger than the flow-extract lever. Cheapest probe: log `len(todo)` against
+`len(canons)` in `_dock` for a single hub. Deliberately untouched here (live campaign).
+
 ### In flight at time of writing
 
 Launched on Trillium under the cell split agreed with the Balam agent (each cluster takes one ClpP and
