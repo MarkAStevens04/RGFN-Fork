@@ -461,6 +461,69 @@ than throttling submissions to a guessed concurrency. The caveat from the two-we
 stands: this was one favourable moment, the p90 wait for longer requests is 68.6 h, and none of this
 is something to *promise* in a schedule.
 
+### Update (evening) — the batch sweep past 200: a free 1.28x, and the old benchmark pool was optimistic
+
+Entry `036` stopped its batch sweep at 200 because that was the production per-training-**step** sample
+count. In *enumeration* there is no step: the worker hands the whole hub (~1,360 children) to the
+oracle in one `_score()` call, so nothing forces chunking at 200. Re-running Part A at 200/400/800/1600
+on **1,600 real enumerated children** from `rxnflow_clpp` (jobs 722081 at 24 cores / 722082 at 48):
+
+| batch | QV2 procs | s/mol (24 cores) | s/mol (48 cores) | vs batch 200 | GPU util |
+|---:|---:|---:|---:|---:|---:|
+| 200 | 8 | 0.430 | 0.428 | — | 61% |
+| 400 | 4 | 0.376 | 0.374 | 1.14× | 69% |
+| 800 | 2 | 0.350 | 0.349 | 1.23× | 74% |
+| **1600** | **1** | **0.337** | **0.336** | **1.28×** | **77%** |
+
+`ok=1536/1600` at **every** batch on both jobs and VRAM flat at 24 GB — so scores are batch-invariant,
+the property that makes this safe to change. The per-process fixed cost reproduces at **21.1 s**,
+measured three independent ways (21.1 / 20.8 / 21.4 s per added process) against the 20.7 s fitted
+earlier on the old pool. Pure per-ligand is 0.324 s, so batch 1600 sits 1.04× off the ceiling — going
+beyond it is pointless.
+
+**Two corrections this forces on the earlier sections.**
+
+*First, the extrapolation above was too optimistic.* It predicted 1.43×; the truth is 1.28×. The
+mechanism was right (fixed cost confirmed almost exactly) but the per-ligand cost is **0.324 s on real
+enumerated children vs 0.196 s on the 408-molecule `seed_6td3.csv` pool**, so the fixed cost is a
+smaller share of a bigger number.
+
+*Second — and this matters beyond this entry — the benchmark pool that entry `036` and the earlier
+sections used understates production cost by 1.44×* (0.298 vs 0.430 s/mol at the same batch 200). The
+real-children number instead matches the live fleet's measured 0.447 s/mol. **Cost estimates for
+docking cells should be sized off real enumerated children**, not the seed set; the pool used here is
+kept at `/scratch/markymoo/rgfn_runs/bench_pools/bench_pool_1600.csv`.
+
+**Extra CPU cores buy nothing** (0.430 vs 0.428; 0.337 vs 0.336). Consistent with a direct measurement
+of Meeko prep on the same molecules: **10.58 ms/mol at 24 cores, 6.26 ms at 48 — i.e. 3.6% of a
+447 ms child.** That also **falsifies entry `036`'s proposed next lever**: it suggested "pipelining
+Meeko prep against docking", and 3.6% is the hard ceiling on what such a pipeline could hide. Prep is
+already parallel (`MeekoLigandPreparator` uses `Pool(num_cpus)`, defaulting to the job's full core
+affinity, and `n_cpu` is `None` everywhere so nothing caps it).
+
+**Where the idle GPU time actually goes.** Utilisation climbs 61% → 77% purely from batching, so a real
+share of the "53% idle" measured earlier was the *per-process setup* phase, which batching recovers.
+The residual is per-ligand host/driver work inside the QV2 binary. Two further eliminations: pose I/O
+is **not** a network cost (`TMPDIR=/tmp` is node-local overlayfs; `SLURM_TMPDIR` is tmpfs in RAM), and
+the standard fix for making concurrent processes share a card — NVIDIA MPS — **does not apply**, because
+QuickVina2-GPU is OpenCL and MPS only co-schedules CUDA contexts. That is why the Part B concurrency
+result cannot be rescued from outside the vendor binary.
+
+**A risk raised and then disproved by reading the code**, recorded so nobody re-raises it: it looked as
+though batch 1600 would put 1600 × 9 = 14,400 poses into one gnina SDF against 1,800 at batch 200. In
+fact `Docking6TD3GpuOracle.score_detailed` accumulates poses for the **entire call** into one Tier-2
+SDF, and the call is *already* the whole hub — so gnina already runs at ~12,240 poses per call at
+DOCK_BATCH=200. Raising the batch changes only QV2 chunking inside `docking_module_gpu`. No added risk,
+but it also means **6TD3's gain will be smaller than ClpP's (~1.16× expected)**: the gnina amortisation
+is already banked, and 6TD3's higher per-ligand cost (0.51 s) makes the 21 s setup a smaller share.
+6TD3 at batch 200 on real molecules measured 0.665 s/mol.
+
+**Applied.** `DOCK_BATCH` is an environment variable on `submit_docking_cell.sh`, so this needed **no
+code change**. The 44 pending 6TD3 slices were cancelled and resubmitted with `DOCK_BATCH=1600`
+(verified present in the new jobs' recorded environment), as were the 8 new `fraggfn_clpp` slices.
+`rxnflow_clpp` was already 166/200 hubs in and keeps batch 200 — its slices are the one cell in this
+campaign measured at the old setting.
+
 ### In flight at time of writing
 
 Launched on Trillium under the cell split agreed with the Balam agent (each cluster takes one ClpP and
