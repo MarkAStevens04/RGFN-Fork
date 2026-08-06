@@ -42,7 +42,11 @@ from targets import Target, get_target  # noqa: E402
 
 REPO_ROOT = HERE.parents[2]  # experiments/lsd_hubs/matrix16 -> repo root
 MANIFEST_CSV = HERE / "manifest.csv"
-RESULTS_ROOT = HERE / "results"
+# Both roots are env-overridable, and BOTH must be for an isolated test to be safe. MATRIX16_SCRATCH
+# alone is not enough: results_dir lives in the REPO, so redirecting only the scratch tree still points
+# the campaign at the committed results -- which is how a 24-hub harvest test overwrote the real
+# rxnflow_seh curve.png/summary.json (restored from git). Redirect both together.
+RESULTS_ROOT = Path(os.environ.get("MATRIX16_RESULTS", str(HERE / "results")))
 SCRATCH_ROOT = Path(
     os.environ.get("MATRIX16_SCRATCH", "/scratch/markymoo/rgfn_runs/lsdflow/matrix16")
 )

@@ -48,6 +48,21 @@ echo "=== dest:   $DEST"
 df -h "$(dirname "$DEST")" 2>/dev/null | tail -1
 mkdir -p "$DEST" || { echo "ERROR: cannot create $DEST"; exit 1; }
 
+# Free-space floor. /home is a 110 G QUOTA, not a filesystem (`df /home` reports the 63 PB mount and
+# is meaningless -- query the quota path itself). This matters because the script runs UNATTENDED from
+# cron: filling the quota to zero would not just truncate a backup, it would break conda/login/VS Code
+# for every session. So tier 1 (weights -- the actual dealbreaker) always runs, and tier 2 is skipped
+# below the floor rather than half-written. Raise MIN_FREE_GB to be more conservative.
+MIN_FREE_GB=${MIN_FREE_GB:-5}
+free_gb() { df -BG --output=avail "$(dirname "$DEST")" 2>/dev/null | tail -1 | tr -dc '0-9'; }
+FREE_BEFORE="$(free_gb)"
+echo "=== free on $(dirname "$DEST"): ${FREE_BEFORE:-?} GiB (tier-2 floor ${MIN_FREE_GB} GiB)"
+if [ -n "$FREE_BEFORE" ] && [ "$FREE_BEFORE" -lt "$MIN_FREE_GB" ]; then
+    echo "WARNING: only ${FREE_BEFORE} GiB free -- below the ${MIN_FREE_GB} GiB floor."
+    echo "WARNING: running TIER 1 ONLY (weights). Free space, then re-run for tier 2."
+    TIER1_ONLY=1
+fi
+
 # ---- TIER 1: weights + provenance -----------------------------------------------------------------
 # --prune-empty-dirs keeps the tree shallow; the include list is ordered dirs-first so rsync can
 # descend (an --include of a file alone never matches inside an excluded dir).

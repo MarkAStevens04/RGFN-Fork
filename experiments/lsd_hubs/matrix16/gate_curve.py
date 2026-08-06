@@ -39,7 +39,7 @@ for p in (str(REPO), str(HERE), str(REPO / "experiments" / "lsd_hubs" / "campaig
         sys.path.insert(0, p)
 
 import run_campaign as RC  # noqa: E402  (experiments/lsd_hubs/campaign/run_campaign.py)
-from manifest import get_cell  # noqa: E402
+from manifest import RESULTS_ROOT, get_cell  # noqa: E402
 
 
 def parse_gates(spec: str) -> list:
@@ -150,7 +150,10 @@ def main() -> None:
             flush=True,
         )
 
-    out = Path(a.out_dir) if a.out_dir else HERE / "results" / "gate_curve" / cell.tag
+    # RESULTS_ROOT, not HERE/"results": the manifest's root honours $MATRIX16_RESULTS, so an isolated
+    # test can redirect this. Hardcoding the repo path here made a 24-hub harvest test overwrite the
+    # committed gate_curve for rxnflow_seh even though the scratch tree WAS redirected.
+    out = Path(a.out_dir) if a.out_dir else RESULTS_ROOT / "gate_curve" / cell.tag
     out.mkdir(parents=True, exist_ok=True)
     with open(out / "gate_curve.csv", "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
