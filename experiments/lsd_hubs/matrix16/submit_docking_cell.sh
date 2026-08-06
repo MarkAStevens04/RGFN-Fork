@@ -58,7 +58,30 @@ source /home/markymoo/miniconda3/etc/profile.d/conda.sh || { echo "ERROR: no con
 conda activate base
 eval "$(python experiments/lsd_hubs/matrix16/manifest.py --emit "$GEN" "$TGT")" || {
     echo "ERROR: manifest emit failed for $GEN/$TGT"; exit 1; }
-[ "$STATUS" = "ready" ] || { echo "ERROR: cell $CELL_TAG is '$STATUS', not ready"; exit 1; }
+# `ready` now also requires training to have REACHED its 5,000-iteration target -- an undertrained
+# checkpoint passes every smoke (the plumbing is fine) but yields a cell that is not comparable to
+# the others, and that defect no amount of enumeration fixes. Both RGFN docking cells sat at
+# 2730/5000 and 3570/5000 while reporting ready.
+#
+# ALLOW_UNDERTRAINED=1 is a deliberate, LOUD escape hatch: it proceeds, but stamps the shortfall
+# into the run dir so the provenance travels with the artifacts instead of living in someone's head.
+if [ "$STATUS" != "ready" ]; then
+    case "$STATUS:${ALLOW_UNDERTRAINED:-0}" in
+        undertrained:*:1|epoch-unknown:1|undertrained*:1)
+            echo "WARNING: $CELL_TAG is '$STATUS' and ALLOW_UNDERTRAINED=1 -- proceeding."
+            echo "WARNING: results from this cell are NOT comparable to fully-trained cells."
+            ;;
+        *)
+            echo "ERROR: cell $CELL_TAG is '$STATUS', not ready."
+            case "$STATUS" in
+              undertrained*) echo "  $TRAINING_NOTE. Finish training, point the manifest at a"
+                             echo "  complete checkpoint, or re-run with ALLOW_UNDERTRAINED=1 to"
+                             echo "  proceed with the shortfall recorded." ;;
+              epoch-unknown) echo "  Run: python experiments/lsd_hubs/matrix16/manifest.py --scan-epochs" ;;
+            esac
+            exit 1 ;;
+    esac
+fi
 [ "$REWARD_TYPE" = "docking" ] || {
     echo "ERROR: $CELL_TAG is a '$REWARD_TYPE' cell — use submit_cell.sh for surrogate targets"; exit 1; }
 

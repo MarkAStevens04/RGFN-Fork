@@ -402,6 +402,38 @@ node**, not a whole node (`DefCpuPerGPU=24`); and Trillium uses the **same parti
 returned −5.9/−7.9/−6.6 against Balam's −5.8/−7.9/−6.5, and 6TD3 returned −2.44/−1.19 against
 reference values −2.20/−1.26, both within Vina's run-to-run spread.
 
+### Update (same afternoon, ~4:30pm) — the coverage finding was fixed within hours, but it is 6 cells, not 8
+
+The agent on Balam wired the two missing generators (`16d725a` "Wire RGFN + FragGFN for docking --
+runnable docking matrix 4 cells -> 8", plus `f3b4486` and `7eed675`), which **supersedes the
+"two-generator comparison" conclusion above**. Two qualifications on that headline, though:
+
+**It is 6 runnable cells, not 8.** With the workers wired, `manifest.py` now fails the RGFN docking
+cells on a *different* gate — their checkpoints never finished training:
+
+| cell | status |
+|---|---|
+| `rgfn_clpp` | **`undertrained:3570/5000`** |
+| `rgfn_6td3` | **`undertrained:2730/5000`** |
+| `fraggfn_clpp`, `fraggfn_6td3` | ready (newly) |
+| `rxnflow_clpp`, `rxnflow_6td3`, `scent_clpp`, `scent_6td3` | ready |
+
+So the docking matrix is now **three generators wide** (RxnFlow, SCENT, FragGFN), and RGFN's two
+docking cells need ~1,400 and ~2,300 more training iterations before they can be enumerated at all.
+Worth noting that FragGFN is a **cost-model control, not a peer** (entry `050`: its count-once
+"reactions" are fragment attachments and its molecules carry no synthesis route), so the two cells
+this actually adds to the *peer* comparison are zero — the scientific width gain waits on RGFN
+finishing training.
+
+**A shared-tree hazard this surfaced, with the definitive test for it.** `f3b4486` edited
+`submit_docking_cell.sh` while 32 of this entry's slices sat queued against it. SLURM snapshots a
+batch script at **submit** time, so queued jobs are unaffected — verified rather than assumed, via
+`scontrol write batch_script <jobid>`, which dumped the stored 234-line old script against the
+283-line working copy with zero references to the new logic. The change is also purely
+generator-conditional (`rgfn) NEED_SERVER=0 ;; *) NEED_SERVER=1`), so `rxnflow`/`scent` slices behave
+identically either way. **`scontrol write batch_script` is the way to check what a queued job will
+actually run** — the working copy tells you nothing about it.
+
 ### Update (same afternoon) — `bf_max_job_user=3` throttles the RAMP, it does not cap concurrency
 
 The production launch immediately qualified this entry's own gloomiest reading. Eight enumeration

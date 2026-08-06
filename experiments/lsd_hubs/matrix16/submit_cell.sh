@@ -53,6 +53,23 @@ SPEC="$(python experiments/lsd_hubs/matrix16/manifest.py --emit "$GEN" "$TGT")" 
     echo "ERROR: manifest emit failed for '$GEN' '$TGT'"; exit 1; }
 eval "$SPEC"
 
+# Readiness gate. This launcher previously had NONE -- it ran whatever the manifest resolved, which
+# was survivable only because all 8 surrogate cells happen to be trained to 5,000. Same rule as
+# submit_docking_cell.sh so the two cannot diverge: refuse an undertrained or unscanned checkpoint,
+# with a loud, recorded escape hatch.
+if [ "$STATUS" != "ready" ]; then
+    if [ "${ALLOW_UNDERTRAINED:-0}" = 1 ]; then
+        echo "WARNING: $CELL_TAG is '$STATUS' and ALLOW_UNDERTRAINED=1 -- proceeding."
+        echo "WARNING: $TRAINING_NOTE -- results are NOT comparable to fully-trained cells."
+    else
+        echo "ERROR: cell $CELL_TAG is '$STATUS', not ready. $TRAINING_NOTE"
+        [ "$STATUS" = "epoch-unknown" ] && \
+            echo "  Run: python experiments/lsd_hubs/matrix16/manifest.py --scan-epochs"
+        echo "  Set ALLOW_UNDERTRAINED=1 to proceed with the shortfall recorded."
+        exit 1
+    fi
+fi
+
 echo "=== cell=$CELL_TAG  stage=$STAGE  reward=$REWARD_NAME  gate=${HIGHER_IS_BETTER:+>}$MODE_REWARD_THRESHOLD"
 echo "    env=$CONDA_ENV  worker=$WORKER  n_traj=$N_TRAJ  n_hubs=$N_HUBS  enum_max=$ENUM_MAX"
 echo "    ckpt=$CHECKPOINT"

@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import csv
 import glob
+import json
 import os
 import sys
 from dataclasses import dataclass
@@ -145,6 +146,54 @@ class Cell:
                 break
         return best
 
+    # Campaign standard: every pub-scale cell trains 5,000 iterations (Logs/030). A cell trained
+    # less than this is not comparable to the others, however healthy it looks.
+    EXPECTED_EPOCH = 5000
+
+    @property
+    def train_epoch(self):
+        """Iterations the checkpoint actually reached, or ``None`` if not yet scanned.
+
+        Read from a cached ``<checkpoint>.epoch.json`` sidecar, NOT from the checkpoint: a real read
+        is ``torch.load`` on a 200-450 MB file (13-19 s measured, even with ``mmap=True``), so doing
+        it inside ``--emit`` would add minutes to every launcher invocation. Populate the sidecars
+        once with ``manifest.py --scan-epochs``.
+
+        WHY THIS EXISTS: ``ready`` used to mean "checkpoint + sidecar present and training emitted
+        candidates", which says nothing about how FAR training got. Both RGFN docking cells reported
+        ready at 2730/5000 and 3570/5000, and a smoke against the 71%-trained one passed every
+        assertion -- because the plumbing was fine. Only the epoch reveals that the cell would not be
+        comparable to the six trained to 5000. This is the second time "ready" meant less than it
+        sounded (see ``docking_wired``), so it is now checked rather than assumed."""
+        if not self.checkpoint:
+            return None
+        side = Path(self.checkpoint + ".epoch.json")
+        if not side.exists():
+            return None
+        try:
+            return int(json.load(open(side))["epoch"])
+        except (OSError, ValueError, KeyError, TypeError):
+            return None
+
+    @property
+    def training_complete(self):
+        """``True`` / ``False`` / ``None`` (unknown — sidecar not populated). Never guesses."""
+        ep = self.train_epoch
+        if ep is None:
+            return None
+        return ep >= self.EXPECTED_EPOCH * 0.99
+
+    @property
+    def training_note(self) -> str:
+        """Human-readable provenance, safe to paste into a log or a figure caption."""
+        ep = self.train_epoch
+        if ep is None:
+            return "epoch unknown (run manifest.py --scan-epochs)"
+        if self.training_complete:
+            return f"trained {ep}/{self.EXPECTED_EPOCH}"
+        pct = 100.0 * ep / self.EXPECTED_EPOCH
+        return f"UNDERTRAINED {ep}/{self.EXPECTED_EPOCH} ({pct:.0f}%)"
+
     @property
     def docking_wired(self) -> bool:
         """Whether this generator's worker can ACTUALLY score this target.
@@ -193,6 +242,7 @@ class Cell:
             and self.guidance_ok
             and self.n_candidates > 0
             and self.docking_wired
+            and self.training_complete is True
         )
 
     def status(self) -> str:
@@ -204,6 +254,11 @@ class Cell:
             return "training"
         if not self.docking_wired:
             return "worker-not-wired"  # trained + present, but this worker cannot dock
+        tc = self.training_complete
+        if tc is False:
+            return f"undertrained:{self.train_epoch}/{self.EXPECTED_EPOCH}"
+        if tc is None:
+            return "epoch-unknown"
         return "ready"
 
 
@@ -282,6 +337,9 @@ def _emit_shell(cell: Cell) -> str:
         "ENUM_DIR": str(cell.enum_dir),
         "RESULTS_DIR": str(cell.results_dir),
         "STATUS": cell.status(),
+        "TRAIN_EPOCH": cell.train_epoch if cell.train_epoch is not None else "",
+        "TRAINING_COMPLETE": {True: "true", False: "false", None: "unknown"}[cell.training_complete],
+        "TRAINING_NOTE": cell.training_note,
     }
     import shlex
 
@@ -308,6 +366,31 @@ def _print_table() -> None:
     print(f"active + ready ({len(active_ready)}/8 surrogate): {', '.join(active_ready)}")
 
 
+def _scan_epochs() -> None:
+    """Populate ``<checkpoint>.epoch.json`` for every cell. Import torch lazily so the rest of the
+    manifest stays dependency-free (the launcher sources it from a bare conda env)."""
+    import torch
+
+    for c in load_manifest():
+        if not c.checkpoint_exists:
+            print(f"  {c.tag:<16} no checkpoint")
+            continue
+        side = Path(c.checkpoint + ".epoch.json")
+        if side.exists():
+            print(f"  {c.tag:<16} cached: {c.training_note}")
+            continue
+        try:
+            d = torch.load(c.checkpoint, map_location="cpu", weights_only=False, mmap=True)
+            ep = (d.get("metrics") or {}).get("epoch", d.get("it"))
+            if ep is None:
+                print(f"  {c.tag:<16} no epoch/it in checkpoint")
+                continue
+            side.write_text(json.dumps({"epoch": int(ep), "checkpoint": c.checkpoint}) + "\n")
+            print(f"  {c.tag:<16} {c.training_note}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"  {c.tag:<16} scan failed: {exc}")
+
+
 def _main() -> None:
     import argparse
 
@@ -319,12 +402,21 @@ def _main() -> None:
         help="print a shell-sourceable KEY=VALUE spec for one cell (for submit_cell.sh)",
     )
     ap.add_argument(
+        "--scan-epochs",
+        action="store_true",
+        help="read each checkpoint's reached iteration and cache it to <ckpt>.epoch.json. SLOW "
+        "(torch.load per checkpoint, 13-19 s each) and only needed once per checkpoint -- every "
+        "other command reads the cached sidecar.",
+    )
+    ap.add_argument(
         "--list",
         choices=["all", "active", "deferred", "active-ready"],
         help="print 'generator<TAB>target' per matching cell (for launch scripts)",
     )
     a = ap.parse_args()
-    if a.emit:
+    if a.scan_epochs:
+        _scan_epochs()
+    elif a.emit:
         print(_emit_shell(get_cell(a.emit[0], a.emit[1])))
     elif a.list:
         stage = None if a.list in ("all", "active-ready") else a.list
