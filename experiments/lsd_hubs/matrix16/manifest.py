@@ -338,7 +338,9 @@ def _emit_shell(cell: Cell) -> str:
         "RESULTS_DIR": str(cell.results_dir),
         "STATUS": cell.status(),
         "TRAIN_EPOCH": cell.train_epoch if cell.train_epoch is not None else "",
-        "TRAINING_COMPLETE": {True: "true", False: "false", None: "unknown"}[cell.training_complete],
+        "TRAINING_COMPLETE": {True: "true", False: "false", None: "unknown"}[
+            cell.training_complete
+        ],
         "TRAINING_NOTE": cell.training_note,
     }
     import shlex
