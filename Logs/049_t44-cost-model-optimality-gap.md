@@ -39,6 +39,36 @@ is missing is only a sample+enumerate pass against it (see Next Experiments). **
 results already in the benchmark are unaffected**, because count-once needs only the per-fragment
 reaction counts, which that snapshot does have.
 
+## Update (2026-08-04) — DRD2 audited, gate passed on the second target
+
+The predicted sample+enumerate pass ran (job **72145**, native run
+`scent_drd2_native_72145`) against the recipe-carrying `scent_drd2/2026-07-10_17-28-06` checkpoint —
+**no retrain**, exactly as scoped below. Recipe coverage came back **100.0% (1600/1600)**, so the
+guard passed and the audit is valid. Result, on 100 modes at full (1.00) native-route coverage, MILP
+status **Optimal** on both strategies:
+
+| target | strategy | count-once | SPARROW optimum | gap |
+|---|---|---|---|---|
+| sEH | hub-batching | 288 | 279 | 3.12% |
+| sEH | best-candidate | 314 | 299 | 4.78% |
+| **DRD2** | **hub-batching** | **117** | **117** | **0.00%** |
+| **DRD2** | best-candidate | 364 | 346 | 4.95% |
+
+**The finding generalizes and, on DRD2, sharpens: hub-batching hits the global optimum exactly (117 =
+117, 0.00% gap), while best-candidate leaves 4.95% on the table.** So on both independent targets
+hub-batching is nearer the achievable floor than the baseline, and the earlier worry that the 3.1% was
+a single-target artifact is retired. T4.4 can now be quoted as a range: **hub-batching 0.0–3.1% of
+optimal, best-candidate 4.8–5.0%.**
+
+Two mechanical notes for reproduction. (1) The first attempt (job **71800**) crashed in 15 s: the TDC
+DRD2 oracle self-downloads to a relative `./oracle` dir, and Balam compute nodes have a read-only
+`$HOME` (and no internet), so `os.mkdir('./oracle')` raised `PermissionError`. sEH never hits this
+(frozen proxy checkpoint, no TDC download). Fix = pre-stage `external/scent/oracle/drd2_current.pkl` on
+the login node so the worker takes TDC's "found local copy" branch; it is a gitignored cache like the
+sEH proxy. (2) This is a *different same-scale run* than matrix16's `scent_drd2` cell (native resample
+off the 2026-07-10 checkpoint, 100-mode audit), the same caveat that already applies to the sEH 3.1%.
+`results/scent_drd2_native_reconcile/`.
+
 ## Relevance to our Publication
 
 T4.4's acceptance criterion was "a single number for the gap", and **3.1%** is it, with the strongest

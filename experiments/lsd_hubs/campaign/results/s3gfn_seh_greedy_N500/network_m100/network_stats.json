@@ -1,0 +1,10 @@
+{
+  "n_targets": 100,
+  "n_compound_nodes": 1494,
+  "n_reaction_nodes": 1996,
+  "n_buyable": 525,
+  "n_intermediates": 869,
+  "n_shared_compounds": 306,
+  "n_dropped_steps": 0,
+  "n_routeless_targets": 0
+}

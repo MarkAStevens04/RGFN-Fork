@@ -29,8 +29,15 @@ import csv
 import json
 from pathlib import Path
 
-from run_campaign import _load_candidates, _load_enumerated_hubs, build_strategy
+from run_campaign import (
+    RANK_METHODS,
+    _load_candidates,
+    _load_enumerated_hubs,
+    build_strategy,
+    rank_fragments,
+)
 
+from glue.samplers.lsdflow.child_select import make_child_policy
 from validation.lsdflow.eval.base import LibrarySet
 from validation.lsdflow.eval.network import expand_route_with_recipes
 from validation.lsdflow.eval.sparrow import SparrowEvaluator
@@ -150,6 +157,35 @@ def main() -> None:
     )
     ap.add_argument("--tag", default="recon_smoke")
     ap.add_argument("--sparrow-env", default="sparrow")
+    # ACQUISITION POLICY — must match the configuration whose number the paper quotes.
+    # These default to run_campaign's own defaults (naive `reward`, no pre-select), which is what
+    # every audit before 2026-08-04 silently used: reconcile_t15 never passed them, so entry 049's
+    # 3.1% gap was measured on the NAIVE library (100 modes / 288 count-once = 2.88 rxn/mode,
+    # matching matrix16's scent_seh_naive 2.78) — NOT on the free-frag+K20 configuration the
+    # headline reports (1.223-1.303 rxn/mode). The gap is library-dependent (on DRD2, hub-batching
+    # scored 0.00% vs best-candidate's 4.95% on the same network), so it cannot be assumed to
+    # transfer between policies. Pass --child-policy free_frag --prebuild-k 20 to audit the
+    # configuration the headline actually uses.
+    ap.add_argument(
+        "--child-policy",
+        default="reward",
+        choices=["reward", "free_frag"],
+        help="within-hub child selection (Logs/037): reward = naive; free_frag = fragment-aware. "
+        "Default `reward` reproduces every pre-2026-08-04 audit.",
+    )
+    ap.add_argument(
+        "--prebuild-k",
+        type=int,
+        default=0,
+        help="pre-select-K: pre-synthesize the top-K fragments (by --rank-by) and charge them "
+        "upfront. Use with --child-policy free_frag (the headline uses K=20).",
+    )
+    ap.add_argument(
+        "--rank-by",
+        default="build_score",
+        choices=list(RANK_METHODS),
+        help="pre-select ranking (must match run_campaign's, or the two price different libraries)",
+    )
     ap.add_argument(
         "--min-recipe-coverage",
         type=float,
@@ -201,6 +237,26 @@ def main() -> None:
         f"{len(promoted)} promoted frags, cutoff {a.cutoff}"
     )
 
+    # Acquisition policy, built exactly as run_campaign does so the audited library is bit-identical
+    # to the campaign's. hub_batching consumes both; best_candidate ignores them (it has no hubs).
+    child_policy = make_child_policy(a.child_policy)
+    prebuilt = None
+    if a.prebuild_k > 0:
+        ranked = rank_fragments(
+            enum_hubs,
+            cost_table,
+            a.reward_threshold,
+            method=a.rank_by,
+            higher_is_better=a.higher_is_better,
+        )
+        prebuilt = {f for f, _ in ranked[: a.prebuild_k]}
+        upfront = cost_table.shared_build_cost(prebuilt)[0] if cost_table else 0
+        print(
+            f"[t15] pre-select-K: {len(prebuilt)} fragments pre-synthesized (top {a.rank_by}), "
+            f"{upfront} reactions charged upfront"
+        )
+    print(f"[t15] acquisition: child_policy={a.child_policy} prebuild_k={a.prebuild_k}")
+
     common = dict(
         target=a.tag, reward_threshold=a.reward_threshold, higher_is_better=a.higher_is_better
     )
@@ -213,9 +269,16 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     records = []
     for name, pool in (("best_candidate", cands), ("hub_batching", enum_hubs)):
-        result = build_strategy(name, pool, cost_table, comps, similarity=a.cutoff, **common).run(
-            budget=("modes", a.budget_modes)
-        )
+        result = build_strategy(
+            name,
+            pool,
+            cost_table,
+            comps,
+            similarity=a.cutoff,
+            child_policy=child_policy,
+            prebuilt_fragments=prebuilt,
+            **common,
+        ).run(budget=("modes", a.budget_modes))
         rec = _reconcile_one(
             name, result, routes_json, hub_final_idx, recipes, promoted, evaluator, a.tag
         )

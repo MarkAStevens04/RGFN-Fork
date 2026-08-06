@@ -1,0 +1,45 @@
+{
+  "tag": "scent_drd2_native_freefrag",
+  "recon_dir": "/scratch/markymoo/rgfn_runs/lsdflow/scent_drd2_native_72145",
+  "cutoff": 0.5,
+  "reward_threshold": 0.5,
+  "tolerance": 0.1,
+  "min_coverage": 0.95,
+  "records": [
+    {
+      "strategy": "best_candidate",
+      "n_modes": 100,
+      "n_native_routes": 100,
+      "native_route_coverage": 1.0,
+      "count_once_reactions": 364,
+      "sparrow_reactions": 346,
+      "sparrow_priced_modes": 100,
+      "abs_diff": 18,
+      "rel_diff": 0.0495,
+      "sparrow_milp_status": "Optimal",
+      "sparrow_n_reaction_nodes": 357,
+      "sparrow_n_shared_compounds": 54
+    },
+    {
+      "strategy": "hub_batching",
+      "n_modes": 100,
+      "n_native_routes": 100,
+      "native_route_coverage": 1.0,
+      "count_once_reactions": 134,
+      "sparrow_reactions": 117,
+      "sparrow_priced_modes": 100,
+      "abs_diff": 17,
+      "rel_diff": 0.1269,
+      "sparrow_milp_status": "Optimal",
+      "sparrow_n_reaction_nodes": 121,
+      "sparrow_n_shared_compounds": 49
+    }
+  ],
+  "gated_strategies": [
+    "best_candidate",
+    "hub_batching"
+  ],
+  "ungated_strategies": [],
+  "worst_rel_diff": 0.1269,
+  "gate_passed": false
+}

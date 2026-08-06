@@ -244,3 +244,8 @@ validation/lsdflow/results/seh_rgfn_pilot/graph.gpickle
 
 experiments/lsd_hubs/campaign/results/scent_seh_1kx200/diversity_pairs/gallery.png
 experiments/lsd_hubs/campaign/results/scent_seh_1kx200/diversity_pairs/route_trees.png
+
+experiments/lsd_hubs/campaign/results/s3gfn_seh_greedy_N500/network_m125/tree.json
+experiments/lsd_hubs/campaign/results/paper_pipeline_headline/pipeline_headline.png
+experiments/lsd_hubs/campaign/results/s3gfn_seh_select_N500/network/tree.json
+experiments/lsd_hubs/campaign/results/s3gfn_seh_greedy_N500/network_m150/tree.json

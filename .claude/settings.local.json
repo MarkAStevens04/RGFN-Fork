@@ -288,7 +288,10 @@
       "Bash(git -C .claude/worktrees/hub-order-ablation status --short)",
       "Bash(quota -s)",
       "Bash(diskusage_report)",
-      "Bash(timeout 20 claude agents --help)"
+      "Bash(timeout 20 claude agents --help)",
+      "Bash(sacct -j 71525,71526,71528,71562,71563,71564 --format=JobID,JobName%20,State,End -n)",
+      "Bash(sacct -S 2026-07-24 --name=al_6td3_lsdflow,al_scent_seh_lsdflow --format=JobID,JobName%20,State,End -n)",
+      "Bash(sinfo -n balam001,balam002,balam003,balam004,balam005,balam006 -o \"%.9n %.11T %.15C %.30E\" -h)"
     ]
   }
 }

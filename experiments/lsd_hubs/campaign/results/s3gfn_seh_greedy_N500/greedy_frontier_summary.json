@@ -1,0 +1,64 @@
+{
+  "tag": "s3gfn_seh_multiaiz_greedy",
+  "selection": "greedy",
+  "gate": 7.0,
+  "cutoff": 0.5,
+  "n_modes_available": 192,
+  "n_routed": 478,
+  "rows": [
+    {
+      "n_modes": 25,
+      "used_rxns": 70,
+      "n_selected": 25,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.8,
+      "milp_status": "Optimal",
+      "n_targets_priced": 25
+    },
+    {
+      "n_modes": 50,
+      "used_rxns": 128,
+      "n_selected": 50,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.56,
+      "milp_status": "Optimal",
+      "n_targets_priced": 50
+    },
+    {
+      "n_modes": 75,
+      "used_rxns": 178,
+      "n_selected": 75,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.3733,
+      "milp_status": "Optimal",
+      "n_targets_priced": 75
+    },
+    {
+      "n_modes": 100,
+      "used_rxns": 235,
+      "n_selected": 100,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.35,
+      "milp_status": "Optimal",
+      "n_targets_priced": 100
+    },
+    {
+      "n_modes": 125,
+      "used_rxns": 311,
+      "n_selected": 125,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.488,
+      "milp_status": "Optimal",
+      "n_targets_priced": 125
+    },
+    {
+      "n_modes": 150,
+      "used_rxns": 376,
+      "n_selected": 150,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5067,
+      "milp_status": "Optimal",
+      "n_targets_priced": 150
+    }
+  ]
+}
