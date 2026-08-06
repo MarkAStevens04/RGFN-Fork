@@ -52,6 +52,13 @@ class RGFNAdapter(GFNAdapter):
         self.reward_name = reward_name
         self.batch_size = batch_size
         self.strip_stereo = strip_stereo
+        # DOCKING targets record the RAW oracle energy in `reward` (what targets.py's calibrated bars
+        # are measured in) while `log_reward` keeps the training transform. RGFN reaches its oracle
+        # IN-PROCESS via @OracleRewardProxy (same env as glue -- no cross-env bridge), and that proxy
+        # emits {"value", "raw_score"} exactly like SCENT's DockingBridgeProxy, so one component name
+        # serves both. Surrogate targets leave this None and the proxy value is the gate value.
+        # See validation/lsdflow/adapters/workers/_docking for the two-column contract.
+        self.gate_component = "raw_score" if reward_name in ("6td3", "clpp") else None
         self.device = _resolve_device(device)
 
         bindings = [
@@ -97,7 +104,10 @@ class RGFNAdapter(GFNAdapter):
         total_traj = 0
         for traj in self.sampler.get_trajectories_iterator(n_trajectories, self.batch_size):
             recs, visits, n = extract_flow_records(
-                self.objective, traj, strip_stereo=self.strip_stereo
+                self.objective,
+                traj,
+                strip_stereo=self.strip_stereo,
+                gate_component=self.gate_component,
             )
             records.extend(recs)
             for key, count in visits.items():
@@ -167,6 +177,7 @@ class RGFNAdapter(GFNAdapter):
                 hub_state,
                 max_children=max_children,
                 strip_stereo=self.strip_stereo,
+                gate_component=self.gate_component,
             )
             all_records.extend(recs)
             per_hub.append(

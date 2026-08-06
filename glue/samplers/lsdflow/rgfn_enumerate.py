@@ -127,7 +127,13 @@ def _add(timing, key, dt):
 
 
 def _extract(
-    objective, reward, trajs: List[Trajectories], strip_stereo: bool, timing=None, sync=None
+    objective,
+    reward,
+    trajs: List[Trajectories],
+    strip_stereo: bool,
+    timing=None,
+    sync=None,
+    gate_component: Optional[str] = None,
 ) -> List[FlowRecord]:
     """Score + flow-extract a chunk of enumerated child trajectories.
 
@@ -149,7 +155,9 @@ def _extract(
     _add(timing, "reward_gen_s", time.perf_counter() - _r0)
     big.set_reward_outputs(reward_output)
     _f0 = time.perf_counter()
-    records, _visits, _n = extract_flow_records(objective, big, strip_stereo=strip_stereo)
+    records, _visits, _n = extract_flow_records(
+        objective, big, strip_stereo=strip_stereo, gate_component=gate_component
+    )
     _sync()
     _add(timing, "flow_extract_s", time.perf_counter() - _f0)
     return records
@@ -167,6 +175,7 @@ def enumerate_terminal_children(
     strip_stereo: bool = True,
     timing=None,
     sync=None,
+    gate_component: Optional[str] = None,
 ) -> Tuple[List[FlowRecord], int]:
     """Enumerate a hub's one-reaction terminal children as ``FlowRecord``s.
 
@@ -201,13 +210,29 @@ def enumerate_terminal_children(
         chunk = trajs[i : i + chunk_size]
         try:
             records.extend(
-                _extract(objective, reward, chunk, strip_stereo, timing=timing, sync=sync)
+                _extract(
+                    objective,
+                    reward,
+                    chunk,
+                    strip_stereo,
+                    timing=timing,
+                    sync=sync,
+                    gate_component=gate_component,
+                )
             )
         except Exception:  # noqa: BLE001 - isolate a bad product, keep the rest of the hub
             for t in chunk:
                 try:
                     records.extend(
-                        _extract(objective, reward, [t], strip_stereo, timing=timing, sync=sync)
+                        _extract(
+                            objective,
+                            reward,
+                            [t],
+                            strip_stereo,
+                            timing=timing,
+                            sync=sync,
+                            gate_component=gate_component,
+                        )
                     )
                 except Exception:  # noqa: BLE001
                     continue

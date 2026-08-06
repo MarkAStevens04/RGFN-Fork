@@ -56,6 +56,7 @@ torch.set_num_threads(1)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _artifacts as A  # noqa: E402
+import _docking  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 if str(REPO_ROOT) not in sys.path:
@@ -104,7 +105,7 @@ def _stripped_key(ctx, g):
         return None, None
 
 
-def _build_reward(reward_name, reward_c, device):
+def _build_reward(reward_name, reward_c, device, work_dir=None):
     if reward_name == "seh":
         return SEHFrozenReward(
             device=device,
@@ -115,9 +116,41 @@ def _build_reward(reward_name, reward_c, device):
         return DRD2FrozenReward(
             model_path=reward_c["model_path"], clip=float(reward_c.get("clip", 10.0))
         )
-    raise SystemExit(
-        f"[fraggfn_worker] reward '{reward_name}' not wired. Docking targets (6td3/clpp) are deferred."
-    )
+    if reward_name in ("6td3", "clpp"):
+        # FragGFN cannot import glue, so it reaches the oracle over the persistent docking server
+        # with the SAME bridge it trained against -- keeping the recovered flow terms comparable to
+        # the sampled DAG. workdir MUST be on $SCRATCH: the bridge's default sits under the repo and
+        # $HOME is read-only on compute nodes (Logs/012) -> PermissionError at construction.
+        from validation.generators.fraggfn.fixed_reward import DockingBridgeReward
+
+        _docking.require_socket()
+        return DockingBridgeReward(
+            oracle=reward_c["oracle"],
+            repo_root=str(REPO_ROOT),
+            workdir=str(work_dir) if work_dir else None,
+            norm=float(reward_c.get("norm", 1.0)),
+            clip=float(reward_c.get("clip", 10.0)),
+            oracle_args=dict(reward_c.get("oracle_args", {}) or {}),
+        )
+    raise SystemExit(f"[fraggfn_worker] reward '{reward_name}' not wired.")
+
+
+def _make_scorer(reward, beta, clip):
+    """``score(smiles) -> (gate_values, log_rewards)`` for either target class.
+
+    Surrogate: the gate value and the flow value are the same proxy number. Docking: they DIVERGE --
+    the gate is applied to the raw energy while the flow term uses the training transform (see
+    ``_docking``'s two-column contract). One function so the sample and enumerate paths cannot
+    drift apart."""
+    if hasattr(reward, "raw_scores"):  # DockingBridgeReward
+        ds = _docking.DockingChildScorer(reward, beta=beta, clip=clip)
+        return ds.score, ds
+
+    def score(smiles):
+        vals = list(reward.predict(list(smiles)))
+        return vals, [beta * (-clip if v != v else float(np.clip(v, -clip, clip))) for v in vals]
+
+    return score, None
 
 
 def _build_trainer(config_path, reward_name, device, seed, out_dir):
@@ -128,7 +161,7 @@ def _build_trainer(config_path, reward_name, device, seed, out_dir):
     beta = float(fr_c.get("beta", 8))
     clip = float(reward_c.get("clip", 10.0))
 
-    reward = _build_reward(reward_name, reward_c, device)
+    reward = _build_reward(reward_name, reward_c, device, work_dir=out_dir / "reward_bridge")
 
     gcfg = init_empty(Config())
     gcfg.log_dir = str(out_dir / "_fgfn_scratch_logdir")
@@ -149,7 +182,7 @@ def _build_trainer(config_path, reward_name, device, seed, out_dir):
 
 
 # ============================================================ sample mode
-def _extract_batch(trainer, reward, beta, clip, enc, trajs):
+def _extract_batch(trainer, reward, beta, clip, enc, trajs, _score):
     """§2 flow records + hub graphs for one sampled batch (reconstruct-hub recipe).
     Returns (records, visit_counts, hub_graphs) — hub_graphs maps hub_stereo_key -> the hub Graph
     (persisted so enumerate can reload the exact scaffold rather than re-decompose from SMILES)."""
@@ -162,13 +195,22 @@ def _extract_batch(trainer, reward, beta, clip, enc, trajs):
         except Exception:
             term_smiles.append(None)
     valid = [s for s in term_smiles if s is not None]
-    vmap = dict(zip(valid, reward.predict(valid))) if valid else {}
+    # Two columns: `values` is what the mode gate sees, `logr_map` what the policy trained on.
+    # Identical for a surrogate; divergent for docking (_docking's two-column contract).
+    if valid:
+        _gv, _lr = _score(valid)
+        vmap = dict(zip(valid, _gv))
+        lrmap = dict(zip(valid, _lr))
+    else:
+        vmap, lrmap = {}, {}
     values = [vmap.get(s, float("nan")) for s in term_smiles]
 
     def shaped(v):
         return beta * (-clip if v != v else float(np.clip(v, -clip, clip)))
 
-    log_rewards = torch.tensor([shaped(v) for v in values], dtype=torch.float, device=dev)
+    log_rewards = torch.tensor(
+        [lrmap.get(s, shaped(float("nan"))) for s in term_smiles], dtype=torch.float, device=dev
+    )
     batch = algo.construct_batch(trajs, enc, log_rewards).to(dev)
     n = len(trajs)
     bidx = torch.arange(n, device=dev).repeat_interleave(batch.traj_lens.to(dev))
@@ -236,6 +278,7 @@ def _extract_batch(trainer, reward, beta, clip, enc, trajs):
 
 
 def _run_sample(args, trainer, reward, beta, clip, out_dir, device):
+    _score, _dstats = _make_scorer(reward, beta, clip)
     model, task = trainer.model, trainer.task
     all_records, visit_counts, hub_graphs, total = [], {}, {}, 0
     remaining = args.n_trajectories
@@ -247,7 +290,7 @@ def _run_sample(args, trainer, reward, beta, clip, out_dir, device):
             trajs = trainer.algo.create_training_data_from_own_samples(
                 model, b, enc, random_action_prob=0.0
             )
-        recs, visits, hgs = _extract_batch(trainer, reward, beta, clip, enc, trajs)
+        recs, visits, hgs = _extract_batch(trainer, reward, beta, clip, enc, trajs, _score)
         all_records.extend(recs)
         for k, c in visits.items():
             visit_counts[k] = visit_counts.get(k, 0) + c
@@ -343,7 +386,7 @@ def _enumerate_children(ctx, env, hub_g, max_children):
     return out
 
 
-def _score_children(trainer, reward, beta, clip, paths, chunk=256, timer=None):
+def _score_children(trainer, reward, beta, clip, paths, chunk=256, timer=None, _score=None):
     """§2 flow terms per enumerated child (construct_batch + model, chunked for memory).
     Returns (records, added_by_child, reaction_by_child).
 
@@ -386,9 +429,9 @@ def _score_children(trainer, reward, beta, clip, paths, chunk=256, timer=None):
                 xg.append(g3)
             x_smis = [Chem.MolToSmiles(ctx.graph_to_obj(g)) for g in xg]
         with _t.track("reward_gen_s"):
-            vals = reward.predict(x_smis)
+            vals, _logr = _score(x_smis)
         with _t.track("flow_extract_s"):
-            log_rewards = torch.tensor([shaped(v) for v in vals], dtype=torch.float, device=dev)
+            log_rewards = torch.tensor(_logr, dtype=torch.float, device=dev)
             enc = torch.zeros(len(traj_dicts), task.num_cond_dim, device=dev)
             batch = algo.construct_batch(traj_dicts, enc, log_rewards).to(dev)
             n = len(traj_dicts)
@@ -465,6 +508,7 @@ def _read_hubs(path):
 
 
 def _run_enumerate(args, trainer, reward, beta, clip, out_dir):
+    _score, _dstats = _make_scorer(reward, beta, clip)
     ctx = trainer.ctx
     env = trainer.algo.env if getattr(trainer.algo, "env", None) is not None else GraphBuildingEnv()
     if not args.hubs_file:
@@ -483,7 +527,21 @@ def _run_enumerate(args, trainer, reward, beta, clip, out_dir):
     _use_cuda = str(getattr(trainer, "device", "")).startswith("cuda")
     timer = A.ComponentTimer(sync=torch.cuda.synchronize if _use_cuda else None)
     hub_timings = []
-    for hub_stereo, depth in hubs:
+    # Persist every 10 hubs: a docking enumeration is GPU-hours per slice, so an unflushed walltime
+    # kill discards the lot. Downstream rejects a <90%-coverage enumeration, so a partial is usable
+    # evidence and cannot be mistaken for a complete cell.
+    flusher = A.PartialFlusher(
+        out_dir,
+        every=10,
+        timing_meta=dict(
+            setup_s=getattr(args, "_setup_s", 0.0),
+            device=str(getattr(trainer, "device", "")),
+            reward_name=args.reward_name,
+            model=args.model_name,
+            cuda_synchronized=_use_cuda,
+        ),
+    )
+    for _i, (hub_stereo, depth) in enumerate(hubs):
         hub_key = (
             Chem.MolToSmiles(Chem.MolFromSmiles(hub_stereo), isomericSmiles=False)
             if Chem.MolFromSmiles(hub_stereo)
@@ -498,7 +556,9 @@ def _run_enumerate(args, trainer, reward, beta, clip, out_dir):
         timer.reset()
         with timer.track("enumeration_s"):
             paths = _enumerate_children(ctx, env, hub_g, args.enum_max_children)
-        recs, added, reactions = _score_children(trainer, reward, beta, clip, paths, timer=timer)
+        recs, added, reactions = _score_children(
+            trainer, reward, beta, clip, paths, timer=timer, _score=_score
+        )
         all_records.extend(recs)
         enum_hubs.append(
             A.build_enum_hub(
@@ -524,6 +584,7 @@ def _run_enumerate(args, trainer, reward, beta, clip, out_dir):
             f"[fraggfn_worker]   hub depth={depth} -> {len(recs)} children  {hub_stereo[:48]}",
             flush=True,
         )
+        flusher.maybe(_i, enum_hubs, hub_timings)
 
     tmeta = A.write_enum_timings(
         out_dir / "enum_timings.json",

@@ -158,14 +158,29 @@ class Cell:
         misled a cross-cluster hand-off into planning 8 docking cells when only 4 can run.
 
         Detected from the worker source rather than a hand-maintained list, so wiring a generator
-        flips it automatically. Surrogate targets are always wired (in-process proxy, no bridge)."""
+        flips it automatically. Surrogate targets are always wired (in-process proxy, no bridge).
+
+        Detects the REFUSAL, not the capability. A first attempt looked for the cross-env bridge
+        classes and gave a FALSE NEGATIVE on RGFN, which needs no bridge at all: it runs in the same
+        env as ``glue`` and reaches the oracle in-process through gin (``@OracleRewardProxy`` wrapping
+        ``@DockingClpPOracle``), so the class names never appear in its worker. Every worker that
+        cannot dock says so explicitly with a "not wired" SystemExit, and that is the reliable
+        signal."""
         if not self.target.is_docking:
             return True
         try:
             src = (REPO_ROOT / self.worker).read_text()
         except OSError:
             return False
-        return any(k in src for k in ("DockingBridgeReward", "DockingBridgeProxy"))
+        # An explicit refusal naming this target's reward is the negative signal.
+        for line in src.splitlines():
+            if "not wired" in line and ("6td3" in line or "clpp" in line or "reward_name" in line):
+                # a guard exists; wired iff the worker ALSO builds a docking reward
+                return any(
+                    k in src
+                    for k in ("DockingBridgeReward", "DockingBridgeProxy", "OracleRewardProxy")
+                )
+        return True
 
     @property
     def ready(self) -> bool:
