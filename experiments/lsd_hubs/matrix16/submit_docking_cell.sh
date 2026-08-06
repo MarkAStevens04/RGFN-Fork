@@ -133,6 +133,19 @@ PY
 echo "=== [$CELL_TAG] slice $SLICE_IDX/$N_SLICES  oracle=$ORACLE $ORACLE_ARGS  enum_max=$ENUM_MAX ==="
 echo "=== node=$(hostname)  run=$RUN ==="
 
+# RGFN is the one generator that needs NO docking server: it runs in the same env as glue and
+# reaches the oracle IN-PROCESS through gin (@OracleRewardProxy -> @DockingClpPOracle). Measured in
+# smoke 72538 -- the server saw exactly 3 molecules (the preflight probes) while the worker scored all
+# 437 itself, i.e. it had constructed a SECOND oracle. Two QuickVina2-GPU contexts on one card is
+# ~40 s of wasted construction and, more to the point, a real OOM risk: Logs/036 measured two
+# concurrent QV2 processes at ~39.9 GB on a 40 GB A100. So for RGFN we skip the server and use the
+# standalone preflight instead, which constructs, docks, and EXITS -- freeing its VRAM before the
+# worker starts.
+case "$GENERATOR" in
+    rgfn) NEED_SERVER=0 ;;
+    *)    NEED_SERVER=1 ;;
+esac
+
 # ---- 1. persistent docking server (rgfn env; owns the GPU docker) --------------------------------
 conda activate rgfn
 source ~/bin/rgfn-smoke-env.sh >/dev/null 2>&1 || true   # LD_LIBRARY_PATH for QV2-GPU + gnina
@@ -140,14 +153,19 @@ source ~/bin/rgfn-smoke-env.sh >/dev/null 2>&1 || true   # LD_LIBRARY_PATH for Q
 # that env cannot import glue (no gin) -- without this the clean shutdown degrades to a kill and we
 # lose the server's utilization stats.
 RGFN_PY="$(command -v python)"
-python -m glue.oracles.docking_server --oracle "$ORACLE" \
-    --socket "$SOCK" --stats "$RUN/dock_server_stats.json" $ORACLE_ARGS \
-    > "$RUN/dock_server.log" 2>&1 &
-SERVER_PID=$!
-echo "[dock-cell] docking server pid=$SERVER_PID -> $RUN/dock_server.log"
+SERVER_PID=""
+if [ "$NEED_SERVER" = 1 ]; then
+    python -m glue.oracles.docking_server --oracle "$ORACLE" \
+        --socket "$SOCK" --stats "$RUN/dock_server_stats.json" $ORACLE_ARGS \
+        > "$RUN/dock_server.log" 2>&1 &
+    SERVER_PID=$!
+    echo "[dock-cell] docking server pid=$SERVER_PID -> $RUN/dock_server.log"
+else
+    echo "[dock-cell] $GENERATOR scores in-process (no server); standalone preflight instead"
+fi
 
 cleanup() {
-    if kill -0 "$SERVER_PID" 2>/dev/null; then
+    if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
         echo "[dock-cell] shutting down docking server"
         "$RGFN_PY" - "$SOCK" <<'PY' || kill "$SERVER_PID" 2>/dev/null
 import sys
@@ -165,7 +183,14 @@ PY
 }
 trap cleanup EXIT
 
-# ---- 2. probe THROUGH the socket: is this node's docker actually usable? -------------------------
+# ---- 2. is this node's docker actually usable? ---------------------------------------------------
+# With a server: probe THROUGH the socket, which validates the exact path the run depends on at no
+# extra construction cost. Without one (RGFN): the standalone gate, which constructs its own oracle
+# and exits, freeing that VRAM before the worker builds its in-process one.
+if [ "$NEED_SERVER" = 0 ]; then
+    python scripts/preflight_dock.py --oracle "$ORACLE" $ORACLE_ARGS \
+        || { echo "ERROR: docking preflight failed on $(hostname)"; exit 42; }
+else
 python - "$SOCK" "$ORACLE" <<'PY' || { echo "ERROR: docking preflight failed on $(hostname)"; exit 42; }
 import sys
 sys.path.insert(0, ".")
@@ -190,6 +215,7 @@ if ok == 0:
     )
     raise SystemExit(42)
 PY
+fi
 
 # ---- 3. enumerate this hub slice in the GENERATOR's env ------------------------------------------
 conda activate "$CONDA_ENV"
@@ -200,7 +226,7 @@ case "$PY_REAL" in
     "$ENV_PREFIX"/*) : ;;
     *) echo "ERROR: python resolved to '${PY_REAL:-<none>}', not '$ENV_PREFIX/bin/python'."; exit 1 ;;
 esac
-export RGFN_DOCK_SOCKET="$SOCK"
+[ "$NEED_SERVER" = 1 ] && export RGFN_DOCK_SOCKET="$SOCK"
 
 GUIDANCE_ARG=(); [ -n "${GUIDANCE:-}" ] && GUIDANCE_ARG=(--guidance "$GUIDANCE")
 SAMPLE_DIR_ARG=(); case "$GENERATOR" in fraggfn) SAMPLE_DIR_ARG=(--sample-dir "$SAMPLE_DIR") ;; esac
