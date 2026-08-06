@@ -402,6 +402,33 @@ node**, not a whole node (`DefCpuPerGPU=24`); and Trillium uses the **same parti
 returned −5.9/−7.9/−6.6 against Balam's −5.8/−7.9/−6.5, and 6TD3 returned −2.44/−1.19 against
 reference values −2.20/−1.26, both within Vina's run-to-run spread.
 
+### Update (same afternoon) — `bf_max_job_user=3` throttles the RAMP, it does not cap concurrency
+
+The production launch immediately qualified this entry's own gloomiest reading. Eight enumeration
+slices plus one sample job were submitted together at 13:44; **all nine were running within two
+minutes**, across eight distinct nodes:
+
+| start | jobs started |
+|---|---|
+| 13:44:55 | 3 |
+| 13:45:26 | 2 |
+| 13:45:56 | 1 |
+| 13:46:26 | 1 |
+| 13:46:56 | 2 |
+
+That is `bf_max_job_user=3` behaving as a **per-backfill-cycle** limit (cycles run ~30 s apart), not a
+ceiling on how many cards one user may hold. So the earlier observation that "exactly 3 started
+immediately" was the first cycle, not the whole story, and the p50-of-4-cards statistic understates
+what a burst of short-walltime jobs can obtain when holes exist. **We obtained 9 concurrent H100s
+inside two minutes on a saturated cluster from a bottom-quartile-priority account.**
+
+Practical consequence for the numbers above: at 8 cards rather than 4, `rxnflow_clpp` finishes in
+**~2.9 h** rather than 5.7 h. The right operating procedure is therefore to submit every slice at once
+with the **shortest honest walltime**, and let backfill absorb them over successive cycles — rather
+than throttling submissions to a guessed concurrency. The caveat from the two-week survey still
+stands: this was one favourable moment, the p90 wait for longer requests is 68.6 h, and none of this
+is something to *promise* in a schedule.
+
 ### In flight at time of writing
 
 Launched on Trillium under the cell split agreed with the Balam agent (each cluster takes one ClpP and
