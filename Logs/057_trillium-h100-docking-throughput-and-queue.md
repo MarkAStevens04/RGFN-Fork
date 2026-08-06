@@ -137,12 +137,15 @@ Branch `Hub-Analysis`. Built on `27a1123` ("manifest: a docking cell is not 'rea
 cannot dock" — the fix for the coverage finding below, authored by the agent on Balam in this same
 shared checkout).
 
-**Not yet committed:** `Logs/057_trillium-h100-docking-throughput-and-queue.md`,
-`experiments/fixed_reward/docking_benchmark/submit_batch_concurrency_trillium.sh`, and this entry's
-row in `docs/RESEARCH_CONTEXT.md`. [TODO — add commit hash after pushing.]
+Committed as **`1ed225d`** — this log plus
+`experiments/fixed_reward/docking_benchmark/submit_batch_concurrency_trillium.sh`, staged **by name**.
 
-⚠️ Two agents share this one working tree (`/home` is shared). Commit these three paths **by name** —
-`git add -A` would sweep in the other agent's in-progress SPARROW edits.
+This entry's row in `docs/RESEARCH_CONTEXT.md` is **deliberately left uncommitted**: two agents share
+this one working tree (`/home` is shared between the clusters), and that file simultaneously holds
+~117 lines of the other agent's in-progress MultiAiZ/SPARROW section. It should be committed by
+whoever finishes that section. `git add -A` here would sweep in their unfinished work — and note that
+`pre-commit` stashes and restores unstaged files around every commit, so concurrent edits during that
+window are a real hazard in a shared checkout.
 
 ## Relevant Resources
 
