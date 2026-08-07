@@ -86,8 +86,11 @@ harvest_one() {
     # the switch cannot leak into the manifest emits (which need base) on the next round.
     local gv; eval "gv=\${GATES_${tgt}:-}"
     if [ -n "$gv" ]; then
+        # `--gates=$gv`, NOT `--gates "$gv"`: every docking gate list starts with a MINUS sign
+        # (-11,-10.5,...), and argparse treats a value beginning with '-' as the next option --
+        # "error: argument --gates: expected one argument". The equals form is unambiguous.
         if ( source ~/bin/rgfn-smoke-env.sh 2>/dev/null || conda activate rgfn
-             python experiments/lsd_hubs/matrix16/gate_curve.py "$gen" "$tgt" --gates "$gv" ) \
+             python experiments/lsd_hubs/matrix16/gate_curve.py "$gen" "$tgt" --gates="$gv" ) \
                > "$STATE/harvest_${tag}_gates.log" 2>&1; then
             say "  [$tag] gate sweep OK ($gv)"
         else
