@@ -41,11 +41,19 @@ if str(HERE) not in sys.path:  # allow `import targets` whether run as script or
 from targets import Target, get_target  # noqa: E402
 
 REPO_ROOT = HERE.parents[2]  # experiments/lsd_hubs/matrix16 -> repo root
-MANIFEST_CSV = HERE / "manifest.csv"
-# Both roots are env-overridable, and BOTH must be for an isolated test to be safe. MATRIX16_SCRATCH
-# alone is not enough: results_dir lives in the REPO, so redirecting only the scratch tree still points
-# the campaign at the committed results -- which is how a 24-hub harvest test overwrote the real
-# rxnflow_seh curve.png/summary.json (restored from git). Redirect both together.
+# All THREE of these are env-overridable, and all three must be redirected together for an isolated
+# run to be safe. MATRIX16_SCRATCH alone is not enough: results_dir lives in the REPO, so redirecting
+# only the scratch tree still points the campaign at the committed results -- which is how a 24-hub
+# harvest test overwrote the real rxnflow_seh curve.png/summary.json (restored from git).
+#
+# MATRIX16_MANIFEST exists so a *different seed* can be run without editing the shared manifest.csv:
+# `tag` is deliberately (generator, target) with no seed in it, so a second seed reusing this file
+# would collide in both the scratch and results trees. Point all three at per-seed values instead:
+#   MATRIX16_MANIFEST=.../manifest_seed43.csv
+#   MATRIX16_SCRATCH=/scratch/.../lsdflow/matrix16_seed43
+#   MATRIX16_RESULTS=.../results_seed43
+# Unset, every one of them falls back to the seed-42 headline paths, so existing callers are unchanged.
+MANIFEST_CSV = Path(os.environ.get("MATRIX16_MANIFEST", str(HERE / "manifest.csv")))
 RESULTS_ROOT = Path(os.environ.get("MATRIX16_RESULTS", str(HERE / "results")))
 SCRATCH_ROOT = Path(
     os.environ.get("MATRIX16_SCRATCH", "/scratch/markymoo/rgfn_runs/lsdflow/matrix16")
