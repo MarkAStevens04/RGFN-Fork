@@ -65,6 +65,114 @@ The core argument of the paper: RGFN + a properly designed docking oracle, train
 
 ---
 
+## How library cost is measured: the MultiAiZ → SPARROW pipeline
+
+> **Naming (adopted 2026-08-04).** SPARROW does **two different jobs** in this project and conflating
+> them is the single easiest way to misread a result. We now name them explicitly and use these terms
+> in all new logs and figures: **SPARROW-Verifier (SV)** and **SPARROW-Batching (SB)**, defined below.
+> Older entries predate the convention — read them with it in mind.
+
+### The question this machinery answers
+
+A chemist wants **100 different kinds of molecule likely to bind a target**, and has to physically
+make them. Every reaction costs time and money. So: *which pipeline delivers those 100 for the fewest
+reactions?* Our claim is that building molecules **out of reactions in the first place** — so the
+software always knows how each one was made — beats generating molecules first and working out how to
+make them afterwards.
+
+### Three stages, swappable
+
+The benchmark is three independent stages joined by two contracts
+(`validation/lsdflow/eval/base.py`):
+
+```
+Generator ──pool──▶ Selection strategy ──ordered library──▶ Evaluator ──▶ (reactions, timing)
+```
+
+- **Generator.** Ours (SCENT, RGFN, RxnFlow) build from reactions and carry recipes. The non-reaction
+  baseline (S3-GFN) emits molecule strings with **no recipe at all** (`has_route=0`).
+- **Selection strategy** (`glue/samplers/lsdflow/campaign.py`) — which molecules to actually make.
+- **Evaluator** — what the chosen set costs.
+
+**A structural constraint that drives every design choice here:** our own cost model
+(`count_once`) needs a reaction DAG, so route-less libraries carry `count_once_reactions=None`. It
+**literally cannot score S3-GFN.** Any comparison against a non-reaction generator therefore *has* to
+go through SPARROW. That is forced by the architecture, not a preference.
+
+### SPARROW's two jobs
+
+**SPARROW-Verifier (SV) — the independent auditor.** We hand it a library we have *already chosen*
+plus its recipes and ask: what is the cheapest way to make **all** of it? In code:
+`constrain_all_targets=True`, reward weight **zero**. SV decides nothing; it checks our arithmetic.
+This is what produces statements like "our estimate is within 3.1% of a provably optimal solution".
+We *expect* SV to agree with us — that is the point.
+
+**SPARROW-Batching (SB) — a genuine competitor.** We hand it a large pool with recipes and scores plus
+a reaction budget, and it chooses **which** molecules to make. In code:
+`constrain_all_targets=False`, reward-bearing objective, hard `--max-rxns`. This is SPARROW used the
+way it was designed, and it is a real rival to hub-batching, not a measuring device.
+
+SB has **no diversity term**. It maximizes score under a budget, and cheap means shared recipes, which
+means structurally similar molecules. So whenever SB selects, the fraction of its picks that are
+genuinely distinct is something we **measure**, never assume.
+
+*SB is a selector, so always name the pool with it* — `S3GFN + SB`, `BC-SB`, `BC-Enum-SB` — otherwise
+"SPARROW-Batching" reads as one fixed experiment when it is a slot in a matrix.
+
+### MultiAiZ — the competitor's route planner
+
+Given molecules with no recipes, MultiAiZ runs a retrosynthesis search over the whole batch for
+several cycles, each time adding discovered intermediates to the "you can buy this" list so later
+molecules converge onto shared pieces. Measured cost: **~16 s per molecule, linear** (2.25 h for 500).
+Our side pays **zero**, because our recipes already exist — that asymmetry is a result, and we report
+it rather than trying to equalize it.
+
+Two implementation details with real consequences:
+
+- **Routes must be stitched down to real stock.** MultiAiZ ends recipes at its discovered
+  intermediates and marks them purchasable. Priced naively they would be **free** and the entire
+  convergence saving would read as zero, so we expand them into their build sub-trees.
+- **Plan once, price many.** Route discovery used to re-run inside *every* pricing call. It is now a
+  standalone step whose output is cached (`submit_multiaiz_discover.sh`), so sweeping SPARROW
+  parameters costs seconds. The cache key is the **pool**, never the molecule: MultiAiZ is set-based,
+  so routes depend on which other molecules were planned alongside them.
+
+### Two correctness traps, both learned the hard way
+
+**1. Shallow native routes must be recipe-expanded.** Our generators *attach* a promoted
+dynamic-library fragment in one step rather than synthesizing it. Handed to SPARROW unexpanded,
+SPARROW **buys** what count-once **builds** — the two then price different assumptions and the result
+is meaningless. This produced a spurious 62.7% "disagreement" on DRD2 (entry `049`). Every native
+route is now expanded via `expand_route_with_recipes`, which requires the run's fragment snapshot to
+carry `smiles_to_route` recipes; the drivers abort if coverage is below 95%.
+
+**2. A sampled row is not a candidate.** A GFlowNet re-samples the same molecule many times, so
+`records.csv` rows are sampling *events*. The top-500 rows of the sEH run are only **115 distinct
+molecules**. Any pool built from rows without deduplication is a fraction of its intended size.
+
+### How much room SPARROW actually has
+
+SPARROW optimizes over the **whole** merged graph automatically — `build_network` unions all routes
+and deduplicates compounds by canonical SMILES, so shared intermediates collapse into one node and
+alternative producers become alternative reaction nodes. The limit is solver size, not expressiveness.
+
+But the *ceiling* differs sharply by side, and it does not favour us:
+
+| side | alternative recipes per molecule |
+|---|---|
+| competitor (MultiAiZ) | ~16 |
+| ours (native routes) | **1.07** — only 6.3% of molecules can be made more than one way |
+
+So the optimizer has far more freedom on the competitor's side. Giving it real route choice on ours
+would need multi-trajectory logging at sample time (a GFlowNet reaches the same molecule many ways,
+but `routes.json` keeps one recipe per product) — a re-sample, not a config change. Open future work.
+
+**Practical limit:** the MILP is superlinear in pool size — ~1 s per budget point at 500 targets,
+>110 s at 2,000 — so "give SB as large a pool as possible" is bounded by solve time, and a pool that
+fails to solve is itself a reportable datapoint.
+
+---
+
 ## Paper target
 
 Realistic tiering (revised down from an earlier "NeurIPS primary / Nature stretch" framing to match what an in-silico-only result can actually clear; see the project's venue-strategy notes):
@@ -86,7 +194,6 @@ Realistic tiering (revised down from an earlier "NeurIPS primary / Nature stretc
 ## Current project status
 
 A list of objectives for our project. Tiers: **MVP** (minimum publishable result), **Target** (the full glue story), **Stretch** (upside). Check items `[X]` as they land; blocked items carry a ⚠️.
-
 
 ### Objective 0 — Oracle validation *(Foundation)*
 - [X] Validate the docking oracle on **6TD3**: 78-pp separation between known glues and warhead-matched decoys on the DDB1 neosubstrate differential — the validated testbed for RGFN. (exp `002`)
@@ -121,7 +228,6 @@ A list of objectives for our project. Tiers: **MVP** (minimum publishable result
 ### Objective 6 — Positioning & release *(always-on)*
 - [ ] Write the **novelty paragraph** vs. the conditioned JT-VAE glue generator (reaction-grounded synthesizability + goal-directed sampling, not a conditioned VAE).
 - [ ] Keep **code/data release-ready**: pinned env, fixed seeds, dataset provenance; archive every run's full output.
-
 
 ---
 
@@ -187,6 +293,7 @@ Chronological record; the objectives above cite these by number. Full entries in
 | [028](../Logs/028_scent-recipe-reruns-nested-cost-model.md) | 2026-07-10 → 07-11 | [OUTDATED] SCENT — synthesis-recipe re-runs (sEH/DRD2) + nested-amortization cost model | **Charging SCENT's promoted intermediates honestly ~doubles the true cost the old metric reported; hub-batching saving unchanged.** Re-ran the fragment-promoting SCENT targets with `--log-recipes` (sEH job 70180, DRD2 70184; 1,600 fragments + **1,600 synthesis routes** each; sEH **438 nested** fragments-from-fragments vs DRD2 6), then the dependent frozen 30k hub analyses (70189: 20,519 hubs/2,709 multichild; 70190: 28,865/864) — all COMPLETED over the weekend via an `afterok` dependency chain. New `dynamic_amortization.py` charges each distinct promoted fragment **once** per costed library (reactions primary, exact nested via routes; SCENT $ secondary), + per-molecule composition capture (`compositions.json`). Result (flow acquisition): sEH base 1.15 → **augmented 2.59** rxn/mode hub (indep 1.77 → 3.21; +98 rxns/$348 for 77 shared fragments); DRD2 1.66 → **2.25** (indep 2.49 → 3.08). The saving is preserved (shared build cancels) — batching still wins; the *absolute* cost was undercounted. 6TD3/ClpP don't promote at 400 iters (deferred). Fixed a DRD2 hit-bar bug (inherited sEH's 7.0; DRD2 proxy is 0–1 → use 0.5). Not committed (branch Hub-Analysis). |
 | [027](../Logs/027_lsdflow-scent-crossenv-hub-extraction.md) | 2026-07-10 | [COST DECISIONS SUPERSEDED→029] sEH / SCENT — LSD-Flow cross-env hub extraction from the cost-aware flow field | **SCENT wired into the hub analysis; batchable hubs present in the cost-aware model too.** Cross-env bridge (worker in the `scent` env + in-process client; SCENT's package is also named `rgfn`) lets the harness sample SCENT with **no harness changes** — every downstream step (ranking/acquisition/cost/diversity/TB-integrity) runs unchanged. Validated end-to-end on the 5,000-iter patched sEH checkpoint (entry `024`, job 70066): forward policy + logZ clean (74.33 = trained value), guidance sidecar loads → **P_B recovered exactly** (the cost-tilted trained policy, §5). At N=2k: 19 multi-child hubs (best sEH 8.2), hub-amortized **2.49** vs independent **3.92** rxn/mode (as in RGFN). Preliminary flow-vs-visitation correlation **0.35** (vs RGFN's 0.086 @ 10k) — a candidate cost-guidance TB-integrity signal, pending the matched-N run. **Addendum (same day):** analyze the *faithful full* SCENT — building from a checkpoint leaves it restricted to 418 base fragments, so freeze the dynamic library (418 + **1,600 promoted**) via `on_update_fragments_library` for both sampling + enumeration (job 70179, base-lib, cancelled). Built + validated **`enumerate_hub_children`** (frozen library, exhaustive: depth-0 hub 3,975 paths, 2/2 sampled recovered). Cost decisions: reactions primary + SCENT $-cost secondary, each promoted fragment charged once per costed library, exact nesting → new **synthesis-recipe logging** (`recipe_logging.py` monkeypatch, `--log-recipes`) records each promoted fragment's route (feeds nested cost + a future chemist "make these intermediates" view); recipe re-run **job 70180**. Next: nested-amortization cost model + the §8 hub-coincidence study. Not committed (branch Hub-Analysis). |
 | [026](../Logs/026_lsdflow-hub-modes-dropoff-funnel.md) | 2026-07-10 | [COST METRIC SUPERSEDED→029] sEH / RGFN — paper-comparable hub "modes" + the filter-dropoff funnel | **Mode definition aligned to the papers; the binding filter — not similarity — is the dominant dropoff.** Redefined a "mode" to match upstream `TanimotoSimilarityModes` / `[bengio2021gflownet]`: reward-gated + best-first greedy sphere-exclusion (ECFP Morgan r=3, 2048, 0.7), replacing the earlier structure-only ECFP4/0.65 Butina; also fixed `_per_mode_cost` (one representative per hit-mode). New modular analysis home `experiments/lsd_hubs/` with `dropoff/funnel.py` (per-hub filter funnel; reuses `validation/lsdflow` mode primitives). On the 30k sEH enumeration (job 70140, 12 hubs, 4586 raw one-reaction children): binding gate dominates — 30% survive sEH≥6, **3% ≥7, 0% ≥8**; Tanimoto dedup gentle (raw→structure 2.3×, 135 ≥7-hits→71 hit-modes). **Depth-0 fragment hubs are structurally diverse but yield 0 high-affinity hits; depth-3 hubs carry the hits (19–29 hit-modes) and amortize ~3.6× reactions/mode.** ⇒ breadth from fragments, hits from depth. Not committed (branch Hub-Analysis). |
+| [058](../Logs/058_docking-matrix-complete-six-cells.md) | 2026-08-11 | The hub-batching advantage measured against REAL GPU docking, on every cell we can run (ClpP + 6TD3 × RxnFlow/SCENT/FragGFN) | **The surrogate result survives contact with real docking: hub-batching is cheaper in all 6 docking cells, 2.43–4.43× (median 2.76×), and leads at all 42 gate points tested — with all TWELVE arms reaching the full 300-mode budget, so nothing is flattered by a starved baseline.** Closes `055`'s biggest gap (380/380 wins were all surrogate-scored) and supersedes `057`'s "docking half is a TWO-generator comparison": FragGFN docking is now wired and smoked, making it three (RGFN excluded by the training gate, not by missing code). **2,022,682 docked children** over 1,200 hub enumerations, **412.5 GPU-h** of enumeration. At each cell's calibrated bar (ClpP −8.0, entry `045` AUROC 0.895; 6TD3 −2.0, provisional): rxnflow_clpp 1.223 vs 2.977 (**2.43×**, 34 hubs), scent_clpp 1.290 vs 3.420 (**2.65×**), fraggfn_clpp 1.093 vs 4.840 (**4.43×**, only 7 hubs), rxnflow_6td3 1.193 vs 2.977 (**2.50×**), scent_6td3 1.157 vs 3.320 (**2.87×**), fraggfn_6td3 1.533 vs 5.000 (**3.26×**). **Threshold sweeps** (7 gates/cell, re-scoring already-docked children — no GPU): edge grows monotonically as the bar loosens (scent_clpp 1.63×@−11.0 → 2.65×@−8.0; rxnflow_6td3 2.06×@−4.0 → 2.54×@−1.0), and **only the two strictest ClpP gates are pool-limited** (scent_clpp 280 modes @−11.0, rxnflow_clpp 30 @−10.5) — which is what makes **−8.0 the defensible ClpP bar** rather than a convenient one, while for fraggfn_clpp the ClpP gate is effectively **NON-BINDING** (300 modes at every gate −11→−8, matching its 91.5% smoke qualification). Each bar-point reproduces its campaign number exactly (bit-identity). **Measured compute inverts the surrogate picture**: docking is **87.5–99.7%** of enumeration cost here, versus flow-extraction up to 97.8% for rxnflow_seh in `055`; hub-batching's own walk consumed only 0.96–18.53 h of the 26.1–143.1 h per cell. **Automation** (`autoharvest.sh`, 215 rounds over 4 days) merged + evaluated + swept + backed up each cell unattended, detecting completion from ARTIFACTS because the slices ran on two unfederated schedulers sharing /scratch (a Balam job cannot depend on a Trillium job id); readiness is delegated to the strict merge so a partial set can never be promoted. **Four bugs found by executing paths rather than trusting them:** `--gates "-11,..."` (argparse reads a leading `-` as the next option → needs `--gates=`); `gate_curve.py` needs the `rgfn` env not `base`; it defaulted to child policy `reward`/K=0/no-snapshot for EVERY generator — right for the baselines, **wrong for SCENT**, and it does not crash, it silently yields a sweep incomparable to the cell's own campaign; and **`best_reward` was direction-blind** (unconditional `max()`), so every docking cell reported its WORST qualifying molecule as best (rxnflow_clpp −8.0, exactly the bar, beside median −8.9) — fixed, summaries regenerated, every other field bit-identical (re-confirming determinism); cost metrics were never affected. Corrected best dockers: scent_clpp **−14.2**, fraggfn_clpp −13.5, scent_6td3 −7.398. **Operational:** 8/12 scent_clpp slices hit the 8 h walltime at 147/200 hubs, and the per-10-hub partial flush turned that into a **top-up** (53 missing hubs, 8 slices, nothing re-docked) — but sizing from the raw oracle rate was wrong by **2.3×** (11 min/hub predicted, ~25 actual; the cross-env bridge is the gap), so size slices from observed per-hub time. Also: **editing a script does not reach an already-running loop** — a `--gates` fix committed 11:13 never applied to cells harvested at 20:21/03:06/05:37 because bash had already parsed the function; all 6 sweeps re-run by hand. **Caveats:** one seed/checkpoint per cell, no error bars; cross-generator MAGNITUDES not comparable (best-candidate's own cost differs, 4.84–5.00 vs 2.977, so FragGFN's ratio is partly a worse denominator) and FragGFN stays a cost-model control (attachments ≠ synthesis steps); `log_reward` is cross-generator INCOMPARABLE (each its own beta·clip, SCENT unclipped to 56.8 vs FragGFN clipped at 10) — only raw `reward` is; 6TD3's −2.0 bar has no AUROC calibration behind it. Jobs 72493–72663 (Balam) + Trillium `7213xx`. `42eeb26`, `bf494c0`, `b36c3d5`. |
 
 ---
 
@@ -217,6 +324,14 @@ Chronological record; the objectives above cite these by number. Full entries in
 - **Decoys**: Realistic fake glues — correct warhead, random drug-like arm. If decoys score like known glues, the oracle only reads warhead binding and is useless for RGFN.
 - **gnina**: Our docking engine (v1.3.2, CNN-rescored). Launched from `/scratch/markymoo/gnina/run_gnina.sh`.
 - **Balam**: SciNet GPU cluster (4× A100 per debug_full_node, 64 cores, 1 h max). Outputs go to `$SCRATCH` (`/scratch/markymoo/`), not `$HOME`.
+- **SPARROW-Verifier (SV)**: SPARROW as an **independent auditor** — given an already-chosen library and its recipes, find the cheapest way to make *all* of it (`constrain_all_targets=True`, reward weight 0). Used to show our own cost accounting is not self-serving; we *expect* agreement.
+- **SPARROW-Batching (SB)**: SPARROW as a **competitor** — given a large pool and a reaction budget, choose *which* molecules to make (`constrain_all_targets=False`, reward objective, `--max-rxns`). A genuine rival to hub-batching. Has **no diversity term**, so the distinctness of its picks is always measured, never assumed. Always name the pool with it (`BC-SB`, `S3GFN + SB`).
+- **BC-SB (Best-Candidate SPARROW-Batching)**: SB over the N highest-reward *distinct* candidates the generator sampled — no enumeration, no flow. The "naive chemist" competitor.
+- **BC-Enum-SB (Best-Candidate Full-Enumeration SPARROW-Batching)**: SB over the full enumeration of 64 hubs picked by walking candidates best-reward-first. The strongest competitor that never uses flow.
+- **Mode**: one distinct "kind" of molecule — clears the reward gate *and* is Tanimoto-dissimilar (Morgan r=3/2048, ≤ 0.5) from every mode already counted. 100 modes = 100 genuinely different shots on goal, not 100 near-copies.
+- **Hub**: a partly-built intermediate many finished molecules can share. Build it once, branch off it.
+- **Native route vs from-scratch**: *native* = the recipe our generator already used (free). *From-scratch* = a planner re-deriving a recipe for a finished molecule. Which one you price with can reverse a head-to-head result, because re-derivation partly measures whose chemistry the planner's catalogue happens to cover (entry `047`).
+- **count-once**: our cost model — each molecule's assembly couplings plus each distinct promoted fragment built **once**. Only defined over a reaction DAG, so it **cannot score route-less generators** — which is why cross-method comparisons must use SPARROW.
 
 ---
 
