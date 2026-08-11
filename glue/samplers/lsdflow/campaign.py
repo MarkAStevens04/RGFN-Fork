@@ -179,7 +179,10 @@ def _budget_hit(budget: Budget, cum_reactions: int, cum_modes: int) -> bool:
 
 
 def _finalize(
-    result: CampaignResult, built_promoted: Set[str], built_hubs: Set[str]
+    result: CampaignResult,
+    built_promoted: Set[str],
+    built_hubs: Set[str],
+    higher_is_better: bool = True,
 ) -> CampaignResult:
     rewards = [p.reward for p in result.accepted if p.reward == p.reward]
     result.total_modes = len(result.accepted)
@@ -189,7 +192,11 @@ def _finalize(
     )
     result.distinct_promoted_fragments = len(built_promoted)
     result.distinct_hubs_used = len(built_hubs)
-    result.best_reward = max(rewards) if rewards else float("nan")
+    # Direction-aware: "best" is the LOWEST value for a lower-is-better target. An unconditional
+    # max() silently reported the WORST qualifying molecule on every docking cell -- e.g. rxnflow_clpp
+    # showed best_reward -8.0 (exactly the gate bar) beside median -8.9, i.e. a "best" worse than the
+    # median. Cost metrics and mode counts were unaffected, but the field is quoted in summaries.
+    result.best_reward = (max(rewards) if higher_is_better else min(rewards)) if rewards else float("nan")
     result.median_reward = statistics.median(rewards) if rewards else float("nan")
     result.n_scaffolds = _count_scaffolds([p.smiles for p in result.accepted])
     return result
@@ -386,7 +393,7 @@ class BestCandidateStrategy(CampaignStrategy):
             if _budget_hit(budget, cum_rx, step):
                 result.stop_reason = budget[0]
                 break
-        return _finalize(result, built_promoted, built_hubs)
+        return _finalize(result, built_promoted, built_hubs, self.higher_is_better)
 
 
 class HubBatchingStrategy(CampaignStrategy):
@@ -506,7 +513,7 @@ class HubBatchingStrategy(CampaignStrategy):
         for p in result.accepted:
             object.__setattr__(p, "reward_gen_calls_added", p.cum_reward_gen_calls - prev)
             prev = p.cum_reward_gen_calls
-        return _finalize(result, built_promoted, built_hubs)
+        return _finalize(result, built_promoted, built_hubs, self.higher_is_better)
 
 
 # ----------------------------------------------------------------- fan-out / pre-select helpers (Logs/037)
