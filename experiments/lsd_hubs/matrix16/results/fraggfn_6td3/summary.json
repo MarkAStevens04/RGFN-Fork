@@ -1,0 +1,131 @@
+{
+  "tag": "fraggfn_6td3",
+  "reward_threshold": -2.0,
+  "similarity": 0.5,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "rank_by": null,
+  "best_candidate": {
+    "strategy": "best_candidate",
+    "total_modes": 300,
+    "total_reactions": 1500,
+    "reactions_per_mode": 5.0,
+    "total_reward_gen_calls": 0,
+    "reward_gen_calls_per_mode": 0.0,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 300,
+    "n_scaffolds": 300,
+    "best_reward": -5.241,
+    "median_reward": -5.514,
+    "case1_modes_at_100rxn": 20,
+    "case2_reactions_at_300modes": 1500,
+    "stop_reason": "modes"
+  },
+  "hub_batching": {
+    "strategy": "hub_batching",
+    "total_modes": 300,
+    "total_reactions": 460,
+    "reactions_per_mode": 1.533,
+    "total_reward_gen_calls": 49665,
+    "reward_gen_calls_per_mode": 165.55,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 40,
+    "n_scaffolds": 280,
+    "best_reward": -2.008,
+    "median_reward": -4.607,
+    "case1_modes_at_100rxn": 60,
+    "case2_reactions_at_300modes": 460,
+    "stop_reason": "modes"
+  },
+  "compute_time": {
+    "enum_timings_meta": {
+      "setup_s": 1.336,
+      "slice_setups_s": [
+        1.328,
+        1.337,
+        1.335,
+        1.347,
+        1.374,
+        1.194,
+        1.141,
+        1.396,
+        1.371,
+        1.265,
+        1.457,
+        1.285
+      ],
+      "merged_from": [
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice10of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice11of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice12of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice1of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice2of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice3of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice4of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice5of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice6of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice7of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice8of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/fraggfn_6td3/enum/slice9of12/enum_timings.json"
+      ],
+      "n_slices": 12,
+      "n_hubs": 200,
+      "n_children": 240555,
+      "totals_s": {
+        "enumeration_s": 480.804,
+        "reward_gen_s": 168249.024,
+        "flow_extract_s": 76.729
+      },
+      "device": "cuda",
+      "reward_name": "6td3",
+      "component_split": "full",
+      "partial": false
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "setup_s": 1.336,
+      "hub_pick_s": 0.198,
+      "enumeration_s": 97.1003,
+      "reward_gen_s": 34210.9474,
+      "flow_extract_s": 17.2385,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 12.9971,
+      "n_hubs_walked": 40,
+      "n_children_scored": 49665,
+      "missing_hub_keys": [],
+      "total_s": 34339.8172
+    },
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "setup_s": 0.0,
+      "hub_pick_s": 0.0,
+      "enumeration_s": 0.0,
+      "reward_gen_s": 0.0,
+      "flow_extract_s": 0.0,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.3213,
+      "n_hubs_walked": 0,
+      "n_children_scored": 0,
+      "missing_hub_keys": [],
+      "total_s": 0.3213
+    },
+    "head_to_head": {
+      "hub_total_s": 34339.8172,
+      "best_total_s": 0.3213,
+      "extra_compute_s": 34339.4959,
+      "ratio_hub_over_best": 106881.214,
+      "per_component_delta_s": {
+        "setup_s": 1.336,
+        "hub_pick_s": 0.198,
+        "enumeration_s": 97.1003,
+        "reward_gen_s": 34210.9474,
+        "flow_extract_s": 17.2385,
+        "unattributed_s": 0.0,
+        "mode_selection_s": 12.6758
+      },
+      "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+    }
+  }
+}

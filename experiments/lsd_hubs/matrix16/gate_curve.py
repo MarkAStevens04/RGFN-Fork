@@ -62,14 +62,42 @@ def main() -> None:
     ap.add_argument("--similarity", type=float, default=0.5)
     ap.add_argument("--budget-modes", type=int, default=300)
     ap.add_argument("--budget-reactions", type=int, default=100)
-    ap.add_argument("--child-policy", default="reward", choices=["reward", "free_frag"])
-    ap.add_argument("--prebuild-k", type=int, default=0)
+    # Defaults are None, not "reward"/0/"", so they can be resolved PER GENERATOR below.
+    ap.add_argument("--child-policy", default=None, choices=["reward", "free_frag"])
+    ap.add_argument("--prebuild-k", type=int, default=None)
     ap.add_argument("--rank-by", default="build_score")
-    ap.add_argument("--snapshot", default="", help="SCENT fragments_<N>.json (nested cost model)")
+    ap.add_argument("--snapshot", default=None, help="SCENT fragments_<N>.json (nested cost model)")
     ap.add_argument("--out-dir", default="")
     a = ap.parse_args()
 
     cell = get_cell(a.generator, a.target)
+
+    # Per-generator defaults, MIRRORING run_cell_campaign.sh. This script used to default to
+    # reward/K=0/no-snapshot for everyone, which is right for the baselines but WRONG for SCENT
+    # (free_frag + pre-select-K=20 is its hero policy, Logs/037, and the promoted-fragment snapshot is
+    # what makes its nested cost model correct). That mismatch does not crash -- it silently produces a
+    # sweep whose reactions/mode cannot be compared to the cell's own campaign number, which is the
+    # kind of divergence that survives every smoke test. Explicit flags still win.
+    if a.child_policy is None:
+        a.child_policy = "free_frag" if a.generator == "scent" else "reward"
+    if a.prebuild_k is None:
+        a.prebuild_k = 20 if a.generator == "scent" else 0
+    if a.snapshot is None:
+        a.snapshot = ""
+        if a.generator == "scent":
+            # additional_fragments/ sits at the run root, a couple of levels above the checkpoint;
+            # take the highest-N snapshot, matching run_cell_campaign.sh and scent_worker.
+            run_root = Path(cell.checkpoint).resolve().parents[2]
+            snaps = sorted(
+                run_root.glob("additional_fragments/fragments_*.json"),
+                key=lambda p: int(p.stem.split("_")[-1]),
+            )
+            if snaps:
+                a.snapshot = str(snaps[-1])
+                print(f"[gate_curve] auto-discovered SCENT snapshot: {a.snapshot}")
+            else:
+                print("[gate_curve] WARNING no SCENT snapshot -> nested cost falls back to min_num_reactions")
+    print(f"[gate_curve] child_policy={a.child_policy} prebuild_k={a.prebuild_k}")
     gates = parse_gates(a.gates)
     enum_path = cell.enum_dir / "enum_children.json"
     if not enum_path.exists():

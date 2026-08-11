@@ -1,0 +1,102 @@
+{
+  "cell": "fraggfn_6td3",
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "similarity": 0.5,
+  "budget_modes": 300,
+  "higher_is_better": false,
+  "n_enumerated_hubs": 200,
+  "points": [
+    {
+      "gate": -4.0,
+      "best_modes": 300,
+      "best_rxn_per_mode": 5.0,
+      "best_stop_reason": "modes",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.8,
+      "hub_stop_reason": "modes",
+      "edge": 2.778,
+      "hub_hubs_used": 60,
+      "hub_reward_gen_calls": 73185,
+      "pool_limited": false
+    },
+    {
+      "gate": -3.5,
+      "best_modes": 300,
+      "best_rxn_per_mode": 5.0,
+      "best_stop_reason": "modes",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.64,
+      "hub_stop_reason": "modes",
+      "edge": 3.049,
+      "hub_hubs_used": 48,
+      "hub_reward_gen_calls": 59010,
+      "pool_limited": false
+    },
+    {
+      "gate": -3.0,
+      "best_modes": 300,
+      "best_rxn_per_mode": 5.0,
+      "best_stop_reason": "modes",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.573,
+      "hub_stop_reason": "modes",
+      "edge": 3.179,
+      "hub_hubs_used": 43,
+      "hub_reward_gen_calls": 53760,
+      "pool_limited": false
+    },
+    {
+      "gate": -2.5,
+      "best_modes": 300,
+      "best_rxn_per_mode": 5.0,
+      "best_stop_reason": "modes",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.573,
+      "hub_stop_reason": "modes",
+      "edge": 3.179,
+      "hub_hubs_used": 43,
+      "hub_reward_gen_calls": 53760,
+      "pool_limited": false
+    },
+    {
+      "gate": -2.0,
+      "best_modes": 300,
+      "best_rxn_per_mode": 5.0,
+      "best_stop_reason": "modes",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.533,
+      "hub_stop_reason": "modes",
+      "edge": 3.262,
+      "hub_hubs_used": 40,
+      "hub_reward_gen_calls": 49665,
+      "pool_limited": false
+    },
+    {
+      "gate": -1.5,
+      "best_modes": 300,
+      "best_rxn_per_mode": 5.0,
+      "best_stop_reason": "modes",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.52,
+      "hub_stop_reason": "modes",
+      "edge": 3.289,
+      "hub_hubs_used": 39,
+      "hub_reward_gen_calls": 48405,
+      "pool_limited": false
+    },
+    {
+      "gate": -1.0,
+      "best_modes": 300,
+      "best_rxn_per_mode": 5.0,
+      "best_stop_reason": "modes",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.507,
+      "hub_stop_reason": "modes",
+      "edge": 3.318,
+      "hub_hubs_used": 38,
+      "hub_reward_gen_calls": 47250,
+      "pool_limited": false
+    }
+  ]
+}
