@@ -116,6 +116,14 @@ def _parse_args():
     # enumerate mode
     p.add_argument("--hubs-file", default="", help="enumerate mode: CSV with 'smiles,depth' rows")
     p.add_argument("--enum-max-children", type=int, default=4000, help="per-hub enumeration cap")
+    p.add_argument(
+        "--count-only",
+        action="store_true",
+        help="enumerate mode: COUNT each hub's children and stop -- no reward/docking, no flow "
+        "extraction. Sizes a re-enumeration before paying for it: docking is 97%% of a SCENT "
+        "docking cell's cost, so the true child count of a capped hub is otherwise unknowable "
+        "without buying the whole thing. Writes enum_counts.json.",
+    )
     return p.parse_args()
 
 
@@ -569,7 +577,24 @@ def _make_enumerator(rgfn_api, Trajectories, RSA, RSB, RSC, RST, RAC, Molecule):
             return None
         return RSA(molecule=mol, num_reactions=int(depth))
 
-    return enumerate_terminal_children, hub_state_from_smiles
+    def count_children(env, hub_state, max_children):
+        """``(n_paths, n_children, seconds)`` for one hub — DFS only, NO reward and NO flow extraction.
+
+        Exists to size a re-enumeration honestly. A hub capped at ``ENUM_MAX`` has an unknown TRUE child
+        count, and on a docking cell reward generation is ~97% of the bill, so discovering that count by
+        running the real enumeration means buying the whole thing first. This pays only the DFS, which is
+        ~0.01 s/child against docking's ~0.95. ``n_children`` applies the same
+        ``build_child_trajectory`` filter the real path uses, so it is the count that would actually be
+        docked, not the raw path count.
+        """
+        t0 = time.perf_counter()
+        paths = enumerate_product_paths(env, hub_state, max_children)
+        n_built = sum(
+            1 for p in paths if build_child_trajectory(env, hub_state, p) is not None
+        )
+        return len(paths), n_built, time.perf_counter() - t0
+
+    return enumerate_terminal_children, hub_state_from_smiles, count_children
 
 
 # ----------------------------------------------------------------- freeze
@@ -675,7 +700,12 @@ def main():
         # it is fixed differently there -- same bug, two injection points.)
         _bindings.append(f'DockingBridgeProxy.repo_root="{REPO_ROOT}"')
         _bindings.append(f'DockingBridgeProxy.workdir="{run_dir}/reward_bridge_scent"')
-        _docking.require_socket()  # fail now, not after a 40 s oracle construction
+        # --count-only never scores anything, so demanding the docking server would defeat its purpose
+        # (it exists to size a re-enumeration WITHOUT paying for docking) and would tie a pure-DFS job
+        # to a GPU node running a server. The gin bindings above stay: the trainer is still constructed,
+        # so the proxy is still instantiated -- it just never gets called.
+        if not getattr(args, "count_only", False):
+            _docking.require_socket()  # fail now, not after a 40 s oracle construction
 
     gin.parse_config_files_and_bindings(
         [config_path],
@@ -878,7 +908,7 @@ def main():
         )
 
     elif args.mode == "probe_hubs":
-        _, hub_state_from_smiles = _make_enumerator(
+        _, hub_state_from_smiles, _ = _make_enumerator(
             rgfn,
             Trajectories,
             ReactionStateA,
@@ -909,7 +939,7 @@ def main():
                 "[scent_worker] WARNING enumerate --no-freeze: promoted-fragment children will be missed",
                 flush=True,
             )
-        enumerate_terminal_children, hub_state_from_smiles = _make_enumerator(
+        enumerate_terminal_children, hub_state_from_smiles, count_children = _make_enumerator(
             rgfn,
             Trajectories,
             ReactionStateA,
@@ -920,6 +950,55 @@ def main():
             Molecule,
         )
         hubs = _read_hubs(args.hubs_file)
+
+        # COUNT-ONLY: size the job, then stop. Deliberately before the flusher/oracle setup so this
+        # mode never touches the docking server and can run on any node.
+        if args.count_only:
+            counts = []
+            for _i, (smiles, depth) in enumerate(hubs):
+                hs = hub_state_from_smiles(smiles, depth)
+                if hs is None:
+                    counts.append({"hub": smiles, "depth": depth, "error": "invalid_smiles"})
+                    continue
+                n_paths, n_children, secs = count_children(env, hs, args.enum_max_children)
+                counts.append(
+                    {
+                        "hub": smiles,
+                        "depth": int(depth),
+                        "n_paths": n_paths,
+                        "n_children": n_children,
+                        "dfs_s": round(secs, 3),
+                        "hit_cap": n_paths >= args.enum_max_children,
+                    }
+                )
+                print(
+                    f"[scent_worker] count hub depth={depth} -> {n_children} children "
+                    f"({n_paths} paths, {secs:.1f}s){' HIT CAP' if n_paths >= args.enum_max_children else ''}"
+                    f"  {smiles[:40]}",
+                    flush=True,
+                )
+            done = [c for c in counts if "n_children" in c]
+            json.dump(
+                {
+                    "max_children": args.enum_max_children,
+                    "reward_name": args.reward_name,
+                    "n_hubs": len(counts),
+                    "total_children": sum(c["n_children"] for c in done),
+                    "total_dfs_s": round(sum(c["dfs_s"] for c in done), 2),
+                    "n_hit_cap": sum(1 for c in done if c["hit_cap"]),
+                    "per_hub": counts,
+                },
+                open(out_dir / "enum_counts.json", "w"),
+                indent=2,
+            )
+            print(
+                f"[scent_worker] COUNT-ONLY done: {sum(c['n_children'] for c in done):,} children over "
+                f"{len(done)} hubs, {sum(1 for c in done if c['hit_cap'])} still at the cap "
+                f"-> {out_dir}/enum_counts.json",
+                flush=True,
+            )
+            return
+
         all_records, per_hub, enum_hubs = [], [], []
         # Per-hub enumeration / reward-gen / flow-extract wall-clock (Logs/039); setup_s + _sync are
         # defined once above (shared with sample mode).

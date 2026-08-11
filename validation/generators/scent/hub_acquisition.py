@@ -325,7 +325,7 @@ class ScentHubAcquisition:
         cands = cands[: self.n_candidate_hubs]
         self._last_n_candidates = len(cands)
 
-        enumerate_children, hub_state_from_smiles = _sw._make_enumerator(
+        enumerate_children, hub_state_from_smiles, _ = _sw._make_enumerator(
             rc["rgfn_api"],
             rc["Trajectories"],
             rc["RSA"],
