@@ -22,7 +22,8 @@ We then wired the remaining two, which turned it into a three-generator comparis
 RGFN, is blocked on unfinished training rather than on missing code).
 
 This entry runs the whole thing: three generators × two docking targets = six cells, each one
-exhaustively enumerating every one-reaction child of 200 shared scaffolds and **docking every child**.
+enumerating the one-reaction children of 200 shared scaffolds and **docking every child** (exhaustively
+for the two baselines; the two SCENT cells hit a deliberate per-scaffold cap — see the audit below).
 Two protein systems are involved — **ClpP**, where the score is a single binding energy, and
 **6TD3**, where it is the *difference* between two docking runs, which is how we isolate the
 cooperative "glue" effect we actually care about. For each cell we compare our method against the
@@ -243,9 +244,53 @@ the rest being enumeration of hubs it never walked.
   bit-identical, which also re-confirms the campaign is deterministic. Cost metrics and mode counts were
   never affected.
 
+**Enumeration-completeness audit** (run because `scent_clpp` lost 8 of 12 slices to walltime, so
+"200/200 hubs present" needed to be distinguished from "every hub's children are complete"):
+
+*Hub coverage is exact in all six cells.* Each merged `enum_children.json` hub set is **set-equal to
+its `hubs.csv`** (200/200), with **zero duplicates** and zero hubs appearing in more than one slice —
+so the `of12` + `of8` union for `scent_clpp` was genuinely disjoint and the merge's keep-first rule
+never had to arbitrate. **No truncated hub is possible by construction:** the worker calls
+`enumerate_terminal_children` for a hub, appends it with its complete child list, and only then calls
+`flusher.maybe()`, so a mid-hub kill drops that hub **entirely** rather than persisting a partial one.
+Empirically no cell has an anomalously small hub (0 hubs below 10% of the cell's median child count).
+
+*Per-hub child enumeration is NOT exhaustive for the two SCENT cells.* `ENUM_MAX=4000` binds only on
+SCENT, whose dynamic promoted library gives it far more reachable last-step reactions than the
+baselines (max children: rxnflow 2000/2099, fraggfn 2100/1680 — all well clear of the cap):
+
+| cell | hubs at the 4000 cap | median `Σ_x P_F(x\|h)`, uncapped | median, CAPPED |
+|---|---|---|---|
+| `scent_clpp` | 25 (12 stereo-distinct) | 0.9945 | **0.1039** |
+| `scent_6td3` | 51 | 0.9977 | **0.9288** |
+| `rxnflow_clpp` | 0 | 0.9430 | — |
+
+The forward-mass sum is the same normalization readout entry `050` used, and it closes to ~1.0 on
+uncapped hubs, which validates the measurement. So `scent_clpp`'s capped hubs retain only **~10% of
+the reachable forward-probability mass** (severe), while `scent_6td3`'s retain ~93% (mild). The cap
+truncates by **depth-first action-index order**, i.e. a deterministic but arbitrary subset — not the
+top-scoring children and not a random sample. Capped hubs are also **inside the walk**: 5 of
+`scent_clpp`'s 37 walked hubs (including rank 1) and 7 of `scent_6td3`'s 17 (including ranks 0 and 1).
+
+*Direction of the bias is toward understating our result.* Fewer enumerated children per scaffold means
+fewer modes extractable per scaffold build, so the walk needs MORE hubs to reach 300 modes, which
+raises reactions/mode. The two SCENT edges (2.65×, 2.87×) are therefore conservative. This is reasoning
+from the mechanism, not a measurement — quantifying it needs a re-enumeration at a higher cap.
+
+*This is pre-existing, not docking-specific.* `scent_seh` (57 capped hubs, median capped mass 0.5555 vs
+0.9998 uncapped) and `scent_drd2` (31) carry the same truncation, so it is a property of every SCENT
+cell in entries `050`/`055`. **Entry `050` needs an interpretation correction:** its stated criteria
+(0/200 hubs exceed 1, 0/200 below 0.01) are both confirmed by this measurement, but it attributed
+SCENT's low-mass tail — "SCENT's 5th percentile of 0.402 is genuine stop-probability mass at hubs the
+policy likes to terminate at" — to policy stopping. The tail is the 4000-child cap: capped hubs sit at
+median 0.556 while uncapped sit at 0.9998. Its broader "independently confirms the enumeration is
+exhaustive" therefore holds for the 143 uncapped `scent_seh` hubs and not for the 57 capped ones.
+
 **Caveats**
 
 - **One seed, one checkpoint per cell.** No error bars on any ratio.
+- **The two SCENT cells are not child-exhaustive** (see the audit above); `scent_clpp` in particular
+  loses ~90% of forward mass on 25 of its 200 hubs, 5 of them inside the walk.
 - **Cross-generator magnitudes are not comparable.** Best-candidate's own cost differs (FragGFN
   4.84–5.00 r/m vs RxnFlow 2.977), so FragGFN's larger ratio is partly a worse denominator. FragGFN also
   remains a **cost-model control** throughout — its attachments are not synthesis steps.
