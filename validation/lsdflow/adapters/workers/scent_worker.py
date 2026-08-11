@@ -955,10 +955,34 @@ def main():
         # mode never touches the docking server and can run on any node.
         if args.count_only:
             counts = []
+
+            # Write after EVERY hub, not just at the end. The DFS is ~260 s on a real capped hub, so a
+            # 25-hub sizing pass is ~2 h and a walltime kill would otherwise discard all of it -- the
+            # same mistake PartialFlusher exists to prevent for the docking path. Cost is one small
+            # json.dump per hub against a 4-minute DFS.
+            def _flush_counts():
+                done_ = [c for c in counts if "n_children" in c]
+                json.dump(
+                    {
+                        "max_children": args.enum_max_children,
+                        "reward_name": args.reward_name,
+                        "n_hubs_requested": len(hubs),
+                        "n_hubs_done": len(done_),
+                        "partial": len(done_) < len(hubs),
+                        "total_children": sum(c["n_children"] for c in done_),
+                        "total_dfs_s": round(sum(c["dfs_s"] for c in done_), 2),
+                        "n_hit_cap": sum(1 for c in done_ if c["hit_cap"]),
+                        "per_hub": counts,
+                    },
+                    open(out_dir / "enum_counts.json", "w"),
+                    indent=2,
+                )
+
             for _i, (smiles, depth) in enumerate(hubs):
                 hs = hub_state_from_smiles(smiles, depth)
                 if hs is None:
                     counts.append({"hub": smiles, "depth": depth, "error": "invalid_smiles"})
+                    _flush_counts()
                     continue
                 n_paths, n_children, secs = count_children(env, hs, args.enum_max_children)
                 counts.append(
@@ -971,26 +995,14 @@ def main():
                         "hit_cap": n_paths >= args.enum_max_children,
                     }
                 )
+                _flush_counts()
                 print(
-                    f"[scent_worker] count hub depth={depth} -> {n_children} children "
-                    f"({n_paths} paths, {secs:.1f}s){' HIT CAP' if n_paths >= args.enum_max_children else ''}"
-                    f"  {smiles[:40]}",
+                    f"[scent_worker] count hub {len(counts)}/{len(hubs)} depth={depth} -> {n_children} "
+                    f"children ({n_paths} paths, {secs:.1f}s)"
+                    f"{' HIT CAP' if n_paths >= args.enum_max_children else ''}  {smiles[:40]}",
                     flush=True,
                 )
             done = [c for c in counts if "n_children" in c]
-            json.dump(
-                {
-                    "max_children": args.enum_max_children,
-                    "reward_name": args.reward_name,
-                    "n_hubs": len(counts),
-                    "total_children": sum(c["n_children"] for c in done),
-                    "total_dfs_s": round(sum(c["dfs_s"] for c in done), 2),
-                    "n_hit_cap": sum(1 for c in done if c["hit_cap"]),
-                    "per_hub": counts,
-                },
-                open(out_dir / "enum_counts.json", "w"),
-                indent=2,
-            )
             print(
                 f"[scent_worker] COUNT-ONLY done: {sum(c['n_children'] for c in done):,} children over "
                 f"{len(done)} hubs, {sum(1 for c in done if c['hit_cap'])} still at the cap "
