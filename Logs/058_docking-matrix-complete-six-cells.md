@@ -63,9 +63,10 @@ target: the advantage is now measured on both ClpP and the 6TD3 glue differentia
   least a second seed per cell before we quote a median ratio.
 - **Finish the fourth generator.** RGFN's two docking cells are stuck at 55% and 71% of their training
   target. Completing them makes the docking matrix four generators wide, matching the surrogate half.
-- **Decide the ClpP threshold in the paper's own terms.** The sweep shows the two strictest ClpP
-  settings starve one generator's material while a third generator is unaffected by the threshold
-  entirely — worth stating explicitly rather than quoting a single number.
+- **Decide the ClpP threshold in the paper's own terms.** ClpP behaves very differently per generator:
+  at bars stricter than the calibrated one, RxnFlow runs out of material at 5 of 7 settings and SCENT at
+  2 of 7, while FragGFN is unaffected at every setting. Worth stating explicitly rather than quoting a
+  single number.
 
 **Next steps in project**
 
