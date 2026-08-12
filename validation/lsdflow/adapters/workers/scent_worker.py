@@ -1022,6 +1022,7 @@ def main():
         flusher = A.PartialFlusher(
             out_dir,
             every=10,
+            n_hubs=len(hubs),
             timing_meta=dict(
                 setup_s=setup_s,
                 device=str(device),

@@ -566,6 +566,7 @@ def _run_enumerate(args, trainer, beta, clip, out_dir):
     flusher = A.PartialFlusher(
         out_dir,
         every=10,
+        n_hubs=len(hubs),
         timing_meta=dict(
             setup_s=getattr(args, "_setup_s", 0.0),
             device=str(getattr(trainer, "device", "")),

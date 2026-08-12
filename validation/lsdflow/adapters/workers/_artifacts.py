@@ -186,11 +186,30 @@ class PartialFlusher:
         flusher.final(enum_hubs, hub_timings)
     """
 
-    def __init__(self, out_dir, *, every: int = 10, timing_meta: Optional[Dict] = None):
+    def __init__(
+        self,
+        out_dir,
+        *,
+        every: int = 10,
+        timing_meta: Optional[Dict] = None,
+        n_hubs: Optional[int] = None,
+    ):
+        """``n_hubs`` (the slice's hub count) shrinks ``every`` so a SMALL slice still flushes.
+
+        ``every=10`` was chosen for 200-hub slices, where it bounds the JSON rewrite cost. But a
+        re-enumeration slice can carry 2-3 hubs (scent_clpp's capped-hub top-up: 25 hubs over 10
+        slices), and then the interval never elapses -- the flusher writes nothing until ``final()``,
+        so a walltime kill discards the entire slice. That is the precise failure this class exists to
+        prevent, reappearing as soon as slices got small. Clamping to ``n_hubs // 4`` guarantees at
+        least ~4 flushes regardless of slice size, and leaves the 200-hub behaviour unchanged.
+        """
         from pathlib import Path
 
         self.out_dir = Path(out_dir)
-        self.every = max(1, int(every))
+        every = int(every)
+        if n_hubs:
+            every = min(every, max(1, int(n_hubs) // 4))
+        self.every = max(1, every)
         self.timing_meta = dict(timing_meta or {})
         self.n_flushes = 0
 
