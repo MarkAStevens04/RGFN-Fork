@@ -291,7 +291,12 @@
       "Bash(timeout 20 claude agents --help)",
       "Bash(sacct -j 71525,71526,71528,71562,71563,71564 --format=JobID,JobName%20,State,End -n)",
       "Bash(sacct -S 2026-07-24 --name=al_6td3_lsdflow,al_scent_seh_lsdflow --format=JobID,JobName%20,State,End -n)",
-      "Bash(sinfo -n balam001,balam002,balam003,balam004,balam005,balam006 -o \"%.9n %.11T %.15C %.30E\" -h)"
+      "Bash(sinfo -n balam001,balam002,balam003,balam004,balam005,balam006 -o \"%.9n %.11T %.15C %.30E\" -h)",
+      "Bash(sacct -j 72509,72510,72511,72522 -n -o JobID,JobName%18,State%14,Elapsed)",
+      "Bash(sinfo -o \"%.20P %.10a %.10l %.6D %.6t %.20N\")",
+      "Bash(awk '$3==\"COMPLETED\" && $1 ~ /_e[0-9]+$/')",
+      "Bash(awk ' *)",
+      "Bash(sacct -u markymoo -X -S 2026-08-06T00:00 -o Elapsed,State,AllocTRES%40 -n)"
     ]
   }
 }

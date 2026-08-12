@@ -34,9 +34,9 @@ same thing: 100 distinct, high-scoring molecule families.
 
 ## Answer
 
-**Run as a real pipeline, our method needs about three times fewer reactions to deliver the same
-100-family library — and the earlier result that had us losing was an artifact of who was made to do
-the retrosynthesis.** The competitor pipeline needs ~411 reactions to reach 100 families; ours needs
+**Run as a real pipeline, our method needs substantially fewer reactions to deliver the same
+100-family library — between 1.8x and 3.1x depending on how charitable we are to the competitor — and
+the earlier result that had us losing was an artifact of who was made to do the retrosynthesis.** The competitor pipeline needs ~411 reactions to reach 100 families; ours needs
 131. Read the other way, at our budget of 131 reactions the competitor delivers 32 families to our
 100. This holds even though the competitor's molecules score *higher* than ours on the binding
 surrogate and even though its syntheses solve at a 95.6% rate, so neither molecule quality nor
@@ -50,22 +50,36 @@ reaches 100 families in **235** reactions, so the **conservative margin is 1.79�
 real; 1.79× is the one that survives a reviewer arguing we judged the optimizer at a task it was not
 built for, and it is the one to lead with.
 
-Two secondary findings came out of the same runs. First, the optimizer has a measurable blind spot:
-because cheap syntheses come from molecules that share intermediates, and molecules that share
-intermediates look alike, its selections are **less diverse than the pool it draws from** exactly
-when the budget is tight — 27% distinct families versus the pool's own 41%. Second, our
+**The more accurate framing is a trade, not a win.** S3-GFN is roughly 4x more "mode-dense" per
+candidate than our enumerated pool — it needs ~230 candidates to contain 100 distinct molecules where
+ours needs ~1,010 — while our molecules are ~2x cheaper each to synthesize. We win on the axis the
+paper is about (lab reactions) and lose on the axis it is not (how many candidates you must score).
+Entry [059] measures the same trade from the other direction.
+
+Two secondary findings came out of the same runs.
+
+First — stated as the measurement, not the interpretation — the optimizer's objective contains no
+diversity term (verified in its source), and on this pool its selections came out
+**less diverse than the pool it draws from** exactly when the budget is tight — 27% distinct
+families versus the pool's own 41%. Entry [059] confirms the mechanism directly by showing the
+selection concentrating on a handful of intermediates. Second, our
 "pre-synthesize the top-K fragments up front" option has a **break-even library size**: below it the
 up-front cost is wasted and the option actively hurts, above it the sharing pays that cost back.
 
 ## Relevance to our Publication
 
-This is the experiment that turns the paper's claim from an internal comparison into an external one.
+This is the first external comparison the paper has — and it should be described that way rather
+than as a settled one. It is a single target, a single seed on our side at the time of writing, and a
+single training + planning run on the competitor's, so it opens the external comparison rather than
+closing it.
 Reviewers at NeurIPS will ask the obvious question — *you compared your method against your own
 ablations; what happens against what people actually use?* — and the honest answer we had before this
 entry was unfavourable. We can now state the comparison in the form the question demands: same
 target, same scoring function, same quality bar, same deliverable, competitor given the stronger
 planner and its own catalogue, optimizer allowed to make its own decisions, and our method still
-delivers the library for a third of the synthetic effort.
+delivers the library for a fraction of the synthetic effort. The honest ceiling on that sentence is
+that our side now has three seeds (123.3 +/- 2.1 reactions for 100 modes) while the competitor still
+has one, so the ratio carries error bars on one side only.
 
 It also lets us report the costs honestly rather than defensively. Our method spends far more calls
 to the scoring function than the competitor does, and the competitor spends 2.25 hours of
@@ -84,7 +98,10 @@ poke at.
   commercial catalogue, which is the realistic setting, but a reviewer can argue our blocks are
   purchasable as well. Re-running the planning step with the merged catalogue removes that objection
   and is expected to strengthen the competitor.
-- **Error bars.** Still the single largest gap in the benchmark: every number here is one seed.
+- **Error bars on the COMPETITOR's side.** Ours now has three seeds (entry [056]'s T4.5 work:
+  123.3 +/- 2.1 reactions for 100 modes on sEH). The competitor is still a single training run and a
+  single planning run, so the head-to-head ratio has error bars on one side only. Replicating it
+  means retraining S3-GFN — real compute, not a re-plan.
 - **Choose the pre-synthesis setting per target rather than globally.** The break-even finding means
   the current global setting is the wrong choice for at least one target at the 100-family scale.
 

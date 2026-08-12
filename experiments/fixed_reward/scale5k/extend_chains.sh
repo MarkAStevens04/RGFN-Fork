@@ -21,8 +21,8 @@ if [ -n "${SLURM_JOB_ID:-}" ]; then echo "FATAL: run from a LOGIN node."; exit 1
 # docking cells, LONGEST-pole first (so extra rounds deepen the slowest cells):
 #   RGFN 6TD3 (~17d) > RGFN ClpP (~7d) > baseline 6TD3 (~4-5d) > baseline ClpP (~3d)
 CELLS=(
-  "rgfn 6td3 43" "rgfn 6td3 44"
-  "rgfn clpp 43" "rgfn clpp 44"
+  "rgfn 6td3 43" "rgfn 6td3 44" "rgfn 6td3 42"
+  "rgfn clpp 43" "rgfn clpp 44" "rgfn clpp 42"
   "scent 6td3 43" "scent 6td3 44" "fraggfn 6td3 43" "fraggfn 6td3 44" "fraggfn 6td3 42" "rxnflow 6td3 43" "rxnflow 6td3 44"
   "scent clpp 43" "scent clpp 44" "fraggfn clpp 43" "fraggfn clpp 44" "fraggfn clpp 42" "rxnflow clpp 43" "rxnflow clpp 44"
 )

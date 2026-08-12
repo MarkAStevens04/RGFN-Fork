@@ -46,7 +46,11 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
 
-from validation.lsdflow.eval.network import build_network, canonical  # noqa: E402
+from validation.lsdflow.eval.network import (  # noqa: E402
+    build_network,
+    canonical,
+    expand_route_with_recipes,
+)
 from validation.lsdflow.eval.route_recovery import env_python  # noqa: E402
 from validation.lsdflow.metrics.diversity import (  # noqa: E402
     count_modes,
@@ -56,21 +60,77 @@ from validation.lsdflow.metrics.diversity import (  # noqa: E402
 SPARROW_WORKER = "validation/lsdflow/adapters/workers/sparrow_worker.py"
 
 
-def load_pool(path: Path, gate: float):
-    """[(smiles, reward)] above the gate, best-reward-first."""
-    rows = []
+def load_pool(path: Path, gate: float, top_n: int = 0):
+    """[(smiles, reward)] above the gate, DEDUPLICATED by SMILES, best-reward-first.
+
+    Dedup is load-bearing, not hygiene. A GFlowNet samples the same molecule many times, so a
+    ``records.csv`` row is a *sampling event*, not a candidate: the top-500 rows of the sEH run are
+    only 115 distinct molecules. Taking rows verbatim would (a) hand SPARROW the same target dozens
+    of times and (b) silently shrink "the 500 best candidates" to ~115, making the arm look far
+    weaker than it is. Keep each molecule once, at its best observed reward.
+
+    ``top_n`` caps AFTER dedup, so "top-N candidates" means N distinct molecules.
+    """
+    best = {}
     with open(path, newline="") as fh:
         for r in csv.DictReader(fh):
-            smi = r.get("smiles") or r.get("SMILES")
+            smi = r.get("smiles") or r.get("SMILES") or r.get("child_key")
             raw = r.get("score", r.get("reward"))
             try:
                 val = float(raw)
             except (TypeError, ValueError):
                 continue
-            if smi and val > gate:
-                rows.append((smi, val))
-    rows.sort(key=lambda t: -t[1])
-    return rows
+            if smi and val > gate and (smi not in best or val > best[smi]):
+                best[smi] = val
+    rows = sorted(best.items(), key=lambda t: -t[1])
+    return rows[:top_n] if top_n else rows
+
+
+def load_enum_pool(enum_path: Path, hub_routes_path: Path, gate: float, top_n: int = 0):
+    """BC-Enum-SB's pool: the ENUMERATED CHILDREN of a hub set, with their routes ASSEMBLED.
+
+    Why this cannot reuse the `native` path. An enumerated child is a molecule the generator never
+    sampled — it is one reaction past a hub — so it has no entry in ``routes.json`` (measured: 29 of
+    500 children present, versus 64 of 64 hub_keys). Its route has to be built the way
+    ``reconcile_t15._native_route_for_mode`` builds it for hub-batching:
+
+        child route = the hub's route steps  +  the child's own diversifying reaction
+
+    Getting this wrong silently produces a pool of ~6% of the children, which would make the arm look
+    absurdly weak for a reason that has nothing to do with the science.
+
+    Returns ``([(smiles, reward)], {smiles: shallow_route})`` — still SHALLOW, so the caller must
+    recipe-expand exactly as for native routes.
+    """
+    data = json.loads(Path(enum_path).read_text())
+    hub_routes = json.loads(Path(hub_routes_path).read_text())
+    best, routes, n_missing_hub = {}, {}, 0
+    for hub in data.get("hubs", []):
+        hk = hub.get("hub_key")
+        hr = hub_routes.get(hk) if hk else None
+        if hr is None:
+            n_missing_hub += 1
+            continue  # a hub with no route cannot price its children; count it, never silently drop
+        prefix = list(hr.get("steps") or [])
+        for c in hub.get("children", []):
+            smi, rew = c.get("smiles"), c.get("reward")
+            if not smi or rew is None or float(rew) <= gate:
+                continue
+            rew = float(rew)
+            if smi in best and rew <= best[smi]:
+                continue
+            steps = prefix + list(c.get("reaction") or [])
+            best[smi] = rew
+            routes[smi] = {"product_smiles": smi, "num_reactions": len(steps), "steps": steps}
+    if n_missing_hub:
+        print(
+            f"[enum] WARNING {n_missing_hub} hub(s) had no route in hub-routes — their children skipped"
+        )
+    rows = sorted(best.items(), key=lambda t: -t[1])
+    if top_n:
+        rows = rows[:top_n]
+    keep = {s for s, _ in rows}
+    return rows, {s: r for s, r in routes.items() if s in keep}
 
 
 def _run_sparrow(repo, sparrow_env, tree, targets, out, work, max_seconds, extra=()):
@@ -160,10 +220,44 @@ def _greedy_frontier(a, out_dir, pool, routed, entries):
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
-        "--routes", required=True, help="cached multiaiz_routes.json (plan-once artifact)"
+        "--routes",
+        required=True,
+        help="multiaiz_routes.json, or the run's routes.json when --route-source native",
     )
     ap.add_argument(
-        "--pool", required=True, help="pool_scores.csv (smiles,score) for the SAME pool"
+        "--route-source",
+        default="multiaiz",
+        choices=["multiaiz", "native", "enum"],
+        help="multiaiz = the competitor's planned routes (MANY candidate recipes per molecule). "
+        "native = the reaction-GFN's own by-construction routes (exactly ONE per molecule, and "
+        "SHALLOW, so they must be recipe-expanded — --snapshot becomes required).",
+    )
+    ap.add_argument(
+        "--snapshot",
+        default="",
+        help="fragments_<N>.json — REQUIRED with --route-source native: supplies the "
+        "`smiles_to_route` recipes that turn attached promoted fragments into BUILT ones. Without "
+        "it SPARROW buys what count-once builds (the Logs/049 DRD2 62.7% failure).",
+    )
+    ap.add_argument(
+        "--hub-routes",
+        default="",
+        help="the sample's routes.json — REQUIRED with --route-source enum: supplies each hub's "
+        "route prefix. Enumerated children are one reaction past a hub and are absent from "
+        "routes.json themselves, so their routes must be assembled rather than looked up.",
+    )
+    ap.add_argument(
+        "--pool",
+        required=False,
+        default="",
+        help="pool CSV (smiles|child_key + score|reward) for the SAME pool",
+    )
+    ap.add_argument(
+        "--top-n",
+        type=int,
+        default=0,
+        help="cap the pool at the N highest-reward DISTINCT molecules (0 = all above gate). This is "
+        "the 'as large as SPARROW can solve' knob.",
     )
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--tag", default="sparrow_select")
@@ -196,22 +290,78 @@ def main() -> None:
     out_dir = Path(a.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    routes_by_canon = json.loads(Path(a.routes).read_text())
-    pool = load_pool(Path(a.pool), a.gate)
+    if a.route_source in ("native", "enum") and not a.snapshot:
+        raise SystemExit(
+            f"[select] --route-source {a.route_source} requires --snapshot (recipe expansion)"
+        )
+    if a.route_source == "enum" and not a.hub_routes:
+        raise SystemExit(
+            "[select] --route-source enum requires --hub-routes (the sample routes.json)"
+        )
+    if a.route_source != "enum" and not a.pool:
+        raise SystemExit(
+            "[select] --pool is required unless --route-source enum (which derives it)"
+        )
+    if a.route_source == "enum":
+        pool, raw = load_enum_pool(Path(a.routes), Path(a.hub_routes), a.gate, a.top_n)
+        print(
+            f"[enum] {len(pool)} distinct children above gate>{a.gate}, routes assembled "
+            "(hub prefix + the child's own reaction)"
+        )
+    else:
+        raw = json.loads(Path(a.routes).read_text())
+        pool = load_pool(Path(a.pool), a.gate, a.top_n)
     if not pool:
         raise SystemExit(f"[select] no pool molecules above gate {a.gate} in {a.pool}")
+
+    # TWO ROUTE SOURCES, different shapes and different correctness requirements.
+    #
+    #   multiaiz : {canonical_smiles: [route, ...]}  — MANY candidate recipes per molecule (~16 for
+    #              the N=500 pool). Already bottom out at purchasable stock, so they price directly.
+    #
+    #   native   : {smiles: {seed, num_reactions, steps}} — exactly ONE recipe per molecule, and
+    #              *shallow*: a promoted dynamic-library fragment is ATTACHED in one step, never
+    #              synthesized. Feeding those to SPARROW unexpanded is the bug that made the DRD2
+    #              reconcile read 62.7% (Logs/049): SPARROW would BUY the promoted fragments while
+    #              count-once BUILDS them, so the two price different assumptions. Every native
+    #              route must therefore be recipe-expanded first (`expand_route_with_recipes`),
+    #              which needs the run's fragment snapshot — hence --snapshot is required here.
+    is_native = a.route_source in ("native", "enum")
+    recipes, promoted = {}, set()
+    if is_native:
+        if not a.snapshot:
+            raise SystemExit(
+                "[select] --route-source native requires --snapshot (recipe expansion)"
+            )
+        snap = json.loads(Path(a.snapshot).read_text())
+        recipes = snap.get("smiles_to_route") or {}
+        promoted = set(snap.get("chosen_smiles", []))
+        cov = (sum(1 for s in promoted if s in recipes) / len(promoted)) if promoted else 1.0
+        if promoted and cov < 0.95:
+            raise SystemExit(
+                f"[select] ABORT: snapshot has recipes for only {cov:.1%} of its {len(promoted)} "
+                "promoted fragments. Native routes cannot be expanded, so SPARROW would treat them "
+                "as bought while count-once builds them — the pricing would be meaningless."
+            )
+        print(
+            f"[select] {a.route_source} routes | recipe coverage {cov:.1%} of {len(promoted)} promoted frags"
+        )
 
     # entries: one per (target, candidate route). Duplicate targets are intentional — build_network
     # unions their reactions and the MILP picks the max-sharing combination.
     entries, routed = [], set()
     for smi, rew in pool:
-        c = canonical(smi, a.strip_stereo)
-        rts = routes_by_canon.get(c) if c else None
+        if is_native:
+            rt = raw.get(smi) or (raw.get(canonical(smi, a.strip_stereo)) if smi else None)
+            rts = [expand_route_with_recipes(rt, recipes, promoted)] if rt else None
+        else:
+            c = canonical(smi, a.strip_stereo)
+            rts = raw.get(c) if c else None
         if not rts:
             continue
         routed.add(smi)
-        for rt in rts:
-            entries.append({"smiles": smi, "reward": rew, "route": rt})
+        for r_ in rts:
+            entries.append({"smiles": smi, "reward": rew, "route": r_})
     if not entries:
         raise SystemExit("[select] no pool molecule has a route in the artifact — wrong pairing?")
 

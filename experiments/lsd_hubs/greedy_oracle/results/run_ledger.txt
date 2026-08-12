@@ -1,0 +1,13 @@
+2026-08-12T14:24:13 scent_seh rc=0 98s policy=free_frag k=20
+2026-08-12T14:24:41 rgfn_seh rc=0 12s policy=reward k=0
+2026-08-12T14:24:52 rxnflow_seh rc=0 10s policy=reward k=0
+2026-08-12T14:25:59 rgfn_drd2 rc=0 67s policy=reward k=0
+2026-08-12T14:27:23 scent_drd2 rc=0 84s policy=free_frag k=20
+2026-08-12T14:28:12 rxnflow_drd2 rc=0 49s policy=reward k=0
+2026-08-12T14:29:38 fraggfn_drd2 rc=0 86s policy=reward k=0
+2026-08-12T14:32:25 scent_clpp rc=0 167s policy=free_frag k=20
+2026-08-12T14:33:21 rxnflow_clpp rc=0 56s policy=reward k=0
+2026-08-12T14:35:15 fraggfn_clpp rc=0 114s policy=reward k=0
+2026-08-12T14:37:49 scent_6td3 rc=0 154s policy=free_frag k=20
+2026-08-12T14:39:20 rxnflow_6td3 rc=0 91s policy=reward k=0
+2026-08-12T14:41:55 fraggfn_6td3 rc=0 154s policy=reward k=0

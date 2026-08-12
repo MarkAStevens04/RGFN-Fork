@@ -1,0 +1,91 @@
+{
+  "tag": "scent_clpp_bar-9.0",
+  "reward_threshold": -9.0,
+  "similarity": 0.5,
+  "higher_is_better": false,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "child_policy": "free_frag",
+  "prebuild_k": 20,
+  "rank_by": "build_score",
+  "n_hubs": 200,
+  "allow_revisit": true,
+  "arms": {
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "total_modes": 300,
+      "total_reactions": 1026,
+      "reactions_per_mode": 3.42,
+      "total_reward_gen_calls": 0,
+      "reward_gen_calls_per_mode": 0.0,
+      "distinct_promoted_fragments": 202,
+      "distinct_hubs_used": 266,
+      "n_scaffolds": 289,
+      "best_reward": -14.4,
+      "median_reward": -11.5,
+      "case1_modes_at_100rxn": 27,
+      "case2_reactions_at_300modes": 1026,
+      "stop_reason": "modes",
+      "selection_wall_s": 2.153
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "total_modes": 300,
+      "total_reactions": 400,
+      "reactions_per_mode": 1.333,
+      "total_reward_gen_calls": 65952,
+      "reward_gen_calls_per_mode": 219.84,
+      "distinct_promoted_fragments": 44,
+      "distinct_hubs_used": 40,
+      "n_scaffolds": 275,
+      "best_reward": -14.2,
+      "median_reward": -10.0,
+      "case1_modes_at_100rxn": 68,
+      "case2_reactions_at_300modes": 400,
+      "stop_reason": "modes",
+      "selection_wall_s": 5.056
+    },
+    "greedy_oracle": {
+      "strategy": "greedy_oracle",
+      "total_modes": 300,
+      "total_reactions": 335,
+      "reactions_per_mode": 1.117,
+      "total_reward_gen_calls": 340761,
+      "reward_gen_calls_per_mode": 1135.87,
+      "distinct_promoted_fragments": 23,
+      "distinct_hubs_used": 25,
+      "n_scaffolds": 237,
+      "best_reward": -13.0,
+      "median_reward": -9.5,
+      "case1_modes_at_100rxn": 79,
+      "case2_reactions_at_300modes": 335,
+      "stop_reason": "modes",
+      "selection_wall_s": 104.139,
+      "n_probes": 5200,
+      "n_hubs_scored": 25,
+      "walk_reward_gen_calls": 72958,
+      "pool_reward_gen_calls": 340761
+    }
+  },
+  "flow_vs_greedy": {
+    "reactions_ratio_flow_over_greedy": 1.1934,
+    "flow_excess_pct": 19.34,
+    "modes_at_rxn_budget": {
+      "flow": 68,
+      "greedy": 79
+    },
+    "reactions_at_mode_budget": {
+      "flow": 400,
+      "greedy": 335
+    },
+    "oracle_calls_flow_walk": 65952,
+    "oracle_calls_greedy_pool": 340761,
+    "oracle_calls_greedy_walk": 72958,
+    "oracle_call_overhead_x": 5.167,
+    "selection_wall_s": {
+      "flow": 5.056,
+      "greedy": 104.139
+    }
+  },
+  "regression": null
+}

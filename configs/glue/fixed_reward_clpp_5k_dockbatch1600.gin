@@ -1,0 +1,21 @@
+# RGFN / ClpP, identical to fixed_reward_clpp_5k.gin except the docking batch.
+#
+# WHY THIS FILE EXISTS. RGFN is the one generator that reaches the docking oracle IN-PROCESS through
+# gin rather than through the persistent docking server, so submit_docking_cell.sh's DOCK_BATCH
+# override (which is passed as --oracle-arg to the server) never reaches it -- RGFN silently falls
+# back to DockingClpPOracle's constructor default of 200. Every other docking cell in the campaign
+# runs at 1600.
+#
+# WHAT 1600 BUYS. Measured on 1,600 real enumerated children on an H100 (Logs/057): ClpP 0.430 ->
+# 0.337 s/mol, a 1.28x saving, from amortising the ~21 s per-QuickVina2-GPU-process setup over one
+# process per hub instead of ~7. An LSD-Flow hub has ~1,400 children, so a whole hub fits in one
+# process. Memory is flat in batch size (~24 GB at every batch) because ligands dock sequentially
+# inside the process, so this costs no VRAM.
+#
+# WHY IT IS SAFE. docking_batch_size is a pure throughput knob, not a scoring parameter: Logs/036
+# established batch-invariant scores at 25-200, and Logs/057 re-confirmed it at 200/400/800/1600 with
+# an identical ok count (1536/1600) and identical VRAM at every batch, for BOTH oracles. Nothing about
+# the reward, its beta/norm/clip, or the trained checkpoint's comparability changes.
+include 'configs/glue/fixed_reward_clpp_5k.gin'
+
+DockingClpPOracle.docking_batch_size = 1600

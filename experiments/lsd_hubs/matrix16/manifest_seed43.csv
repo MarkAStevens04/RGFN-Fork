@@ -1,6 +1,6 @@
 generator,target,seed,config,checkpoint,guidance_sidecar
 rgfn,6td3,43,configs/glue/fixed_reward_6td3_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rgfn_6td3_5k/seed43/train/checkpoints/last_gfn.pt,
-rgfn,clpp,43,configs/glue/fixed_reward_clpp_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rgfn_clpp_5k/seed43/train/checkpoints/last_gfn.pt,
+rgfn,clpp,43,configs/glue/fixed_reward_clpp_5k_dockbatch1600.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rgfn_clpp_5k/seed43/train/checkpoints/last_gfn.pt,
 scent,6td3,43,validation/configs/scent_6td3_fixed_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_6td3_5k/seed43/train/checkpoints/last_gfn.pt,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_6td3_5k/seed43/train/checkpoints/guidance_models.pt
 scent,clpp,43,validation/configs/scent_clpp_fixed_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_clpp_5k/seed43/train/checkpoints/last_gfn.pt,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_clpp_5k/seed43/train/checkpoints/guidance_models.pt
 fraggfn,6td3,43,validation/configs/fraggfn_6td3_docking_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/fraggfn_6td3_5k/seed43/checkpoints/last_gfn.pt,

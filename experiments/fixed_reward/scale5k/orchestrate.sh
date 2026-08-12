@@ -63,6 +63,10 @@ launch_cell(){ # tag script args...
 declare -a PAIRS=()
 for seed in "${SEEDS[@]}"; do for gen in "${GENS[@]}"; do PAIRS+=("$seed:$gen"); done; done
 PAIRS+=("42:fraggfn")
+# seed-42 RGFN 6td3+clpp stalled 2026-07-25 (their fr5k chains were cancelled to free weekend slots +
+# nothing requeued them). Manage them here so they can't fall through again; the done seed-42 RGFN
+# cells (seh, drd2) are auto-skipped via the candidates.csv check.
+PAIRS+=("42:rgfn")
 
 declare -a DOCK=() SURR=()
 DONE=0; ACT=0

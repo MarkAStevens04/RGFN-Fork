@@ -1,0 +1,116 @@
+{
+  "tag": "rgfn_seh",
+  "reward_threshold": 7.0,
+  "similarity": 0.5,
+  "higher_is_better": true,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "rank_by": "build_score",
+  "n_hubs": 200,
+  "allow_revisit": true,
+  "arms": {
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "total_modes": 9,
+      "total_reactions": 36,
+      "reactions_per_mode": 4.0,
+      "total_reward_gen_calls": 0,
+      "reward_gen_calls_per_mode": 0.0,
+      "distinct_promoted_fragments": 0,
+      "distinct_hubs_used": 9,
+      "n_scaffolds": 9,
+      "best_reward": 7.359,
+      "median_reward": 7.209,
+      "case1_modes_at_100rxn": 9,
+      "case2_reactions_at_300modes": null,
+      "stop_reason": "pool_exhausted",
+      "selection_wall_s": 0.022
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "total_modes": 135,
+      "total_reactions": 404,
+      "reactions_per_mode": 2.993,
+      "total_reward_gen_calls": 194016,
+      "reward_gen_calls_per_mode": 1437.16,
+      "distinct_promoted_fragments": 0,
+      "distinct_hubs_used": 92,
+      "n_scaffolds": 135,
+      "best_reward": 7.946,
+      "median_reward": 7.264,
+      "case1_modes_at_100rxn": 35,
+      "case2_reactions_at_300modes": null,
+      "stop_reason": "pool_exhausted",
+      "selection_wall_s": 0.639
+    },
+    "greedy_oracle": {
+      "strategy": "greedy_oracle",
+      "total_modes": 129,
+      "total_reactions": 379,
+      "reactions_per_mode": 2.938,
+      "total_reward_gen_calls": 194490,
+      "reward_gen_calls_per_mode": 1507.67,
+      "distinct_promoted_fragments": 0,
+      "distinct_hubs_used": 85,
+      "n_scaffolds": 128,
+      "best_reward": 7.946,
+      "median_reward": 7.289,
+      "case1_modes_at_100rxn": 52,
+      "case2_reactions_at_300modes": null,
+      "stop_reason": "pool_exhausted",
+      "selection_wall_s": 0.405,
+      "n_probes": 17200,
+      "n_hubs_scored": 85,
+      "walk_reward_gen_calls": 75133,
+      "pool_reward_gen_calls": 194490
+    },
+    "greedy_oracle_static": {
+      "strategy": "greedy_oracle_static",
+      "total_modes": 135,
+      "total_reactions": 404,
+      "reactions_per_mode": 2.993,
+      "total_reward_gen_calls": 194016,
+      "reward_gen_calls_per_mode": 1437.16,
+      "distinct_promoted_fragments": 0,
+      "distinct_hubs_used": 92,
+      "n_scaffolds": 135,
+      "best_reward": 7.946,
+      "median_reward": 7.264,
+      "case1_modes_at_100rxn": 35,
+      "case2_reactions_at_300modes": null,
+      "stop_reason": "pool_exhausted",
+      "selection_wall_s": 0.088,
+      "n_probes": 200,
+      "n_hubs_scored": 200,
+      "walk_reward_gen_calls": 194490,
+      "pool_reward_gen_calls": 194490
+    }
+  },
+  "flow_vs_greedy": {
+    "reactions_ratio_flow_over_greedy": 1.0187,
+    "flow_excess_pct": 1.87,
+    "modes_at_rxn_budget": {
+      "flow": 35,
+      "greedy": 52
+    },
+    "reactions_at_mode_budget": {
+      "flow": null,
+      "greedy": null
+    },
+    "oracle_calls_flow_walk": 194016,
+    "oracle_calls_greedy_pool": 194490,
+    "oracle_calls_greedy_walk": 75133,
+    "oracle_call_overhead_x": 1.002,
+    "selection_wall_s": {
+      "flow": 0.639,
+      "greedy": 0.405
+    }
+  },
+  "regression": {
+    "identical": true,
+    "field_diffs": {},
+    "sequence_identical": true
+  }
+}
