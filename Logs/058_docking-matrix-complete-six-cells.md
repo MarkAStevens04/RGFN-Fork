@@ -197,9 +197,16 @@ grows monotonically as the bar loosens, e.g.:
 | `fraggfn_6td3` | −4.0 | 2.78× | −2.0 | 3.26× | −1.0 | 3.32× |
 | `rxnflow_6td3` | −4.0 | 2.06× | −2.0 | 2.50× | −1.0 | 2.54× |
 
-Only the two strictest **ClpP** gates are pool-limited (`scent_clpp` 280/300 modes at −11.0;
-`rxnflow_clpp` 30/300 at −10.5), which is what makes **−8.0** the defensible ClpP bar rather than a
-convenient one. `fraggfn_clpp` reaches 300 modes at every gate from −11.0 to −8.0, i.e. the ClpP
+Hub-batching leads on the ratio at all 42 points, but only **35 of 42 are strictly like-for-like**
+(both arms reaching the full 300-mode budget): 7/7 for every 6TD3 cell and for `fraggfn_clpp`, 5/7 for
+`scent_clpp`, and just **2/7 for `rxnflow_clpp`**. All 7 exceptions are ClpP at bars stricter than the
+calibrated one, and they split two ways: at 4 points **both** arms fall short (`rxnflow_clpp` −11.0/
+−10.5/−10.0 down to 8/147 hub modes, `scent_clpp` 280 at −11.0), so the ratio there is uninformative;
+at the other 3 only **best-candidate** falls short (`rxnflow_clpp` 57 and 206 modes at −9.5/−9.0,
+`scent_clpp` 275 at −10.5) while hub-batching still reaches 300 — which favours hub-batching rather
+than flattering it, since the baseline cannot assemble the library at all there. Every cell's
+**bar-point is like-for-like**, which is what the headline table quotes, and this is what makes
+**−8.0** the defensible ClpP bar rather than a convenient one. `fraggfn_clpp` reaches 300 modes at every gate from −11.0 to −8.0, i.e. the ClpP
 threshold is effectively **non-binding** for that cell — consistent with its 91.5% smoke-scale
 qualification rate. Each cell's bar-point reproduces its campaign number exactly (e.g. `scent_clpp`
 1.290 r/m → 2.651×), the bit-identity `gate_curve.py` exists to provide.
