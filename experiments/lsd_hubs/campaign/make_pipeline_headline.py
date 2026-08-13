@@ -85,6 +85,21 @@ PANEL_C_BUDGET = 300  # the deepest budget every arm in panel C reaches
 # original path so the figure still builds on a machine where the staged copy is missing (campaign
 # CSVs are git-ignored, so the staged copy is a convenience, never the only record).
 SCRATCH_BC = Path("/scratch/markymoo/rgfn_runs/lsdflow_sparrow/bc_sb")
+SCRATCH_RES = Path("/scratch/markymoo/rgfn_runs/lsdflow_sparrow/results")
+
+# The competitor pipeline, one entry per REPLICATE (retrain -> MultiAiZ -> select). Seed 42 is the
+# original Logs/056 run; 43/44 are produced by submit_s3gfn_replicate_routes.sh. Missing seeds are
+# skipped, so this file needs no edit when they land -- the band appears on its own.
+THEIRS_SELECT_SEEDS = {
+    42: "s3gfn_seh_select_N500",
+    43: "s3gfn_seh_seed43_select_N500",
+    44: "s3gfn_seh_seed44_select_N500",
+}
+THEIRS_GREEDY_SEEDS = {
+    42: "s3gfn_seh_greedy_N500",
+    43: "s3gfn_seh_seed43_greedy_N500",
+    44: "s3gfn_seh_seed44_greedy_N500",
+}
 BC_SB_SEEDS = {
     42: ("bc_sb_seh/bc_sb_seed42_N21000.csv", "bc_sb_seh_seed42_N21000/select_frontier.csv"),
     43: ("bc_sb_seh/bc_sb_seed43_N21000.csv", "bc_sb_seh_seed43_N21000/select_frontier.csv"),
@@ -206,6 +221,14 @@ def load_ours_seed_band():
     return vals
 
 
+def _n_phrase(band):
+    """"n=1" vs "n=3 (a ± b)" -- so the caption never claims replicates that are not on disk."""
+    vals = sorted(band.values())
+    if len(vals) < 2:
+        return "n=1"
+    return f"n={len(vals)} ({st.mean(vals):.0f} ± {st.stdev(vals):.0f})"
+
+
 def _modes_at(pts, budget):
     """Modes delivered by the time `budget` reactions are spent (step function, no interpolation).
 
@@ -217,39 +240,90 @@ def _modes_at(pts, budget):
     return max(reached) if reached else 0
 
 
+def _competitor_seed_curves(subdirs, filename):
+    """{seed: [(reactions, modes)]} for every seed whose frontier CSV exists.
+
+    THE COMPETITOR'S MISSING ERROR BAR. Every other arm in the benchmark is replicated; theirs was
+    one training run plus one MultiAiZ planning run (F1's open item). The replicates each repeat all
+    three stages -- retrain, plan, select -- because MultiAiZ is set-based and its routes depend on
+    the pool, so a "seed" here is a whole pipeline re-run, not a re-solve.
+
+    Absent seeds are simply skipped, so this reduces to the original single-seed behaviour until the
+    replicate jobs land, and picks them up with no further edit once they do.
+    """
+    curves = {}
+    for seed, sub in subdirs.items():
+        for root in (RES, SCRATCH_RES):
+            p = root / sub / filename
+            if p.exists():
+                pts = []
+                with open(p) as fh:
+                    for r in csv.DictReader(fh):
+                        if r.get("milp_status") not in (None, "", "Optimal"):
+                            continue  # a truncated solve is not a frontier point
+                        pts.append((int(float(r["used_rxns"])), int(float(r["n_modes"]))))
+                curves[seed] = sorted(pts)
+                break
+    return curves
+
+
+def _mean_curve(curves, over="x"):
+    """Average across seeds along whichever axis was actually HELD FIXED by the experiment.
+
+    This is not a cosmetic choice. The two competitor arms are swept along different axes:
+
+      * SPARROW-Batching sweeps the reaction BUDGET, and `used_rxns` equals that budget, so
+        reactions are the fixed grid and the modes delivered vary -> average modes at shared x.
+      * the diversity-aware greedy sweeps MODE POINTS and asks SPARROW what they cost, so the mode
+        count is the fixed grid and reactions vary -> average reactions at shared y.
+
+    Averaging the greedy arm on x would intersect on `used_rxns`, which no two seeds share, silently
+    yielding an EMPTY curve and a missing readout. Both ladders are pinned per seed by
+    submit_s3gfn_replicate_routes.sh, so intersecting on the right axis keeps every plotted point a
+    true n-seed mean instead of mixing seed counts along one curve.
+    """
+    if not curves:
+        return []
+    if over == "x":
+        xs = sorted(set.intersection(*(set(x for x, _ in c) for c in curves.values())))
+        return [(x, st.mean(next(m for xx, m in c if xx == x) for c in curves.values())) for x in xs]
+    ys = sorted(set.intersection(*(set(y for _, y in c) for c in curves.values())))
+    return sorted(
+        (st.mean(next(x for x, yy in c if yy == y) for c in curves.values()), y) for y in ys
+    )
+
+
 def load():
     ours_native = _budget_curve(RES / "scent_seh_freefrag/budget_efficiency.csv", "hub_batching")
     ours_scratch = _budget_curve(
         RES / "scent_seh_sparrow_headline/budget_efficiency.csv", "hub_batching"
     )
     # baseline, as actually run: MultiAiZ routes + SPARROW doing its own selection
-    theirs_real = []
+    real_seeds = _competitor_seed_curves(THEIRS_SELECT_SEEDS, "select_frontier.csv")
+    theirs_real = _mean_curve(real_seeds)
+    # Panel B's mode-rate reads off seed 42, the one seed for which the pool's own 41% rate was
+    # measured; averaging a rate against a single-seed reference line would mix populations.
     rates = []
     with open(RES / "s3gfn_seh_select_N500/select_frontier.csv") as fh:
         for r in csv.DictReader(fh):
-            theirs_real.append((int(float(r["used_rxns"])), int(float(r["n_modes"]))))
             rates.append((int(float(r["used_rxns"])), float(r["mode_rate"])))
-    theirs_real.sort()
     rates.sort()
     # baseline at its STRONGEST: MultiAiZ routes + a diversity-aware greedy selection (SPARROW prices)
-    theirs_greedy = []
-    gp = RES / "s3gfn_seh_greedy_N500/greedy_frontier.csv"
-    if gp.exists():
-        with open(gp) as fh:
-            for r in csv.DictReader(fh):
-                theirs_greedy.append((int(float(r["used_rxns"])), int(float(r["n_modes"]))))
-        theirs_greedy.sort()
+    greedy_seeds = _competitor_seed_curves(THEIRS_GREEDY_SEEDS, "greedy_frontier.csv")
+    theirs_greedy = _mean_curve(greedy_seeds, over="y")  # mode points are the fixed grid
     # baseline, from-scratch re-derivation (entry 048's T3.2 arm); curve rows are [modes, reactions]
     summ = json.load(open(RES / "s3gfn_seh/s3gfn_frontier_summary.json"))
     theirs_scratch = sorted(
         (int(rx), int(md)) for md, rx in summ["curves"]["0.50"] if rx is not None and md is not None
     )
-    return ours_native, ours_scratch, theirs_real, theirs_scratch, theirs_greedy, rates
+    return (ours_native, ours_scratch, theirs_real, theirs_scratch, theirs_greedy, rates,
+            real_seeds, greedy_seeds)  # fmt: skip
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
-    ours_native, ours_scratch, theirs_real, theirs_scratch, theirs_greedy, rates = load()
+    (ours_native, ours_scratch, theirs_real, theirs_scratch, theirs_greedy, rates,
+     real_seeds, greedy_seeds) = load()  # fmt: skip
     bc_sb, bc_enum, n_bc_seeds = load_panel_c()
     ours_band = load_ours_seed_band()
 
@@ -267,7 +341,7 @@ def main():
     )
     print(f"reactions to reach {TARGET_MODES} modes:")
     for k, v in reads.items():
-        print(f"   {k:<15} {v:.0f}")
+        print(f"   {k:<15} " + ("(absent)" if v is None else f"{v:.0f}"))
     headline = reads["theirs_real"] / reads["ours_native"]
     # conservative = vs the baseline's BEST result over every configuration we have tested
     best_baseline = min(v for k, v in reads.items() if k.startswith("theirs") and v)
@@ -282,6 +356,24 @@ def main():
         f"  [quoted readout stays the seed-42 value {reads['ours_native']:.0f}, the worst of the three;"
         f" using the mean would read {reads['theirs_real'] / band_mean:.2f}x]"
     )
+
+    # The competitor's own seed spread, once its replicates exist. Reported per seed rather than only
+    # as a mean, because with n=3 the spread is the whole point of running them.
+    def _seed_readouts(curves):
+        vals = {s: _lerp_x_at_y(c, TARGET_MODES) for s, c in curves.items()}
+        return {s: v for s, v in vals.items() if v is not None}
+
+    theirs_real_band = _seed_readouts(real_seeds)
+    theirs_greedy_band = _seed_readouts(greedy_seeds)
+    for name, b in (("MultiAiZ+SB", theirs_real_band), ("MultiAiZ+greedy", theirs_greedy_band)):
+        vals = sorted(b.values())
+        if len(vals) > 1:
+            print(
+                f"   competitor {name}, {len(vals)} seeds: "
+                f"{[round(v) for v in vals]} -> {st.mean(vals):.1f} +/- {st.stdev(vals):.1f}"
+            )
+        else:
+            print(f"   competitor {name}: n=1 (replicates not yet on disk)")
 
     ours_at_c = _modes_at(ours_native, PANEL_C_BUDGET)
     sb_at_c = next(r for r in bc_sb if r["budget"] == PANEL_C_BUDGET)
@@ -365,6 +457,23 @@ def main():
         (band[0], TARGET_MODES), textcoords="offset points", xytext=(-9, -11),
         ha="right", fontsize=8.0, color=INK2, zorder=6,
     )  # fmt: skip
+    # The competitor gets the SAME treatment as soon as its replicates exist -- an error bar drawn
+    # from its own seeds. Until then nothing is drawn and the caption says n=1, rather than an
+    # unmarked point implying a precision it does not have.
+    for cb, dy in ((theirs_real_band, -27), (theirs_greedy_band, -27)):
+        vals = sorted(cb.values())
+        if len(vals) < 2:
+            continue
+        m = st.mean(vals)
+        axA.errorbar(
+            [m], [TARGET_MODES], xerr=[[m - vals[0]], [vals[-1] - m]], fmt="none", ecolor=THEIRS,
+            elinewidth=1.5, capsize=3.5, capthick=1.5, alpha=0.9, zorder=4,
+        )  # fmt: skip
+        axA.annotate(
+            f"{len(vals)} seeds: {m:.0f} ± {st.stdev(vals):.0f}", (m, TARGET_MODES),
+            textcoords="offset points", xytext=(0, dy), ha="center", fontsize=8.0, color=INK2,
+            zorder=6,
+        )  # fmt: skip
 
     axA.annotate(
         "", xy=(reads["ours_native"], TARGET_MODES + 26),
@@ -503,7 +612,8 @@ def main():
         f"Both arms priced by SPARROW; our readout is the independent SPARROW audit of the same "
         f"library (our own count-once estimate reads {ours_native_countonce:.0f}, agreeing to 4.8%). "
         f"Our side also has {len(band)} seeds ({band_mean:.0f} ± {band_sd:.0f}, error bar) while the "
-        f"competitor is n=1; the quoted {reads['ours_native']:.0f} is the WORST of our three seeds, "
+        f"competitor is {_n_phrase(theirs_real_band)}; the quoted {reads['ours_native']:.0f} is the "
+        f"WORST of our three seeds, "
         f"so the ratio drawn is the conservative one. Conservative reading — our "
         f"{reads['ours_native']:.0f} vs the baseline's STRONGEST tested configuration "
         f"({best_baseline:.0f}: MultiAiZ + a diversity-aware selection) = {conservative:.2f}×.",
