@@ -473,8 +473,15 @@ noted.
 2. **Finish `rgfn_clpp` seed 43** (in flight) → ClpP becomes the first target with all four generators.
    Caption the seed mismatch.
 3. **Regenerate F2** with the cap-6 FragGFN model and the docking cells folded in.
-4. **`fromer2024sparrow` is missing from `Logs/references/references.bib`** despite being cited as a
-   key in Logs/042/049/056/059. Add it (and check the MultiAiZ / S3-GFN entries render).
+4. ~~`fromer2024sparrow` is missing from `references.bib`.~~ **Done 2026-08-12** — registered as
+   `[fromer2024sparrow]` (Fromer & Coley, *Nat Comput Sci* **4**, 440–450, 2024), PDF at
+   `Logs/references/pdfs/fromer2024sparrow.pdf`. **Use the citable line from that paper:** SPARROW's
+   objective has no diversity term *by the authors' own statement* — "SPARROW currently does not
+   consider marginal information gain related to molecular diversity and matched molecular pairs."
+   That is a much stronger footing for §5.3 than our source-code reading of
+   `LinearSelector.set_objective`: the concentration behaviour of BC-SB / BC-Enum-SB is a documented
+   property of the tool, not an artifact we might have induced. Cite both (paper for the design,
+   code for the exact sign convention we ran).
 5. **Draw F3 and F6** — the two most load-bearing results with no figure.
 6. **Decide and document the headline reward bar** (5.0 vs 7.0) with the §5.2d reason stated.
 

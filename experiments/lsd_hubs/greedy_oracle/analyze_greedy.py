@@ -149,6 +149,7 @@ def main() -> None:
                 "cell": cell,
                 "docking": cell.split("_", 1)[1] in DOCKING,
                 "bar": s["reward_threshold"],
+                "higher_is_better": s["higher_is_better"],
                 "bc_rxn_per_mode": bc_rm,
                 "flow_rxn_per_mode": hb_rm,
                 "greedy_rxn_per_mode": gr_rm,

@@ -138,6 +138,49 @@
   note    = {In-silico molecular-glue design/evaluation. Reference for glue design and the choice of the 6TD3 system (see Logs/002_6td3-cr8-validation-and-discrimination.md).}
 }
 
+@article{fromer2024sparrow,
+  title   = {An algorithmic framework for synthetic cost-aware decision making in molecular design},
+  author  = {Fromer, Jenna C. and Coley, Connor W.},
+  journal = {Nature Computational Science},
+  year    = {2024},
+  volume  = {4},
+  pages   = {440--450},
+  doi     = {10.1038/s43588-024-00639-y},
+  eprint  = {2311.02187},
+  archivePrefix = {arXiv},
+  url     = {https://www.nature.com/articles/s43588-024-00639-y},
+  note    = {SPARROW ("Synthesis Planning And Rewards-based Route Optimization Workflow",
+             coleygroup/sparrow): a mixed-integer linear program over a MERGED retrosynthetic graph
+             that jointly chooses WHICH candidate molecules to make and WHICH routes to make them by,
+             scalarizing three terms with weights lambda = [l1, l2, l3] -- cumulative reward of the
+             selected candidates (maximized), starting-material cost, and a per-reaction penalty
+             inversely proportional to success probability (both minimized). Because compounds are
+             deduplicated by canonical SMILES, shared intermediates collapse to one node and are
+             amortized automatically. We use it in TWO distinct roles and conflating them misreads
+             every result (docs/RESEARCH_CONTEXT.md, "How library cost is measured"):
+             (1) SPARROW-VERIFIER (SV) -- independent auditor of a library we already chose
+             (constrain_all_targets=True, reward weight 0); the source of "count-once is within
+             0.0-3.1% of provably optimal" (Logs/042 gate, Logs/049). (2) SPARROW-BATCHING (SB) --
+             a genuine COMPETITOR that picks the batch itself under a hard --max-rxns budget
+             (constrain_all_targets=False, reward-bearing objective); the competitor's selector in
+             the headline (Logs/056) and in the BC-SB / BC-Enum-SB arms (Logs/059). Objective sign
+             convention verified against LinearSelector.set_objective: it MINIMIZES
+             -w0*sum(reward*selected) + w1*sum(SM cost) + w2*sum(reaction penalty), so
+             weights=[1,0,0,0,0] plus a hard max_rxns maximizes selected reward under a reaction
+             budget (a hard budget was chosen over a reaction penalty deliberately -- a penalty
+             requires inventing an exchange rate between reward units and reactions). CRITICAL for
+             our argument: the objective has NO diversity term, and the paper says so itself --
+             "SPARROW currently does not consider marginal information gain related to molecular
+             diversity and matched molecular pairs" -- which is why the distinctness of an SB
+             selection is always MEASURED, never assumed, and why SB concentrates its picks on a
+             handful of intermediates (Logs/059: 78% from one at the tightest budget). Practical
+             limit: the MILP is superlinear in pool size (~1 s per budget point at 500 targets,
+             >110 s at 2,000), so a pool that fails to solve is itself a reportable datapoint.
+             Own `sparrow` conda env (external/setup_sparrow.sh) + PuLP/CBC; crossed by subprocess
+             via validation/lsdflow/adapters/workers/sparrow_worker.py.
+             PDF: pdfs/fromer2024sparrow.pdf.}
+}
+
 @article{ianez2026multiaiz,
   title   = {Joint synthesis planning by leveraging common intermediates},
   author  = {I{\'a}{\~n}ez Picazo, Pablo and Voronov, Alexey and Genheden, Samuel and Westerlund, Annie M.},

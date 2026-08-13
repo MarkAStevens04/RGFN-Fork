@@ -161,7 +161,7 @@ spot as `[kim2026s3gfn]`. &nbsp;`pdfs/zhang2025baldgfn.pdf` · arXiv:2509.00704
 
 ---
 
-## Evaluation — synthesizability metrics
+## Evaluation — synthesizability metrics & synthesis-cost tooling
 
 ### `[genheden2020aizynth]` — AiZynthFinder: a fast, robust retrosynthesis tool
 The retrosynthesis engine behind the **synthesizability metric we report on every
@@ -180,6 +180,44 @@ is a *post-hoc validation* metric, never an in-loop reward. Installed in its own
 The cheap, RDKit-native companion to AiZynth that the same papers also report (a 1 = easy
 … 10 = hard heuristic from fragment contributions + complexity penalties). We compute it
 alongside the AiZynth verdict in the same evaluator. &nbsp;DOI:10.1186/1758-2946-1-8
+
+### `[fromer2024sparrow]` — SPARROW: synthetic cost-aware decision making in molecular design (Nat Comput Sci 2024)
+The **cost model everything in the library benchmark is ultimately priced against**, and the one
+paper to read before touching a reactions/mode number. SPARROW ("Synthesis Planning And
+Rewards-based Route Optimization Workflow", [`coleygroup/sparrow`](https://github.com/coleygroup/sparrow))
+is a **mixed-integer linear program over a merged retrosynthetic graph** that jointly picks *which*
+candidates to make and *which routes* to make them by, trading three scalarized terms: cumulative
+reward of the selected candidates (maximized) against starting-material cost and a per-reaction
+penalty inversely proportional to success probability (minimized). Compounds are deduplicated by
+canonical SMILES, so **shared intermediates collapse to one node and amortize automatically** —
+which is exactly why it can price a hub-batched library fairly.
+
+**Read this next bit before citing it, because we use SPARROW for two opposite jobs** and
+conflating them is the easiest way to misread a result (convention adopted 2026-08-04; see
+`docs/RESEARCH_CONTEXT.md`, "How library cost is measured"):
+- **SPARROW-Verifier (SV)** — *independent auditor.* Hand it a library we already chose plus its
+  recipes and ask for the cheapest way to make **all** of it (`constrain_all_targets=True`, reward
+  weight 0). We *expect* agreement; this is the source of "our count-once estimate is within
+  0.0–3.1% of provably optimal, and hub-batching is closer to the optimum than the baseline"
+  (`Logs/042` gate, `Logs/049`).
+- **SPARROW-Batching (SB)** — *a genuine competitor.* Hand it a pool + a hard reaction budget and
+  it chooses **which** molecules to make (`constrain_all_targets=False`, reward-bearing objective,
+  `--max-rxns`). The competitor's selector in the headline (`Logs/056`) and in the BC-SB /
+  BC-Enum-SB arms (`Logs/059`). Always name the pool with it.
+
+**The single most load-bearing fact:** the objective has **no diversity term**, and the authors say
+so themselves — *"SPARROW currently does not consider marginal information gain related to
+molecular diversity and matched molecular pairs."* Quote them, not our source-code reading, when
+the paper needs it. That limitation is the mechanism behind `Logs/059`: a cost-only optimizer
+concentrates its picks on a handful of intermediates (78% from one at the tightest budget), so the
+distinctness of an SB selection is always **measured, never assumed**. Sign convention verified
+against `LinearSelector.set_objective` — it *minimizes*
+`-w₀·Σ(reward×selected) + w₁·Σ(SM cost) + w₂·Σ(reaction penalty)`, so `weights=[1,0,0,0,0]` plus a
+hard `max_rxns` maximizes selected reward under a reaction budget. The MILP is superlinear in pool
+size (~1 s per budget point at 500 targets, >110 s at 2,000), so a pool that fails to solve is
+itself a reportable datapoint. Own `sparrow` conda env (`external/setup_sparrow.sh`) + PuLP/CBC,
+crossed by subprocess via `validation/lsdflow/adapters/workers/sparrow_worker.py`.
+&nbsp;DOI:10.1038/s43588-024-00639-y · arXiv:2311.02187 · `pdfs/fromer2024sparrow.pdf`
 
 ### `[ianez2026multiaiz]` — MultiAiZ: joint synthesis planning by leveraging common intermediates
 The **second competitor route-planner** for the LSD-Flow library benchmark (T4.1), a smarter
