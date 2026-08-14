@@ -210,11 +210,45 @@ trap cleanup EXIT
 # With a server: probe THROUGH the socket, which validates the exact path the run depends on at no
 # extra construction cost. Without one (RGFN): the standalone gate, which constructs its own oracle
 # and exits, freeing that VRAM before the worker builds its in-process one.
+#
+# ON FAILURE, RESUBMIT ELSEWHERE rather than dying. The gate itself is cheap and correct -- it caught
+# balam006 in 15 s and cost no GPU time (job 73370). What it cost was the QUEUE SLOT: on a saturated
+# cluster the resubmission waited ~34 h, so a wedged node converts a 15-second detection into a
+# day-and-a-half delay, and only if a human notices. Node degradation here is transient and invisible
+# to SLURM (balam006 ran docking fine two days earlier and still showed STATE=alloc, REASON=none), so
+# the right response is automatic: re-queue with this node excluded and let the original attempt exit 0.
+# Bounded by DOCK_RETRY_MAX so a genuine oracle bug cannot cause an endless resubmission loop.
+preflight_failed() {
+    local node exc n tl
+    node=$(hostname); n=${DOCK_RETRY:-0}
+    exc="${DOCK_EXCLUDE:+$DOCK_EXCLUDE,}$node"
+    if [ "$n" -ge "${DOCK_RETRY_MAX:-3}" ]; then
+        echo "ERROR: docking preflight failed on $node; $n retr(y/ies) exhausted, giving up."
+        echo "       Nodes tried: $exc"
+        exit 42
+    fi
+    # $0 is SLURM's spooled copy, not the repo file -- resubmit the repo path.
+    tl=$(scontrol show job "${SLURM_JOB_ID:-0}" 2>/dev/null | grep -oE "TimeLimit=[^ ]+" | cut -d= -f2)
+    echo "WARNING: docking preflight failed on $node (transient node degradation, Logs/013/014)."
+    echo "WARNING: resubmitting excluding '$exc' -- retry $((n + 1))/${DOCK_RETRY_MAX:-3}."
+    # Array, not ${VAR:+-J "$VAR"}: inside that expansion the quotes are literal, so a job name would
+    # arrive mangled and a name with a space would split into extra arguments.
+    local -a extra=()
+    [ -n "${SLURM_JOB_NAME:-}" ] && extra+=(-J "$SLURM_JOB_NAME")
+    [ -n "$tl" ] && extra+=(--time="$tl")
+    sbatch --parsable --exclude="$exc" "${extra[@]}" \
+        --export=ALL,DOCK_RETRY=$((n + 1)),DOCK_EXCLUDE="$exc" \
+        "$REPO/experiments/lsd_hubs/matrix16/submit_docking_cell.sh" \
+        "$GEN" "$TGT" "$SLICE_IDX" "$N_SLICES" \
+        && { echo "WARNING: this attempt exits 0; the resubmission carries the work."; exit 0; }
+    echo "ERROR: resubmission failed; surfacing the original preflight failure."
+    exit 42
+}
 if [ "$NEED_SERVER" = 0 ]; then
     python scripts/preflight_dock.py --oracle "$ORACLE" $ORACLE_ARGS \
-        || { echo "ERROR: docking preflight failed on $(hostname)"; exit 42; }
+        || preflight_failed
 else
-python - "$SOCK" "$ORACLE" <<'PY' || { echo "ERROR: docking preflight failed on $(hostname)"; exit 42; }
+python - "$SOCK" "$ORACLE" <<'PY' || preflight_failed
 import sys
 sys.path.insert(0, ".")
 sys.path.insert(0, "scripts")
