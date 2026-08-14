@@ -240,6 +240,32 @@ def _modes_at(pts, budget):
     return max(reached) if reached else 0
 
 
+def _assert_comparable_schema(path, fieldnames):
+    """Refuse a frontier CSV that was written by a different VERSION of the frontier script.
+
+    THIS HAPPENED (2026-08-13). This repo is one working tree shared by three agents. A co-author
+    rewrote `sparrow_select_frontier.py`'s measurement while the seed-43/44 replicate jobs were
+    QUEUED -- `n_modes` (modes among the selected set) became `n_modes_kept` (a pruned subset priced
+    by a separate solve) and `mode_rate` was redefined -- so the jobs silently measured a different
+    quantity than seed 42 and their numbers looked like a 2x seed effect. Nothing crashed.
+
+    A band is only a band if every seed in it was measured the same way, so the schema is checked
+    rather than trusted: an unexpected column set means a version difference, and averaging across it
+    would manufacture a spread out of a definition change. Fail loudly and name the fix.
+    """
+    got = set(fieldnames or ())
+    if "n_modes" in got:
+        return
+    drifted = sorted(got & {"n_modes_kept", "lambda_div", "cost_kept_rxns", "mean_pairwise_sim"})
+    raise SystemExit(
+        f"[headline] REFUSING {path}\n"
+        f"  it has no `n_modes` column, so it was not written by the frontier version seed 42 was.\n"
+        f"  version-specific columns present: {drifted or sorted(got)}\n"
+        f"  Re-run that seed's frontier against the pinned script version before plotting a band —\n"
+        f"  see Logs/061 Method 6. Mixing versions turns a definition change into a fake seed effect."
+    )
+
+
 def _competitor_seed_curves(subdirs, filename):
     """{seed: [(reactions, modes)]} for every seed whose frontier CSV exists.
 
@@ -258,7 +284,9 @@ def _competitor_seed_curves(subdirs, filename):
             if p.exists():
                 pts = []
                 with open(p) as fh:
-                    for r in csv.DictReader(fh):
+                    rdr = csv.DictReader(fh)
+                    _assert_comparable_schema(p, rdr.fieldnames)
+                    for r in rdr:
                         if r.get("milp_status") not in (None, "", "Optimal"):
                             continue  # a truncated solve is not a frontier point
                         pts.append((int(float(r["used_rxns"])), int(float(r["n_modes"]))))
