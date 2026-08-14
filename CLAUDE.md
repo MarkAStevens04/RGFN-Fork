@@ -99,6 +99,21 @@ on the startup path — fix `glue/registry.py`, not the config.
   Mac laptop and **validate what you can locally** (imports, `py_compile`, gin
   config-include integrity, `bash -n`) — full train/dock validation happens on
   Balam. State clearly in your summary what you did vs. couldn't verify.
+- **SLURM walltime limits (authoritative — `sinfo -o "%P %l"`, NOT the public SciNet
+  page, which still says 24 h):** `compute` and `compute_full` **3 days**; `debug`
+  **2 hours**; `debug_full_node` **1 hour**. Ask for what the work needs, not the
+  max — short requests backfill sooner.
+- **ANY job that docks must `source ~/bin/rgfn-smoke-env.sh` — batch jobs included,
+  not just login smokes. Never hand-roll `LD_LIBRARY_PATH`.** QuickVina2-GPU links
+  against `libboost_{program_options,system,filesystem}.so.1.83.0`, which live in
+  `$SCRATCH/vina_gpu/boost/lib` and **not** in the conda env. Omit that path and
+  `ldd` shows 3 unresolved libs, the docker cannot start **on any node**, and the
+  failure surfaces as `Docking attempt #N failed on GPU 0` + all-`nan` — which reads
+  exactly like a degraded GPU and has already been misdiagnosed as one (job 73370:
+  balam006 blamed, excluded, and an auto-resubmit feature written, all for a missing
+  `-L` path). `submit_docking_cell.sh` sources the helper; copy that, don't reinvent
+  it. Diagnostic: `ldd $(find $SCRATCH/vina_gpu -name 'QuickVina2-GPU*' -perm -u+x | head -1)`
+  — 3 "not found" means the environment, 0 means look at the hardware.
 - **Login-node smoke tests (Balam *or* Trillium):** before any interactive smoke
   test that imports `glue`/`rgfn` (pulls in dgl) or runs the GPU docking oracle,
   prefix the command with `source ~/bin/rgfn-smoke-env.sh &&`. That one helper
