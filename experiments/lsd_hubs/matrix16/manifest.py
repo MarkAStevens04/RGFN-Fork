@@ -176,13 +176,26 @@ class Cell:
         ready at 2730/5000 and 3570/5000, and a smoke against the 71%-trained one passed every
         assertion -- because the plumbing was fine. Only the epoch reveals that the cell would not be
         comparable to the six trained to 5000. This is the second time "ready" meant less than it
-        sounded (see ``docking_wired``), so it is now checked rather than assumed."""
+        sounded (see ``docking_wired``), so it is now checked rather than assumed.
+
+        STALENESS: the sidecar is a cache of a file that KEEPS CHANGING -- training appends to the
+        same last_gfn.pt for days -- so a sidecar older than its checkpoint describes a run that has
+        since moved on. Ignoring that inverted every RGFN verdict: sidecars written 08-07 still said
+        2730/3590/3620 while the 08-12 checkpoints had reached 4880/4999/4999, so this gate reported
+        three FULLY-TRAINED cells as undertrained and blocked the last gap in the docking matrix for
+        two days. A cache that silently serves stale data is worse than no cache here, because the
+        whole point of the gate is to be believed. Now: if the checkpoint is newer than its sidecar,
+        the sidecar is discarded and reported as unknown (``None``) rather than trusted, which routes
+        the caller to ``--scan-epochs`` instead of to a wrong number."""
         if not self.checkpoint:
             return None
         side = Path(self.checkpoint + ".epoch.json")
+        ckpt = Path(self.checkpoint)
         if not side.exists():
             return None
         try:
+            if ckpt.exists() and ckpt.stat().st_mtime > side.stat().st_mtime + 1:
+                return None  # stale: checkpoint advanced since the scan
             return int(json.load(open(side))["epoch"])
         except (OSError, ValueError, KeyError, TypeError):
             return None
@@ -390,9 +403,17 @@ def _scan_epochs() -> None:
             print(f"  {c.tag:<16} no checkpoint")
             continue
         side = Path(c.checkpoint + ".epoch.json")
-        if side.exists():
+        # Re-read when the checkpoint is NEWER than its sidecar. Skipping on mere existence made this
+        # command unable to repair the very staleness it is the documented fix for: `train_epoch`
+        # correctly reported "unknown" for an outdated sidecar and pointed here, and this then printed
+        # "cached: epoch unknown" and moved on, leaving the stale file in place forever.
+        ckpt = Path(c.checkpoint)
+        stale = ckpt.exists() and side.exists() and ckpt.stat().st_mtime > side.stat().st_mtime + 1
+        if side.exists() and not stale:
             print(f"  {c.tag:<16} cached: {c.training_note}")
             continue
+        if stale:
+            print(f"  {c.tag:<16} sidecar STALE (checkpoint is newer) -- re-reading")
         try:
             d = torch.load(c.checkpoint, map_location="cpu", weights_only=False, mmap=True)
             ep = (d.get("metrics") or {}).get("epoch", d.get("it"))

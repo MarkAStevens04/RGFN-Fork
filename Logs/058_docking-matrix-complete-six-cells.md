@@ -61,8 +61,9 @@ target: the advantage is now measured on both ClpP and the 6TD3 glue differentia
 
 - **Error bars.** Every cell is a single seed and a single trained checkpoint. Reviewers will want at
   least a second seed per cell before we quote a median ratio.
-- **Finish the fourth generator.** RGFN's two docking cells are stuck at 55% and 71% of their training
-  target. Completing them makes the docking matrix four generators wide, matching the surrogate half.
+- **Finish the fourth generator.** Both RGFN docking cells turned out to be trained already (the
+  "undertrained" reading was a stale-sidecar artifact, see Caveats); `rgfn_6td3` seed 43 is enumerating
+  now, which makes the docking matrix four generators wide, matching the surrogate half.
 - **Decide the ClpP threshold in the paper's own terms.** ClpP behaves very differently per generator:
   at bars stricter than the calibrated one, RxnFlow runs out of material at 5 of 7 settings and SCENT at
   2 of 7, while FragGFN is unaffected at every setting. Worth stating explicitly rather than quoting a
@@ -305,7 +306,13 @@ exhaustive" therefore holds for the 143 uncapped `scent_seh` hubs and not for th
 - **`log_reward` is not comparable across generators** either: each is its own `beta * clip(...)` with a
   different fitted clip (SCENT does not clip and reached 56.8; FragGFN clips at 10). Only the raw
   `reward` column is cross-generator comparable.
-- **Three generators, not four.** RGFN's docking cells are undertrained (6TD3 2730/5000, ClpP
-  3570/5000) and excluded by the readiness gate; `rgfn_clpp` seed43/44 are complete at 4999 but are a
-  different seed from the rest of the row.
+- **Three generators, not four — and the reason was WRONG.** This entry reported RGFN's docking cells
+  as undertrained (6TD3 2730/5000, ClpP 3570/5000). Those figures came from `manifest.py`'s cached
+  `<ckpt>.epoch.json` sidecars, which were written 08-07 and never invalidated when training advanced.
+  A live `torch.load` on 08-14 gives **rgfn_clpp 4999 on all three seeds** and **rgfn_6td3 4880/4999/4999**
+  (seeds 42/43/44). So RGFN-ClpP was fully trained on its OWN seed 42 the whole time, no seed change was
+  ever needed, and rgfn_6td3 seeds 43/44 finished on 08-12 — the gate hid a complete cell for two days.
+  Fixed: `train_epoch` now discards a sidecar older than its checkpoint, and `--scan-epochs` re-reads
+  rather than skipping on mere existence. `rgfn_6td3` (seed 43) is now enumerating, which will make this
+  a **four-generator** matrix.
 - The 6TD3 bar remains **provisional**; unlike ClpP's −8.0 it has no AUROC calibration behind it.

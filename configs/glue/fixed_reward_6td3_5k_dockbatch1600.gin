@@ -1,0 +1,13 @@
+# 6TD3 fixed-reward 5k + a docking batch size that RGFN actually receives.
+#
+# Twin of fixed_reward_clpp_5k_dockbatch1600.gin, for the same reason. RGFN scores IN-PROCESS through
+# gin, not through the persistent docking server, so submit_docking_cell.sh's
+# `--oracle-arg docking_batch_size=...` -- which is a server-side argument -- never reaches it. The
+# oracle then silently falls back to its constructor default, and for the 6TD3 differential oracle
+# that default is **25** (ClpP's is 200), forgoing the measured 3.3x that batch 200+ buys on a single
+# QuickVina2-GPU process (Logs/036 Part A: batch-invariant scores, memory-flat in batch size).
+#
+# Nothing here changes the reward: only how many ligands are handed to one QV2 invocation.
+include 'configs/glue/fixed_reward_6td3_5k.gin'
+
+Docking6TD3GpuOracle.docking_batch_size = 1600
