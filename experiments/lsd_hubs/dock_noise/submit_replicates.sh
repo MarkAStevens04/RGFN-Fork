@@ -36,12 +36,25 @@ OUT=${OUT:-$SCRATCH/rgfn_runs/dock_noise}
 PROBE=${PROBE:-$REPO/experiments/lsd_hubs/dock_noise/probe.smi}
 mkdir -p "$OUT"
 
-source /home/markymoo/miniconda3/etc/profile.d/conda.sh
+# Source the canonical helper -- do NOT hand-roll this. QuickVina2-GPU links against
+# libboost_{program_options,system,filesystem}.so.1.83.0, which live in $SCRATCH/vina_gpu/boost/lib
+# and NOT in the conda env; the helper puts that on LD_LIBRARY_PATH and exports GNINA. The first
+# version of this script built LD_LIBRARY_PATH from the nvidia libs alone, so `ldd` on the binary had
+# 3 "not found" entries, the docker could not start on ANY node, and the resulting all-nan output was
+# misread as a degraded GPU (job 73370 -- balam006 was blameless). submit_docking_cell.sh sources the
+# same helper, which is exactly why production docking works and this did not.
 module load cuda/11.8.0 2>/dev/null || true
-conda activate rgfn
-export PATH="/home/markymoo/miniconda3/envs/rgfn/bin:$PATH"
-export LD_LIBRARY_PATH="$(ls -d /home/markymoo/miniconda3/envs/rgfn/lib/python*/site-packages/nvidia/*/lib 2>/dev/null | paste -sd:):${LD_LIBRARY_PATH:-}"
-export TORCH_HOME=$SCRATCH/.cache/torch HF_HOME=$SCRATCH/.cache/huggingface PYTHONUNBUFFERED=1
+source ~/bin/rgfn-smoke-env.sh || { echo "ERROR: rgfn-smoke-env.sh failed"; exit 1; }
+export TORCH_HOME=$SCRATCH/.cache/torch HF_HOME=$SCRATCH/.cache/huggingface
+
+# Prove the toolchain resolves BEFORE burning a GPU allocation on it: 3 missing boost libs here is
+# the difference between a 2-second exit and an hour of all-nan results that reads as a bad node.
+QV_BIN=$(find "${SCRATCH}/vina_gpu" -maxdepth 3 -type f -name 'QuickVina2-GPU*' -perm -u+x 2>/dev/null | head -1)
+if [ -n "$QV_BIN" ]; then
+    MISSING=$(ldd "$QV_BIN" 2>&1 | grep -c 'not found')
+    echo "[dock-noise] QuickVina2-GPU: $QV_BIN ($MISSING unresolved shared libs)"
+    [ "$MISSING" = 0 ] || { echo "ERROR: $MISSING unresolved libs -- LD_LIBRARY_PATH is wrong, not the node"; exit 1; }
+fi
 
 echo "=== dock-noise: $(wc -l < "$PROBE") molecules x K=$K replicates, oracle=$ORACLE"
 echo "    host=$(hostname)"; nvidia-smi -L 2>/dev/null | head -1
