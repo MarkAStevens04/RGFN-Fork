@@ -35,7 +35,20 @@ number worse.
 
 ## Answer
 
-`[TODO — after jobs 73365 / 73367 land]`
+**Partial — the competitor's strongest configuration is now replicated, and the single run we had been
+comparing against was its luckiest.** Across three independent runs it needs 264 ± 25 reactions to
+deliver the 100-family library, where the one run we had reported 235. The comparison we describe as
+our conservative one therefore moves from 1.79× to **2.02×** in our favour. The claim survives
+replication and gets slightly stronger, which is the outcome worth having; the spread is about 10% of
+the mean, so it should not be quoted more tightly than that.
+
+The other selection procedure is being re-measured, for two reasons that are themselves the most
+important findings here, and both share a shape: **a wrong number that looked like a result.** First,
+a co-author changed what the measurement *means* while these jobs sat in the queue, so the replicates
+quietly computed a different quantity than the run they were meant to be compared against, and the
+numbers looked like a large seed effect rather than a bug (Method 6). Second, the optimizer's own
+solver reports success when it has merely run out of time, so a third of the competitor's curve was
+never actually solved (Method 7).
 
 ## Relevance to our Publication
 
@@ -120,10 +133,24 @@ Root for repo-relative paths: `/home/markymoo/projects/RGFN_Fork/RGFN-Fork`.
 - `/scratch/markymoo/rgfn_runs/experiments/fixed_reward/s3gfn_seh_smoke/seed43_smoke/` — the
   10-step smoke that caught the missing env; kept as the evidence for Method 1.
 
+**Version-pinning artifacts** (Method 6 — these exist because the frontier script changed mid-flight)
+
+- `/scratch/markymoo/rgfn_runs/pinned_frontier_head/` — a frozen copy of the **committed**
+  `sparrow_select_frontier.py` (sha256 `f428aa59863694a9`), at the directory depth the script's
+  `parents[3]` requires, with `validation` symlinked to the live repo. Deliberately outside the repo.
+- `/scratch/markymoo/rgfn_runs/rerun_sb_pinned.sh` — re-runs only the SB frontier against that pinned
+  copy, reusing the cached MultiAiZ routes.
+
 **Results**
 
-- `/scratch/markymoo/rgfn_runs/lsdflow_sparrow/results/s3gfn_seh_seed4{3,4}_select_N500/` — SB.
-- `/scratch/markymoo/rgfn_runs/lsdflow_sparrow/results/s3gfn_seh_seed4{3,4}_greedy_N500/` — greedy.
+- `/scratch/markymoo/rgfn_runs/lsdflow_sparrow/results/s3gfn_seh_seed4{3,4}_select_N500/` — SB, from
+  the **pinned** script. These are the comparable ones.
+- `/scratch/markymoo/rgfn_runs/lsdflow_sparrow/results/s3gfn_seh_seed4{3,4}_greedy_N500/` — greedy,
+  from the original chain; valid, because that code path is byte-identical across the two versions.
+- `/scratch/markymoo/rgfn_runs/lsdflow_sparrow/results/s3gfn_seh_seed4{3,4}_select_N500_LAMBDADIV_not_comparable/`
+  — the first, non-comparable SB run. **Kept on purpose:** it is a co-author's newer
+  diversity-constrained metric applied to two fresh MultiAiZ route sets, so it is data they may want;
+  it simply cannot be averaged with seed 42.
 - `./experiments/lsd_hubs/campaign/results/paper_pipeline_headline/` — the figure the replicates feed,
   plus `panel_c_our_molecules.csv`.
 
@@ -207,19 +234,147 @@ passed).
 5. **Recorded in the shared-agent mailbox** (`/home/markymoo/agent_comms/`): claim
    `claims/s3gfn_seh_replicates`, status in `msg/balam-b2.md`.
 
+6. **Discovered the SB arm had measured a different quantity, and repaired it.** This is the entry's
+   most transferable finding, so it is recorded in full.
+
+   *The failure.* `sparrow_select_frontier.py` lives in a working tree shared by three agents. At
+   12:37 on 2026-08-13 — **after** these jobs were queued and before they reached their frontier step
+   — a co-author rewrote its SB measurement: `n_modes` (modes among the SELECTED set, via
+   `count_modes`) became `n_modes_kept` (a pruned subset priced by a separate `_price_kept_set` solve),
+   `mode_rate` was redefined from `n_modes/n_selected` to `len(kept)/n_selected`, and `lambda_div` /
+   `clusters_touched` / `cost_kept_rxns` / `mean_pairwise_sim` were added. A SLURM job runs the script
+   as of the moment it *starts*, so both replicates ran that version.
+
+   *Why it was dangerous.* Exit 0, `milp_status Optimal` on every row, plausible numbers. Seed 43
+   reported **149 modes at a 300-reaction budget** where seed 42 reports ~70. Read naively that is a
+   2× seed effect that would have destroyed the headline. It is a definition change. Entry [059]
+   Method 5 records "an infrastructure failure reported as a scientific limit"; this is the same
+   pathology one level up — **a co-author's definition change reported as a seed effect.**
+
+   *The repair, and how the pinned version was proven rather than assumed.* Extracted the committed
+   version (`git show HEAD:…`, sha256 `f428aa59863694a9`, the file as of `8c2fe63`) into
+   `/scratch/markymoo/rgfn_runs/pinned_frontier_head/`, mirroring `experiments/lsd_hubs/campaign/`
+   because the script derives `REPO = Path(__file__).resolve().parents[3]`, with `validation`
+   symlinked back to the live repo — outside the repo, so it carries none of the in-repo symlink
+   hazard. Then **re-derived seed 42's own frontier with it** at the three budgets whose solves
+   finish well under the 600 s MILP cap (R = 50/100/1000): identical to the archived CSV on every
+   measured column (`used_rxns`, `n_selected`, `n_modes`, `mode_rate`, `rxn_per_selected`,
+   `rxn_per_mode`, `total_reward`, `milp_status`), and `routed=478 (95.6%)` reproduced exactly.
+   Only the sub-cap budgets are used for this check, because a time-limited solve's incumbent is not
+   guaranteed reproducible across machine load. Note this run imported the **live**
+   `metrics/diversity.py` and `sparrow_worker.py`, which the same co-author had also modified — so
+   the exact reproduction is simultaneously evidence that those two edits are additive and do not
+   move the measurement.
+
+   *Scope of the re-run, minimised by diffing rather than guessing.* `_greedy_frontier` is
+   **byte-identical** between the two versions (3,077 chars each), so the greedy results stood and
+   were not re-run. MultiAiZ discovery does not depend on the frontier script at all, so the expensive
+   artifacts (2.64 h / 2.55 h) were reused from cache. Only the SB arm was re-run
+   (`/scratch/markymoo/rgfn_runs/rerun_sb_pinned.sh`, ~50 min/seed). The co-author's outputs were
+   **preserved, not deleted** — renamed to `*_select_N500_LAMBDADIV_not_comparable/`, since they are
+   their new metric applied to two fresh route sets.
+
+7. **The optimizer's solver reports success when it has only run out of time.** Independently of
+   Method 6, the same co-author added time-limit detection to `sparrow_worker.py`, having found that
+   **CBC reports status "Optimal" for whatever incumbent it holds when a time limit stops it**, and
+   PuLP's `sol_status` does not distinguish (verified on pulp 3.3.2: a 2 s-limited solve still says
+   "Optimal Solution Found"). Their tell was a looser reaction budget returning a *worse* objective
+   than a tighter one while both claimed optimality, which is impossible for true optima.
+
+   Running the replicates through the corrected worker exposed the consequence: under the 600 s MILP
+   cap that seed 42 used, **6 of seed 43's 10 SB rows are genuinely `TimeLimit`** (R = 150/300/400/
+   500/600/800), and by the same token 6 of the *archived seed-42* rows carry an `Optimal` label they
+   did not earn — R = 150/200/300 have `solve_s` of 602.57/602.65/602.79.
+
+   **What this does and does not mean.** A truncated solve returns a feasible selection, so it is a
+   real, achievable library. But SPARROW maximizes *reward*, and the mode count is measured afterwards
+   — so a truncated incumbent's mode count is **not** a bound on the optimum's in either direction; it
+   is a noisy sample. Measured noise is a few modes (R=400 gave 107 modes in one 600 s run and 104 in
+   another). The correct description is therefore *non-reproducible*, not *biased in a known
+   direction*, and an earlier draft of this entry and of the mailbox note said "understates SPARROW,
+   biasing in our favour" — that was wrong and is corrected here.
+
+   **Why it still had to be re-run.** Seed 42's 411-reaction readout interpolates between R=400
+   (98 modes, `solve_s` 225.66) and R=500 (117, 205.40) — both terminated on their own well inside the
+   cap, so the headline itself rests on true optima. Seed 43's readout falls between R=300 and R=400,
+   **both truncated**, so its value would carry solver noise rather than being a measurement. Jobs
+   73607/73608/73609 re-solve budgets 50,100,200,300,400,500,1000 for all three seeds at
+   `--max-seconds 1800`. Seed 42 is included deliberately: a longer cap can only find an
+   equal-or-better solution, so one cap across all three seeds is more comparable than mixing, and
+   seed 42's readout rows staying at 98/117 is the check that this reasoning holds. **These jobs were
+   still queued when this entry was last updated — Balam had 45 pending jobs — so the SB band is not
+   yet reportable.**
+
+   *Prophylactic.* `make_pipeline_headline.py::_assert_comparable_schema` now refuses any frontier CSV
+   without an `n_modes` column, naming the version problem and the fix instead of averaging across two
+   definitions (commit `578a87e`; tested against the preserved drifted file). Balam also forces
+   `--gpus-per-node=1` on every job, so the CPU-only re-run had to request a GPU it does not use, and
+   `-p debug` is `MaxJobsPU=1, MaxSubmitPU=1` — one debug job at a time, contrary to a note claiming
+   the limit does not apply there, **and the limit is per UNIX user**, so a co-author's debug job
+   blocks yours (their `rnv_seh42`/73606 did, twice).
+
+   *A second prophylactic, added because the first guard exposed a worse bug of my own.* Dropping
+   non-optimal rows leaves a seed's curve sparse, and `_mean_curve` averages seeds on their **shared**
+   x-values — so a sparse replicate does not merely add noise, it deletes the dense seed's points too.
+   With seed 43 reduced to {50,100,200,1000}, the mean curve lost every row in between and the
+   100-mode readout interpolated across an 800-reaction gap to **467 instead of 411, moving the
+   headline from 3.13× to 3.56× in our favour.** `_admissible_seeds` now excludes any seed whose
+   100-mode bracket exceeds `MAX_READOUT_BRACKET` (250 reactions) from the average entirely, printing
+   why, and `_seed_readouts` refuses such a seed's readout. With seed 43 excluded the headline returns
+   to 3.13× at n=1, which is the honest state until the re-solves land.
+
 ### Results
 
-`[TODO — jobs running. To fill in: per-seed reactions to reach 100 modes for both selectors, the
-3-seed mean ± sd on the competitor side, and whether the headline ratio (currently 3.13× against a
-single competitor run) and the conservative ratio (1.79×) survive with bands on both sides.]`
+**Reactions to deliver the 100-mode library.** τ = 0.5, reward gate 7.0, all arms SPARROW-priced.
 
-**Already established, for comparison when the replicates land:**
+| arm | per seed (42 / 43 / 44) | mean ± sd | n |
+|---|---|---|---|
+| ours, hub-batching | 131 / 123 / 119 | **124.3 ± 6.1** | 3 |
+| competitor, MultiAiZ + diversity-aware greedy (**their best**) | 235 / 280 / 278 | **264.3 ± 25.4** | 3 |
+| competitor, MultiAiZ + SPARROW-Batching | 411 / `[TODO]` / `[TODO]` | `[TODO]` | 1 → 3 running |
 
-| arm | reactions for 100 modes | n |
+**Ratios.** The figure deliberately quotes our **seed-42** readout of 131, the worst of our three
+seeds, so every ratio below is the conservative form:
+
+| comparison | before (competitor n=1) | now (competitor n=3) |
 |---|---|---|
-| ours, hub-batching (SPARROW-priced) | 119 / 123 / 131 → **124.3 ± 6.1** | 3 |
-| competitor, MultiAiZ + SPARROW-Batching | 411 | 1 → **3 pending** |
-| competitor, MultiAiZ + diversity-aware greedy (their best) | 235 | 1 → **3 pending** |
+| conservative — vs their strongest configuration | 1.79× | **2.02×** |
+| same, against our 3-seed mean 124.3 instead of 131 | 1.89× | 2.13× |
+| headline — vs MultiAiZ + SPARROW-Batching | 3.13× | `[TODO]` |
+
+**Seed 42 was the competitor's best run of the three on its strongest configuration** (235 vs 278/280),
+so the number the draft had been quoting was favourable to them. Replication moves the conservative
+claim in our favour and puts an error bar on it. The sd is 9.6% of the mean, and n = 3.
+
+**Per-seed pipeline agreement** — evidence the replicates are the same experiment, not three different
+ones:
+
+| quantity | seed 42 | seed 43 | seed 44 |
+|---|---|---|---|
+| training wall-clock | 4:14:42 | 4:09:19 | 4:24:19 |
+| best pool score | 8.4839 | 8.4602 | `see summary` |
+| `final/synth_ratio` | — | 0.875 | 0.880 |
+| `final/avg_reward` | — | 0.990 | 1.005 |
+| MultiAiZ discovery | 8,085 s (2.25 h) | 9,507 s (2.64 h) | 9,192 s (2.55 h) |
+| pool routed by MultiAiZ | 478 / 500 (95.6%) | 454 / 500 (90.8%) | `[TODO]` |
+
+Discovery ran longer for the replicates because both shared a node; it is wall-clock, not work.
+
+Rebuilt-env fidelity check (Method 1), seed 43, 10 steps:
+
+| quantity | this run | documented for `zincfrag_hb105` |
+|---|---|---|
+| `sampled_synth_ratio`, early steps | 1.6–6.3% | 4.7% on the GP-MolFormer prior |
+| unique stereo-stripped blocks | 178,622 | ~178k |
+| in-stock block score | 1.0 (5/5) | 1.0 required by the build assertion |
+
+Pinned-version verification (Method 6), seed 42 re-derived at the sub-cap budgets:
+
+| budget | archived (`n_modes`) | pinned re-run | every measured column identical |
+|---|---|---|---|
+| 50 | 16 | 16 | yes |
+| 100 | 24 | 24 | yes |
+| 1000 | 192 | 192 | yes |
 
 Rebuilt-env fidelity check (Method 1), seed 43, 10 steps:
 

@@ -80,6 +80,9 @@ SURFACE, INK, INK2, INK3, GRID = "#fcfcfb", "#0b0b0b", "#52514e", "#8a8984", "#e
 TARGET_MODES = 100
 POOL_MODE_RATE = 0.412  # S3-GFN top-500's own mode rate (pre-flight saturation, tau=0.5)
 PANEL_C_BUDGET = 300  # the deepest budget every arm in panel C reaches
+# Widest reactions-gap the TARGET_MODES readout may be interpolated across. The budget ladder's
+# tightest spacing near 100 modes is 100 reactions, so anything much wider means rows were dropped.
+MAX_READOUT_BRACKET = 250
 
 # Panel C inputs. Staged copies of the sweep outputs on $SCRATCH; the loader falls back to the
 # original path so the figure still builds on a machine where the staged copy is missing (campaign
@@ -282,17 +285,60 @@ def _competitor_seed_curves(subdirs, filename):
         for root in (RES, SCRATCH_RES):
             p = root / sub / filename
             if p.exists():
-                pts = []
+                pts, dropped = [], []
                 with open(p) as fh:
                     rdr = csv.DictReader(fh)
                     _assert_comparable_schema(p, rdr.fieldnames)
                     for r in rdr:
                         if r.get("milp_status") not in (None, "", "Optimal"):
-                            continue  # a truncated solve is not a frontier point
+                            # A truncated MILP is a feasible incumbent, so its mode count is a LOWER
+                            # BOUND on what the competitor achieves at that budget -- plotting it
+                            # would understate them and flatter us. Dropped, but never silently:
+                            # dropping enough rows leaves the readout interpolated across a wide gap,
+                            # which is how a 600 s cap nearly produced a bogus seed-43 number.
+                            dropped.append((r.get("budget_rxns"), r.get("milp_status")))
+                            continue
                         pts.append((int(float(r["used_rxns"])), int(float(r["n_modes"]))))
+                if dropped:
+                    print(
+                        f"  [competitor seed {seed}] DROPPED {len(dropped)} non-optimal row(s): "
+                        f"{dropped} -- readout is interpolated across the remaining points; check the "
+                        f"bracket around {TARGET_MODES} modes before quoting it"
+                    )
                 curves[seed] = sorted(pts)
                 break
     return curves
+
+
+def _bracket_width(curve):
+    """Reactions-gap between the curve points either side of TARGET_MODES, or None if unbracketed."""
+    below = max((x for x, y in curve if y <= TARGET_MODES), default=None)
+    above = min((x for x, y in curve if y >= TARGET_MODES), default=None)
+    return None if below is None or above is None else above - below
+
+
+def _admissible_seeds(curves, label):
+    """Keep only seeds whose curve still brackets TARGET_MODES tightly after non-optimal rows are cut.
+
+    THIS GUARD EXISTS BECAUSE ITS ABSENCE INFLATED OUR OWN HEADLINE. `_mean_curve` intersects seeds on
+    their shared x-values, so a seed left sparse by dropped rows does not merely add noise -- it
+    DELETES the dense seed's points too. With seed 43 reduced to {50,100,200,1000} the mean curve lost
+    every row in between, and the 100-mode readout interpolated across an 800-reaction gap to 467
+    instead of 411, moving the headline from 3.13x to 3.56x IN OUR FAVOUR. A sparse replicate must be
+    excluded from the average outright, not averaged in.
+    """
+    keep = {}
+    for s, c in curves.items():
+        w = _bracket_width(c)
+        if w is None or w > MAX_READOUT_BRACKET:
+            print(
+                f"  [{label} seed {s}] EXCLUDED from the mean curve: {TARGET_MODES}-mode bracket is "
+                f"{'absent' if w is None else str(w) + ' reactions wide'} "
+                f"(limit {MAX_READOUT_BRACKET}). Re-solve that seed's binding budgets to optimality."
+            )
+            continue
+        keep[s] = c
+    return keep
 
 
 def _mean_curve(curves, over="x"):
@@ -327,7 +373,9 @@ def load():
         RES / "scent_seh_sparrow_headline/budget_efficiency.csv", "hub_batching"
     )
     # baseline, as actually run: MultiAiZ routes + SPARROW doing its own selection
-    real_seeds = _competitor_seed_curves(THEIRS_SELECT_SEEDS, "select_frontier.csv")
+    real_seeds = _admissible_seeds(
+        _competitor_seed_curves(THEIRS_SELECT_SEEDS, "select_frontier.csv"), "MultiAiZ+SB"
+    )
     theirs_real = _mean_curve(real_seeds)
     # Panel B's mode-rate reads off seed 42, the one seed for which the pool's own 41% rate was
     # measured; averaging a rate against a single-seed reference line would mix populations.
@@ -337,7 +385,9 @@ def load():
             rates.append((int(float(r["used_rxns"])), float(r["mode_rate"])))
     rates.sort()
     # baseline at its STRONGEST: MultiAiZ routes + a diversity-aware greedy selection (SPARROW prices)
-    greedy_seeds = _competitor_seed_curves(THEIRS_GREEDY_SEEDS, "greedy_frontier.csv")
+    greedy_seeds = _admissible_seeds(
+        _competitor_seed_curves(THEIRS_GREEDY_SEEDS, "greedy_frontier.csv"), "MultiAiZ+greedy"
+    )
     theirs_greedy = _mean_curve(greedy_seeds, over="y")  # mode points are the fixed grid
     # baseline, from-scratch re-derivation (entry 048's T3.2 arm); curve rows are [modes, reactions]
     summ = json.load(open(RES / "s3gfn_seh/s3gfn_frontier_summary.json"))
@@ -387,12 +437,34 @@ def main():
 
     # The competitor's own seed spread, once its replicates exist. Reported per seed rather than only
     # as a mean, because with n=3 the spread is the whole point of running them.
-    def _seed_readouts(curves):
-        vals = {s: _lerp_x_at_y(c, TARGET_MODES) for s, c in curves.items()}
-        return {s: v for s, v in vals.items() if v is not None}
+    def _seed_readouts(curves, label=""):
+        """Per-seed reactions-at-TARGET_MODES, refusing a readout whose bracket is too wide to trust.
 
-    theirs_real_band = _seed_readouts(real_seeds)
-    theirs_greedy_band = _seed_readouts(greedy_seeds)
+        The readout is an interpolation between the two curve points either side of TARGET_MODES. If
+        non-optimal rows were dropped, those neighbours can end up far apart and the interpolated
+        value becomes an artifact of the gap rather than a measurement -- e.g. dropping seed 43's
+        time-limited R=300/400 rows leaves R=200 (60 modes) and R=1000 (186), and interpolating a
+        100-mode readout across that 800-reaction gap gives ~454 instead of ~382.
+        """
+        out = {}
+        for s, c in curves.items():
+            v = _lerp_x_at_y(c, TARGET_MODES)
+            if v is None:
+                continue
+            below = max((x for x, y in c if y <= TARGET_MODES), default=None)
+            above = min((x for x, y in c if y >= TARGET_MODES), default=None)
+            if below is not None and above is not None and above - below > MAX_READOUT_BRACKET:
+                print(
+                    f"  [{label} seed {s}] REFUSING readout: the {TARGET_MODES}-mode bracket spans "
+                    f"{below}->{above} reactions ({above - below} wide, limit {MAX_READOUT_BRACKET}). "
+                    f"Re-solve the budgets in that gap to optimality instead of interpolating them."
+                )
+                continue
+            out[s] = v
+        return out
+
+    theirs_real_band = _seed_readouts(real_seeds, "MultiAiZ+SB")
+    theirs_greedy_band = _seed_readouts(greedy_seeds, "MultiAiZ+greedy")
     for name, b in (("MultiAiZ+SB", theirs_real_band), ("MultiAiZ+greedy", theirs_greedy_band)):
         vals = sorted(b.values())
         if len(vals) > 1:
