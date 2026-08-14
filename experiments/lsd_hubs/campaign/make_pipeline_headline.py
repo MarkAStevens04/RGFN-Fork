@@ -93,11 +93,24 @@ SCRATCH_RES = Path("/scratch/markymoo/rgfn_runs/lsdflow_sparrow/results")
 # The competitor pipeline, one entry per REPLICATE (retrain -> MultiAiZ -> select). Seed 42 is the
 # original Logs/056 run; 43/44 are produced by submit_s3gfn_replicate_routes.sh. Missing seeds are
 # skipped, so this file needs no edit when they land -- the band appears on its own.
-THEIRS_SELECT_SEEDS = {
-    42: "s3gfn_seh_select_N500",
-    43: "s3gfn_seh_seed43_select_N500",
-    44: "s3gfn_seh_seed44_select_N500",
-}
+# SB is read in TIERS, all-or-nothing, because the MILP time limit is part of the measurement.
+# CBC does not solve these selection problems to proven optimality in any budget we can afford, so a
+# frontier point is "the best selection SPARROW found in <cap> seconds". That is a legitimate and
+# realistic specification -- no practitioner runs CBC for days -- but it is only comparable across
+# seeds if every seed got the SAME cap. The archived seed-42 curve used 600 s; the replicates are
+# re-solved at 1800 s. Mixing the two would put a definition difference inside the error bar, so a
+# tier is used only when EVERY seed in it is present, otherwise we fall back to seed 42 alone at n=1.
+SELECT_TIERS = [
+    (
+        1800,
+        {
+            42: "s3gfn_seh_seed42_select_N500_maxsec1800",
+            43: "s3gfn_seh_seed43_select_N500_maxsec1800",
+            44: "s3gfn_seh_seed44_select_N500_maxsec1800",
+        },
+    ),
+    (600, {42: "s3gfn_seh_select_N500"}),  # the archived Logs/056 run, n=1
+]
 THEIRS_GREEDY_SEEDS = {
     42: "s3gfn_seh_greedy_N500",
     43: "s3gfn_seh_seed43_greedy_N500",
@@ -269,7 +282,7 @@ def _assert_comparable_schema(path, fieldnames):
     )
 
 
-def _competitor_seed_curves(subdirs, filename):
+def _competitor_seed_curves(subdirs, filename, keep_nonoptimal=False):
     """{seed: [(reactions, modes)]} for every seed whose frontier CSV exists.
 
     THE COMPETITOR'S MISSING ERROR BAR. Every other arm in the benchmark is replicated; theirs was
@@ -285,29 +298,53 @@ def _competitor_seed_curves(subdirs, filename):
         for root in (RES, SCRATCH_RES):
             p = root / sub / filename
             if p.exists():
-                pts, dropped = [], []
+                pts, capped = [], []
                 with open(p) as fh:
                     rdr = csv.DictReader(fh)
                     _assert_comparable_schema(p, rdr.fieldnames)
                     for r in rdr:
-                        if r.get("milp_status") not in (None, "", "Optimal"):
-                            # A truncated MILP is a feasible incumbent, so its mode count is a LOWER
-                            # BOUND on what the competitor achieves at that budget -- plotting it
-                            # would understate them and flatter us. Dropped, but never silently:
-                            # dropping enough rows leaves the readout interpolated across a wide gap,
-                            # which is how a 600 s cap nearly produced a bogus seed-43 number.
-                            dropped.append((r.get("budget_rxns"), r.get("milp_status")))
-                            continue
+                        truncated = r.get("milp_status") not in (None, "", "Optimal")
+                        if truncated:
+                            capped.append(r.get("budget_rxns"))
+                            # KEEP OR DROP is a real choice. A truncated MILP returns a feasible
+                            # selection, so the point is achievable and real -- but SPARROW maximizes
+                            # REWARD and modes are counted afterwards, so the mode count is a noisy
+                            # sample rather than a bound in either direction (measured: 107 vs 104
+                            # modes on two runs of the same row). Within a tier every seed shares one
+                            # solver budget, so that noise is part of the reported spread and the
+                            # points are kept. Dropping them instead leaves the curve sparse, which
+                            # is worse: see _admissible_seeds.
+                            if not keep_nonoptimal:
+                                continue
                         pts.append((int(float(r["used_rxns"])), int(float(r["n_modes"]))))
-                if dropped:
+                if capped:
+                    verb = "time-limited (kept)" if keep_nonoptimal else "DROPPED as non-optimal"
                     print(
-                        f"  [competitor seed {seed}] DROPPED {len(dropped)} non-optimal row(s): "
-                        f"{dropped} -- readout is interpolated across the remaining points; check the "
-                        f"bracket around {TARGET_MODES} modes before quoting it"
+                        f"  [competitor seed {seed}] {len(capped)} row(s) {verb}: budgets {capped}"
                     )
                 curves[seed] = sorted(pts)
                 break
     return curves
+
+
+def _resolve_select_tier():
+    """The SB curves, from the first tier whose EVERY seed is on disk. Returns (curves, cap_seconds).
+
+    All-or-nothing on purpose. A partially-present tier is the trap: taking seeds 43/44 at 1800 s and
+    seed 42 at 600 s would fold a solver-budget difference into the seed spread, and the spread is the
+    whole quantity being reported.
+    """
+    for cap, subdirs in SELECT_TIERS:
+        curves = _competitor_seed_curves(subdirs, "select_frontier.csv", keep_nonoptimal=True)
+        if len(curves) == len(subdirs):
+            print(f"  [MultiAiZ+SB] tier: MILP cap {cap}s, n={len(curves)} seed(s) {sorted(curves)}")
+            return curves, cap
+        if curves:
+            print(
+                f"  [MultiAiZ+SB] tier {cap}s INCOMPLETE ({len(curves)}/{len(subdirs)} seeds: "
+                f"{sorted(curves)}) — skipping it rather than mixing solver budgets"
+            )
+    return {}, None
 
 
 def _bracket_width(curve):
@@ -373,9 +410,8 @@ def load():
         RES / "scent_seh_sparrow_headline/budget_efficiency.csv", "hub_batching"
     )
     # baseline, as actually run: MultiAiZ routes + SPARROW doing its own selection
-    real_seeds = _admissible_seeds(
-        _competitor_seed_curves(THEIRS_SELECT_SEEDS, "select_frontier.csv"), "MultiAiZ+SB"
-    )
+    real_seeds, select_cap = _resolve_select_tier()
+    real_seeds = _admissible_seeds(real_seeds, "MultiAiZ+SB")
     theirs_real = _mean_curve(real_seeds)
     # Panel B's mode-rate reads off seed 42, the one seed for which the pool's own 41% rate was
     # measured; averaging a rate against a single-seed reference line would mix populations.
@@ -395,13 +431,13 @@ def load():
         (int(rx), int(md)) for md, rx in summ["curves"]["0.50"] if rx is not None and md is not None
     )
     return (ours_native, ours_scratch, theirs_real, theirs_scratch, theirs_greedy, rates,
-            real_seeds, greedy_seeds)  # fmt: skip
+            real_seeds, greedy_seeds, select_cap)  # fmt: skip
 
 
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     (ours_native, ours_scratch, theirs_real, theirs_scratch, theirs_greedy, rates,
-     real_seeds, greedy_seeds) = load()  # fmt: skip
+     real_seeds, greedy_seeds, select_cap) = load()  # fmt: skip
     bc_sb, bc_enum, n_bc_seeds = load_panel_c()
     ours_band = load_ours_seed_band()
 
@@ -717,6 +753,9 @@ def main():
         f"so the ratio drawn is the conservative one. Conservative reading — our "
         f"{reads['ours_native']:.0f} vs the baseline's STRONGEST tested configuration "
         f"({best_baseline:.0f}: MultiAiZ + a diversity-aware selection) = {conservative:.2f}×.",
+        f"SB is not solved to proven optimality — CBC reports \"Optimal\" for whatever incumbent a "
+        f"time limit stops it on, so an SB frontier point is the best selection found within a fixed "
+        f"MILP budget of {select_cap} s, identical for every seed plotted.",
         f"C — the same optimizer on OUR molecules: BC-SB over 21,001 distinct candidates "
         f"(n={n_bc_seeds} seeds); BC-Enum-SB over 131,474 molecules enumerated from the 64 "
         f"intermediates a naive best-score walk collects (n=1). Raw counts, not per-distinct ratios: "
