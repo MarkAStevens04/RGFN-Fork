@@ -295,9 +295,53 @@ policy likes to terminate at" — to policy stopping. The tail is the 4000-child
 median 0.556 while uncapped sit at 0.9998. Its broader "independently confirms the enumeration is
 exhaustive" therefore holds for the 143 uncapped `scent_seh` hubs and not for the 57 capped ones.
 
+**UPDATE 2026-08-17 — three changes to the numbers above.**
+
+*`scent_clpp` re-enumerated at cap 20,000.* All 25 capped hubs came back at their true sizes (min
+4,325 / median 7,940 / max 14,943, matching the count-only pass exactly; zero still at the cap),
+lifting the cell from 340,761 to **448,090** children. The result moved as the audit predicted, by the
+predicted mechanism: **1.290 -> 1.167 r/m** and **2.651x -> 2.931x**, with the walk shrinking from
+**34 hubs to 18** — deeper enumeration yields more modes per scaffold, so fewer scaffold builds buy
+300 modes. Best-candidate is unchanged at 3.420 (it never reads the enumeration), which is the
+internal control. So "the SCENT numbers are conservative" was right, by ~10.6% on this cell.
+
+*`rgfn_clpp` seed 43 completed*, from Trillium's 78 hubs plus a 122-hub fill-in here (200/200,
+166,028 children): **hub 1.623 r/m over 68 hubs vs best-candidate 3.687 = 2.272x**. ClpP is therefore
+the first target with a **complete four-generator** comparison. Note it is seed 43 where the other
+three ClpP cells are seed 42.
+
+*The docking oracle is much noisier than this entry assumed, and the headline survives it anyway.*
+A controlled replicate experiment (`experiments/lsd_hubs/dock_noise/`, 400 molecules x 5 INDEPENDENT
+processes — one process per replicate, because both cache layers key on canonical SMILES and repeats
+inside one process would return the cached value and report zero noise) measured QuickVina2-GPU's
+pose-search scatter:
+
+| statistic | value |
+|---|---|
+| identical across all 5 draws | **0 of 400 (0.0%)** |
+| per-molecule SD | median **0.502**, p90 1.139, max 3.741 kcal/mol |
+| per-molecule range | median 1.200, p90 2.800, max 9.700 |
+| qualification flips at the -8.0 bar | **172 of 400 (43.0%)** |
+| flips among near-bar molecules | **109 of 139 (78.4%)** |
+
+An earlier opportunistic estimate off cross-slice duplicates (median 0.70 spread, 1.2% flips) was badly
+biased: it counted within-process cache hits as "identical" (90.4% of it), used K=2, and sampled
+whatever happened to be reachable from two hubs rather than stratifying near the bar.
+
+So mode MEMBERSHIP is substantially noise-driven. **Reactions/mode is not**, and that is measured
+rather than argued: `noise_bootstrap.py` adds independent N(0, 0.502) to every child's and candidate's
+score and re-runs the campaign 20 times, with its sigma=0 draw reproducing the committed number
+exactly. On `scent_clpp`, hub reactions/mode is **1.1397 +/- 0.0176** and the edge **2.957x +/- 0.055**
+(min 2.853x, max 3.047x), **every draw favouring hub-batching** and every draw reaching 300/300 modes.
+The reason is structural: reactions/mode is a COUNT over a 448,090-child pool, so when noise knocks one
+child out another replaces it, and both strategies draw from the same oracle. Oracle noise therefore
+contributes roughly **+/-2%** to the edge, well inside the between-cell spread — but any claim about
+WHICH molecules are in a library needs n-fold docking, not a single draw.
+
 **Caveats**
 
 - **One seed, one checkpoint per cell.** No error bars on any ratio.
+- **Oracle noise contributes ~+/-2% to each edge** (bootstrap above); mode membership is far less stable than the count.
 - **The two SCENT cells are not child-exhaustive** (see the audit above); `scent_clpp` in particular
   loses ~90% of forward mass on 25 of its 200 hubs, 5 of them inside the walk.
 - **Cross-generator magnitudes are not comparable.** Best-candidate's own cost differs (FragGFN
