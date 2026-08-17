@@ -7,3 +7,11 @@ fraggfn,6td3,43,validation/configs/fraggfn_6td3_docking_fixed_5k.yaml,/scratch/m
 fraggfn,clpp,43,validation/configs/fraggfn_clpp_docking_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/fraggfn_clpp_5k/seed43/checkpoints/last_gfn.pt,
 rxnflow,6td3,43,validation/configs/rxnflow_6td3_docking_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rxnflow_6td3_5k/seed43/checkpoints/last_gfn.pt,
 rxnflow,clpp,43,validation/configs/rxnflow_clpp_docking_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rxnflow_clpp_5k/seed43/checkpoints/last_gfn.pt,
+rgfn,seh,43,configs/glue/fixed_reward_seh_proxy_stdlib_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rgfn_seh_5k/seed43/train/checkpoints/last_gfn.pt,
+rgfn,drd2,43,configs/glue/fixed_reward_drd2_stdlib_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rgfn_drd2_5k/seed43/train/checkpoints/last_gfn.pt,
+scent,seh,43,validation/configs/scent_seh_fixed_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh_5k/seed43/train/checkpoints/last_gfn.pt,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh_5k/seed43/train/checkpoints/guidance_models.pt
+scent,drd2,43,validation/configs/scent_drd2_fixed_5k.gin,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_drd2_5k/seed43/train/checkpoints/last_gfn.pt,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_drd2_5k/seed43/train/checkpoints/guidance_models.pt
+rxnflow,seh,43,validation/configs/rxnflow_seh_fixed_stdlib_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rxnflow_seh_5k/seed43/checkpoints/last_gfn.pt,
+rxnflow,drd2,43,validation/configs/rxnflow_drd2_fixed_stdlib_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/rxnflow_drd2_5k/seed43/checkpoints/last_gfn.pt,
+fraggfn,seh,43,validation/configs/fraggfn_seh_fixed_5k.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/fraggfn_seh_5k/seed43/checkpoints/last_gfn.pt,
+fraggfn,drd2,43,validation/configs/fraggfn_drd2_maxfrag6.yaml,/scratch/markymoo/rgfn_runs/experiments/fixed_reward/fraggfn_drd2_5k/seed43/checkpoints/last_gfn.pt,
