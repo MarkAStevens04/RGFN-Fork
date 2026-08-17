@@ -118,7 +118,7 @@ Branch `Hub-Analysis`. **Not yet committed:** the campaign infrastructure
 (`experiments/fixed_reward/scale5k/{orchestrate.sh,extend_chains.sh,submit_*.sh,analyze_matrix.py,analysis/}`),
 the 16 `_5k` configs, the `docking_batch_size=200` change in
 `glue/oracles/docking_seh_oracle.py`, and the FragGFN `max_nodes: 6` change in the four
-`validation/configs/fraggfn_*_fixed_5k.yaml`, plus this log. [TODO — add commit hash after pushing.]
+`validation/configs/fraggfn_*_fixed_5k.yaml`, plus this log. committed as `4e69b0a`.
 **Can you commit the experiment files? Once you do, let me know and I'll fill in the hash.**
 
 ## Relevant Resources
