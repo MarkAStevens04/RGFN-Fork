@@ -1,0 +1,48 @@
+{
+  "cell": "scent_clpp",
+  "sigma": 0.502,
+  "draws": 3,
+  "gate": -8.0,
+  "rows": [
+    {
+      "draw": 0,
+      "sigma": 0.0,
+      "hub_rpm": 1.167,
+      "best_rpm": 3.42,
+      "edge": 2.9305912596401025,
+      "hub_modes": 300,
+      "best_modes": 300,
+      "hub_hubs": 18
+    },
+    {
+      "draw": 1,
+      "sigma": 0.502,
+      "hub_rpm": 1.13,
+      "best_rpm": 3.383,
+      "edge": 2.9938053097345136,
+      "hub_modes": 300,
+      "best_modes": 300,
+      "hub_hubs": 12
+    },
+    {
+      "draw": 2,
+      "sigma": 0.502,
+      "hub_rpm": 1.113,
+      "best_rpm": 3.373,
+      "edge": 3.0305480682839177,
+      "hub_modes": 300,
+      "best_modes": 300,
+      "hub_hubs": 10
+    },
+    {
+      "draw": 3,
+      "sigma": 0.502,
+      "hub_rpm": 1.153,
+      "best_rpm": 3.44,
+      "edge": 2.9835212489158716,
+      "hub_modes": 300,
+      "best_modes": 300,
+      "hub_hubs": 15
+    }
+  ]
+}

@@ -32,21 +32,42 @@ if not slices:
     raise SystemExit(f"[merge] no slices under {enum_dir} — run submit_docking_cell.sh first")
 
 want = [r["smiles"] for r in csv.DictReader(open(enum_dir / "hubs.csv"))]
-hubs, seen, dup = [], set(), []
+
+# When one hub appears in several slices, keep the copy with the MOST children -- not the first one
+# the glob happens to reach. Slices are normally disjoint, so this only bites on a RE-ENUMERATION:
+# scent_clpp's 25 capped hubs exist both in the original of8/of12 run (truncated at ENUM_MAX=4000) and
+# in the of10 re-run (up to 14,943). Sort order interleaves the groups -- 'slice10of12' sorts before
+# 'slice5of10' -- so keep-first silently retained 4,000 children for some hubs and 8,276 for others,
+# i.e. a merged enumeration that is partly re-enumerated and partly not, with nothing in the output
+# saying which. Preferring the larger set is sound rather than merely convenient: the enumerating DFS
+# walks action indices in a fixed order and stops at the cap, so a cap-20000 run's children are a
+# strict SUPERSET of the same hub's cap-4000 children. Deeper therefore always wins, and the choice is
+# independent of glob order.
+best, n_copies = {}, {}
 for p in slices:
+    grp = Path(p).parent.name
     for h in json.load(open(p)).get("hubs", []):
         key = h.get("hub_input") or h["hub_key"]
-        if key in seen:
-            dup.append(key)
-            continue
-        seen.add(key)
-        hubs.append(h)
+        n = len(h.get("children", []))
+        n_copies[key] = n_copies.get(key, 0) + 1
+        prev = best.get(key)
+        if prev is None or n > prev[2]:
+            best[key] = (h, grp, n)
+
+# Preserve hubs.csv order so the walk order is reproducible, then append any extras.
+seen = set(best)
+want_set = set(want)
+hubs = [best[k][0] for k in want if k in best] + [best[k][0] for k in best if k not in want_set]
+deeper = {k: v for k, v in best.items() if n_copies[k] > 1}
 
 missing = [h for h in want if h not in seen]
 n_children = sum(len(h.get("children", [])) for h in hubs)
 print(f"[merge] {len(slices)} slice(s) -> {len(hubs)}/{len(want)} hubs, {n_children:,} children")
-if dup:
-    print(f"[merge] WARNING {len(dup)} duplicate hub(s) across slices (kept first) — slices should be disjoint")
+if deeper:
+    print(f"[merge] {len(deeper)} hub(s) present in MORE THAN ONE slice -> kept the deepest copy of each:")
+    for k, (_h, grp, n) in sorted(deeper.items(), key=lambda kv: -kv[1][2])[:5]:
+        print(f"[merge]   {n:>7,} children from {grp}")
+    print(f"[merge]   (a re-enumeration; deeper is a superset of shallower for the same hub)")
 if missing and force != "--force":
     raise SystemExit(
         f"[merge] REFUSING to publish: {len(missing)} hub(s) have no slice "
