@@ -104,9 +104,12 @@ SELECT_TIERS = [
     (
         1800,
         {
-            42: "s3gfn_seh_seed42_select_N500_maxsec1800",
-            43: "s3gfn_seh_seed43_select_N500_maxsec1800",
-            44: "s3gfn_seh_seed44_select_N500_maxsec1800",
+            42: ("s3gfn_seh_seed42_select_N500_maxsec1800",
+                 "s3gfn_seh_seed42_select_N500_maxsec1800_extra"),
+            43: ("s3gfn_seh_seed43_select_N500_maxsec1800",
+                 "s3gfn_seh_seed43_select_N500_maxsec1800_extra"),
+            44: ("s3gfn_seh_seed44_select_N500_maxsec1800",
+                 "s3gfn_seh_seed44_select_N500_maxsec1800_extra"),
         },
     ),
     (600, {42: "s3gfn_seh_select_N500"}),  # the archived Logs/056 run, n=1
@@ -295,13 +298,21 @@ def _competitor_seed_curves(subdirs, filename, keep_nonoptimal=False):
     """
     curves = {}
     for seed, sub in subdirs.items():
-        for root in (RES, SCRATCH_RES):
-            p = root / sub / filename
-            if p.exists():
-                pts, capped = [], []
-                with open(p) as fh:
+        # A seed's budgets may be split across more than one directory: the ladder is expensive, so
+        # budgets added later were solved in their own run rather than by redoing the whole sweep.
+        # Legitimate to union ONLY because both runs share the pool, the script version and the MILP
+        # cap -- the three things a tier fixes. Same budget in both dirs: prefer the solved row.
+        subs = (sub,) if isinstance(sub, str) else tuple(sub)
+        by_budget, capped, found = {}, [], []
+        for one in subs:
+            for root in (RES, SCRATCH_RES):
+                path = root / one / filename
+                if not path.exists():
+                    continue
+                found.append(one)
+                with open(path) as fh:
                     rdr = csv.DictReader(fh)
-                    _assert_comparable_schema(p, rdr.fieldnames)
+                    _assert_comparable_schema(path, rdr.fieldnames)
                     for r in rdr:
                         truncated = r.get("milp_status") not in (None, "", "Optimal")
                         if truncated:
@@ -316,14 +327,18 @@ def _competitor_seed_curves(subdirs, filename, keep_nonoptimal=False):
                             # is worse: see _admissible_seeds.
                             if not keep_nonoptimal:
                                 continue
-                        pts.append((int(float(r["used_rxns"])), int(float(r["n_modes"]))))
-                if capped:
-                    verb = "time-limited (kept)" if keep_nonoptimal else "DROPPED as non-optimal"
-                    print(
-                        f"  [competitor seed {seed}] {len(capped)} row(s) {verb}: budgets {capped}"
-                    )
-                curves[seed] = sorted(pts)
+                        key = r.get("budget_rxns") or r.get("n_modes")
+                        b = int(float(key))
+                        pt = (int(float(r["used_rxns"])), int(float(r["n_modes"])))
+                        if b not in by_budget or (truncated is False and by_budget[b][1] is True):
+                            by_budget[b] = (pt, truncated)
                 break
+        if not found:
+            continue
+        if capped:
+            verb = "time-limited (kept)" if keep_nonoptimal else "DROPPED as non-optimal"
+            print(f"  [competitor seed {seed}] {len(capped)} row(s) {verb}: budgets {capped}")
+        curves[seed] = sorted(pt for pt, _ in by_budget.values())
     return curves
 
 
@@ -336,14 +351,28 @@ def _resolve_select_tier():
     """
     for cap, subdirs in SELECT_TIERS:
         curves = _competitor_seed_curves(subdirs, "select_frontier.csv", keep_nonoptimal=True)
-        if len(curves) == len(subdirs):
-            print(f"  [MultiAiZ+SB] tier: MILP cap {cap}s, n={len(curves)} seed(s) {sorted(curves)}")
-            return curves, cap
-        if curves:
+        if len(curves) != len(subdirs):
+            if curves:
+                print(
+                    f"  [MultiAiZ+SB] tier {cap}s INCOMPLETE ({len(curves)}/{len(subdirs)} seeds: "
+                    f"{sorted(curves)}) — skipping it rather than mixing solver budgets"
+                )
+            continue
+        # A tier is not usable just because its files exist: every seed must also still BRACKET the
+        # target after time-limited rows are accounted for. Accepting a tier where only some seeds
+        # bracket would silently hand the headline to whichever seed happened to have the right rows
+        # -- a subset of seeds masquerading as the tier.
+        bad = {s: _bracket_width(c) for s, c in curves.items()
+               if _bracket_width(c) is None or _bracket_width(c) > MAX_READOUT_BRACKET}  # fmt: skip
+        if bad:
             print(
-                f"  [MultiAiZ+SB] tier {cap}s INCOMPLETE ({len(curves)}/{len(subdirs)} seeds: "
-                f"{sorted(curves)}) — skipping it rather than mixing solver budgets"
+                f"  [MultiAiZ+SB] tier {cap}s REJECTED: seed(s) {sorted(bad)} do not bracket "
+                f"{TARGET_MODES} modes within {MAX_READOUT_BRACKET} reactions (widths {bad}). "
+                f"Solve the missing budgets for those seeds before this tier can be used."
             )
+            continue
+        print(f"  [MultiAiZ+SB] tier: MILP cap {cap}s, n={len(curves)} seed(s) {sorted(curves)}")
+        return curves, cap
     return {}, None
 
 
