@@ -73,10 +73,22 @@ TARGETS: Dict[str, Target] = {
         name="seh",
         reward_name="seh",
         higher_is_better=True,
-        mode_reward_threshold=7.0,
+        # HEADLINE BAR = 5.0 (decided 2026-08-18). Was 7.0, which is the value the RGFN paper's own
+        # sEH numbers are quoted at -- but 7.0 sits in the proxy's optimised tail, NOT in the range
+        # where the proxy tracks real activity: entry 034 measured only weak enrichment of known
+        # actives (AUROC 0.76/0.68) and 0 of 2,315 real actives reach 8.0, and entry 051 found the
+        # meaningful range is ~5-6 with a diversity collapse past ~7.
+        #
+        # The operational reason is what settled it. At 7.0 the comparison is not like-for-like: an
+        # arm falls short of the 300-mode budget in rgfn_seh and BOTH rxnflow cells on EVERY one of
+        # the three seeds, so the ratio is measured over a starved library and understates
+        # hub-batching (entry 055 saw the same thing on one seed; three seeds confirm it is
+        # systematic, not seed luck). At 5.0 every clean cell reaches 300/300 and the seed spread is
+        # 1.9-3.2%. 7.0 remains in threshold_variants so the paper-comparable number stays quotable.
+        mode_reward_threshold=5.0,
         reward_type="surrogate",
         threshold_variants=[5.0, 6.0, 7.0],
-        reward_note="proxy value; 7.0 paper-comparable, 5-6 more calibrated (Logs/034)",
+        reward_note="proxy value; HEADLINE 5.0 (calibrated, Logs/034/051); 7.0 = paper-comparable variant",
     ),
     "drd2": Target(
         name="drd2",

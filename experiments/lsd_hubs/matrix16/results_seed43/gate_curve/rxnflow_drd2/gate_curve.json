@@ -8,43 +8,43 @@
   "n_enumerated_hubs": 177,
   "points": [
     {
-      "gate": 5.0,
-      "best_modes": 0,
-      "best_rxn_per_mode": null,
+      "gate": 0.5,
+      "best_modes": 78,
+      "best_rxn_per_mode": 2.526,
       "best_stop_reason": "pool_exhausted",
-      "hub_modes": 0,
-      "hub_rxn_per_mode": null,
-      "hub_stop_reason": "pool_exhausted",
-      "edge": null,
-      "hub_hubs_used": 0,
-      "hub_reward_gen_calls": 0,
-      "pool_limited": true
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.287,
+      "hub_stop_reason": "modes",
+      "edge": 1.963,
+      "hub_hubs_used": 48,
+      "hub_reward_gen_calls": 49668,
+      "pool_limited": false
     },
     {
-      "gate": 6.0,
-      "best_modes": 0,
-      "best_rxn_per_mode": null,
+      "gate": 0.7,
+      "best_modes": 66,
+      "best_rxn_per_mode": 2.545,
       "best_stop_reason": "pool_exhausted",
-      "hub_modes": 0,
-      "hub_rxn_per_mode": null,
-      "hub_stop_reason": "pool_exhausted",
-      "edge": null,
-      "hub_hubs_used": 0,
-      "hub_reward_gen_calls": 0,
-      "pool_limited": true
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.36,
+      "hub_stop_reason": "modes",
+      "edge": 1.871,
+      "hub_hubs_used": 60,
+      "hub_reward_gen_calls": 60235,
+      "pool_limited": false
     },
     {
-      "gate": 7.0,
-      "best_modes": 0,
-      "best_rxn_per_mode": null,
+      "gate": 0.9,
+      "best_modes": 51,
+      "best_rxn_per_mode": 2.647,
       "best_stop_reason": "pool_exhausted",
-      "hub_modes": 0,
-      "hub_rxn_per_mode": null,
-      "hub_stop_reason": "pool_exhausted",
-      "edge": null,
-      "hub_hubs_used": 0,
-      "hub_reward_gen_calls": 0,
-      "pool_limited": true
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.517,
+      "hub_stop_reason": "modes",
+      "edge": 1.745,
+      "hub_hubs_used": 86,
+      "hub_reward_gen_calls": 96143,
+      "pool_limited": false
     }
   ]
 }
