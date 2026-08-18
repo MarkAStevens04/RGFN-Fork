@@ -1,0 +1,50 @@
+{
+  "cell": "fraggfn_seh",
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "similarity": 0.5,
+  "budget_modes": 300,
+  "higher_is_better": true,
+  "n_enumerated_hubs": 200,
+  "points": [
+    {
+      "gate": 5.0,
+      "best_modes": 300,
+      "best_rxn_per_mode": 5.0,
+      "best_stop_reason": "modes",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.227,
+      "hub_stop_reason": "modes",
+      "edge": 4.075,
+      "hub_hubs_used": 17,
+      "hub_reward_gen_calls": 27300,
+      "pool_limited": false
+    },
+    {
+      "gate": 6.0,
+      "best_modes": 300,
+      "best_rxn_per_mode": 5.0,
+      "best_stop_reason": "modes",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.267,
+      "hub_stop_reason": "modes",
+      "edge": 3.946,
+      "hub_hubs_used": 20,
+      "hub_reward_gen_calls": 30345,
+      "pool_limited": false
+    },
+    {
+      "gate": 7.0,
+      "best_modes": 300,
+      "best_rxn_per_mode": 5.0,
+      "best_stop_reason": "modes",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.413,
+      "hub_stop_reason": "modes",
+      "edge": 3.539,
+      "hub_hubs_used": 31,
+      "hub_reward_gen_calls": 46935,
+      "pool_limited": false
+    }
+  ]
+}

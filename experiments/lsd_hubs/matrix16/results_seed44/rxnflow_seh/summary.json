@@ -1,0 +1,103 @@
+{
+  "tag": "rxnflow_seh",
+  "reward_threshold": 7.0,
+  "similarity": 0.5,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "rank_by": null,
+  "best_candidate": {
+    "strategy": "best_candidate",
+    "total_modes": 22,
+    "total_reactions": 62,
+    "reactions_per_mode": 2.818,
+    "total_reward_gen_calls": 0,
+    "reward_gen_calls_per_mode": 0.0,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 21,
+    "n_scaffolds": 22,
+    "best_reward": 8.028,
+    "median_reward": 7.286,
+    "case1_modes_at_100rxn": 22,
+    "case2_reactions_at_300modes": null,
+    "stop_reason": "pool_exhausted"
+  },
+  "hub_batching": {
+    "strategy": "hub_batching",
+    "total_modes": 80,
+    "total_reactions": 177,
+    "reactions_per_mode": 2.212,
+    "total_reward_gen_calls": 64939,
+    "reward_gen_calls_per_mode": 811.74,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 52,
+    "n_scaffolds": 80,
+    "best_reward": 7.976,
+    "median_reward": 7.262,
+    "case1_modes_at_100rxn": 49,
+    "case2_reactions_at_300modes": null,
+    "stop_reason": "pool_exhausted"
+  },
+  "compute_time": {
+    "enum_timings_meta": {
+      "setup_s": 0.549,
+      "device": "cuda",
+      "cuda_synchronized": true,
+      "reward_name": "seh",
+      "model": "rxnflow",
+      "component_split": "full",
+      "n_hubs": 200,
+      "n_children": 68748,
+      "totals_s": {
+        "enumeration_s": 107.743,
+        "reward_gen_s": 85.635,
+        "flow_extract_s": 11154.0
+      }
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "setup_s": 0.549,
+      "hub_pick_s": 0.153,
+      "enumeration_s": 107.7429,
+      "reward_gen_s": 85.6347,
+      "flow_extract_s": 11153.9996,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.8931,
+      "n_hubs_walked": 200,
+      "n_children_scored": 68748,
+      "missing_hub_keys": [],
+      "total_s": 11348.9722
+    },
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "setup_s": 0.0,
+      "hub_pick_s": 0.0,
+      "enumeration_s": 0.0,
+      "reward_gen_s": 0.0,
+      "flow_extract_s": 0.0,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.0675,
+      "n_hubs_walked": 0,
+      "n_children_scored": 0,
+      "missing_hub_keys": [],
+      "total_s": 0.0675
+    },
+    "head_to_head": {
+      "hub_total_s": 11348.9722,
+      "best_total_s": 0.0675,
+      "extra_compute_s": 11348.9047,
+      "ratio_hub_over_best": 168147.163,
+      "per_component_delta_s": {
+        "setup_s": 0.549,
+        "hub_pick_s": 0.153,
+        "enumeration_s": 107.7429,
+        "reward_gen_s": 85.6347,
+        "flow_extract_s": 11153.9996,
+        "unattributed_s": 0.0,
+        "mode_selection_s": 0.8256
+      },
+      "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+    }
+  }
+}

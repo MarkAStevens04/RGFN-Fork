@@ -1,0 +1,50 @@
+{
+  "cell": "rxnflow_seh",
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "similarity": 0.5,
+  "budget_modes": 300,
+  "higher_is_better": true,
+  "n_enumerated_hubs": 200,
+  "points": [
+    {
+      "gate": 5.0,
+      "best_modes": 117,
+      "best_rxn_per_mode": 2.726,
+      "best_stop_reason": "pool_exhausted",
+      "hub_modes": 300,
+      "hub_rxn_per_mode": 1.517,
+      "hub_stop_reason": "modes",
+      "edge": 1.797,
+      "hub_hubs_used": 93,
+      "hub_reward_gen_calls": 37577,
+      "pool_limited": false
+    },
+    {
+      "gate": 6.0,
+      "best_modes": 70,
+      "best_rxn_per_mode": 2.686,
+      "best_stop_reason": "pool_exhausted",
+      "hub_modes": 267,
+      "hub_rxn_per_mode": 1.903,
+      "hub_stop_reason": "pool_exhausted",
+      "edge": 1.411,
+      "hub_hubs_used": 132,
+      "hub_reward_gen_calls": 66994,
+      "pool_limited": true
+    },
+    {
+      "gate": 7.0,
+      "best_modes": 22,
+      "best_rxn_per_mode": 2.818,
+      "best_stop_reason": "pool_exhausted",
+      "hub_modes": 80,
+      "hub_rxn_per_mode": 2.212,
+      "hub_stop_reason": "pool_exhausted",
+      "edge": 1.274,
+      "hub_hubs_used": 52,
+      "hub_reward_gen_calls": 64939,
+      "pool_limited": true
+    }
+  ]
+}
