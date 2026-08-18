@@ -45,8 +45,25 @@ for i in $(seq 1 "$ROUNDS"); do
         [ -f "$marker" ] && continue
         all_done=0
         enum="$ENUM_DIR/enum_children.json"
-        # -s not -f: a zero-byte file means the writer was killed mid-flush, which is NOT ready.
+        # Coverage, NOT mere existence. "-s" was wrong and it cost three cells: rgfn_worker flushes a
+        # PARTIAL enum_children.json every 10 hubs (the same insurance PartialFlusher gives the docking
+        # workers), so the file appears minutes into a 15-hour enumeration and grows. The harvester saw
+        # it, ran the campaign, and stamped the cell done -- s43 rgfn_drd2 was campaigned at 70/200
+        # hubs, s44 rgfn_seh at 190/200, s44 rgfn_drd2 at 60/200, each producing a plausible
+        # reactions/mode measured over a fraction of the intended pool. Require every hub in hubs.csv
+        # to be present, which is the same standard merge_docking_slices.sh enforces for docking cells.
         [ -s "$enum" ] || continue
+        cov=$(python - "$enum" "$ENUM_DIR/hubs.csv" <<'PYCOV'
+import csv, json, sys
+hubs = json.load(open(sys.argv[1])).get("hubs", [])
+have = {h.get("hub_input") or h["hub_key"] for h in hubs}
+want = {r["smiles"] for r in csv.DictReader(open(sys.argv[2]))}
+print(f"{len(have & want)} {len(want)}")
+PYCOV
+) || continue
+        read -r n_have n_want <<< "$cov"
+        [ "${n_have:-0}" -ge "${n_want:-1}" ] || {
+            say "  [$CELL_TAG] partial: ${n_have}/${n_want} hubs -- waiting"; continue; }
         say "  [$CELL_TAG] enumeration present -> campaign"
         if bash experiments/lsd_hubs/matrix16/run_cell_campaign.sh "$gen" "$tgt" \
                > "$STATE/harvest_${TAG}_${CELL_TAG}.log" 2>&1; then
