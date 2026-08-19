@@ -104,7 +104,8 @@ the single most likely way to produce a wrong paper.
 | **Chemistry library** | The *fixed vocabulary*: `glue_standard_v1` = 418 building blocks + 112 reaction templates (SCENT's SMALL library). Never varies within a run. |
 | **Library** | The thing being built and measured: the set of molecules a chemist commits to synthesizing. Its size **is** its mode count. |
 | **Mode** | One molecule that (a) clears a per-target reward gate **and** (b) is Tanimoto-`< τ` (Morgan r=3 / 2048 bits) from every mode already accepted, grown greedily best-reward-first. Default τ = 0.5. |
-| **reactions/mode** | count-once total reactions ÷ modes. Lower is better. **Primary metric.** |
+| **modes at a reaction budget** | Distinct high-reward molecules delivered within a fixed budget of **100 reactions**. Higher is better. **PRIMARY readout as of 2026-08-17** — see CLAUDE.md "THE BENCHMARK'S PRIMARY READOUT". Every table in this document predates that decision and is written at the 100-mode readout; re-slice before quoting. |
+| **reactions/mode** | count-once total reactions ÷ modes. Lower is better. **Secondary** readout (was primary; the drift from the plan's own fixed-reaction headline began at Logs/056). |
 | **count-once** | Our cost model. Assembly couplings once + each distinct promoted fragment built once. **Undefined on route-less generators** — this is why any cross-generator comparison must go through SPARROW. |
 | **Hub** | A pre-terminal intermediate several finished molecules descend from. Build once, branch off it. |
 | **Native vs from-scratch** | *native* = the recipe our generator already used (free). *from-scratch* = a planner re-deriving a recipe for a finished molecule. **Which one you price with can reverse a head-to-head** (Logs/047, and §5.1). |

@@ -1,0 +1,131 @@
+{
+  "tag": "rxnflow_6td3",
+  "reward_threshold": -2.0,
+  "similarity": 0.5,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "rank_by": null,
+  "best_candidate": {
+    "strategy": "best_candidate",
+    "total_modes": 300,
+    "total_reactions": 891,
+    "reactions_per_mode": 2.97,
+    "total_reward_gen_calls": 0,
+    "reward_gen_calls_per_mode": 0.0,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 300,
+    "n_scaffolds": 299,
+    "best_reward": -5.659,
+    "median_reward": -4.216,
+    "case1_modes_at_100rxn": 34,
+    "case2_reactions_at_300modes": 891,
+    "stop_reason": "modes"
+  },
+  "hub_batching": {
+    "strategy": "hub_batching",
+    "total_modes": 300,
+    "total_reactions": 340,
+    "reactions_per_mode": 1.133,
+    "total_reward_gen_calls": 30901,
+    "reward_gen_calls_per_mode": 103.0,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 21,
+    "n_scaffolds": 251,
+    "best_reward": -6.018,
+    "median_reward": -3.36,
+    "case1_modes_at_100rxn": 96,
+    "case2_reactions_at_300modes": 340,
+    "stop_reason": "modes"
+  },
+  "compute_time": {
+    "enum_timings_meta": {
+      "setup_s": 0.847,
+      "slice_setups_s": [
+        2.0,
+        1.494,
+        1.642,
+        1.435,
+        1.196,
+        0.828,
+        0.703,
+        0.437,
+        0.866,
+        0.664,
+        0.592,
+        0.718
+      ],
+      "merged_from": [
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice10of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice11of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice12of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice1of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice2of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice3of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice4of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice5of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice6of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice7of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice8of12/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/rxnflow_6td3/enum/slice9of12/enum_timings.json"
+      ],
+      "n_slices": 12,
+      "n_hubs": 200,
+      "n_children": 308249,
+      "totals_s": {
+        "enumeration_s": 380.147,
+        "reward_gen_s": 177954.611,
+        "flow_extract_s": 14336.287
+      },
+      "device": "cuda",
+      "reward_name": "6td3",
+      "component_split": "full",
+      "partial": false
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "setup_s": 0.847,
+      "hub_pick_s": 0.148,
+      "enumeration_s": 40.1723,
+      "reward_gen_s": 17483.6702,
+      "flow_extract_s": 1462.2794,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 2.8484,
+      "n_hubs_walked": 21,
+      "n_children_scored": 30901,
+      "missing_hub_keys": [],
+      "total_s": 18989.9653
+    },
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "setup_s": 0.0,
+      "hub_pick_s": 0.0,
+      "enumeration_s": 0.0,
+      "reward_gen_s": 0.0,
+      "flow_extract_s": 0.0,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.2256,
+      "n_hubs_walked": 0,
+      "n_children_scored": 0,
+      "missing_hub_keys": [],
+      "total_s": 0.2256
+    },
+    "head_to_head": {
+      "hub_total_s": 18989.9653,
+      "best_total_s": 0.2256,
+      "extra_compute_s": 18989.7396,
+      "ratio_hub_over_best": 84159.321,
+      "per_component_delta_s": {
+        "setup_s": 0.847,
+        "hub_pick_s": 0.148,
+        "enumeration_s": 40.1723,
+        "reward_gen_s": 17483.6702,
+        "flow_extract_s": 1462.2794,
+        "unattributed_s": 0.0,
+        "mode_selection_s": 2.6228
+      },
+      "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+    }
+  }
+}

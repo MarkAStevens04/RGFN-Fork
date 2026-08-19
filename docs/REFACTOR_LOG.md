@@ -1571,3 +1571,221 @@ window, confirmed via `sacct`.
 paths explicitly, or confirm `git status --porcelain` shows nothing under `external/`. If a clone
 ever has to be re-created, remember it carries first-use downloads that the setup scripts fetch but
 `git clone` does not.
+
+---
+
+## 2026-08-14 — New benchmark baselines: REINVENT 4 (Phase 1a) + shared competitor plumbing
+
+**Why.** The external comparison rests on a single route-less baseline (S3-GFN). Adding more
+entrants — REINVENT 4 and Saturn (route-less, S3-GFN's class), SynFormer (reaction-aware, the cell
+that isolates the *flow field* from mere reaction-grounding), and TANGO — is phased work; this entry
+covers Phase 1a and the plumbing every later phase reuses. Surrogate targets only (sEH, DRD2), N=500
+pools, 3 seeds, deliverable = 100 modes.
+
+**New — shared, generator-agnostic**
+- `experiments/lsd_hubs/campaign/mode_saturation.py` — recovers the pre-flight that Logs/056 ran from
+  scratch and never committed, and promotes it to a **gate**: MultiAiZ is ~2.25 h per N=500 pool and
+  its cache key is the pool, so a pool that cannot reach 100 modes must be caught in seconds, not
+  after the spend. Regression-pinned: reproduces Logs/056's published 41.2% mode rate (206 modes at
+  n=500) on the seed-42 S3-GFN sEH pool exactly.
+- `experiments/lsd_hubs/campaign/submit_competitor_routes.sh` — `submit_s3gfn_replicate_routes.sh`
+  generalized to any route-less entrant (`GENERATOR` × `TARGET` × `SEED`), saturation gate in front.
+  `build_s3gfn_pools.py` needed no change; it was already generator-agnostic (only its name is
+  S3-GFN-specific).
+
+**New — REINVENT 4 adapter** (`validation/generators/reinvent/`, `validation/configs/reinvent_*.yaml`,
+`experiments/lsd_hubs/campaign/submit_reinvent.sh`, `external/setup_reinvent.sh` replacing the stub).
+Follows the S3-GFN adapter shape exactly: per-adapter frozen-reward copy, own env, pool crosses to
+`rgfn` by subprocess, `has_route=0`.
+
+**Three upstream facts that cost time and are recorded so they cost it once.**
+
+1. **v4.5.11 cannot be seeded through its own interface.** `Reinvent.py` reads `seed` from the TOML
+   but gates the call on the *CLI* flag and passes the *config* value, while `ReinventConfig` is
+   `extra="forbid"` with **no `seed` field** — so a TOML carrying `seed` is a hard ValidationError,
+   `input_config.get("seed")` is always `None`, and `set_seed(None)` returns immediately. Every
+   invocation silently fails to seed. `validation/generators/reinvent/_seeded_launcher.py` seeds and
+   then defers to `main_script()` verbatim. Without it our three replicates per cell would have been
+   real but irreproducible.
+2. **Install from the lockfile; `install.py` does not exist at this tag.** v4.5.11 documents
+   `pip install -r requirements-linux-64.lock` then `pip install --no-deps .`. Also read the
+   **lockfile** for what is installed, not `pyproject.toml`: pyproject says `torch==2.5.1+cu124`, the
+   lockfile pins **cu121** (plus `numpy==1.26.4`, Python 3.10). The setup script now asserts the
+   installed torch matches the pyg find-links target, since a mismatch would otherwise surface as a
+   `torch_sparse` import error inside a job hours later.
+3. **The tag is pinned for packaging reasons, not scientific ones** (REINVENT's RL is DAP in every
+   4.x release): `main` pins `torch==2.12.0` with no prebuilt `torch-sparse` wheel — which
+   `bengio2021flow` imports at module level — requires `numpy>=2` (breaks the legacy DRD2 sklearn
+   pickle), and moved the priors to Zenodo (a download that fails on compute nodes).
+
+**Two environment constraints now in force for all later phases.**
+- **New conda envs go on `/scratch`, addressed with `conda run -p`**, never `miniconda3/envs`:
+  `/home/markymoo` is at ~95 G of its 110 G quota with `conda clean -a` reporting nothing to reclaim.
+- **Clone shallow at the tag** (`--branch <tag> --depth 1`). REINVENT4's full history is 1.49 GB of
+  git objects because every prior model is versioned in it.
+
+**Two more upstream constraints found by the first real run, both now encoded:**
+
+4. **`max_score` must be `<= 1.0`** — `RLConfig` rejects anything larger, so the "unreachable score"
+   trick does not work. It is not needed either: `SimpleTerminator` fires on
+   `step > min_steps and score >= max_score`, and `step` never exceeds `max_steps`, so
+   **`min_steps == max_steps` is what actually guarantees a fixed budget**. The score bound is
+   belt-and-braces.
+5. **`gflownet --no-deps` leaves `omegaconf` missing**, and `gflownet/__init__.py` imports it — so
+   *any* `from gflownet.models import bengio2021flow` fails. It is not in REINVENT's lockfile, and
+   our own driver needs it too. `setuptools<81` is also required or several bundled REINVENT
+   components fail to import and the plugin registry silently comes up short (58 vs 59 components),
+   which would make the discovery check weaker than it looks.
+
+**Verified.** Statically: `bash -n`, `py_compile`, no `__init__.py` under `plugins/` (which would
+break namespace-package discovery), repo-root resolution from the plugin file, and both generated
+TOMLs parse with no key `ReinventConfig` forbids. In-env: the setup script's own four checks (sEH
+MPNN loads from the pre-placed cache; the component is *registered and typed*, not merely importable;
+numpy/torch versions; and real molecules scored through the component with NaN — not 0 — for invalid
+input), and the script re-runs idempotently. End-to-end: full RL -> checkpoint -> sampling from the
+trained agent -> ingest, conformant `has_route=0` dataset, on **both** sEH and DRD2.
+
+**Two results from that validation worth keeping:**
+
+- **The seeding fix demonstrably works.** Two seed-42 runs produce a **bit-identical** 40/40 pool;
+  seed 43 shares **0/40** with them. So the three replicates per cell are both reproducible and
+  genuinely independent — which is exactly what would have been silently false without
+  `_seeded_launcher.py`.
+- **The DRD2 oracle is environment-invariant.** It is an SVC pickled with sklearn 0.23, so every env
+  raises `InconsistentVersionWarning`. Measured across `reinvent4` (sklearn 1.7.2), `rgfn` (1.8.0),
+  `fraggfn` (1.7.2, rdkit 2026.03.3) and `scent` (1.2.2): **identical probabilities to 12 decimal
+  places**. This matters beyond REINVENT — each generator runs in its own env, so a version-dependent
+  unpickle would have meant every entrant optimizing a slightly different DRD2, invisibly. Re-run the
+  check if the pickle is ever regenerated.
+
+**Still open:** the first full-scale cell (`reinvent_seh` seed 42, job 73605) and everything
+downstream of it (saturation gate -> MultiAiZ -> frontiers). Saturn, SynFormer and TANGO not started.
+
+### 2026-08-14 (same day, later) — Phase 1a result + Phase 1b: Saturn
+
+**REINVENT 4 sEH seed 42 ran end-to-end** on an A100 (job 73606, `-p debug`): 1000 RL steps in
+**21.2 min** (~1.1 s/step), 2,000 unique valid candidates sampled from the trained agent, ingested
+conformant with `has_route=0`. The mode-saturation gate passes and shows the baseline is **not a
+strawman**: 1,860 of 2,000 clear the 7.0 gate, and at N=500 the pool holds **201 modes (rate 0.402)**
+against S3-GFN's 206 / 0.412 on the same metric — the two route-less entrants are near-identical in
+mode density. 100 modes are reachable from 250 candidates. Downstream (MultiAiZ → both frontiers) is
+job 73610.
+
+**Saturn adapter built** (`validation/generators/saturn/`, `validation/configs/saturn_*.yaml`,
+`experiments/lsd_hubs/campaign/submit_saturn.sh`, `external/setup_saturn.sh`). Validated end-to-end
+on both targets; measured **~19 oracle calls/s**, so a full 10,000-call cell is **~10 min**.
+
+`fixed_reward.py` is byte-for-byte the REINVENT copy — verified by comparing ASTs with docstrings
+stripped, not by eye. Reward parity is now measured on both targets across five envs: the sEH MPNN
+returns 0.0273 for ethanol in `saturn`, `reinvent4` and `s3gfn` alike, and the DRD2 pickle agrees to
+12 decimal places in `saturn` / `reinvent4` / `rgfn` / `fraggfn` / `scent` despite spanning sklearn
+1.2.2 → 1.8.0. Both checks are now assertions inside `setup_saturn.sh` rather than notes.
+
+**Five upstream facts about Saturn, all found by reading source or by a failing smoke:**
+
+1. **The hash Saturn's own README pins for its paper (`fee0179`) is BROKEN.** Its
+   `reinforcement_learning.py` reads `configuration.reinforcement_learning.margin_threshold`, which
+   `ReinforcementLearningParameters` does not define, so `ReinforcementLearningAgent` cannot be
+   constructed — goal-directed generation cannot run at all. Checked across refs: `fee0179` is the
+   *only* one whose RL module mentions `margin_threshold`, and *no* ref defines it, i.e. the line was
+   removed right after and that commit caught the repo mid-edit. **We pin `de5cd7f`** (the TANGO
+   pre-print hash), the next published-paper pin from the same authors, which runs — and which Phase
+   3 needs anyway, so one clone and one pin now serve both arms. `setup_saturn.sh` grew a check that
+   every attribute the RL module reads off the dataclass actually exists, so this class of bug fails
+   at setup rather than hours into a job.
+2. **`ReinforcementLearningAgent.__init__` gained a leading `logging_frequency`** between the two
+   hashes. The driver now passes every argument by keyword; a positional call would have silently
+   bound the log path to the frequency.
+3. **`Oracle.construct_oracle` does `OracleComponentParameters(**component)`**, so `components` must
+   be plain dicts — passing the dataclass the signature advertises is a TypeError.
+4. **A C compiler is a RUNTIME dependency.** Mamba's layer-norm goes through Triton, which JIT-builds
+   a launcher stub on first use and dies with "Failed to find C compiler". This cluster has no
+   `/usr/bin/gcc` and `module load gcc` does not populate PATH non-interactively, so `gcc_linux-64`
+   goes into the env — which is what Saturn's README recommends anyway. `conda run -p` exports `CC`.
+5. **Saturn seeds correctly** via `set_seed_everywhere` — no launcher needed, unlike REINVENT.
+
+**Deliberate deviation from upstream `setup.sh`: torch 2.1.0+cu118, not 1.12.1+cu113.** Two
+independent constraints, neither about Saturn's science: `bengio2021flow` needs a prebuilt
+`torch_sparse`, and `mamba-ssm`/`causal-conv1d` publish wheels for cu118/cu122 across torch 1.12–2.3
+but **none for cu113 at any torch version** — under cu113 both would compile against nvcc 11.3, which
+this cluster does not have (that is their documented Issue #1). torch 2.1.0+cu118 is the combination
+where every wheel exists, so there is **no CUDA compile at all**. We also skip openbabel and
+xtb-python: the only hard import in Saturn's eager oracle chain is `morfeus`, and openbabel is needed
+solely by GEAM's docking oracle, which `_stubs.py` stubs (same technique as the S3-GFN adapter's
+`unidock_vina` stub).
+
+**Queue etiquette.** Both submit scripts now accept `CELLS="seh:43 drd2:42 ..."` and run the cells
+sequentially in one job. The account's QOS caps submitted jobs at 60 and three other agents share it,
+so eleven short cells submitted individually would crowd them out for no gain.
+
+### 2026-08-14 (same day, later still) — Phase 2: SynFormer, the reaction-aware entrant
+
+**Why it is the most valuable of the four new baselines.** REINVENT, Saturn and S3-GFN are all
+route-LESS. SynFormer generates molecules AS SYNTHETIC PATHWAYS, so its molecules carry a route by
+construction (`has_route=1`) exactly as ours do. It is therefore the only cell that separates the two
+things the headline conflates — is the advantage the **flow field**, or merely **reaction-grounding**?
+No ablation on our own generators can answer it, and `LSD_FLOW_BENCHMARK_PLAN.md` §7 names the gap.
+It also skips MultiAiZ entirely (~2.25 h/pool the route-less entrants pay).
+
+**New:** `external/setup_synformer.sh` (replacing the placeholder stub),
+`validation/generators/synformer/{__init__,fixed_reward,route_convert,run_synformer_fixed}.py`,
+`validation/configs/synformer_{seh,drd2}_fixed.yaml`, `experiments/lsd_hubs/campaign/submit_synformer.sh`,
+plus a `--route-source external` branch in `sparrow_select_frontier.py`.
+
+**No Enamine licence needed**, despite the README. That caveat governs re-PREPROCESSING; the
+preprocessed `fpindex.pkl` / `matrix.pkl` and the trained checkpoint are on HuggingFace, and the
+sampler reads only those (confirmed in source — it never touches the raw SDF).
+
+**The route converter is the substantive piece.** The obvious source, the `synthesis` column, is
+`Stack.get_action_string()` — postfix tokens naming the leaves and the reactions but **not the
+intermediate products**, and a reaction network is precisely a graph of intermediates. Recovering
+them by re-running templates in RDKit would reimplement the model's own bookkeeping with a fresh
+chance to be wrong. Instead `route_convert.py` patches `StatePool.get_dataframe` to serialize
+`Stack.get_tree()`, which already carries every intermediate. Legitimate because the sampler's
+workers are `mp.Process` under Linux's default **fork**, so a parent-side patch is inherited (their
+CUDA init happens after the fork, which is what makes fork safe). One trap encoded: `get_tree`
+appends children by POPPING a stack, so `children[0]` is the LAST reactant — they are reversed before
+emitting `reactant`/`fragments`, the difference between a correct route and a silently transposed one.
+
+**`--route-source external` is additive and validated.** It folds a `routes.jsonl` into the same
+`{canonical_smiles: [route, ...]}` shape the multiaiz artifact uses, so `build_network`, the MILP and
+the pricing are literally the same code path; `is_native` deliberately excludes it, so no recipe
+expansion is attempted (every leaf is purchasable). Verified on a synthetic two-molecule fixture
+sharing one intermediate: **5 compound nodes, 2 reaction nodes, the shared acid collapsing to a
+single node** — i.e. the merge that the whole cost model depends on actually happens.
+
+**Deviations from upstream, both forced and documented.** We do not install `pytdc`: their GA driver
+builds `tdc.Oracle("SA")` at import, and TDC self-downloads into `./oracle`, which fails on a compute
+node. Our driver reproduces their GA loop verbatim (`sanitize`, `make_mating_pool`, `reproduce`
+copied; `crossover`/`mutate` imported unchanged; same population/offspring/mutation settings) against
+our frozen reward, and replaces their patience-based early stop with a fixed oracle budget so the
+training budget does not depend on how easy the target is. The starting population is their own
+bundled `data/chembl_filtered_1k.txt` rather than TDC's ZINC — no download, and ChEMBL matches
+REINVENT's and Saturn's priors.
+
+**Four environment traps, each of which cost a build:**
+
+1. **numpy must be `<2`.** torch 2.1.0 is built against the numpy 1.x C API; numpy 2 makes `import
+   torch` warn "Failed to initialize NumPy: _ARRAY_API not found" and then fail at the first
+   `torch.tensor(<np array>)` with "Could not infer dtype of numpy.float32" — surfacing while loading
+   the sEH weights, far from the cause.
+2. **Pin scipy in the SAME pip command as numpy.** Installing numpy alone and letting a later package
+   pull scipy yields a numpy-2-built scipy that fails with "numpy._core.multiarray failed to import";
+   recovering needs a clean uninstall.
+3. **Cap BLAS/OMP threads for the WHOLE script, not just verification.** The login node's
+   `RLIMIT_NPROC` is 1024 and OpenBLAS spawns one thread per core, segfaulting the interpreter — and
+   this bites during *installation*, because synformer's pyproject uses
+   `version = {attr = "synformer.__version__"}`, so `pip install -e .` imports the package.
+4. **`ln -sfn TARGET LINK` does not replace LINK when LINK is a real directory** — it creates the link
+   *inside* it. The clone ships a tracked `data/trained_weights/`, so the 2.8 GB checkpoint ended up
+   one level down and read as "missing". The setup now removes a real directory first, and refuses if
+   it holds anything but a `.gitignore`.
+
+**The 6.8 GB lives on `$SCRATCH`** and is symlinked into the clone, because the checkpoint stores its
+data paths RELATIVE and resolves them against cwd. Symlinks under `external/` were once genuinely
+dangerous here; the ignore rule is now `external/*`, which covers them, and that was re-verified
+behaviourally with `git check-ignore` before relying on it.
+
+**Not yet verified:** any SynFormer run at all — the first smoke is in flight. Wall-clock is unknown
+and the submit script's 6 h is a guess, because the bottleneck is projection (transformer decode at
+search_width 24 over ~200 molecules/generation, 4 GB index per worker), not the oracle.

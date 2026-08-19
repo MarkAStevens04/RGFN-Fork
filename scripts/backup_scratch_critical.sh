@@ -1,10 +1,18 @@
 #!/bin/bash
-# Back up the IRREPLACEABLE parts of $SCRATCH to $HOME, so a scratch purge cannot cost us a training
-# run or block post-hoc analysis.
+# Back up the IRREPLACEABLE parts of $SCRATCH to the def-naeilum PROJECT space, so a scratch purge
+# cannot cost us a training run or block post-hoc analysis.
 #
-# WHY: /scratch on this cluster is purge-eligible and holds everything expensive we produce, while
-# /home is not purged. The repo already versions the small committed results; what is NOT in git and
-# NOT reproducible on a deadline is the model weights and the LSD-Flow artifacts derived from them.
+# WHY: /scratch on this cluster is purge-eligible and holds everything expensive we produce. The repo
+# already versions the small committed results; what is NOT in git and NOT reproducible on a deadline
+# is the model weights and the LSD-Flow artifacts derived from them.
+#
+# WHY NOT $HOME (changed 2026-08-18): /home is a 110 G quota and these backups had grown to 46 G of
+# it, pushing it to 89 % and blocking logins. /project has ~1.1 T. The old $HOME copies were migrated
+# on 2026-08-18 (copy -> checksum-verify all 227 .pt -> delete). Pointing DEST back at $HOME would
+# recreate the outage, which is exactly what this script did before.
+#
+# /project is mounted on the LOGIN nodes but typically NOT on compute nodes -- run this from a login
+# node, as its usage line already assumes. Do not call it from inside a SLURM job.
 #
 # Two tiers, most-critical first, so a partial run still saves the things that matter:
 #
@@ -30,7 +38,7 @@
 set -uo pipefail
 
 SRC=${SRC:-/scratch/markymoo/rgfn_runs}
-DEST=${DEST:-$HOME/scratch_backup/rgfn_runs}
+DEST=${DEST:-/project/def-naeilum/naeilum/SDL3/RGFN_LSD_MarkStevens/backups/scratch_runs/rgfn_runs}
 DRY=""
 TIER1_ONLY=0
 for a in "$@"; do

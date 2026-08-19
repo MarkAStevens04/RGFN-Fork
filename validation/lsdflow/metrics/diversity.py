@@ -29,7 +29,7 @@ molecule dozens of times. Every function here accepts a ``fps=`` sequence aligne
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
 try:
     from rdkit import Chem, DataStructs
@@ -138,6 +138,70 @@ def mode_representatives(
         if max_modes and len(reps) >= max_modes:
             break
     return reps
+
+
+def mode_assignments(
+    keys: Sequence[str],
+    rewards: Optional[Sequence[float]] = None,
+    *,
+    higher_is_better: bool = True,
+    reward_threshold: Optional[float] = None,
+    similarity_threshold: float = _MODE_SIMILARITY_THRESHOLD,
+    fps: Optional[Sequence] = None,
+) -> Dict[str, List[str]]:
+    """``{representative_smiles: [member_smiles, ...]}`` — the FULL partition behind
+    :func:`mode_representatives`, not just its centres.
+
+    :func:`mode_representatives` answers "how many distinct families are here?" by naming one member
+    of each. This answers "which family is each molecule in?", which is what an external selector
+    needs if it is to be given *our* notion of distinctness rather than its own. Every molecule that
+    passes the gate lands in exactly one group, so the group count equals ``count_modes`` on the same
+    arguments — the two readouts cannot disagree.
+
+    Assignment rule follows directly from how sphere exclusion rejects: a molecule was excluded
+    because it was more similar than ``similarity_threshold`` to some already-accepted mode, so it
+    belongs to that mode. Where several qualify it goes to the **most similar**, and a molecule
+    similar to none (possible only for the fingerprint-less) is dropped rather than forced.
+
+    Used to hand SPARROW our tau-modes as its clusters ([fromer2025diversity] defines clusters as an
+    arbitrary, project-supplied partition precisely so this substitution is legitimate).
+    """
+    reps = mode_representatives(
+        keys,
+        rewards,
+        higher_is_better=higher_is_better,
+        reward_threshold=reward_threshold,
+        similarity_threshold=similarity_threshold,
+        fps=fps,
+    )
+    if not reps:
+        return {}
+    if Chem is None:  # RDKit-unavailable fallback, mirroring count_modes: every key its own group
+        return {keys[i]: [keys[i]] for i in reps}
+
+    rep_fps = [_fp_at(keys, fps, i) for i in reps]
+    groups: Dict[str, List[str]] = {keys[i]: [] for i in reps}
+    rep_keys = [keys[i] for i in reps]
+    rep_pos = {i: n for n, i in enumerate(reps)}
+
+    for i, k in enumerate(keys):
+        if not k:
+            continue
+        if i in rep_pos:  # a representative is the first member of its own group
+            groups[k].append(k)
+            continue
+        if rewards is not None and not _passes_gate(rewards[i], reward_threshold, higher_is_better):
+            continue
+        fp = _fp_at(keys, fps, i)
+        if fp is None:
+            continue
+        sims = DataStructs.BulkTanimotoSimilarity(fp, rep_fps)
+        best = max(range(len(sims)), key=sims.__getitem__)
+        if sims[best] > similarity_threshold:
+            groups[rep_keys[best]].append(k)
+        # else: passed the gate yet resembles no accepted mode -- only reachable when `keys` holds
+        # duplicates or the caller passed mismatched fps; dropping is safer than inventing a group.
+    return groups
 
 
 def count_modes(

@@ -1,0 +1,45 @@
+# REINVENT 4 FIXED-REWARD baseline on DRD2 — a ROUTE-LESS SMILES entrant, same class as S3-GFN.
+#
+# The DRD2 twin of reinvent_seh_fixed.yaml; read that file for the entrant's role and the oracle-
+# budget rationale. Only the reward and the transform differ.
+#
+# FAIRNESS: the same cached TDC DRD2 activity oracle (oracle/drd2_current.pkl) the reaction-GFN
+# entrants use, with TDC's exact count-Morgan/FCFP6 featurization. Mode gate: DRD2 > 0.5.
+#
+# Run (repo root, reinvent4 env; candidate emission shells to the rgfn env):
+#   conda run -n reinvent4 python validation/generators/reinvent/run_reinvent_fixed.py \
+#       --cfg validation/configs/reinvent_drd2_fixed.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+
+run:
+  name: fixed_reward/reinvent_drd2
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  system: drd2
+  reward_name: drd2
+  n_samples: 2000
+  sample_oversample: 6.0
+  score_units: "drd2_tdc_activity (higher is better; 0-1)"
+
+reward:
+  type: drd2
+  model_path: /home/markymoo/projects/RGFN_Fork/RGFN-Fork/oracle/drd2_current.pkl
+  device: cpu
+  rescore_device: cpu
+  # NO transform: the DRD2 oracle already returns a probability on [0, 1], which is exactly what
+  # REINVENT's DAP objective wants. Adding one would be a knob that looks meaningful and is not.
+  transform: {}
+
+reinvent:
+  device: cuda:0
+  prior_file: ""
+  batch_size: 128
+  max_steps: 1000                        # ~128,000 reward calls; see reinvent_seh_fixed.yaml
+  sigma: 128
+  learning_rate: 0.0001
+  diversity_filter:
+    type: IdenticalMurckoScaffold
+    bucket_size: 25
+    minscore: 0.4
+    minsimilarity: 0.4

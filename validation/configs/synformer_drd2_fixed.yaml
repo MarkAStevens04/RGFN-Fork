@@ -1,0 +1,69 @@
+# SynFormer FIXED-REWARD baseline on DRD2 — the REACTION-AWARE, non-GFN entrant.
+#
+# Unlike REINVENT / Saturn / S3-GFN, SynFormer generates molecules AS SYNTHETIC PATHWAYS, so its
+# molecules carry a route by construction (has_route=1) exactly as ours do. That makes this the cell
+# that separates "the flow field is what wins" from "reaction-grounding is what wins" — a question no
+# ablation on our own generators can answer. It skips MultiAiZ entirely and prices through
+# sparrow_select_frontier.py --route-source external.
+#
+# FAIRNESS: the optimizer is upstream's own GraphGA-SF (a Graph GA proposes, SynFormer projects into
+# synthesizable space, the oracle scores), with the cached TDC DRD2 activity oracle so it optimizes
+# exactly what every other entrant does. Mode gate: DRD2 > 0.5. The pickle scores identically to 12
+# decimal places across all five benchmark envs.
+#
+# CATALOGUE: SynFormer's own ~223k Enamine building blocks + 115 templates, as shipped. That is far
+# larger than our 418-block library, and deliberately so — a broad catalogue means purchasable leaves
+# are free, which is the baseline's best case, not a handicap.
+#
+# Run (repo root, synformer env; candidate emission shells to the rgfn env):
+#   conda run -p /scratch/markymoo/conda_envs/synformer python \
+#     validation/generators/synformer/run_synformer_fixed.py \
+#     --cfg validation/configs/synformer_drd2_fixed.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+
+run:
+  name: fixed_reward/synformer_drd2
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  system: drd2
+  reward_name: drd2
+  # Upstream's Oracle defaults to max_oracle_calls = 10000 — the PMO convention, and the same budget
+  # Saturn's reference config uses. Counted over DISTINCT molecules, as their buffer does.
+  budget: 10000
+  n_samples: 2000                        # pool size to emit — matches the other entrants
+  score_units: "drd2_tdc_activity (higher is better; 0-1)"
+
+reward:
+  type: drd2
+  model_path: /home/markymoo/projects/RGFN_Fork/RGFN-Fork/oracle/drd2_current.pkl
+  device: cpu                            # also keeps the parent CUDA-free before the sampler forks
+  # NO reward shaping here, unlike the REINVENT/Saturn configs. GraphGA-SF consumes the raw score
+  # directly as a mating-pool weight (`p / sum_scores`); it never needs a [0,1] mapping, so adding
+  # one would change the selection pressure for no reason. The driver clamps at 0 because a negative
+  # weight would corrupt the probability distribution.
+
+synformer:
+  model_path: ""                         # default: external/synformer/data/trained_weights/sf_ed_default.ckpt
+  starting_population: ""                # default: the clone's own data/chembl_filtered_1k.txt
+                                         # Their bundled ChEMBL set, not TDC's ZINC: it needs no
+                                         # external download, and ChEMBL matches REINVENT's and
+                                         # Saturn's priors so the entrants start from comparable space.
+  # GA settings — upstream's own (experiments/graphga_sf_opt.py `config` dict).
+  population_size: 100
+  offspring_size: 100
+  mutation_rate: 0.1
+  # Projection settings — upstream's own `projection()` defaults.
+  search_width: 24
+  exhaustiveness: 64
+  time_limit: 180
+  num_gpus: -1                           # -1 = all visible; a 1-GPU allocation gives 1
+  # 2 = the library default for run_parallel_sampling_return_smiles. Upstream's graphga_sf_opt.py
+  # passes 1, but that is a WALL-CLOCK choice with no algorithmic content: each worker runs the same
+  # per-molecule StatePool/evolve loop, two are simply in flight at once. Raised to 2 so the full
+  # 10,000-call budget is affordable. Each worker holds its own copy of the 4 GB index, so watch host
+  # RAM if this is raised much further.
+  num_workers_per_gpu: 2
+  backend: parallel                      # parallel = upstream's WorkerPool | inprocess = fallback
+  max_evolve_steps: 12                   # upstream's run_sampling_one_cpu default
+  max_results: 100

@@ -115,6 +115,39 @@ def main():
     ap.add_argument(
         "--max-targets", type=int, default=None, help="hard cap on number of selected targets"
     )
+    ap.add_argument(
+        "--clusters",
+        default="",
+        help="JSON {cluster_name: [SMILES, ...]} partitioning the pool. SPARROW treats clusters as "
+        "an arbitrary caller-supplied partition ([fromer2025diversity]), so we pass OUR tau-modes "
+        "and the diversity it optimizes is the same quantity the benchmark reports.",
+    )
+    ap.add_argument(
+        "--lambda-div",
+        type=float,
+        default=0.0,
+        help="SPARROW'S OWN diversity mechanism ([fromer2025diversity] sec 2.2, objective form): "
+        "weight on the number of clusters represented, added to the objective so diversity is "
+        "TRADED OFF against reward rather than required. This is the native path and the one we "
+        "use; sweep it to trace their Pareto front. Needs --clusters.",
+    )
+    ap.add_argument(
+        "--gap-rel",
+        type=float,
+        default=None,
+        help="relative MIP gap for CBC. SPARROW hardcodes gapRel=1e-7 -- proving optimality to one "
+        "part in ten million, far tighter than any effect this benchmark can resolve, and the reason "
+        "diversity-weighted solves run for hours without converging. Setting e.g. 1e-3 accepts a "
+        "solution provably within 0.1%% of optimal, which is well inside our noise. Applied by "
+        "overriding the solver at call time; external/sparrow is left untouched.",
+    )
+    ap.add_argument(
+        "--min-clusters",
+        type=int,
+        default=None,
+        help="require the selection to represent at least this many clusters — the CONSTRAINT form "
+        "of [fromer2025diversity] sec 2.2. Needs --clusters.",
+    )
     a = ap.parse_args()
 
     if a.select:
@@ -132,6 +165,16 @@ def main():
             )
     elif a.max_rxns is not None or a.max_targets is not None:
         ap.error("--max-rxns/--max-targets only apply to --select (pricing must make every target)")
+    if a.min_clusters is not None and not a.clusters:
+        ap.error("--min-clusters needs --clusters (the partition it counts representation over)")
+    if a.lambda_div > 0 and not a.clusters:
+        ap.error("--lambda-div needs --clusters (the partition whose representation it rewards)")
+    if a.lambda_div > 0 and a.min_clusters is not None:
+        ap.error(
+            "--lambda-div and --min-clusters are two DIFFERENT mechanisms for the same goal "
+            "(SPARROW's soft objective vs a hard rule we add on top). Combining them makes the "
+            "result attributable to neither. Pick one."
+        )
 
     from sparrow.route_graph import RouteGraph
     from sparrow.selector.linear import LinearSelector
@@ -144,10 +187,13 @@ def main():
     work_dir = Path(a.work_dir) if a.work_dir else Path(a.out).parent / "sparrow_run"
     work_dir.mkdir(parents=True, exist_ok=True)
 
+    weights = list(_OBJECTIVES[a.objective])
+    weights[3] = a.lambda_div  # slot 3 is SPARROW's diversity term; >0 makes it build the d_i vars
+
     sel = LinearSelector(
         route_graph=graph,
         target_dict=target_dict,
-        weights=_OBJECTIVES[a.objective],
+        weights=weights,
         # PRICING forces every target in; SELECTION lets the MILP choose (see module docstring).
         constrain_all_targets=not a.select,
         dont_buy_targets=True,  # ... and cannot be trivially "bought"
@@ -157,11 +203,19 @@ def main():
         max_seconds=a.max_seconds,
         max_rxns=a.max_rxns,  # None in pricing mode -> constraint not added
         max_targets=a.max_targets,
+        # clusters are CLEANED by Selector.clean_clusters (SMILES -> graph ids, canonicalizing on
+        # the way), so we hand it SMILES and let it map. N_per_cluster stays 0 on purpose: that
+        # switch is SPARROW's OTHER cluster mechanism ("take >= N from EVERY cluster", Briem-style),
+        # which with tau-modes clamps to 1 and would force one pick per mode -- not the deliverable
+        # we measure. The constraint we want is "represent at least K clusters", added below.
+        clusters=json.loads(Path(a.clusters).read_text()) if a.clusters else None,
     )
 
     result = {
         "objective": a.objective,
-        "weights": _OBJECTIVES[a.objective],
+        "weights": weights,
+        "lambda_div": a.lambda_div,
+        "gap_rel": a.gap_rel,
         "mode": "selection" if a.select else "pricing",
         "max_rxns": a.max_rxns,
         "max_targets": a.max_targets,
@@ -170,14 +224,83 @@ def main():
         "n_reaction_nodes": len(graph.reaction_nodes),
         "build_s": round(build_s, 3),
     }
+
+    def _add_min_cluster_constraint(selector, k):
+        """Require the selection to represent >= k clusters ([fromer2025diversity] sec 2.2, the
+        CONSTRAINT variant). Built here rather than upstream because SPARROW ships the two adjacent
+        mechanisms but not this one: `add_diversity_objective` creates the same "cluster represented"
+        binaries but spends them as a weighted OBJECTIVE term (soft, traces a Pareto front), and
+        `set_cluster_constraints` enforces ">= N from EVERY cluster" (a different, much stronger
+        requirement). We need the hard "deliver K distinct families" form so the arm is read at the
+        same fixed deliverable as every other arm in the benchmark.
+
+        d[i] = 1 iff cluster i has any selected member. `d[i] <= sum(members)` alone would let the
+        solver set every d to 0 for free, so it is the `sum(d) >= k` constraint that does the work:
+        together they force at least k clusters to contain a selection. Upper-linking only is
+        correct here precisely BECAUSE d is pushed up by the constraint rather than by an objective.
+        """
+        from pulp import LpVariable, lpSum
+
+        groups = list(selector.clusters.values())
+        if k > len(groups):
+            raise SystemExit(
+                f"[sparrow_worker] --min-clusters {k} exceeds the {len(groups)} clusters present; "
+                "the problem would be infeasible. Lower it or widen the pool."
+            )
+        d = LpVariable.dicts("mincluster", indices=range(len(groups)), cat="Binary")
+        for i, ids in enumerate(groups):
+            selector.problem += d[i] <= lpSum(selector.m[cid] for cid in ids)
+        selector.problem += lpSum(d.values()) >= k
+        return len(groups)
+
     try:
         s0 = time.perf_counter()
         sel.define_variables()
         sel.set_objective()
         sel.set_constraints()
+        if a.min_clusters is not None:
+            n_groups = _add_min_cluster_constraint(sel, a.min_clusters)
+            result["n_clusters"] = n_groups
+            result["min_clusters"] = a.min_clusters
+            print(
+                f"[sparrow_worker] diversity CONSTRAINT: represent >= {a.min_clusters} "
+                f"of {n_groups} clusters",
+                flush=True,
+            )
+        if a.gap_rel is not None:
+            # Override CBC's gap WITHOUT editing the upstream clone: re-bind problem.solve to a
+            # solver carrying our gap. Upstream's optimize() calls self.problem.solve(...) with its
+            # own hardcoded PULP_CBC_CMD, so intercepting at the problem object is the least
+            # invasive seam that still takes effect.
+            from pulp import PULP_CBC_CMD
+
+            _solver = PULP_CBC_CMD(
+                gapRel=a.gap_rel, gapAbs=1e-9, msg=False, timeLimit=a.max_seconds
+            )
+            _orig_solve = sel.problem.solve
+            sel.problem.solve = lambda *_args, **_kw: _orig_solve(_solver)
+            print(
+                f"[sparrow_worker] CBC gapRel overridden to {a.gap_rel} (upstream default 1e-7)",
+                flush=True,
+            )
         sel.optimize()  # raises RuntimeError if infeasible
         solve_s = time.perf_counter() - s0
         import pulp
+
+        # TIME-LIMIT DETECTION. CBC reports status "Optimal" for the best solution it happened to
+        # hold when a time limit stops it, and PuLP's sol_status does not distinguish either
+        # (verified on pulp 3.3.2: a 2 s-limited solve still reports "Optimal Solution Found").
+        # Taking that at face value publishes a truncated search as a proven optimum -- exactly the
+        # failure that made a budget-1200 solve return LOWER reward (4893) than a budget-800 solve
+        # (5760) while both claimed Optimal, which is impossible for true optima since the tighter
+        # problem's solution is feasible in the looser one.
+        #
+        # We therefore judge by wall-clock against the cap. A solve that ran to ~the limit is
+        # reported as TimeLimit and its objective treated as a LOWER BOUND, never as optimal. The
+        # threshold errs toward caution: mislabelling a genuine optimum as unproven costs us a
+        # footnote, the reverse costs us a wrong claim.
+        time_capped = a.max_seconds is not None and solve_s >= 0.95 * a.max_seconds
+        raw_status = pulp.LpStatus[sel.problem.status]
 
         mol_ids, rxn_ids, _ = sel.extract_selected_ids()
         non_dummy = [r for r in rxn_ids if sel.graph.node_from_id(r).dummy == 0]
@@ -195,7 +318,10 @@ def main():
                 selected_smiles.append(str(tid))
         result.update(
             {
-                "milp_status": pulp.LpStatus[sel.problem.status],
+                "milp_status": "TimeLimit" if time_capped else raw_status,
+                "milp_status_raw": raw_status,
+                "time_capped": time_capped,
+                "max_seconds": a.max_seconds,
                 "total_reactions": len(non_dummy),  # HEADLINE: distinct reactions, shared once
                 "n_targets_selected": len(sel_targets),
                 "selected_target_smiles": sorted(selected_smiles),
@@ -220,6 +346,14 @@ def main():
 
     Path(a.out).parent.mkdir(parents=True, exist_ok=True)
     Path(a.out).write_text(json.dumps(result, indent=2))
+    if result.get("time_capped"):
+        print(
+            f"[sparrow_worker] WARNING: solve hit the {a.max_seconds}s limit "
+            f"({result.get('solve_s')}s). CBC still says '{result.get('milp_status_raw')}', but the "
+            "search was truncated -- treat total_reactions as a LOWER BOUND on what SPARROW could "
+            "achieve, not as a proven optimum.",
+            flush=True,
+        )
     print(
         f"[sparrow_worker] objective={a.objective} status={result.get('milp_status')} "
         f"total_reactions={result.get('total_reactions')} "

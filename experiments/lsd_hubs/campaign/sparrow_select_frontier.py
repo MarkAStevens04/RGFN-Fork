@@ -54,7 +54,10 @@ from validation.lsdflow.eval.network import (  # noqa: E402
 from validation.lsdflow.eval.route_recovery import env_python  # noqa: E402
 from validation.lsdflow.metrics.diversity import (  # noqa: E402
     count_modes,
+    mean_pairwise_similarity,
+    mode_assignments,
     mode_representatives,
+    unique_scaffolds,
 )
 
 SPARROW_WORKER = "validation/lsdflow/adapters/workers/sparrow_worker.py"
@@ -147,6 +150,31 @@ def _run_sparrow(repo, sparrow_env, tree, targets, out, work, max_seconds, extra
     return json.loads(Path(out).read_text())
 
 
+def _price_kept_set(a, out_dir, entries_by_smiles, kept, tag):
+    """Reactions actually needed to make ``kept`` — a PRICING solve over just those molecules.
+
+    Why re-price instead of reusing the selection budget R: SPARROW spent R reactions producing a set
+    we then prune. You do not pay for compounds you discard, so charging R for the survivors would
+    overstate the competitor's cost — and the pruned duplicates take their unique final steps with
+    them, leaving only the shared prefixes. R is what it was ALLOWED to spend; this is what the
+    deliverable actually costs.
+
+    The same prune is applied to hub-batching, where it is a NO-OP (its picks are distinct by
+    construction), so the procedure is symmetric rather than a concession to one side.
+    """
+    sub = [e for smi in kept for e in entries_by_smiles.get(smi, [])]
+    if not sub:
+        return None
+    snap = out_dir / f"price_{tag}"
+    net = build_network(sub, strip_stereo=a.strip_stereo)
+    tree, targets = net.write(snap)
+    res = _run_sparrow(
+        REPO, a.sparrow_env, tree, targets, snap / "milp.json",
+        snap / "sparrow_run", a.max_seconds,
+    )  # fmt: skip
+    return res.get("total_reactions") if res else None
+
+
 def _greedy_frontier(a, out_dir, pool, routed, entries):
     """The baseline's STRONGEST configuration: a diversity-aware greedy selection picks the modes,
     SPARROW only prices them (pricing mode, every selected mode must be synthesized).
@@ -227,10 +255,14 @@ def main() -> None:
     ap.add_argument(
         "--route-source",
         default="multiaiz",
-        choices=["multiaiz", "native", "enum"],
+        choices=["multiaiz", "native", "enum", "external"],
         help="multiaiz = the competitor's planned routes (MANY candidate recipes per molecule). "
         "native = the reaction-GFN's own by-construction routes (exactly ONE per molecule, and "
-        "SHALLOW, so they must be recipe-expanded — --snapshot becomes required).",
+        "SHALLOW, so they must be recipe-expanded — --snapshot becomes required). "
+        "external = a REACTION-AWARE competitor's own by-construction routes (SynFormer), read from "
+        "a routes.jsonl. Like `native` these come free with the molecule, but UNLIKE `native` they "
+        "are already deep: every leaf is a purchasable catalogue block, so there is nothing to "
+        "recipe-expand and --snapshot must NOT be passed.",
     )
     ap.add_argument(
         "--snapshot",
@@ -278,6 +310,24 @@ def main() -> None:
         "SPARROW at the one job it was not built for; it is the conservative comparator.",
     )
     ap.add_argument(
+        "--lambda-div",
+        default="",
+        help="comma-separated values of SPARROW's NATIVE diversity weight to sweep (e.g. "
+        "'0,0.1,0.5,1,2'). Their Fig 3B traces a Pareto front as this moves, so sweeping and "
+        "reporting SPARROW at its BEST value per metric gives it its strongest showing and "
+        "forecloses 'you picked a bad lambda'. Requires tau-mode clusters, built automatically.",
+    )
+    ap.add_argument(
+        "--min-clusters",
+        type=int,
+        default=None,
+        help="DIVERSITY-CONSTRAINED SB ([fromer2025diversity] sec 2.2, constraint form): require "
+        "every selection to represent at least this many of OUR tau-modes. Turns SB from a "
+        "diversity-BLIND competitor into a diversity-AWARE one competing on our own metric. Budgets "
+        "below the feasible minimum come back infeasible -- that boundary IS the readout (the "
+        "reactions needed to deliver K distinct molecules), directly comparable to hub-batching.",
+    )
+    ap.add_argument(
         "--mode-points",
         default="25,50,75,100,125,150",
         help="--selection greedy: mode counts to price (the x-axis is modes, not budget)",
@@ -308,6 +358,25 @@ def main() -> None:
             f"[enum] {len(pool)} distinct children above gate>{a.gate}, routes assembled "
             "(hub prefix + the child's own reaction)"
         )
+    elif a.route_source == "external":
+        # A reaction-aware competitor emits routes.jsonl (one JSON object per line, our route
+        # schema). Fold it into the SAME {canonical_smiles: [route, ...]} shape the multiaiz
+        # artifact uses, so everything downstream — build_network, the MILP, the pricing — is
+        # literally the same code path. One route per molecule here, versus ~16 for multiaiz;
+        # that asymmetry favours the multiaiz side and is reported, not corrected.
+        raw = {}
+        with open(a.routes) as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                rec = json.loads(line)
+                smi = rec.get("smiles") or rec.get("product_smiles")
+                c = canonical(smi, a.strip_stereo) if smi else None
+                if c:
+                    raw.setdefault(c, []).append(rec)
+        print(f"[external] {len(raw)} molecules carry a by-construction route")
+        pool = load_pool(Path(a.pool), a.gate, a.top_n)
     else:
         raw = json.loads(Path(a.routes).read_text())
         pool = load_pool(Path(a.pool), a.gate, a.top_n)
@@ -381,16 +450,65 @@ def main() -> None:
     build_s = time.perf_counter() - t0
     print(f"[select] network built in {build_s:.1f}s -> {tree}")
 
+    # Clusters are pool-dependent but budget-independent: compute ONCE, like the network. Using our
+    # own tau-modes (not SPARROW's default Butina/count-Morgan) is deliberate -- it makes the arm
+    # optimize the exact quantity the benchmark reports, so a win or loss is on our metric rather
+    # than on a proxy for it. Legitimate because the paper defines clusters as an arbitrary
+    # caller-supplied partition.
+    lambdas = [float(x) for x in a.lambda_div.split(",") if x.strip()] or [0.0]
+    cluster_args = []
+    if a.min_clusters is not None or any(l > 0 for l in lambdas):
+        t2 = time.perf_counter()
+        rewards_all = {s_: r_ for s_, r_ in pool}
+        pool_smis = [s_ for s_, _ in pool if s_ in routed]
+        groups = mode_assignments(
+            pool_smis,
+            [rewards_all[s_] for s_ in pool_smis],
+            higher_is_better=True,
+            reward_threshold=a.gate,
+            similarity_threshold=a.cutoff,
+        )
+        cl_path = out_dir / "clusters.json"
+        cl_path.write_text(json.dumps(groups))
+        cluster_args = ["--clusters", str(cl_path)]
+        if a.min_clusters is not None:
+            cluster_args += ["--min-clusters", str(a.min_clusters)]
+        member2cl = {m: c for c, ms in groups.items() for m in ms}
+        print(
+            f"[select] tau-mode clusters: {len(groups)} over {len(pool_smis)} routed molecules "
+            f"({time.perf_counter()-t2:.1f}s)"
+            + (
+                f" | requiring >= {a.min_clusters} represented"
+                if a.min_clusters is not None
+                else f" | lambda_div sweep {lambdas}"
+            )
+        )
+        if a.min_clusters is not None and a.min_clusters > len(groups):
+            raise SystemExit(
+                f"[select] ABORT: --min-clusters {a.min_clusters} exceeds the {len(groups)} clusters "
+                "the pool contains — every budget would be infeasible and the sweep would report "
+                "that as a solver limit rather than a pool limit."
+            )
+
     if a.budgets:
         budgets = [int(x) for x in a.budgets.split(",") if x.strip()]
     else:
         # geometric-ish ladder; the ceiling is "every routed target", which pricing mode would give
         budgets = [10, 20, 35, 50, 75, 100, 150, 200, 300, 400, 600, 800]
 
+    if not cluster_args:
+        member2cl = {}
+    entries_by_smiles = {}
+    for e in entries:
+        entries_by_smiles.setdefault(e["smiles"], []).append(e)
+
     rows = []
-    for R in budgets:
-        milp_out = out_dir / f"milp_R{R}.json"
-        cmd = [
+    rewards = {s_: r_ for s_, r_ in pool}
+    for LD in lambdas:
+        for R in budgets:
+            tagLR = f"L{LD:g}_R{R}"
+            milp_out = out_dir / f"milp_{tagLR}.json"
+            cmd = [
             *env_python(a.sparrow_env),
             str(REPO / SPARROW_WORKER),
             "--tree", str(tree),
@@ -400,54 +518,89 @@ def main() -> None:
             "--select",
             "--max-rxns", str(R),
             "--max-seconds", str(a.max_seconds),
-            "--work-dir", str(out_dir / f"sparrow_run_R{R}"),
+            "--work-dir", str(out_dir / f"sparrow_run_{tagLR}"),
+            *cluster_args,
         ]  # fmt: skip
-        t1 = time.perf_counter()
-        proc = subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True)
-        solve_s = time.perf_counter() - t1
-        if proc.returncode != 0 or not milp_out.exists():
-            print(f"  R={R:<5d} FAILED rc={proc.returncode} {proc.stderr.strip()[-160:]}")
-            continue
-        res = json.loads(milp_out.read_text())
-        sel = res.get("selected_target_smiles") or []
-        rewards = {s: r for s, r in pool}
-        # THE measurement: SPARROW optimized reward+cost with no diversity term, so how many of the
-        # molecules it chose are actually distinct modes is an empirical property of its output.
-        n_modes = (
-            count_modes(
-                sel,
-                [rewards.get(s, 0.0) for s in sel],
-                higher_is_better=True,
-                reward_threshold=a.gate,
-                similarity_threshold=a.cutoff,
+            if LD > 0:
+                cmd += ["--lambda-div", str(LD)]
+            t1 = time.perf_counter()
+            proc = subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True)
+            solve_s = time.perf_counter() - t1
+            if proc.returncode != 0 or not milp_out.exists():
+                print(
+                    f"  L={LD:<5g} R={R:<5d} FAILED rc={proc.returncode} {proc.stderr.strip()[-150:]}"
+                )
+                continue
+            res = json.loads(milp_out.read_text())
+            sel = res.get("selected_target_smiles") or []
+            n_sel = len(sel)
+
+            # (1) SPARROW's OWN metric -- how many tau-mode families its picks touch. We expect to lose
+            #     here: it is optimizing precisely this. Reported anyway.
+            touched = len({member2cl.get(x) for x in sel if x in member2cl}) if member2cl else None
+
+            # (2) OUR metric -- prune to a genuinely-distinct subset (each survivor dissimilar to EVERY
+            #     other survivor, not merely in a different family), then RE-PRICE the survivors. You do
+            #     not pay for what you discard. The identical prune applied to hub-batching is a no-op,
+            #     because its picks are distinct by construction -- so this is symmetric, not a handout.
+            keep_idx = mode_representatives(
+            sel, [rewards.get(x, 0.0) for x in sel],
+            higher_is_better=True, reward_threshold=a.gate, similarity_threshold=a.cutoff,
+        )  # fmt: skip
+            kept = [sel[i] for i in keep_idx]
+            cost_kept = (
+                _price_kept_set(a, out_dir, entries_by_smiles, kept, tagLR) if kept else None
             )
-            if sel
-            else 0
-        )
-        n_sel = len(sel)
-        rows.append(
-            {
-                "budget_rxns": R,
-                "used_rxns": res.get("total_reactions"),
-                "n_selected": n_sel,
-                "n_modes": n_modes,
-                "mode_rate": round(n_modes / n_sel, 4) if n_sel else None,
-                "rxn_per_selected": round(res["total_reactions"] / n_sel, 4)
-                if n_sel and res.get("total_reactions") is not None
-                else None,
-                "rxn_per_mode": round(res["total_reactions"] / n_modes, 4)
-                if n_modes and res.get("total_reactions") is not None
-                else None,
-                "total_reward": res.get("selected_reward_total"),
-                "milp_status": res.get("milp_status"),
-                "solve_s": round(solve_s, 2),
-            }
-        )
-        print(
-            f"  R={R:<5d} used={res.get('total_reactions'):<5} selected={n_sel:<4} "
-            f"modes={n_modes:<4} mode_rate={rows[-1]['mode_rate']} "
-            f"rxn/mode={rows[-1]['rxn_per_mode']} ({res.get('milp_status')})"
-        )
+            mps = mean_pairwise_similarity(sel) if len(sel) > 1 else None
+
+            # FIVE METRICS, on BOTH the unpruned selection and the pruned survivors. No single number
+            # captures "diversity": cluster coverage is what SPARROW optimizes but is satisfiable by
+            # near-duplicates sitting between adjacent clusters (and one molecule may cover many
+            # clusters at once); sphere exclusion demands dissimilarity from EVERYTHING kept but is
+            # order-dependent; scaffold counts ignore decoration entirely. All three are proxies for
+            # information gain, which is what we would optimize if we could -- out of scope here, and
+            # flagged as a limitation. Reporting several, on both output sets, lets the reader see
+            # where they disagree rather than trusting our choice of one.
+            scaf_all = unique_scaffolds(sel) if sel else 0
+            scaf_kept = unique_scaffolds(kept) if kept else 0
+            mps_kept = mean_pairwise_similarity(kept) if len(kept) > 1 else None
+
+            rows.append(
+                {
+                    "lambda_div": LD,
+                    "budget_rxns": R,
+                    "used_rxns": res.get("total_reactions"),
+                    "n_selected": n_sel,
+                    "clusters_touched": touched,  # SPARROW's metric
+                    "n_modes_kept": len(kept),  # ours, after pruning
+                    "cost_kept_rxns": cost_kept,  # reactions for the pruned set ONLY
+                    "rxn_per_mode_kept": round(cost_kept / len(kept), 4)
+                    if cost_kept and kept
+                    else None,
+                    "mode_rate": round(len(kept) / n_sel, 4) if n_sel else None,
+                    "rxn_per_selected": round(res["total_reactions"] / n_sel, 4)
+                    if n_sel and res.get("total_reactions") is not None
+                    else None,
+                    "mean_pairwise_sim": round(mps, 4) if mps is not None else None,
+                    "mean_pairwise_sim_kept": round(mps_kept, 4) if mps_kept is not None else None,
+                    "scaffolds_all": scaf_all,  # unpruned: Bemis-Murcko on everything selected
+                    "scaffolds_kept": scaf_kept,  # pruned: on the survivors only
+                    "scaffold_rate": round(scaf_all / n_sel, 4) if n_sel else None,
+                    "total_reward": res.get("selected_reward_total"),
+                    "milp_status": res.get("milp_status"),
+                    # Carried so a truncated search can never be read as a proven optimum downstream.
+                    # A capped row's numbers are a LOWER BOUND on what SPARROW could achieve.
+                    "time_capped": res.get("time_capped"),
+                    "solve_s": round(solve_s, 2),
+                }
+            )
+            r_ = rows[-1]
+            print(
+                f"  L={LD:<5g} R={R:<5d} sel={n_sel:<4} touched={str(touched):<5} "
+                f"kept={len(kept):<4} cost(kept)={str(cost_kept):<5} "
+                f"rxn/mode={r_['rxn_per_mode_kept']} meanSim={r_['mean_pairwise_sim']}"
+                + ("  [TIME-CAPPED: lower bound]" if res.get("time_capped") else "")
+            )
 
     with open(out_dir / "select_frontier.csv", "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()) if rows else ["budget_rxns"])
@@ -470,6 +623,13 @@ def main() -> None:
         open(out_dir / "select_frontier_summary.json", "w"),
         indent=2,
     )
+    n_capped = sum(1 for r in rows if r.get("time_capped"))
+    if n_capped:
+        print(
+            f"[select] WARNING {n_capped}/{len(rows)} solves hit the {a.max_seconds}s MILP limit. "
+            "Those rows are LOWER BOUNDS on SPARROW's performance, not proven optima — re-run "
+            "them with a larger --max-seconds before quoting any of them."
+        )
     print(f"[select] wrote {out_dir}/select_frontier.csv + select_frontier_summary.json")
 
 

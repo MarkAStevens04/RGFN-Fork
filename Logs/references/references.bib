@@ -138,6 +138,40 @@
   note    = {In-silico molecular-glue design/evaluation. Reference for glue design and the choice of the 6TD3 system (see Logs/002_6td3-cr8-validation-and-discrimination.md).}
 }
 
+@article{fromer2025diversity,
+  title   = {Optimal Compound Downselection To Promote Diversity and Parallel Chemistry},
+  author  = {Fromer, Jenna C. and Volkova, Alexandra D. and Coley, Connor W.},
+  journal = {Journal of Chemical Information and Modeling},
+  year    = {2025},
+  volume  = {65},
+  number  = {12},
+  pages   = {5989--5997},
+  doi     = {10.1021/acs.jcim.5c00606},
+  url     = {https://pubs.acs.org/doi/10.1021/acs.jcim.5c00606},
+  note    = {SPARROW v2 -- the SAME GROUP's follow-up to [fromer2024sparrow], and the paper that
+             answers the objection our BC-SB / BC-Enum-SB arms raise (Logs/059): that we only ever
+             compared against a DIVERSITY-BLIND optimizer. Three additions. (1) EXPECTED CUMULATIVE
+             REWARD: maximize sum_t U_t c_t prod_i L_i^(u_it), i.e. discount each candidate's reward
+             by the success probability of every step in its route, so a risky reaction is penalized
+             once PER ROUTE THAT USES IT rather than once globally. Nonlinear; the authors note it
+             needs Gurobi and is not guaranteed globally optimal, and they therefore use the LINEAR
+             formulation (with an iterative lambda_rew scheme, SI S1.3) for all their analysis --
+             which matters for us because we run PuLP/CBC with no Gurobi licence. (2) CLUSTER
+             DIVERSITY: add lambda_div * (number of clusters represented) to the scalarized
+             objective, or impose it as a constraint on clusters represented. Clusters are arbitrary
+             (they use Butina on count-Morgan at 0.8, but note they may be defined by scaffold,
+             predicted protein interaction, or any project-specific criterion). (3) PARALLEL
+             CHEMISTRY: an inequality constraint capping the number of distinct REACTION CLASSES
+             selected, so a batch can be run in parallel. Their Fig. 3C finding is directly relevant
+             to us: raising lambda_div REDUCED the number of selected reactions and RAISED mean
+             reaction score in their case study -- diversity was not bought with extra steps.
+             IMPORTANT for this repo: external/sparrow is already at this version (clone dated
+             2025-06-30; selector/{linear,nonlinear,bayesian}, and LinearSelector already exposes
+             clusters/N_per_cluster/rxn_classes/max_rxn_classes with weights =
+             [reward, start_cost, reaction, diversity, class]). We simply never enabled the last two
+             weights. PDF: pdfs/fromer2025diversity.pdf.}
+}
+
 @article{fromer2024sparrow,
   title   = {An algorithmic framework for synthetic cost-aware decision making in molecular design},
   author  = {Fromer, Jenna C. and Coley, Connor W.},
@@ -250,4 +284,97 @@
                    molecules. Its generator is atom-level with no reaction grounding and no synthesis
                    cost, so it has the same library-economics blind spot as [kim2026s3gfn].
                    SFU / UBC Vancouver Prostate Centre / Diagen AI. PDF: pdfs/zhang2025baldgfn.pdf.}
+}
+
+@article{loeffler2024reinvent4,
+  title   = {{REINVENT} 4: Modern AI-driven generative molecule design},
+  author  = {L{\"o}ffler, Hannes H. and He, Jiazhen and Tibo, Alessandro and Janet, Jon Paul and
+             Voronov, Alexey and Mervin, Lewis H. and Engkvist, Ola},
+  journal = {Journal of Cheminformatics},
+  year    = {2024},
+  volume  = {16},
+  pages   = {20},
+  doi     = {10.1186/s13321-024-00812-5},
+  url     = {https://github.com/MolecularAI/REINVENT4},
+  note    = {AstraZeneca's production de-novo design tool: a ChEMBL-pretrained RNN over SMILES
+             tokens fine-tuned by reinforcement learning (DAP) against a weighted multi-component
+             score, with an explicit diversity filter. A ROUTE-LESS entrant in the LSD-Flow
+             library-efficiency benchmark, in the same class as [kim2026s3gfn] but by a different
+             mechanism: S3-GFN induces per-molecule synthesizability by soft regularization,
+             REINVENT does not model synthesizability at all. Its molecules carry has_route=0, so a
+             library built from its pool must have shared intermediates recovered post-hoc
+             (MultiAiZ -> SPARROW). Included because it is the baseline a reviewer names first.
+             Adapter: validation/generators/reinvent/ (own `reinvent4` prefix env, external/
+             setup_reinvent.sh). PINNED TO v4.5.11 for packaging reasons, NOT scientific ones -- the
+             RL algorithm is DAP in every 4.x release, but `main` pins torch==2.12.0 for which no
+             prebuilt torch-sparse wheel exists (bengio2021flow imports it at module level), requires
+             numpy>=2 (the legacy DRD2 sklearn pickle is not reliably loadable there), and moved the
+             priors to Zenodo (a download that fails on a compute node). Reward parity is enforced by
+             a scoring-component plugin exposing the SAME frozen sEH MPNN / TDC DRD2 oracle every
+             other entrant optimizes.}
+}
+
+@article{guo2026saturn,
+  title   = {Sample-efficient generative molecular design using memory manipulation},
+  author  = {Guo, Jeff and Schwaller, Philippe},
+  journal = {Nature Machine Intelligence},
+  year    = {2026},
+  eprint  = {2405.17066},
+  archivePrefix = {arXiv},
+  url     = {https://github.com/schwallergroup/saturn},
+  note    = {Saturn: a Mamba-based SMILES language model trained with the Augmented Memory algorithm
+             (data augmentation + experience replay), explicitly optimized for SAMPLE EFFICIENCY --
+             few oracle calls per unit of reward. A second ROUTE-LESS entrant beside
+             [loeffler2024reinvent4] and [kim2026s3gfn]. Its sample efficiency is the interesting
+             axis for us: it is the strongest case for "you do not need many oracle calls", which is
+             the axis we LOSE on and report (Logs/056's candidates-you-must-score trade). Because it
+             is reward-maximizing RL, its diversity filters are enabled deliberately -- a collapsed
+             pool cannot reach the benchmark's 100-mode deliverable, and that would only surface
+             after ~2.25 h of route discovery. Same repo and conda env as [guo2026tango]; the README
+             pins a git hash per paper (Saturn fee0179, TANGO de5cd7f).}
+}
+
+@article{guo2026tango,
+  title   = {{TANGO}: direct optimization of constrained synthesizability for generative molecular design},
+  author  = {Guo, Jeff and Schwaller, Philippe},
+  journal = {Nature Computational Science},
+  year    = {2026},
+  eprint  = {2410.11527},
+  archivePrefix = {arXiv},
+  url     = {https://arxiv.org/abs/2410.11527},
+  note    = {"It Takes Two to Tango". TANGO (TANimoto Group Overlap) is a REWARD FUNCTION layered on
+             a general-purpose generator ([guo2026saturn]), not a separate model: it turns the sparse
+             binary signal "is this molecule retrosynthesizable from a SPECIFIED building-block set"
+             into a dense, learnable one, using a retrosynthesis model (syntheseus) in the loop. It
+             is the first generative approach to CONSTRAINED synthesizability (starting-material,
+             intermediate and divergent-synthesis constraints). Uniquely valuable here because the
+             constraint set is caller-supplied: TANGO can be run on the same public ZINCFrag
+             catalogue as the other baselines AND, separately, constrained to our own 418
+             glue_standard_v1 blocks -- the second arm forecloses the "different catalogue" objection
+             to the head-to-head outright, since both sides then build from identical chemistry.}
+}
+
+@article{gao2025synformer,
+  title   = {Generative artificial intelligence for navigating synthesizable chemical space},
+  author  = {Gao, Wenhao and Luo, Shitong and Coley, Connor W.},
+  journal = {Proceedings of the National Academy of Sciences},
+  year    = {2025},
+  doi     = {10.1073/pnas.2415665122},
+  eprint  = {2410.03494},
+  archivePrefix = {arXiv},
+  url     = {https://github.com/wenhao-gao/synformer},
+  note    = {SynFormer: a transformer + diffusion-based building-block selector that generates
+             molecules AS SYNTHETIC PATHWAYS (postfix notation over reaction templates and
+             purchasable blocks), so its output carries a route by construction (has_route=1).
+             THE reaction-aware, non-GFN entrant -- the cell docs/LSD_FLOW_BENCHMARK_PLAN.md section
+             7 names as the one that would isolate the contribution of the FLOW FIELD from mere
+             reaction-grounding, which no ablation on our own generators can do. Oracle-guided
+             optimization comes from experiments/graphga_sf_opt.py (a Graph GA proposes, SynFormer
+             projects into synthesizable space, the oracle scores) whose Oracle.assign_evaluator seam
+             takes our frozen reward directly. Successor to ChemProjector (Luo et al., ICML 2024); both were
+             deprecated by their authors in Dec 2025 in favour of PrexSyn (arXiv 2512.00384), which
+             is NOT usable here because v1 dropped the property-based queries an oracle-guided run
+             needs. NO ENAMINE LICENCE REQUIRED: the preprocessed catalogue (fpindex.pkl, matrix.pkl)
+             and the encoder-decoder checkpoint are on HuggingFace at whgao/synformer, which is what
+             GraphGA-SF consumes.}
 }

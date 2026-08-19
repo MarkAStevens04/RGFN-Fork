@@ -219,6 +219,41 @@ itself a reportable datapoint. Own `sparrow` conda env (`external/setup_sparrow.
 crossed by subprocess via `validation/lsdflow/adapters/workers/sparrow_worker.py`.
 &nbsp;DOI:10.1038/s43588-024-00639-y · arXiv:2311.02187 · `pdfs/fromer2024sparrow.pdf`
 
+
+### `[fromer2025diversity]` — SPARROW v2: optimal downselection for diversity and parallel chemistry (JCIM 2025)
+The **same group's follow-up to [fromer2024sparrow]**, and the paper that answers the sharpest
+objection to our competitor arms: that we only ever raced against a *diversity-blind* optimizer
+(Logs/059 — handed our own enumerated children, SPARROW took 98 candidates off 3 hubs and produced
+2 distinct molecules). Three additions, all already present in our clone:
+
+1. **Expected cumulative reward.** Instead of a linear weighted sum, maximize
+   `Σ_t U_t·c_t·Π_i L_i^(u_i,t)` — discount each candidate's reward by the success probability of
+   *every step in its route*. A risky reaction is then penalized **once per route that uses it**
+   rather than once globally. This is **nonlinear**; the authors state it needs **Gurobi**, is not
+   guaranteed to reach a global optimum, and they therefore use the **linear** formulation (with an
+   iterative `λ_rew` scheme, SI S1.3) for all of their own analysis. We run **PuLP/CBC with no
+   Gurobi licence**, so the linear path is the one available to us — which is also the one they
+   recommend.
+2. **Cluster diversity.** Add `λ_div ×(number of clusters represented)` to the scalarized objective,
+   or impose clusters-represented as a *constraint*. Clusters are deliberately arbitrary: they use
+   Butina on count-Morgan at 0.8, but note they can be scaffolds, predicted protein interactions, or
+   any project-specific criterion — so **our own τ-mode definition can be dropped in directly**,
+   making the comparison like-for-like on our metric rather than on theirs.
+3. **Parallel chemistry.** An inequality constraint capping the number of distinct **reaction
+   classes** selected, so the batch can be run in parallel.
+
+Their Fig. 3C result matters for how we should expect our arms to move: raising `λ_div` *reduced*
+the number of selected reactions and *raised* mean reaction score — in their case study diversity
+was **not** bought with extra steps. They caution this does not hold on every candidate set (SI S4).
+
+**Status in this repo: no upgrade needed.** `external/sparrow` is already at this version (clone
+dated 2025-06-30; `selector/{linear,nonlinear,bayesian}`), and `LinearSelector` already exposes
+`clusters` / `N_per_cluster` / `rxn_classes` / `max_rxn_classes` with
+`weights = [reward, start_cost, reaction, diversity, class]`. Our worker simply hardcodes the last
+two weights to zero and never passes clusters — so enabling this is **configuration, not
+re-implementation**.
+&nbsp;DOI:10.1021/acs.jcim.5c00606 · `pdfs/fromer2025diversity.pdf`
+
 ### `[ianez2026multiaiz]` — MultiAiZ: joint synthesis planning by leveraging common intermediates
 The **second competitor route-planner** for the LSD-Flow library benchmark (T4.1), a smarter
 alternative to plain AiZynth→SPARROW. Where AiZynth routes each target *independently*,

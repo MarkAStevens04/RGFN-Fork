@@ -46,6 +46,11 @@ CUTOFF=${CUTOFF:-0.5}
 SIZES=${SIZES:-"500 1000 2000 5000 10000 21000"}
 BUDGETS=${BUDGETS:-"50,100,125,150,200,300"}
 MILP_CAP=${MILP_CAP:-900}          # per-MILP ceiling; a hit shows up as a non-Optimal status
+# LAMBDA_DIV: SPARROW's NATIVE diversity weight ([fromer2025diversity] sec 2.2, objective form).
+# Empty = the diversity-blind arm (Logs/059). One value per job: the budget sweep at N=21000 is the
+# expensive part, so sweeping lambda INSIDE a job would multiply an already-long run, whereas one
+# job per lambda parallelises for free.
+LAMBDA_DIV=${LAMBDA_DIV:-}
 # $HOME IS READ-ONLY ON BALAM COMPUTE NODES. Writing results into the repo works on the login node
 # and dies with EACCES on compute (jobs 72509-72511 "COMPLETED" in 12 s having done nothing). Results
 # go to $SCRATCH; sync back to the repo from a login node afterwards.
@@ -85,7 +90,8 @@ for N in $SIZES; do
         "${SRC_ARGS[@]}" --snapshot "$SNAP" --top-n "$N" \
         --gate "$GATE" --cutoff "$CUTOFF" \
         --out-dir "$OUT" --tag "${TAG}_N${N}" \
-        --budgets "$BUDGETS" --max-seconds "$MILP_CAP"
+        --budgets "$BUDGETS" --max-seconds "$MILP_CAP" \
+        ${LAMBDA_DIV:+--lambda-div "$LAMBDA_DIV"}
     RC=$?
     echo "  N=$N rc=$RC wall=$(( $(date +%s) - START ))s"
     # Stop climbing once a size fails -- but do NOT dress an infrastructure error up as a science
