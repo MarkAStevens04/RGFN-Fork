@@ -1,0 +1,115 @@
+{
+  "tag": "fraggfn_clpp",
+  "reward_threshold": -8.0,
+  "similarity": 0.5,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "rank_by": null,
+  "best_candidate": {
+    "strategy": "best_candidate",
+    "total_modes": 300,
+    "total_reactions": 1488,
+    "reactions_per_mode": 4.96,
+    "total_reward_gen_calls": 0,
+    "reward_gen_calls_per_mode": 0.0,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 297,
+    "n_scaffolds": 298,
+    "best_reward": -14.3,
+    "median_reward": -12.3,
+    "case1_modes_at_100rxn": 20,
+    "case2_reactions_at_300modes": 1488,
+    "stop_reason": "modes"
+  },
+  "hub_batching": {
+    "strategy": "hub_batching",
+    "total_modes": 300,
+    "total_reactions": 332,
+    "reactions_per_mode": 1.107,
+    "total_reward_gen_calls": 13230,
+    "reward_gen_calls_per_mode": 44.1,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 8,
+    "n_scaffolds": 232,
+    "best_reward": -13.7,
+    "median_reward": -11.7,
+    "case1_modes_at_100rxn": 84,
+    "case2_reactions_at_300modes": 332,
+    "stop_reason": "modes"
+  },
+  "compute_time": {
+    "enum_timings_meta": {
+      "setup_s": 0.894,
+      "slice_setups_s": [
+        0.716,
+        0.752,
+        1.037,
+        1.109
+      ],
+      "merged_from": [
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/fraggfn_clpp/enum/slice1of4/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/fraggfn_clpp/enum/slice2of4/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/fraggfn_clpp/enum/slice3of4/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/fraggfn_clpp/enum/slice4of4/enum_timings.json"
+      ],
+      "n_slices": 4,
+      "n_hubs": 200,
+      "n_children": 297990,
+      "totals_s": {
+        "enumeration_s": 661.586,
+        "reward_gen_s": 129821.801,
+        "flow_extract_s": 112.185
+      },
+      "device": "cuda",
+      "reward_name": "clpp",
+      "component_split": "full",
+      "partial": false
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "setup_s": 0.894,
+      "hub_pick_s": 0.188,
+      "enumeration_s": 31.3681,
+      "reward_gen_s": 5856.8507,
+      "flow_extract_s": 5.5852,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 3.3801,
+      "n_hubs_walked": 8,
+      "n_children_scored": 13230,
+      "missing_hub_keys": [],
+      "total_s": 5898.2661
+    },
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "setup_s": 0.0,
+      "hub_pick_s": 0.0,
+      "enumeration_s": 0.0,
+      "reward_gen_s": 0.0,
+      "flow_extract_s": 0.0,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.2709,
+      "n_hubs_walked": 0,
+      "n_children_scored": 0,
+      "missing_hub_keys": [],
+      "total_s": 0.2709
+    },
+    "head_to_head": {
+      "hub_total_s": 5898.2661,
+      "best_total_s": 0.2709,
+      "extra_compute_s": 5897.9952,
+      "ratio_hub_over_best": 21774.058,
+      "per_component_delta_s": {
+        "setup_s": 0.894,
+        "hub_pick_s": 0.188,
+        "enumeration_s": 31.3681,
+        "reward_gen_s": 5856.8507,
+        "flow_extract_s": 5.5852,
+        "unattributed_s": 0.0,
+        "mode_selection_s": 3.1092
+      },
+      "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+    }
+  }
+}
