@@ -113,6 +113,28 @@ def write_prefix_terms(path, rows: Sequence[Dict]) -> None:
         w.writerows(rows)
 
 
+# The step schema lives in glue/ because the enumeration path (glue) and these artifact writers
+# (validation) must emit the SAME one, and validation may import from glue but never the reverse.
+#
+# But it must be loaded BY PATH, not as `from glue...`. These writers run INSIDE each generator's own
+# conda env, where the `glue` PACKAGE is not importable: `import glue` executes glue/__init__.py ->
+# glue.registry -> gin/torch/rgfn, and in the scent env `rgfn` resolves to SCENT's own fork, not ours.
+# That is exactly why this module's stated contract is stdlib-only. A plain package import here made
+# EVERY scent/rxnflow/fraggfn enumerate job die at startup with `ModuleNotFoundError: No module named
+# 'glue'` (6 SCENT recaps, jobs 74424-74429, failed in 7 s each). route_steps.py is deliberately
+# dependency-free, so loading the file itself keeps one source of truth with no package side effects.
+import importlib.util as _ilu  # noqa: E402
+from pathlib import Path as _Path  # noqa: E402
+
+_rs_path = _Path(__file__).resolve().parents[4] / "glue" / "samplers" / "lsdflow" / "route_steps.py"
+_rs_spec = _ilu.spec_from_file_location("_lsdflow_route_steps", _rs_path)
+if _rs_spec is None or _rs_spec.loader is None:  # pragma: no cover
+    raise ImportError(f"cannot load the canonical route-step schema from {_rs_path}")
+_rs_mod = _ilu.module_from_spec(_rs_spec)
+_rs_spec.loader.exec_module(_rs_mod)
+reaction_id, reaction_step = _rs_mod.reaction_id, _rs_mod.reaction_step  # noqa: F401
+
+
 def build_enum_hub(
     *,
     hub_input: str,
