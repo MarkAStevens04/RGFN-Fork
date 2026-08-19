@@ -20,6 +20,12 @@
 #
 # Usage:  setsid nohup bash experiments/lsd_hubs/matrix16/autoharvest.sh > /dev/null 2>&1 &
 # Knobs:  CELLS ("scent:clpp rxnflow:clpp")  INTERVAL_S (1800)  ROUNDS (240 = 5 days)
+#         STATE (dir for lock/log/heartbeat) -- REQUIRED if you run MORE THAN ONE instance. The lock is
+#         $STATE/autoharvest.lock with no per-instance suffix, so a second instance sharing a STATE
+#         stands down immediately ("another autoharvest holds the lock") and harvests nothing while
+#         looking alive. One instance per seed tree therefore needs a distinct STATE, e.g.
+#         STATE=$SCRATCH/rgfn_runs/ah_seed43 beside the default. (harvest_surrogate.sh keys its lock on
+#         TAG and does not have this hazard.)
 #         GATES_<target> to override the post-hoc sweep points.
 set -uo pipefail
 
