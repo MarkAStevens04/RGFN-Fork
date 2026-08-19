@@ -108,6 +108,7 @@ def load_enum_pool(enum_path: Path, hub_routes_path: Path, gate: float, top_n: i
     data = json.loads(Path(enum_path).read_text())
     hub_routes = json.loads(Path(hub_routes_path).read_text())
     best, routes, n_missing_hub = {}, {}, 0
+    child_rxn = {}  # smiles -> did THIS child carry its own reaction? (guard below)
     for hub in data.get("hubs", []):
         hk = hub.get("hub_key")
         hr = hub_routes.get(hk) if hk else None
@@ -122,13 +123,57 @@ def load_enum_pool(enum_path: Path, hub_routes_path: Path, gate: float, top_n: i
             rew = float(rew)
             if smi in best and rew <= best[smi]:
                 continue
-            steps = prefix + list(c.get("reaction") or [])
+            own = list(c.get("reaction") or [])
+            steps = prefix + own
             best[smi] = rew
+            child_rxn[smi] = bool(own)
             routes[smi] = {"product_smiles": smi, "num_reactions": len(steps), "steps": steps}
     if n_missing_hub:
         print(
             f"[enum] WARNING {n_missing_hub} hub(s) had no route in hub-routes — their children skipped"
         )
+    # A child with no ``reaction`` inherits ONLY the hub's steps, so its route's product is the HUB,
+    # not the child. SPARROW then prices a network in which almost nothing is reachable and returns
+    # the empty library as trivially Optimal — a wrong answer that LOOKS like a crushing win for us
+    # and never raises. Measured on `campaign_enum_seh_70363`: 2,000 targets collapsed to 239
+    # compound nodes with 0 intermediates and 0 targets selected.
+    #
+    # Every RGFN enumeration on disk has this shape (35/35 artifacts, all seeds, all targets):
+    # rgfn_worker's build_enum_hub call omits ``reaction_by_child`` where the other three workers
+    # pass it. Two pre-fix July artifacts (campaign_enum_seh_70295/70363) omit the key entirely.
+    # Fail loudly rather than let either become a published number.
+    n_no_rxn = sum(1 for smi in routes if not child_rxn.get(smi))
+    if routes and n_no_rxn == len(routes):
+        raise SystemExit(
+            f"[enum] ABORT: none of the {len(routes)} children carry a per-child reaction, so every "
+            f"assembled route stops at its hub and prices the wrong molecule. This enumeration "
+            f"cannot be used for selection — re-enumerate with a worker that records reactions "
+            f"(see enum_children.json children[].reaction)."
+        )
+    if n_no_rxn:
+        # ABORT on the PARTIAL case too, not just warn. A partial artifact is the more dangerous of the
+        # two: the all-absent case collapses the network so obviously that it aborts above, whereas a
+        # partial one prices a MIXTURE -- some children at their true molecule, the rest at their hub --
+        # and still returns `Optimal`, so it looks like a real result. Measured on the hub_order merged
+        # artifacts, which mix pre-schema July steps with later ones: flow_top 609,379/1,077,049 (56.6%)
+        # carry a reaction, cand_order 131,569/535,476 (24.6%), random 347,487/350,764 (99.1%). A 99.1%
+        # artifact is exactly the one a warning gets scrolled past.
+        #
+        # ALLOW_PARTIAL_ROUTES=1 downgrades this to the old warning, for the one legitimate case:
+        # deliberately measuring how much the gap moves a number. It has to be asked for explicitly.
+        import os
+
+        msg = (
+            f"{n_no_rxn}/{len(routes)} children have an EMPTY reaction — their routes stop at the hub "
+            f"and price the wrong molecule, while the solve still reports Optimal."
+        )
+        if os.environ.get("ALLOW_PARTIAL_ROUTES") == "1":
+            print(f"[enum] WARNING {msg} ALLOW_PARTIAL_ROUTES=1 set — proceeding; result is suspect.")
+        else:
+            raise SystemExit(
+                f"[enum] ABORT: {msg} Re-enumerate with a worker that records reactions, or set "
+                f"ALLOW_PARTIAL_ROUTES=1 if you are deliberately quantifying the gap."
+            )
     rows = sorted(best.items(), key=lambda t: -t[1])
     if top_n:
         rows = rows[:top_n]
