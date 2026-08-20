@@ -22,8 +22,15 @@
 set -uo pipefail
 
 # Resolve the repo from this script's location so it works from a worktree without editing paths.
+# $SLURM_SUBMIT_DIR FIRST: under sbatch the batch script is COPIED to a spool dir, so BASH_SOURCE
+# points at /var/spool/... and deriving the repo from it yields REPO=/var/spool -- which fails as
+# "python: can't open file '/var/spool/validation/.../scent_worker.py'" six seconds in (jobs
+# 74447-74450). The matrix16 launchers already resolve it this way; this script predates that fix and
+# only worked because it had been launched in ways that happened to leave CWD in the repo.
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-REPO=${REPO:-$(cd "$SCRIPT_DIR/../../.." && pwd)}
+REPO=${REPO:-${SLURM_SUBMIT_DIR:-$(cd "$SCRIPT_DIR/../../.." && pwd)}}
+[ -f "$REPO/validation/lsdflow/adapters/workers/scent_worker.py" ] || {
+    echo "ERROR: REPO=$REPO is not the repo root (no scent_worker.py). Set REPO= explicitly."; exit 2; }
 cd "$REPO" || exit 2
 
 HUBS_FILE=${HUBS_FILE:?set HUBS_FILE=<slice csv>}
