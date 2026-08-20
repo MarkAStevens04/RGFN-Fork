@@ -3,10 +3,28 @@
 
 WHY THIS IS A GATE AND NOT A CURIOSITY. The competitor pipeline's expensive step is MultiAiZ route
 discovery: ~16 s per molecule, linear, so ~2.25 h for an N=500 pool (Logs/056), and its cache key is
-the POOL rather than the molecule — change the pool and the whole thing is re-paid. If a generator's
-pool does not contain the deliverable (100 distinct modes at the target's gate and tau), every hour
-of that is wasted and the cell is unreportable. This script answers "is 100 modes reachable, and from
-how many candidates?" in seconds, before any of it is spent.
+the POOL rather than the molecule — change the pool and the whole thing is re-paid. This script
+answers, in seconds, what that pool can possibly deliver, before any of it is spent.
+
+WHAT THE GATE ASKS CHANGED WITH THE READOUT (2026-08-19). The primary readout is now MODES AT A FIXED
+REACTION BUDGET, not reactions for a fixed mode target (CLAUDE.md, "THE BENCHMARK'S PRIMARY READOUT").
+Under a mode target, a pool short of the target was unreportable, so this script REFUSED it. Under a
+reaction budget every non-empty pool yields a number, so refusing would delete a legitimate datapoint
+— the exact failure CLAUDE.md warns against ("turns an EXCLUSION into a FLAGGED DATAPOINT").
+
+So the gate now PREDICTS THE STOP REASON instead of excluding:
+  * ``budget-binding possible``  — the pool holds at least as many modes as the budget could buy, so
+    the budget can be what stops the selection. The only like-for-like case.
+  * ``pool-exhausted expected``  — the pool holds fewer, so the selection will run out of qualifying
+    candidates with budget UNSPENT. Still run, still reported, but never scored as a cost win or loss,
+    and ``used_rxns`` must be quoted beside the mode count.
+It aborts only on ``--min-modes``: a pool too small to measure anything at all, where 2.25 h of route
+discovery really would buy nothing.
+
+Upper bound used for the prediction: a mode costs at least ``--min-rxn-per-mode`` reactions (default
+1.0 — a route with no reactions is a purchasable molecule, which these pools do not contain), so a
+budget of R reactions can buy at most R / min_rxn_per_mode modes. Measured rates are 1.2-2.7
+reactions per mode, so this bound is deliberately loose in the pool's favour.
 
 It also produces a real result, not just a go/no-go: the size at which a pool saturates IS the
 "candidates you must score" axis — the one the benchmark honestly LOSES on (Logs/056: S3-GFN needs
@@ -30,7 +48,8 @@ Usage (rgfn env):
       --candidates $SCRATCH/rgfn_runs/experiments/fixed_reward/reinvent_seh/seed42/fixed_reward/candidates/candidates.csv \
       --gate 7.0 --cutoff 0.5 --target-modes 100 --out-dir <dir>
 
-Exit status is the gate: 0 if the pool reaches --target-modes, 1 if it does not.
+Exit status is the gate: 0 if the pool is worth routing, 1 if it holds fewer than
+--min-modes modes. The predicted stop reason is printed and stored in summary.json either way.
 """
 
 from __future__ import annotations
@@ -85,7 +104,35 @@ def main() -> None:
     )
     ap.add_argument("--cutoff", type=float, default=0.5, help="tau for mode counting")
     ap.add_argument(
-        "--target-modes", type=int, default=100, help="the deliverable; sets exit status"
+        "--target-modes",
+        type=int,
+        default=100,
+        help="SECONDARY readout's mode target; reported, no longer the exit status",
+    )
+    ap.add_argument(
+        "--rxn-budget",
+        type=int,
+        default=100,
+        help="PRIMARY readout's reaction budget; sets the predicted stop reason",
+    )
+    ap.add_argument(
+        "--min-rxn-per-mode",
+        type=float,
+        default=1.0,
+        help="loose lower bound on a mode's route cost, used only to bound modes-per-budget",
+    )
+    ap.add_argument(
+        "--min-modes",
+        type=int,
+        default=10,
+        help="ABORT floor: fewer modes than this and route discovery measures nothing",
+    )
+    ap.add_argument(
+        "--pool",
+        choices=("naive", "pruned"),
+        default="naive",
+        help="which pool construction will be built; decides what the gate evaluates "
+        "(naive = the top-N prefix, pruned = N mutually distinct drawn from the whole set)",
     )
     ap.add_argument(
         "--lower-is-better",
@@ -137,11 +184,35 @@ def main() -> None:
         rows.append({"n_candidates": n, "n_modes": len(reps), "mode_rate": round(len(reps) / n, 4)})
         print(f"  n={n:<6} modes={len(reps):<5} rate={rows[-1]['mode_rate']:.3f}")
 
-    total_modes = rows[-1]["n_modes"]
-    # The headline number: the smallest pool that already contains the deliverable. This is the
+    modes_at_largest = rows[-1]["n_modes"]
+    # The smallest pool that already contains the SECONDARY readout's deliverable. This is also the
     # "candidates you must score" axis, directly comparable across generators.
     reached_at = next((r["n_candidates"] for r in rows if r["n_modes"] >= a.target_modes), None)
     mps = mean_pairwise_similarity(smis[: min(500, len(smis))], fps=fps[: min(500, len(smis))])
+
+    # Modes in the WHOLE above-gate set, which is what the pruned pool draws from. Distinct from
+    # modes_at_largest (a prefix of the ranking) and the gap between them is the entire point of the
+    # two-pool design: Saturn sEH s42 has 18 modes in its top 500 and 338 in its full 1,911.
+    all_reps = mode_representatives(
+        smis, rewards, higher_is_better=hib,
+        reward_threshold=a.gate, similarity_threshold=a.cutoff, fps=fps,
+    )  # fmt: skip
+    modes_available = len(all_reps)
+
+    # What the pool that will ACTUALLY be built can deliver. The naive pool is the top-N prefix, so
+    # it is capped by the modes inside that prefix; the pruned pool is N mutually distinct molecules
+    # drawn from the whole set, so it is capped by the set's total and by N itself.
+    largest_size = rows[-1]["n_candidates"]
+    if a.pool == "pruned":
+        modes_in_pool = min(largest_size, modes_available)
+    else:
+        modes_in_pool = modes_at_largest
+
+    # Predict the stop reason. A mode costs >= min_rxn_per_mode reactions, so R reactions buy at most
+    # this many modes; if the pool holds fewer, the pool runs out before the budget does.
+    max_modes_budget_can_buy = int(a.rxn_budget / max(a.min_rxn_per_mode, 1e-9))
+    budget_can_bind = modes_in_pool >= max_modes_budget_can_buy
+    predicted_stop = "budget-binding possible" if budget_can_bind else "pool-exhausted expected"
 
     summary = {
         "tag": a.tag or Path(a.candidates).parent.name,
@@ -152,7 +223,14 @@ def main() -> None:
         "higher_is_better": hib,
         "cutoff": a.cutoff,
         "target_modes": a.target_modes,
-        "total_modes": total_modes,
+        "pool_variant": a.pool,
+        "total_modes": modes_at_largest,  # name kept: modes in the largest evaluated PREFIX
+        "modes_in_largest_prefix": modes_at_largest,
+        "modes_available_whole_set": modes_available,
+        "modes_in_pool_to_be_built": modes_in_pool,
+        "rxn_budget": a.rxn_budget,
+        "max_modes_budget_can_buy": max_modes_budget_can_buy,
+        "predicted_stop_reason": predicted_stop,
         "candidates_to_reach_target": reached_at,
         "mean_pairwise_similarity_top500": round(mps, 4) if mps is not None else None,
         "rows": rows,
@@ -169,21 +247,54 @@ def main() -> None:
         print(f"[saturation] wrote {out}/saturation.csv + summary.json")
 
     print("")
+    print(f"[saturation] pool variant   : {a.pool}")
+    print(
+        f"[saturation] modes available: {modes_available} in the whole above-gate set "
+        f"({modes_at_largest} inside the top-{largest_size} prefix)"
+    )
+    print(f"[saturation] pool to be built: {modes_in_pool} modes")
     if reached_at is not None:
         print(
-            f"[saturation] PASS: {a.target_modes} modes reached at {reached_at} candidates "
-            f"({total_modes} modes in the full pool of {len(smis)})."
+            f"[saturation] secondary readout: {a.target_modes} modes reached at "
+            f"{reached_at} candidates"
         )
-        return
-    # Report the shortfall as what it is. A pool that cannot reach the deliverable is a real
-    # property of the generator at this budget -- but it must be SAID, not discovered later as a
-    # confusing frontier that stops early.
-    print(
-        f"[saturation] FAIL: pool tops out at {total_modes} modes, short of {a.target_modes}. "
-        "Do NOT spend route discovery on it. Either raise the generator's diversity setting / "
-        "sample more, or report the cell as pool-limited -- but not as a cost result."
-    )
-    raise SystemExit(1)
+    else:
+        print(
+            f"[saturation] secondary readout: {a.target_modes} modes NOT reachable from this "
+            f"pool — the fixed-MODE number is undefined here, the fixed-REACTION one is not"
+        )
+
+    # ---- the gate ------------------------------------------------------------------------------
+    # Abort ONLY when there is nothing to measure. A pool that merely cannot saturate the budget is
+    # a legitimate, reportable datapoint under the reaction-budget readout — see the module
+    # docstring and CLAUDE.md.
+    if modes_in_pool < a.min_modes:
+        print("")
+        print(
+            f"[saturation] FAIL: pool holds {modes_in_pool} modes, under the --min-modes "
+            f"floor of {a.min_modes}. Route discovery would measure nothing. Raise the "
+            "generator's diversity setting or sample more; do not report this as a cost result."
+        )
+        raise SystemExit(1)
+
+    print("")
+    if budget_can_bind:
+        print(
+            f"[saturation] PASS ({predicted_stop}): {modes_in_pool} modes >= the "
+            f"{max_modes_budget_can_buy} that {a.rxn_budget} reactions could buy at "
+            f">={a.min_rxn_per_mode} rxn/mode. This cell CAN be like-for-like — but confirm it "
+            "from used_rxns in the frontier output, do not assume it."
+        )
+    else:
+        print(
+            f"[saturation] PASS ({predicted_stop}): {modes_in_pool} modes < the "
+            f"{max_modes_budget_can_buy} that {a.rxn_budget} reactions could buy. The selection "
+            "will very likely run out of qualifying candidates with budget UNSPENT."
+        )
+        print(
+            "[saturation]   -> Report modes AND used_rxns. Flag the cell pool-exhausted. Never "
+            "score it as a cost win or loss; it is a POOL-SIZE result, which is itself a finding."
+        )
 
 
 if __name__ == "__main__":

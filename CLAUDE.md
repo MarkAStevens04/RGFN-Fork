@@ -1,5 +1,7 @@
 # CLAUDE.md — repository guide for AI agents and contributors
 
+Do not include a Co-Authored-By line in commit messages.
+
 This is a research fork of **RGFN** (Reaction-GFlowNet) for generating novel
 **molecular glue degraders**. We extend upstream RGFN with new oracles, reward
 shaping, batch-selection strategies, benchmarks, and dataset tooling.
@@ -116,7 +118,13 @@ Both stopping conditions are read off the *same* ordering at read time
    - **budget-binding** — qualifying candidates remain, but the cheapest next mode does not fit in the
      remaining budget. This is the only like-for-like case. (You can rarely land exactly on R, so
      "exhausted" can never mean `used == R`; it means *the next step would exceed R*.)
-   - **pool-exhausted** — nothing qualifying is left to add, so the budget goes UNSPENT. Reporting
+   - **pool-exhausted** — nothing qualifying is left to add. Note the SB arm does not merely leave
+     the budget unspent here: its reported `used_rxns` **inflates**, climbing (non-monotonically) with
+     the budget while the true cost of the identical selected set stays flat — measured 2026-08-20 on
+     Saturn's pruned sEH cell, 65 molecules priced at 247 reactions while `used_rxns` read 300→387
+     across R=300…1000, i.e. up to 140 reactions of slack. So **outside the budget-binding regime
+     quote `cost_kept_rxns`, not `used_rxns`**; the gap between them is itself the exhaustion
+     detector. Reporting
      such a cell as "modes at R reactions" implies it could have spent R and chose not to, which is
      false. Flag it (hatch it, as the two-knob surfaces already do) and never count it as a win or a
      loss on cost. Report `n_modes_available` too: it separates *collapse* (Saturn — only 18 modes
@@ -135,9 +143,13 @@ Both stopping conditions are read off the *same* ordering at read time
    The data is already there: `sparrow_select_frontier.py` records `used_rxns` against `budget_rxns`
    and prints `N modes available from M routed molecules`; the greedy CSV carries `used_rxns`.
 3. It is the constraint a chemist actually has: a budget, not a shopping list.
-4. **The competitor's MILP converges at 100 and does not at 200–300.** Measured on S3-GFN at a 1800 s
-   cap: R=50/100/400/1000 solved in 6–57 s and returned `Optimal`, while **R=200 and R=300 both hit the
-   1800 s wall**. Choosing 100 means the SB arm yields certified optima instead of lower bounds.
+4. **The competitor's MILP converges at 100 where it does not at 200–300.** Measured on S3-GFN at a
+   1800 s cap: R=50/100/400/1000 solved in 6–57 s and returned `Optimal`, while **R=200 and R=300 both
+   hit the 1800 s wall**. So 100 is the budget most likely to yield a certified optimum rather than a
+   lower bound — but **tractability is POOL-dependent, not budget-dependent, so this is not a
+   guarantee**. REINVENT's sEH network needs 5,597 intermediates against S3-GFN's 2,943 for the same
+   ~455 targets, and its R=50 ran >30 min of CBC without returning. Read `time_capped` on every SB row
+   before calling it optimal; a capped row is a lower bound on the competitor, i.e. it flatters us.
 5. ~100 reactions is about one plate — a real bench anchor.
 
 **Numbers already published at the 100-MODE readout are not wrong, they are the secondary readout.**

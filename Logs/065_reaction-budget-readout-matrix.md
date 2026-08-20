@@ -95,6 +95,13 @@ Root for repo-relative paths: `/home/markymoo/projects/RGFN_Fork/RGFN-Fork`.
   be diagnosed as collapse rather than redundancy.
 - `./experiments/lsd_hubs/matrix16/targets.py` — the authoritative per-target gate table, imported
   rather than duplicated. sEH 5.0, DRD2 0.5, ClpP −8.0.
+- `./experiments/lsd_hubs/matrix16/plot_reaction_axis.py` — **new**. Draws this entry's result as two
+  panels: per-cell dots at the headline budget (every seed shown individually, so the reader sees the
+  spread rather than a claim about it) and the ratio against the budget. The mark semantics carry the
+  status labels rather than restating them in prose: a marker is HOLLOW when **that arm** was
+  pool-exhausted — not both members of an excluded pair, which would make our arm look exhausted when
+  it was the comparison arm that ran out — and only both-budget-binding pairs enter a median. Each row
+  also shows `n=` seeds, so a 1-seed docking cell is never read as a 3-seed one.
 
 **Datasets** (inputs; no new compute)
 
@@ -114,6 +121,10 @@ Root for repo-relative paths: `/home/markymoo/projects/RGFN_Fork/RGFN-Fork`.
 - `./experiments/lsd_hubs/matrix16/results/reaction_axis/reaction_axis_ratio.csv` — the paired view,
   one row per (seed, cell, budget) with both arms, the ratio, and a `comparable` flag that is true
   only when BOTH arms were budget-binding.
+- `./experiments/lsd_hubs/matrix16/results/reaction_axis/reaction_axis.{png,pdf}` — the figure. Left:
+  the 12 cells at R=100, ordered by ratio. Right: median ratio vs budget with the per-cell range as a
+  band, the headline budget ringed. The right panel is the more persuasive half — it shows the effect
+  is not an artifact of one arbitrary budget choice, and that 2.88× is the conservative end.
 
 ### Relevant Versions
 

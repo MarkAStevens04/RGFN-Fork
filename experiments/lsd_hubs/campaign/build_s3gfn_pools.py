@@ -45,6 +45,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 from pathlib import Path
 
 
@@ -94,9 +95,7 @@ def verify(ref: Path, rows) -> int:
     ok_order = mine == ref_smi
     ok_set = set(mine) == set(ref_smi)
     ref_scores = {r["smiles"]: r["score"] for r in csv.DictReader(open(ref / "pool_scores.csv"))}
-    ok_scores = all(
-        s in ref_scores and float(ref_scores[s]) == v for s, v in rows[: len(ref_smi)]
-    )
+    ok_scores = all(s in ref_scores and float(ref_scores[s]) == v for s, v in rows[: len(ref_smi)])
     print(f"[verify] {ref}  (N={len(ref_smi)})")
     print(f"  identical order   : {ok_order}")
     print(f"  identical set     : {ok_set}")
@@ -120,6 +119,18 @@ def main() -> None:
     )
     ap.add_argument("--gate", type=float, default=0.0, help="drop candidates scoring below this")
     ap.add_argument("--verify", default="", help="compare against this existing pool dir and exit")
+    ap.add_argument(
+        "--pruned",
+        action="store_true",
+        help="PRUNED POOL: take the top-N mutually DISTINCT molecules (greedy sphere exclusion in "
+        "reward order, Morgan r=3/2048) instead of the top-N by reward. See docs/RESEARCH_CONTEXT.md "
+        "'The two pools and the two numbers'. Scanning deeper is free (CPU-seconds) and we still "
+        "route only N, so this costs no extra MultiAiZ -- it just reaches further down the reward "
+        "ranking to find N genuinely different molecules.",
+    )
+    ap.add_argument(
+        "--cutoff", type=float, default=0.5, help="--pruned: tau for the sphere-exclusion filter"
+    )
     a = ap.parse_args()
 
     rows, n_rows = load_ranked(Path(a.candidates), a.gate)
@@ -128,6 +139,54 @@ def main() -> None:
         f"(gate>={a.gate}); best={rows[0][1]:.4f} worst={rows[-1][1]:.4f}"
     )
 
+    if a.pruned:
+        # Sphere exclusion over the WHOLE above-gate set, reward-ordered. The survivors are mutually
+        # dissimilar by construction, so any subset SPARROW later selects is automatically
+        # all-distinct -- which is why reactions/candidate and reactions/mode must COINCIDE on this
+        # pool, and their disagreement would be a bug rather than a finding.
+        import sys as _sys
+
+        _sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
+        from validation.lsdflow.metrics.diversity import ecfp, mode_representatives
+
+        biggest = max(int(x) for x in a.sizes.split(",") if x.strip())
+        smis = [s_ for s_, _ in rows]
+        rews = [v for _, v in rows]
+        fps = [ecfp(s_) for s_ in smis]
+        idx = mode_representatives(
+            smis,
+            rews,
+            higher_is_better=True,
+            reward_threshold=a.gate,
+            similarity_threshold=a.cutoff,
+            fps=fps,
+        )
+        depth = (idx[biggest - 1] + 1) if len(idx) >= biggest else len(smis)
+        rows = [rows[i] for i in idx]
+        print(
+            f"  PRUNED (tau={a.cutoff}): {len(idx)} distinct molecules exist; scanned {depth} "
+            f"candidates to collect the top {min(biggest, len(idx))} "
+            f"(reward {rews[0]:.3f} -> {rows[min(biggest, len(rows)) - 1][1]:.3f})"
+        )
+        if len(idx) < biggest:
+            # Not fatal, but it MUST be visible: a short pruned pool means the generator cannot
+            # supply N distinct molecules at all, which is a property of the generator and has to be
+            # reported as one rather than surfacing later as a cheap-looking frontier.
+            print(
+                f"  WARNING: only {len(idx)} distinct molecules available, short of {biggest}. "
+                "This cell is POOL-LIMITED on the pruned pool — report it as such."
+            )
+        pruned_meta = {
+            "pool_variant": "pruned",
+            "cutoff": a.cutoff,
+            "gate": a.gate,
+            "n_above_gate": len(smis),
+            "n_distinct_available": len(idx),
+            "scan_depth": depth,
+            "reward_top": round(rews[0], 4),
+            "reward_last_kept": round(rows[-1][1], 4),
+        }
+
     if a.verify:
         raise SystemExit(verify(Path(a.verify), rows))
 
@@ -135,6 +194,18 @@ def main() -> None:
         raise SystemExit("[pools] --out-root and --tag are required unless --verify")
 
     sizes = [int(x) for x in a.sizes.split(",") if x.strip()]
+    if a.pruned:
+        # A pruned pool SHORT of the request is the RESULT, not an error, so emit it at its true
+        # size rather than skipping. Clamping (not skipping) is what makes a mode-collapsed entrant
+        # priceable at all: Saturn sEH s42 supplies 338 of a requested 500, and 338 still clears the
+        # ~100 modes a 100-reaction budget could buy. The directory is named for the size actually
+        # written, so an _N338 dir never claims to be 500.
+        # The NAIVE path deliberately keeps the strict skip below: there a shortfall means the gate
+        # left too few molecules, and an _N500 dir holding 300 would misstate the pool.
+        clamped = sorted({min(n, len(rows)) for n in sizes})
+        if clamped != sorted(set(sizes)):
+            print(f"  pruned: sizes clamped to availability {sorted(set(sizes))} -> {clamped}")
+        sizes = clamped
     for n in sorted(sizes):
         if n > len(rows):
             print(f"  N={n:<6} SKIP — only {len(rows)} distinct candidates available")
@@ -146,6 +217,13 @@ def main() -> None:
             print(f"  N={n:<6} SKIP — {out_dir} already has multiaiz_routes.json (planned pool)")
             continue
         write_pool(out_dir, rows[:n])
+        if a.pruned:
+            meta = dict(
+                pruned_meta, n_requested=max(int(x) for x in a.sizes.split(",") if x.strip())
+            )
+            meta["n_written"] = n
+            meta["pool_limited"] = meta["n_written"] < meta["n_requested"]
+            (out_dir / "pool_meta.json").write_text(json.dumps(meta, indent=2))
         print(f"  N={n:<6} -> {out_dir}/pool.smi")
 
 

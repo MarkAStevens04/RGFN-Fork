@@ -131,7 +131,7 @@ class RGFNAdapter(GFNAdapter):
         )
 
     # ---------------------------------------------------------------- phase 2 enumeration
-    def enumerate_hub_children(self, hubs, *, max_children: int = 2000):
+    def enumerate_hub_children(self, hubs, *, max_children: int = 2000, reaction_out=None):
         """Exhaustively enumerate one-reaction terminal children for each hub (§4b, §6).
 
         Args:
@@ -139,6 +139,11 @@ class RGFNAdapter(GFNAdapter):
                 observed build depth ``k`` (children land at ``k+1``, which sets stop
                 competition vs the ``max_num_reactions`` cap).
             max_children: per-hub enumeration cap (docking budget guard; free for sEH).
+            reaction_out: optional dict, populated ``{product_key: [step]}`` with the reaction that
+                turns the hub into each child. REQUIRED for any downstream route pricing: without
+                it every child's route stops at its hub, so SPARROW prices the hub rather than the
+                child and returns an empty library as trivially optimal — with no error. Passing it
+                is what ``rgfn_worker`` does to fill ``enum_children.json`` children[].reaction.
 
         Returns:
             ``(records, per_hub_stats)`` — flow records for all enumerated children (mergeable
@@ -178,6 +183,7 @@ class RGFNAdapter(GFNAdapter):
                 max_children=max_children,
                 strip_stereo=self.strip_stereo,
                 gate_component=self.gate_component,
+                reaction_out=reaction_out,
             )
             all_records.extend(recs)
             per_hub.append(

@@ -41,6 +41,15 @@ OUT = Path("experiments/lsd_hubs/campaign/results/similarity_heatmap")
 SURFACE, INK, INK2, INK3 = "#fcfcfb", "#0b0b0b", "#52514e", "#8a8984"
 TAU = 0.5  # the mode threshold: pairs at or below this count as distinct molecules
 W_MARG, W_HEAT = 0.9, 4.0  # width units of the marginal density vs the square heatmap
+# How the columns are ordered. "mean_sim" makes the bulk trend monotone so structure separates from
+# noise; "nn_sim" orders by the statistic the mode count actually keys on; "reward" was the original
+# and looks like static, because reward and similarity are near-uncorrelated in these libraries.
+SORT_BY = "mean_sim"  # one of: mean_sim | nn_sim | reward
+SORT_LABEL = {
+    "mean_sim": "mean similarity to the library",
+    "nn_sim": "nearest-neighbour similarity",
+    "reward": "reward",
+}
 BIN_W = 0.05
 BINS = np.arange(0.0, 1.0 + 1e-9, BIN_W)
 
@@ -86,31 +95,43 @@ def reward_map():
     return m
 
 
-def profile(smis, rewards):
-    """Per-molecule similarity histograms, columns ordered by ascending reward."""
+def profile(smis, rewards, sort_by=SORT_BY):
+    """Per-molecule similarity histograms, columns ordered by the chosen key.
+
+    The similarity matrix is built in the input order and only then permuted, because two of the
+    three sort keys are derived from the matrix itself.
+    """
     keep = [(s, Chem.MolFromSmiles(s)) for s in smis]
     keep = [(s, mm) for s, mm in keep if mm is not None]
-    order = sorted(range(len(keep)), key=lambda i: rewards.get(keep[i][0], float("nan")))
-    keep = [keep[i] for i in order]
     fps = [AllChem.GetMorganFingerprintAsBitVect(mm, 3, nBits=2048) for _, mm in keep]
     n = len(fps)
     sim = np.ones((n, n))
     for i in range(n):
-        s = DataStructs.BulkTanimotoSimilarity(fps[i], fps)
-        sim[i] = s
+        sim[i] = DataStructs.BulkTanimotoSimilarity(fps[i], fps)
     np.fill_diagonal(sim, np.nan)  # a molecule is not its own neighbour
+
+    mean_sim = np.nanmean(sim, axis=1)
+    nn = np.nanmax(np.where(np.isnan(sim), -np.inf, sim), axis=1)  # closest single twin
+    rw = np.array([rewards.get(s, np.nan) for s, _ in keep])
+
+    key = {"mean_sim": mean_sim, "nn_sim": nn, "reward": rw}[sort_by]
+    idx = np.argsort(np.where(np.isnan(key), np.inf, key), kind="stable")
+    sim = sim[np.ix_(idx, idx)]
+    keep = [keep[i] for i in idx]
+    mean_sim, nn, rw = mean_sim[idx], nn[idx], rw[idx]
+
     H = np.zeros((len(BINS) - 1, n))
     for i in range(n):
         v = sim[i][~np.isnan(sim[i])]
         H[:, i] = np.histogram(v, bins=BINS)[0] / max(len(v), 1) * 100.0
-    rw = np.array([rewards.get(s, np.nan) for s, _ in keep])
-    nn = np.nanmax(np.where(np.isnan(sim), -np.inf, sim), axis=1)  # nearest-neighbour similarity
-    iu = np.triu_indices(n, k=1)
-    pw = sim[iu]  # every unordered pair once, for the marginal KDE
+
+    pw = sim[np.triu_indices(n, k=1)]  # every unordered pair once, for the marginal KDE
     # Crowding: for each molecule, what share of the REST of the library sits above tau, averaged
     # over molecules. NaN never compares true, so the diagonal drops out of the count on its own.
     crowd = float(np.mean((sim > TAU).sum(axis=1) / max(n - 1, 1)) * 100.0)
-    return dict(H=H, rw=rw, nn=nn, order=[s for s, _ in keep], pw=pw, crowd=crowd)
+    return dict(
+        H=H, rw=rw, nn=nn, mean_sim=mean_sim, order=[s for s, _ in keep], pw=pw, crowd=crowd
+    )
 
 
 def main():
@@ -144,9 +165,9 @@ def main():
 
     ncol = 2
     nrow = int(np.ceil(len(data) / ncol))
-    fig = plt.figure(figsize=(11.2, 4.15 * nrow + 1.62), facecolor=SURFACE)
+    fig = plt.figure(figsize=(11.2, 4.15 * nrow + 2.05), facecolor=SURFACE)
     gs = fig.add_gridspec(
-        nrow, ncol, left=0.052, right=0.858, top=0.892, bottom=0.108, wspace=0.30, hspace=0.30
+        nrow, ncol, left=0.052, right=0.858, top=0.902, bottom=0.150, wspace=0.30, hspace=0.30
     )
 
     for i, d in enumerate(data):
@@ -220,7 +241,9 @@ def main():
             loc="left",
             pad=5,
         )
-        axh.set_xlabel("molecules, sorted by reward (low → high)", fontsize=8, color=INK2)
+        axh.set_xlabel(
+            f"molecules, sorted by {SORT_LABEL[SORT_BY]} (low → high)", fontsize=8, color=INK2
+        )
 
     # Orientation cue, on the first panel only -- the flipped axis is the one thing a reader can
     # misread, and repeating it on all five would just be noise.
@@ -273,16 +296,18 @@ def main():
         0.012,
         0.014,
         "Vertical axis is flipped so HIGHER means MORE DIVERSE. Mass below the dashed line is "
-        "redundancy the mode metric collapses: a pair above τ=0.5 counts as ONE distinct "
-        "molecule.\n"
-        '"% above τ (avg)" = for each molecule, the share of the REST of the library sitting '
-        "above τ, averaged over molecules — how crowded a typical neighbourhood is. "
-        '"med NN" is the median\nnearest-neighbour similarity — the closest single twin, which '
-        "is what the mode count actually keys on. The two can move apart: λ=0→1 takes crowding "
-        "from 94% to 7% while med NN\nbarely shifts, 0.83 to 0.69.  ·  Brighter means more; black "
-        "is an empty bin; colour is log-scaled so faint bands are real. Columns are percentages "
-        "because the arms deliver 82–98 molecules.",
-        fontsize=7.8,
+        "redundancy the mode metric collapses: a pair above τ=0.5 counts as ONE distinct molecule.\n"
+        '"% above τ (avg)" = for each molecule, the share of the REST of the library above τ, '
+        "averaged over molecules — how crowded a typical neighbourhood is.\n"
+        '"med NN" = the median nearest-neighbour similarity: the closest single twin, which is what '
+        "the mode count actually keys on.\n"
+        "The two move apart — λ=0→1 takes crowding from 94% to 7% while med NN goes only "
+        "0.83 to 0.69.\n"
+        "Brighter means more; black is an empty bin; colour is log-scaled so faint bands are real. "
+        "Columns are percentages because the arms deliver 82–98 molecules.\n"
+        "Columns are sorted by a quantity derived from this same data, so a left-to-right gradient "
+        "exists by construction — what is worth reading is the SHAPE of the transition.",
+        fontsize=7.6,
         color=INK2,
         ha="left",
         va="bottom",

@@ -38,6 +38,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import subprocess
 import sys
 import time
@@ -168,7 +169,9 @@ def load_enum_pool(enum_path: Path, hub_routes_path: Path, gate: float, top_n: i
             f"and price the wrong molecule, while the solve still reports Optimal."
         )
         if os.environ.get("ALLOW_PARTIAL_ROUTES") == "1":
-            print(f"[enum] WARNING {msg} ALLOW_PARTIAL_ROUTES=1 set — proceeding; result is suspect.")
+            print(
+                f"[enum] WARNING {msg} ALLOW_PARTIAL_ROUTES=1 set — proceeding; result is suspect."
+            )
         else:
             raise SystemExit(
                 f"[enum] ABORT: {msg} Re-enumerate with a worker that records reactions, or set "
@@ -288,6 +291,20 @@ def _greedy_frontier(a, out_dir, pool, routed, entries):
         open(out_dir / "greedy_frontier_summary.json", "w"), indent=2,
     )  # fmt: skip
     print(f"[greedy] wrote {out_dir}/greedy_frontier.csv")
+
+
+def _write_rows(out_dir, rows) -> None:
+    """Write select_frontier.csv. Called after EVERY budget point so a walltime kill keeps the rows
+    already solved -- see the call site for why. Writes via a temp file and os.replace so a kill
+    DURING the write cannot leave a half-written CSV behind."""
+    if not rows:
+        return
+    tmp = out_dir / "select_frontier.csv.tmp"
+    with open(tmp, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
+        w.writeheader()
+        w.writerows(rows)
+    os.replace(tmp, out_dir / "select_frontier.csv")
 
 
 def main() -> None:
@@ -646,11 +663,15 @@ def main() -> None:
                 f"rxn/mode={r_['rxn_per_mode_kept']} meanSim={r_['mean_pairwise_sim']}"
                 + ("  [TIME-CAPPED: lower bound]" if res.get("time_capped") else "")
             )
+            # REWRITE THE CSV AFTER EVERY BUDGET POINT, not once at the end. A budget ladder can run
+            # for hours -- a single capped solve is an hour by itself -- so a walltime kill used to
+            # discard EVERY row computed so far, leaving the numbers visible in the SLURM log and
+            # absent from the artifact. That cost two cells on 2026-08-19 (reinvent_seh_seed42_pruned
+            # at 7 of 10 points, saturn_seh_seed44) and 1.3 h on job 73610 before that. Rewriting is
+            # O(rows) against solves that take minutes, so the cost is nil.
+            _write_rows(out_dir, rows)
 
-    with open(out_dir / "select_frontier.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0].keys()) if rows else ["budget_rxns"])
-        w.writeheader()
-        w.writerows(rows)
+    _write_rows(out_dir, rows)
     json.dump(
         {
             "tag": a.tag,

@@ -10,8 +10,8 @@
 #
 # Trains SynFormer's Mamba SMILES model by RL (Augmented Memory) against OUR frozen surrogate, injected
 # as a `glue_surrogate` oracle component, then samples a pool from the TRAINED agent and emits a
-# standard candidate dataset with has_route=0. Routes are recovered downstream by MultiAiZ -> SPARROW
-# via submit_competitor_routes.sh, exactly as for the other route-less entrants.
+# standard candidate dataset with has_route=1 — SynFormer carries routes BY CONSTRUCTION, so it does
+# NOT need MultiAiZ; it prices via sparrow_select_frontier.py --route-source external.
 #
 # SIZING — A DIFFERENT BOTTLENECK FROM THE OTHER ENTRANTS. The frozen reward is milliseconds and the
 # GA is trivial; the cost is SynFormer's PROJECTION — a transformer decode at search_width 24 /
@@ -122,7 +122,11 @@ for CELL in $CELLS; do
 
     CANDS="$OUT_DIR/fixed_reward/candidates/candidates.csv"
     if [ "$RC" -eq 0 ] && [ -s "$CANDS" ]; then
-        echo "DONE $CELL -> $OUT_DIR  ($(($(wc -l < "$CANDS") - 1)) candidates, has_route=0)"
+                # has_route=1 — SynFormer is the REACTION-AWARE entrant; the "has_route=0" here was a
+        # sed leftover from the Saturn copy and would have told a reader the exact opposite of
+        # the truth. Read it back from the manifest rather than asserting it.
+        HR=$(python -c "import json;print(json.load(open('$OUT_DIR/fixed_reward/candidates/manifest.json'))['has_routes'])" 2>/dev/null || echo "?")
+        echo "DONE $CELL -> $OUT_DIR  ($(($(wc -l < "$CANDS") - 1)) candidates, has_routes=$HR)"
     else
         # Never let an infrastructure failure be reported as a scientific limit (Logs/059).
         echo "FAILED $CELL rc=$RC — candidates.csv missing or empty." >&2

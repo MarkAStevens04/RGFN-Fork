@@ -512,3 +512,77 @@ lower bound, i.e. it flatters the competitor's best case, not ours.
 converged solve (24→33 on seed 43, 26→32 on seed 44), so the diversity mechanism is load-bearing and
 the `059` comparison against a diversity-blind selector really was unfair. It still saturates well
 short of us.
+
+---
+
+## Update 2026-08-20 — our side reaches n=3, and a new arm returns a NULL
+
+Jobs 74441/74442 (our seeds 43/44) and 74444-74446 (the new HB-Enum-SB arm) completed. All five
+converged; no capped rows on our side and none on HB-Enum-SB. Costs below are `cost_kept_rxns`, not
+`used_rxns`, per the pool-exhaustion rule in `CLAUDE.md`.
+
+**12 — the cross-seed asymmetry is gone, and the ratio survives it.** Our arm had been n=1 (seed 42's
+82) against a competitor at n=3 — the weakest link in the headline. The two missing curves exist now:
+
+| seed | ours | BC-Enum-SB | ours / BC |
+|---|---|---|---|
+| 42 | 82 | 24 ⚠️ capped | 3.42 |
+| 43 | 81 | 33 | **2.45** |
+| 44 | 82 | 32 | **2.56** |
+
+**Ours: mean 81.7, sd 0.6, CV 0.7%** — strikingly stable, and far tighter than the 7.0% median seed
+CV entry `065` measured on the reaction axis for the matrix as a whole. On the two seeds where the
+competitor *converged*, the within-seed ratio is **2.51×**. That is the same ~2.5× the 2026-08-19
+update arrived at by cross-seed inference, now obtained properly, and it should be the quoted number.
+Seed 42's 3.42× remains excluded: its competitor row is a lower bound.
+
+**13 — HB-Enum-SB: SPARROW does NOT do better on flow-derived candidates.** The arm exists to answer
+one question — *does the optimizer do better on candidates enumerated from high-flow hubs than on
+candidates from reward-picked hubs?* Same optimizer, same budget, same gate, same pool cap; only the
+candidates' origin differs. All three seeds solved to `Optimal`.
+
+| seed | HB-Enum-SB (flow hubs) | BC-Enum-SB (reward hubs) |
+|---|---|---|
+| 42 | 42 | 24 ⚠️ capped |
+| 43 | 37 | 33 |
+| 44 | **23** | **32** |
+
+On the two seeds where both converged: **HB 30.0 vs BC 32.5.** No advantage — marginally worse, and
+**the direction flips between seeds** (43: HB +12%; 44: HB −28%). The expectation going in was a
+modest gain, on the reasoning that reward-picked hubs are themselves already fairly high-flow
+(entry `053`: flow picks the neighbourhood, not the rank). The measurement is weaker than that
+expectation: at this sample size there is no detectable difference at all.
+
+**This is "no evidence of a difference", NOT "no difference", and two things forbid the stronger
+claim.** First, **HB-Enum-SB is noisy where we are not** — CV **29.0%** (23–42) against our 0.7%. That
+is itself a finding: SPARROW's selection is far more sensitive to which candidate set it is handed
+than our greedy is, so a ±10% effect is simply not resolvable at n=3. Second, a **live confound**:
+these enumerations used `n_hubs=200 / top_k=1000` while BC-Enum-SB's used `64 / 100`, so the arms
+differ in the WIDTH of the net as well as in how hubs were ranked, and a 200-vs-64 hub difference
+could easily swamp a small flow effect. Isolating it needs a 64-hub *flow* enumeration, which does
+not exist.
+
+**14 — the cleanest selection-only contrast, and it is SMALLER than the headline.** Every ratio above
+compares arms built on *different* candidate sets. For seed 42 one comparison avoids that: our arm and
+HB-Enum-SB on the **same enumeration at the same gate** (`matrix16/scent_seh`, gate 7.0):
+
+| arm, same enum + same gate | distinct @ R=100 |
+|---|---|
+| hub-batching (`scent_seh_thr7`) | **70** |
+| HB-Enum-SB | **42** |
+| ratio | **1.67×** |
+
+That is the honest "same molecules, different chooser" number, and it sits well below the 2.51× we
+quote against BC-Enum-SB. **The implication is uncomfortable and belongs in the paper rather than in a
+footnote: a real share of the 2.51× comes from candidate ORIGIN, not from selection.** Selection is
+worth ~1.67× on identical candidates; the rest is what enumerating off our hubs buys.
+
+Two limits on that number, both real. It is **one seed** — the matrix cells for seeds 43/44 sit at the
+5.0 headline bar, so no same-enum gate-7.0 comparison exists there. And our own two gate-7.0 seed-42
+numbers (82 from `scent_seh_freefrag`, 70 from `scent_seh_thr7`) differ by a `prebuild_k` of 0 vs 20
+on the same gate, so "our arm" is not a single fixed configuration either. Neither undermines the
+direction; both cap how hard the 1.67× can be pushed.
+
+**Next, concretely:** a same-enum, same-gate comparison on seeds 43/44 would turn 1.67× from a single
+point into a band, and it is the cheapest remaining measurement on this entry — the enumerations
+already exist, only the gate differs.

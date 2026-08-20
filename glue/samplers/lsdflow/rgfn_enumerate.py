@@ -176,6 +176,7 @@ def enumerate_terminal_children(
     timing=None,
     sync=None,
     gate_component: Optional[str] = None,
+    reaction_out: Optional[dict] = None,
 ) -> Tuple[List[FlowRecord], int]:
     """Enumerate a hub's one-reaction terminal children as ``FlowRecord``s.
 
@@ -192,6 +193,14 @@ def enumerate_terminal_children(
             (``enumeration_s`` / ``reward_gen_s`` / ``flow_extract_s``); ``None`` → no timing.
         sync: optional no-arg callable (e.g. ``torch.cuda.synchronize``) fired at GPU-timing
             boundaries so async CUDA work is attributed to the right component.
+        reaction_out: optional dict accumulator, populated ``{product_smiles: [step]}`` with the
+            final reaction that turns the hub into each child. An OUT-PARAMETER rather than a third
+            return value because two callers already unpack a 2-tuple
+            (``rgfn_adapter.enumerate_hub_children``, ``acquisition.py``), and this mirrors the
+            ``timing`` accumulator directly above. Without it a child's route stops at its hub, so
+            SPARROW prices the wrong molecule and returns an empty library as trivially optimal —
+            silently. Keyed by BOTH the raw and stereo-stripped product SMILES so a caller can look
+            up by ``child_stereo_key`` or ``child_key``.
 
     Returns:
         ``(records, n_enumerated_paths)``. ``len(records) <= n_enumerated_paths`` when some
@@ -199,6 +208,35 @@ def enumerate_terminal_children(
     """
     _t0 = time.perf_counter()
     paths = _enumerate_product_paths(env, hub_state, max_children)
+    if reaction_out is not None:
+        # The last micro-step of every path is the ReactionActionC that produced the child, and it
+        # carries input_molecule / input_reaction / input_fragments / output_molecule — exactly the
+        # step schema the route assembler expects.
+        from .rgfn_extract import (
+            _stripped_key,  # the project's ONE stereo-key rule (§6)
+        )
+        from .route_steps import reaction_step as _rxn_step
+
+        for _p in paths:
+            _act = _p[-1][2]
+            _step = _rxn_step(_act)
+            _prod = _step.get("product")
+            if not _prod:
+                continue
+            reaction_out[_prod] = [_step]
+            _out_mol = getattr(_act, "output_molecule", None)
+            if _out_mol is not None:
+                # Key by the stereo-stripped cross-model key too, so a caller keyed on
+                # ``child_key`` (stripped) finds it as readily as one keyed on
+                # ``child_stereo_key``. Same helper the records themselves are keyed with, so the
+                # two can never disagree about what "the same molecule" means.
+                try:
+                    _bare, _stereo = _stripped_key(_out_mol)
+                except Exception:  # noqa: BLE001 - a key we cannot build is one we simply omit
+                    continue
+                for _k in (_bare, _stereo):
+                    if _k:
+                        reaction_out.setdefault(_k, [_step])
     trajs = [
         t for t in (_build_child_trajectory(env, hub_state, p) for p in paths) if t is not None
     ]

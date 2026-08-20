@@ -533,7 +533,26 @@ def main() -> None:
                 )
                 + "\n"
             )
+    n_buyable = sum(1 for smi, _ in pool if len(routes[smi]) == 0)
     print(f"[SF-FR] wrote {len(pool)} routes -> {routes_path}", flush=True)
+    if n_buyable:
+        # A ZERO-STEP route is not a failure: SynFormer projected the molecule onto a catalogue
+        # building block, so it costs ZERO reactions — which under a fixed reaction budget makes it
+        # the most valuable kind of library member there is.
+        #
+        # TRAP FOR A LATER READER: `ingest_candidates.py` counts steps, so these rows come out of
+        # candidates.csv with `has_route=0` even though the manifest says has_routes=True and the
+        # route exists. Anything that filters on `has_route == 1` will silently discard SynFormer's
+        # FREE molecules and overstate its cost. The pricing path is safe — `--route-source external`
+        # reads routes.jsonl directly, and build_network handles a step-less route by making the
+        # molecule a compound node with no producing reaction — but do not re-derive the pool from
+        # the CSV's has_route column.
+        print(
+            f"[SF-FR]   of which {n_buyable} ({n_buyable/len(pool):.0%}) are ZERO-STEP: purchasable "
+            f"outright, 0 reactions. They appear in candidates.csv as has_route=0 — see the code "
+            f"comment before filtering on that column.",
+            flush=True,
+        )
 
     ingest_cmd = [
         "conda",

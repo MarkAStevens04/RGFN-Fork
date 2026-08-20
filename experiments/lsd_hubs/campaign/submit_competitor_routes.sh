@@ -59,13 +59,27 @@ case "$TARGET" in
           echo "       lower-is-better gate handling, which this script does not carry." >&2; exit 1 ;;
 esac
 CUTOFF=${CUTOFF:-0.5}
-TARGET_MODES=${TARGET_MODES:-100}
+TARGET_MODES=${TARGET_MODES:-100}          # SECONDARY readout's mode target
+RXN_BUDGET=${RXN_BUDGET:-100}              # PRIMARY readout's reaction budget
+MIN_MODES=${MIN_MODES:-10}                 # gate floor: below this there is nothing to measure
 BUDGETS=${BUDGETS:-50,100,150,200,300,400,500,600,800,1000}   # seed 42's SB ladder (Logs/061)
 MODE_POINTS=${MODE_POINTS:-25,50,75,100,125,150}              # seed 42's greedy ladder
 
 CANDS="$RUN_DIR/fixed_reward/candidates/candidates.csv"
 POOL_ROOT=$SCRATCH/rgfn_runs/lsdflow_sparrow/multiaiz_pools
-TAG=${GENERATOR}_${TARGET}_seed${SEED}
+# POOL selects which of the two pool constructions to build — see docs/RESEARCH_CONTEXT.md,
+# "The two pools and the two numbers". Both go through the IDENTICAL downstream (MultiAiZ -> SB) and
+# both report reactions/candidate AND reactions/mode; only the 500 molecules differ.
+#   naive  = top-500 by reward, diversity only whatever the generator's own tools produced
+#   pruned = top-500 mutually DISTINCT (sphere exclusion, reward-ordered)
+# The tag carries the variant so the two MultiAiZ caches never collide — the cache key is the POOL.
+POOL=${POOL:-naive}
+case "$POOL" in
+    naive)  POOL_FLAG="" ;;
+    pruned) POOL_FLAG="--pruned --cutoff $CUTOFF" ;;
+    *) echo "FATAL: POOL must be naive or pruned, got '$POOL'" >&2; exit 1 ;;
+esac
+TAG=${GENERATOR}_${TARGET}_seed${SEED}$([ "$POOL" = pruned ] && echo "_pruned" || echo "")
 POOL_DIR="$POOL_ROOT/${TAG}_N${N}"
 # Results to $SCRATCH: $HOME is READ-ONLY on Balam compute nodes, and a job writing into the repo
 # "COMPLETES" in seconds with exit 0 having done nothing (the Logs/059 failure).
@@ -83,11 +97,17 @@ echo "RUN_DIR=$RUN_DIR"
 
 # ---- 0. pre-flight gate -------------------------------------------------------------------------
 echo "=== [0/3] mode-saturation pre-flight (gate) ==="
+# The gate PREDICTS THE STOP REASON; it no longer excludes a pool that just cannot saturate the
+# budget, because under the reaction-budget readout that pool still yields a reportable number
+# (CLAUDE.md, "THE BENCHMARK'S PRIMARY READOUT"). --pool matters: the naive pool is capped by the
+# modes inside its top-N prefix, the pruned pool by the modes in the whole above-gate set, and the
+# two differ enormously — Saturn sEH s42 is 18 vs 338. It aborts only below --min-modes.
 conda run --no-capture-output -n rgfn python experiments/lsd_hubs/campaign/mode_saturation.py \
     --candidates "$CANDS" --gate "$GATE" --cutoff "$CUTOFF" --target-modes "$TARGET_MODES" \
+    --rxn-budget "$RXN_BUDGET" --min-modes "$MIN_MODES" --pool "$POOL" \
     --sizes "50,100,250,${N}" --tag "$TAG" --out-dir "$RES_ROOT/${TAG}_saturation" || {
         echo "" >&2
-        echo "ABORT: $TAG cannot deliver $TARGET_MODES modes from $N candidates." >&2
+        echo "ABORT: $TAG holds fewer than $MIN_MODES modes in its $POOL pool — nothing to measure." >&2
         echo "  Not spending ~2.25 h of route discovery on it. This is a POOL-SIZE result and must" >&2
         echo "  be reported as one — see $RES_ROOT/${TAG}_saturation/summary.json." >&2
         exit 2; }
@@ -95,8 +115,21 @@ conda run --no-capture-output -n rgfn python experiments/lsd_hubs/campaign/mode_
 # ---- 1. pool ------------------------------------------------------------------------------------
 echo "=== [1/3] pool ==="
 conda run --no-capture-output -n rgfn python experiments/lsd_hubs/campaign/build_s3gfn_pools.py \
-    --candidates "$CANDS" --out-root "$POOL_ROOT" --tag "$TAG" --sizes "$N" || exit 1
+    --candidates "$CANDS" --out-root "$POOL_ROOT" --tag "$TAG" --sizes "$N" \
+    --gate "$GATE" $POOL_FLAG || exit 1
+
+# A pruned pool is emitted at the size the generator can actually supply, and the directory is named
+# for that size — Saturn sEH s42 asks for 500 and writes _N338. Resolve the real directory instead of
+# assuming _N$N, or a pool-limited cell dies here on a path that was never going to exist.
+if [ ! -s "$POOL_DIR/pool.smi" ] && [ "$POOL" = pruned ]; then
+    ACTUAL=$(ls -d "$POOL_ROOT/${TAG}"_N[0-9]* 2>/dev/null | head -1)
+    if [ -n "$ACTUAL" ] && [ -s "$ACTUAL/pool.smi" ]; then
+        echo "  pool-limited: requested N=$N, using $(basename "$ACTUAL")"
+        POOL_DIR="$ACTUAL"
+    fi
+fi
 [ -s "$POOL_DIR/pool.smi" ] || { echo "FATAL: pool not built at $POOL_DIR" >&2; exit 1; }
+echo "  pool: $POOL_DIR ($(wc -l < "$POOL_DIR/pool.smi") molecules)"
 
 # ---- 2. routes ----------------------------------------------------------------------------------
 # Subroutine call, NOT a copy: same discovery parameters and same timing sidecar as every other
@@ -131,7 +164,7 @@ conda run --no-capture-output -n rgfn python \
     --out-dir "$RES_ROOT/${TAG}_greedy_N${N}" \
     --tag "${TAG}_multiaiz_greedy" || RC=1
 
-if [ "${RUN_SB:-0}" = "1" ]; then
+if [ "${RUN_SB:-1}" = "1" ]; then
     conda run --no-capture-output -n rgfn python \
         experiments/lsd_hubs/campaign/sparrow_select_frontier.py \
         --routes "$ROUTES" --pool "$POOL_DIR/pool_scores.csv" --route-source multiaiz \

@@ -20,11 +20,16 @@
 # hubs") and overlap our own seed-42 hub set by only 35/64, so it sees a genuinely different
 # candidate set. THIS arm is the one where the candidate set really is ours.
 #
-# NO NEW ENUMERATION. It reuses `campaign_enum_seh_70363` -- the 200-hub / top-1000-candidate
-# enumeration (828,448 children, 140,934 distinct above the 7.0 gate) that our own hub-batching
-# headline is computed from. Only the MILP is new.
+# NO NEW ENUMERATION. It reuses the matrix16 `scent_seh` enumerations -- 200 hubs, ~440-490k
+# children each, one per seed -- which are the same artifacts our own hub-batching arm is scored
+# from. Only the MILP is new.
 #
-# ONE CONFOUND TO STATE, NOT HIDE. This enumeration used n_hubs=200 / top_k=1000 while BC-Enum-SB
+# DO NOT POINT THIS AT `campaign_enum_seh_70363`. That artifact predates the per-child `reaction`
+# fix (2026-07-15) and stores NONE, so every child's route stops at its hub and SPARROW returns the
+# empty library as trivially Optimal -- measured: 2,000 targets -> 239 compound nodes, 0 selected,
+# status `Optimal`. `load_enum_pool` now aborts on it, but the right artifact is the matrix16 one.
+#
+# ONE CONFOUND TO STATE, NOT HIDE. These enumerations used n_hubs=200 / top_k=1000 while BC-Enum-SB
 # used 64 / 100, so the arms differ in the WIDTH of the net as well as in how hubs were ranked. A
 # gain here is therefore "flow-picked hubs from a wider net", not "flow alone". Narrowing that needs
 # a 64-hub flow enumeration, which does not exist yet.
@@ -37,13 +42,19 @@
 set -uo pipefail
 cd "$HOME/projects/RGFN_Fork/RGFN-Fork"
 
-# The enumeration our own hub-batching headline is computed from (submit_lsdflow_routes.sh's EN).
-ENUM=${ENUM:-/scratch/markymoo/rgfn_runs/lsdflow/campaign_enum_seh_70363/enum_children.json}
-# scent_seh_70189 (the paired analysis dir) predates the routes format and has no routes.json; the
-# seed-42 native sample run is the only source of hub routes, and covers 191/200 of these hubs.
-HUB_ROUTES=${HUB_ROUTES:-/scratch/markymoo/rgfn_runs/lsdflow/scent_seh_native_70974/sample/routes.json}
-SNAP=${SNAP:-/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh/2026-07-10_17-28-06/additional_fragments/fragments_4000.json}
-TAG=${TAG:-hbenumR100_seed42_L1}
+# SEED picks the matrix16 cell; every one carries its own paired sample/routes.json.
+SEED=${SEED:-42}
+case "$SEED" in
+    42) CELL=matrix16/scent_seh
+        SNAP_DEF=/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh/2026-07-10_17-28-06/additional_fragments/fragments_4000.json ;;
+    *)  CELL=matrix16_seed${SEED}/scent_seh
+        SNAP_DEF=/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh_5k/seed${SEED}/additional_fragments/fragments_4000.json ;;
+esac
+BASE=${BASE:-/scratch/markymoo/rgfn_runs/lsdflow/$CELL}
+ENUM=${ENUM:-$BASE/enum/enum_children.json}
+HUB_ROUTES=${HUB_ROUTES:-$BASE/sample/routes.json}
+SNAP=${SNAP:-$SNAP_DEF}
+TAG=${TAG:-hbenumR100_seed${SEED}_L1}
 GATE=${GATE:-7.0}
 CUTOFF=${CUTOFF:-0.5}
 # 50000 matches BC-Enum-SB's `enumR100_*_N50000` exactly, so pool size is NOT a free variable
@@ -65,7 +76,11 @@ source /home/markymoo/miniconda3/etc/profile.d/conda.sh
 conda activate rgfn
 export LD_LIBRARY_PATH="$(ls -d /home/markymoo/miniconda3/envs/rgfn/lib/python*/site-packages/nvidia/*/lib 2>/dev/null | paste -sd:):${LD_LIBRARY_PATH:-}"
 
-echo "host=$(hostname)  TAG=$TAG  ENUM=$ENUM  sizes=$SIZES  lambda=$LAMBDA_DIV  out=$OUT_ROOT"
+for P in "$ENUM" "$HUB_ROUTES" "$SNAP"; do
+    [ -s "$P" ] || { echo "FATAL: missing input $P" >&2; exit 1; }
+done
+echo "host=$(hostname)  SEED=$SEED  TAG=$TAG  sizes=$SIZES  lambda=$LAMBDA_DIV"
+echo "  ENUM=$ENUM"; echo "  HUB_ROUTES=$HUB_ROUTES"
 FIRST_N=$(echo $SIZES | awk '{print $1}')
 for N in $SIZES; do
     OUT="$OUT_ROOT/${TAG}_N${N}"

@@ -142,8 +142,15 @@ def main() -> None:
         _use_cuda = str(getattr(adapter, "device", args.device)).startswith("cuda")
         for i, (smiles, depth) in enumerate(hubs):
             _h0 = time.perf_counter()
+            # reaction_by_child is NOT optional bookkeeping: enum_children.json children[].reaction
+            # is what lets a child's route be assembled as `hub prefix + this step`. RGFN omitted it
+            # for months, and the failure is silent — SPARROW prices the hub instead of the child
+            # and reports the empty library as Optimal. Every other worker passes it.
+            rxn_by_child = {}
             recs_r, ph = adapter.enumerate_hub_children(
-                [(smiles, depth)], max_children=args.enum_max_children
+                [(smiles, depth)],
+                max_children=args.enum_max_children,
+                reaction_out=rxn_by_child,
             )
             _hub_s = time.perf_counter() - _h0
             rows = [_rec_to_dict(r) for r in recs_r]
@@ -151,7 +158,13 @@ def main() -> None:
             per_hub.extend(ph)
             hub_key = rows[0]["hub_key"] if rows else smiles
             enum_hubs.append(
-                A.build_enum_hub(hub_input=smiles, hub_key=hub_key, depth=depth, recs=rows)
+                A.build_enum_hub(
+                    hub_input=smiles,
+                    hub_key=hub_key,
+                    depth=depth,
+                    recs=rows,
+                    reaction_by_child=rxn_by_child,
+                )
             )
             hub_timings.append(
                 {
