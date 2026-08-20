@@ -13,11 +13,11 @@
       "best_rxn_per_mode": 3.79,
       "best_stop_reason": "modes",
       "hub_modes": 300,
-      "hub_rxn_per_mode": 1.133,
+      "hub_rxn_per_mode": 1.12,
       "hub_stop_reason": "modes",
-      "edge": 3.345,
-      "hub_hubs_used": 15,
-      "hub_reward_gen_calls": 44847,
+      "edge": 3.384,
+      "hub_hubs_used": 13,
+      "hub_reward_gen_calls": 56121,
       "pool_limited": false
     },
     {
@@ -26,11 +26,11 @@
       "best_rxn_per_mode": 3.79,
       "best_stop_reason": "modes",
       "hub_modes": 300,
-      "hub_rxn_per_mode": 1.157,
+      "hub_rxn_per_mode": 1.143,
       "hub_stop_reason": "modes",
-      "edge": 3.276,
-      "hub_hubs_used": 19,
-      "hub_reward_gen_calls": 52605,
+      "edge": 3.316,
+      "hub_hubs_used": 17,
+      "hub_reward_gen_calls": 64714,
       "pool_limited": false
     },
     {
@@ -39,11 +39,11 @@
       "best_rxn_per_mode": 3.79,
       "best_stop_reason": "modes",
       "hub_modes": 300,
-      "hub_rxn_per_mode": 1.197,
+      "hub_rxn_per_mode": 1.19,
       "hub_stop_reason": "modes",
-      "edge": 3.166,
+      "edge": 3.185,
       "hub_hubs_used": 24,
-      "hub_reward_gen_calls": 61522,
+      "hub_reward_gen_calls": 74410,
       "pool_limited": false
     }
   ]

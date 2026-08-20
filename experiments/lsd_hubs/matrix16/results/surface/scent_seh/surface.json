@@ -33,38 +33,38 @@
   "child_policy": "free_frag",
   "prebuild_k": 20,
   "rank_by": "build_score",
-  "wall_s": 313.7,
+  "wall_s": 326.7,
   "summary": {
     "budget_reactions": 300,
     "n_grid_cells": 117,
-    "n_comparable_cells": 109,
-    "n_pool_limited_cells": 8,
-    "hub_wins_cells": 109,
+    "n_comparable_cells": 110,
+    "n_pool_limited_cells": 7,
+    "hub_wins_cells": 110,
     "ratio_min": {
       "tau": 8.0,
       "similarity": 0.5,
-      "hub": 2.373,
+      "hub": 2.3178,
       "best": 3.5059,
-      "ratio": 1.4774,
-      "hub_modes": 126,
+      "ratio": 1.5126,
+      "hub_modes": 129,
       "best_modes": 85
     },
     "ratio_max": {
       "tau": 4.0,
       "similarity": 0.45,
-      "hub": 1.1111,
+      "hub": 1.0989,
       "best": 3.6145,
-      "ratio": 3.2531,
-      "hub_modes": 270,
+      "ratio": 3.2892,
+      "hub_modes": 273,
       "best_modes": 83
     },
     "at_operating_point": {
       "tau": 7.0,
       "similarity": 0.5,
-      "hub": 1.2987,
+      "hub": 1.2305,
       "best": 3.5059,
-      "ratio": 2.6995,
-      "hub_modes": 231,
+      "ratio": 2.8492,
+      "hub_modes": 243,
       "best_modes": 85
     }
   }
