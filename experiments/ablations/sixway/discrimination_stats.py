@@ -22,6 +22,7 @@ construction, so the absolute and differential scores share information.
 Only status='ok' rows are used.
 """
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -30,8 +31,18 @@ from scipy.stats import mannwhitneyu
 
 ROOT = Path(__file__).resolve().parents[3]  # RGFN-Fork root
 T2D3 = ROOT / "experiments" / "oracle_validation" / "docking_6td3"
-KNOWN_CSV = T2D3 / "known_results.csv"
-DECOY_CSV = T2D3 / "decoy_cdk_results.csv"
+# INPUTS ARE OVERRIDABLE (added 2026-08-20, Logs/069). The entry-006 ranking that selected
+# Vina dT2-T1 as the oracle signal was measured against WARHEAD-matched decoys -- every decoy carries
+# the CR8-like purine, but MW is only range-bounded and no other property is matched. Against
+# PROPERTY-matched decoys the differential's AUROC falls 0.946 -> 0.688 and absolute Tier-2 overtakes
+# it, so the six-way ranking has to be re-read on the harder negatives. Same six panels, same stats,
+# different negative set:
+#   KNOWN_CSV=... DECOY_CSV=... OUT_SUFFIX=_matched SET_LABEL="property-matched" python <script>
+KNOWN_CSV = Path(os.environ.get("KNOWN_CSV", T2D3 / "known_results.csv"))
+DECOY_CSV = Path(os.environ.get("DECOY_CSV", T2D3 / "decoy_cdk_results.csv"))
+# Suffix keeps the two negative sets side by side instead of one overwriting the other.
+OUT_SUFFIX = os.environ.get("OUT_SUFFIX", "")
+SET_LABEL = os.environ.get("SET_LABEL", "warhead-matched")
 
 # (label, column, better-direction) — must match plot_violins.py PANELS
 PANELS = [
@@ -86,7 +97,7 @@ def main():
         )
 
     df = pd.DataFrame(rows).sort_values("auroc", ascending=False).reset_index(drop=True)
-    out = Path(__file__).parent / "discrimination_stats.csv"
+    out = Path(__file__).parent / f"discrimination_stats{OUT_SUFFIX}.csv"
     df.to_csv(out, index=False)
 
     print(f"6TD3 / CDK12-DDB1 — known vs. decoy (n={n_known} known / {n_decoy} decoy)")

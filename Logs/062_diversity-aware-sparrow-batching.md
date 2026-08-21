@@ -515,6 +515,40 @@ short of us.
 
 ---
 
+## ⛔ WITHDRAWN 2026-08-20 (later the same day) — Results 13-15 were measured on MIXED enumerations
+
+**Do not quote the HB-Enum-SB numbers, the 1.67× or the 2.27× below.** Re-running against frozen
+inputs; this banner is removed when they land.
+
+**What happened.** All three `scent_seh` enumerations were re-run on 2026-08-19 between 21:13 and
+22:06 to fix a **per-hub enumeration cap that had been truncating children**. The fix is correct and
+those are the good files — but the rewrite landed *after* the HB-Enum-SB jobs had already read the
+old ones, while our own seed-curve jobs ran the next morning against the new ones. So the arms in
+Result 15 were priced on **different candidate sets**, which is precisely the confound that comparison
+existed to remove.
+
+The size of the drift is not marginal — the same three cells at gate 7.0:
+
+| seed | pool the HB job used | pool in the current file |
+|---|---|---|
+| 42 | 21,073 | 119,866 |
+| 43 | 21,581 | 125,414 |
+| 44 | 27,250 | 152,328 |
+
+**Nothing here was detectable from the outputs.** Both runs completed, reported `Optimal`, and
+produced plausible libraries. The only tell was an input mtime, which nothing checked. The lesson is
+narrow and worth stating: *a comparison that claims "the same candidates" must read from a frozen
+copy*, because the shared scratch tree is written by other agents mid-experiment. Re-runs now read
+`/scratch/.../lsdflow_sparrow/_enum_snapshot_20260820/`, with source md5s recorded.
+
+**What is NOT affected, checked rather than assumed.** The BC-Enum-SB sources
+(`bc_enum_seh_seed42`, `t45_seh_seed43/44`) were untouched (mtimes 08-05/08-06) and show no cap
+signature, so Results 1-12 stand — including the **2.51×** within-seed headline. Entry `065`'s matrix
+curves were all regenerated 08-20 11:00-11:02, i.e. *after* the enum fix, so they are on good inputs
+(their numbers did shift slightly; see that entry).
+
+---
+
 ## Update 2026-08-20 — our side reaches n=3, and a new arm returns a NULL
 
 Jobs 74441/74442 (our seeds 43/44) and 74444-74446 (the new HB-Enum-SB arm) completed. All five
@@ -562,7 +596,9 @@ differ in the WIDTH of the net as well as in how hubs were ranked, and a 200-vs-
 could easily swamp a small flow effect. Isolating it needs a 64-hub *flow* enumeration, which does
 not exist.
 
-**14 — the cleanest selection-only contrast, and it is SMALLER than the headline.** Every ratio above
+**14 — the cleanest selection-only contrast** ⚠️ **(n=1 — SUPERSEDED by Result 15, which turns this
+into a same-enum band at n=3; read that instead. Seed 42 is the LOWEST of the three points, so the
+deflationary interpretation below is withdrawn there.)** Every ratio above
 compares arms built on *different* candidate sets. For seed 42 one comparison avoids that: our arm and
 HB-Enum-SB on the **same enumeration at the same gate** (`matrix16/scent_seh`, gate 7.0):
 
@@ -583,6 +619,34 @@ numbers (82 from `scent_seh_freefrag`, 70 from `scent_seh_thr7`) differ by a `pr
 on the same gate, so "our arm" is not a single fixed configuration either. Neither undermines the
 direction; both cap how hard the 1.67× can be pushed.
 
-**Next, concretely:** a same-enum, same-gate comparison on seeds 43/44 would turn 1.67× from a single
-point into a band, and it is the cheapest remaining measurement on this entry — the enumerations
-already exist, only the gate differs.
+**15 — the band lands, and it REVISES Result 14 upward.** Jobs 74482-74485 ran our arm on the
+*matrix16* enumerations at gate 7.0 for seeds 43/44, at both prebuild-K settings, so the selection-only
+contrast is now same-enum, same-gate and within-seed at n=3:
+
+| seed | ours (K=0) | ours (K=20) | HB-Enum-SB | ratio K=0 | ratio K=20 |
+|---|---|---|---|---|---|
+| 42 | 82 † | 70 | 42 | 1.95 † | **1.67** |
+| 43 | 79 | 75 | 37 | 2.14 | **2.03** |
+| 44 | 83 | 72 | 23 | 3.61 | **3.13** |
+
+† seed 42's K=0 number comes from a *different* enumeration (`campaign_enum_seh_70363`), so only its
+K=20 row is same-enum. Seeds 43/44 are same-enum at both settings.
+
+**Selection alone is worth 2.27× (K=20, n=3, sd 0.76), not 1.67×.** The 1.67× reported in Result 14
+was seed 42 — **the lowest of the three**, and reading a single seed as the value was exactly the
+error this entry has now made twice. On the same-enum K=0 rows (seeds 43/44 only) it is 2.87×.
+
+**So the deflationary reading in Result 14 is withdrawn.** With selection worth ~2.3× and the headline
+against BC-Enum-SB at 2.51×, candidate origin accounts for far less of the advantage than that
+paragraph claimed — most of it *is* selection. Result 14's numbers stand as reported; its
+interpretation does not.
+
+**What actually drives the spread is the competitor, not us.** Our arm is stable across seeds
+(79/83 at K=0, 70/72/75 at K=20); HB-Enum-SB is 42/37/23. Seed 44's 23 is what produces the 3.13×,
+and it is the same CV=29% instability flagged in Result 13. The ratio's spread is a property of how
+sensitive SPARROW is to its candidate set, and should be described that way rather than as uncertainty
+in our own arm.
+
+A secondary observation worth keeping: on the same enumeration, `prebuild_k=20` costs us modes at
+R=100 (79→75 on seed 43, 83→72 on seed 44). Pre-selecting K fragments buys cheaper oracle calls
+(Logs/037) but is not free on the reaction axis.

@@ -190,7 +190,13 @@ seeds. 26 cells; 25 strictly comparable.
 | rxnflow_seh | 3 | 81 ± 9 | 34 ± 2 | **2.36×** | 16.0% |
 | scent_seh | 3 | 78 ± 1 | 27 ± 1 | **2.87×** | 3.5% |
 
-**Median over the 25 strictly-comparable points: 2.88×** (min 1.67, max 4.80). The advantage holds in
+**Median over the 25 strictly-comparable points: 2.88×**
+
+> **UPDATED 2026-08-20 → 2.93× over 30/31 points.** The `scent_*` cells were re-enumerated on 08-19 (a per-hub cap had been truncating
+> children) and their curves regenerated 08-20 11:00-11:02; the other session also completed several
+> seed-43/44 docking cells, taking the matrix from 26 to 31 points and from 5 to 8 three-seed cells.
+> The budget trend moves with it: 2.53× / **2.93×** / 3.07× / 3.15× at R=50/100/150/200. The tables
+> below are the 08-18 readout; the figure and CSVs are current. (min 1.67, max 4.80). The advantage holds in
 every cell — there is no cell where the simpler strategy wins or ties.
 
 ⚠ `rxnflow_drd2` seed 44 is the single excluded point: hub-batching was budget-binding at 80 modes

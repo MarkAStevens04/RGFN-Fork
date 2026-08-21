@@ -1,0 +1,179 @@
+{
+  "incumbent_gate": -2.0,
+  "sets": {
+    "warhead_matched": {
+      "median_mw": {
+        "actives": 435.57400000000024,
+        "decoys": 342.9190000000001
+      },
+      "ddb1_dvina": {
+        "n_actives": 160,
+        "n_decoys": 248,
+        "auroc": 0.9460307459677421,
+        "ap": 0.9198763342976362,
+        "youden": {
+          "cutoff": -1.58,
+          "tpr": 0.85,
+          "fpr": 0.04838709677419355,
+          "youden_j": 0.8016129032258065,
+          "enrichment": 17.566666666666666
+        },
+        "max_enrichment": {
+          "cutoff": -2.143,
+          "tpr": 0.55,
+          "fpr": 0.004032258064516129,
+          "youden_j": 0.5459677419354839,
+          "enrichment": 136.4
+        },
+        "at_incumbent_gate": {
+          "cutoff": -2.0,
+          "tpr": 0.66875,
+          "fpr": 0.008064516129032258,
+          "youden_j": 0.6606854838709677,
+          "enrichment": 82.925
+        },
+        "act_median": -2.2,
+        "dec_median": -0.6
+      },
+      "vina_t2": {
+        "n_actives": 160,
+        "n_decoys": 248,
+        "auroc": 0.8904989919354838,
+        "ap": 0.8715462277148603,
+        "youden": {
+          "cutoff": -8.985,
+          "tpr": 0.79375,
+          "fpr": 0.16532258064516128,
+          "youden_j": 0.6284274193548387,
+          "enrichment": 4.8012195121951216
+        },
+        "max_enrichment": {
+          "cutoff": -10.502,
+          "tpr": 0.44375,
+          "fpr": 0.004032258064516129,
+          "youden_j": 0.43971774193548385,
+          "enrichment": 110.05
+        },
+        "at_incumbent_gate": {
+          "cutoff": -2.0,
+          "tpr": 0.99375,
+          "fpr": 0.9959677419354839,
+          "youden_j": -0.0022177419354838523,
+          "enrichment": 0.9977732793522267
+        },
+        "act_median": -10.1455,
+        "dec_median": -7.959
+      },
+      "ddb1_dcnnaff": {
+        "n_actives": 160,
+        "n_decoys": 248,
+        "auroc": 0.8503528225806452,
+        "ap": 0.803330695872991,
+        "youden": {
+          "cutoff": 0.1193,
+          "tpr": 0.79375,
+          "fpr": 0.15725806451612903,
+          "youden_j": 0.636491935483871,
+          "enrichment": 5.047435897435897
+        },
+        "max_enrichment": {
+          "cutoff": 0.2851,
+          "tpr": 0.34375,
+          "fpr": 0.020161290322580645,
+          "youden_j": 0.3235887096774194,
+          "enrichment": 17.05
+        },
+        "at_incumbent_gate": null,
+        "act_median": 0.23054999999999998,
+        "dec_median": 0.0444
+      }
+    },
+    "property_matched": {
+      "median_mw": {
+        "actives": 435.57400000000024,
+        "decoys": 439.5160000000002
+      },
+      "ddb1_dvina": {
+        "n_actives": 160,
+        "n_decoys": 160,
+        "auroc": 0.6884765625,
+        "ap": 0.5869540801631254,
+        "youden": {
+          "cutoff": -1.659,
+          "tpr": 0.83125,
+          "fpr": 0.44375,
+          "youden_j": 0.38750000000000007,
+          "enrichment": 1.8732394366197185
+        },
+        "max_enrichment": {
+          "cutoff": -2.015,
+          "tpr": 0.66875,
+          "fpr": 0.3125,
+          "youden_j": 0.35624999999999996,
+          "enrichment": 2.1399999999999997
+        },
+        "at_incumbent_gate": {
+          "cutoff": -2.0,
+          "tpr": 0.66875,
+          "fpr": 0.3125,
+          "youden_j": 0.35624999999999996,
+          "enrichment": 2.1399999999999997
+        },
+        "act_median": -2.2,
+        "dec_median": -1.5234999999999999
+      },
+      "vina_t2": {
+        "n_actives": 160,
+        "n_decoys": 160,
+        "auroc": 0.7439453125,
+        "ap": 0.753146217049361,
+        "youden": {
+          "cutoff": -9.614,
+          "tpr": 0.65,
+          "fpr": 0.25625,
+          "youden_j": 0.39375000000000004,
+          "enrichment": 2.536585365853659
+        },
+        "max_enrichment": {
+          "cutoff": -10.742,
+          "tpr": 0.35625,
+          "fpr": 0.05,
+          "youden_j": 0.30625,
+          "enrichment": 7.125
+        },
+        "at_incumbent_gate": {
+          "cutoff": -2.0,
+          "tpr": 0.99375,
+          "fpr": 1.0,
+          "youden_j": -0.006249999999999978,
+          "enrichment": 0.99375
+        },
+        "act_median": -10.1455,
+        "dec_median": -8.8625
+      },
+      "ddb1_dcnnaff": {
+        "n_actives": 160,
+        "n_decoys": 160,
+        "auroc": 0.60404296875,
+        "ap": 0.518185910627431,
+        "youden": {
+          "cutoff": 0.0941,
+          "tpr": 0.84375,
+          "fpr": 0.5375,
+          "youden_j": 0.30625,
+          "enrichment": 1.5697674418604652
+        },
+        "max_enrichment": {
+          "cutoff": 0.1924,
+          "tpr": 0.63125,
+          "fpr": 0.38125,
+          "youden_j": 0.25,
+          "enrichment": 1.6557377049180328
+        },
+        "at_incumbent_gate": null,
+        "act_median": 0.23054999999999998,
+        "dec_median": 0.11885
+      }
+    }
+  }
+}

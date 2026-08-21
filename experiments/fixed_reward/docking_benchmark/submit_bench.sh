@@ -48,10 +48,19 @@ if ! grep -q "clCreateContext err=0" <<<"$HC_OUT"; then
 fi
 echo "OpenCL health OK on $(hostname)"
 
+# Knobs are env-overridable so the MAX-BATCH question can be asked without editing the script.
+# Default reproduces the Logs/036 run; ORACLES=docking_6td3_gpu BATCHES="100 200 400" probes the
+# ceiling. Logs/036 measured a single 200-mol QV2 process as memory-flat at ~20 GB of 40, so 200 is
+# the documented safe max and 400 is the question mark.
+ORACLES=${ORACLES:-"docking_seh docking_6td3_gpu"}
+BATCHES=${BATCHES:-"8 32 100"}
+NMOL=${NMOL:-200}
+REPEATS=${REPEATS:-2}
+echo "[submit_bench] oracles=$ORACLES batches=$BATCHES n=$NMOL repeats=$REPEATS"
 python experiments/fixed_reward/docking_benchmark/bench_docking_throughput.py \
-        --oracles docking_seh docking_6td3_gpu \
+        --oracles $ORACLES \
         --smiles-csv experiments/active_learning/6td3/seed_6td3.csv \
-        --n 200 --batch-sizes 8 32 100 --repeats 2 \
+        --n "$NMOL" --batch-sizes $BATCHES --repeats "$REPEATS" \
         --iters 400 1000 --mols-per-iter 100 \
         --out-dir "$OUT_DIR"
 echo "[submit_bench] done -> $OUT_DIR"

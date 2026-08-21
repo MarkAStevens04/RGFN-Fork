@@ -32,10 +32,17 @@ GNINA = os.environ.get(
 TIER2 = os.path.join(HERE, "6TD3_tier2.pdbqt")
 TIER1 = os.path.join(HERE, "6TD3_tier1.pdbqt")
 CRYSTAL = os.path.join(HERE, "crystal_RC8.pdb")
-KNOWN_CSV = os.path.join(
-    HERE, "..", "..", "..", "data", "validation-molecules", "DDB1_CDK12_Glues.csv"
+# Both input sets are OVERRIDABLE so the same pipeline can score a different negative set under
+# IDENTICAL conditions. Added 2026-08-20 for the property-matched decoy calibration: the original
+# `decoys_cdk.smiles` are WARHEAD-matched (every decoy keeps the CR8-like purine, but MW is only
+# range-bounded 250-650 and no other property is matched), which tests "does the oracle merely read
+# ATP-pocket binding" but NOT "does it merely read gross physicochemistry". Re-running with
+# $DECOY_SMI pointed at a DUD-E-style matched set answers the second question on the same footing.
+KNOWN_CSV = os.environ.get(
+    "KNOWN_CSV",
+    os.path.join(HERE, "..", "..", "..", "data", "validation-molecules", "DDB1_CDK12_Glues.csv"),
 )
-DECOY_SMI = os.path.join(HERE, "decoys_cdk.smiles")
+DECOY_SMI = os.environ.get("DECOY_SMI", os.path.join(HERE, "decoys_cdk.smiles"))
 
 OUTDIR = os.environ.get("OUTDIR", os.path.join(HERE, "cluster_out"))
 WORK = os.environ.get("WORK", "/scratch/markymoo/dock_6td3_cluster")

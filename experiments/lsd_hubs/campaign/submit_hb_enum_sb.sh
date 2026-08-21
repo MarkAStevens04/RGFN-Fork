@@ -50,19 +50,41 @@ case "$SEED" in
     *)  CELL=matrix16_seed${SEED}/scent_seh
         SNAP_DEF=/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh_5k/seed${SEED}/additional_fragments/fragments_4000.json ;;
 esac
+# READ FROM THE FROZEN SNAPSHOT, not the live path. Other agents rewrite these artifacts in the
+# shared scratch tree: on 2026-08-19 all three scent_seh enumerations were re-run between 21:13 and
+# 22:06 (a correct fix for a per-hub cap that was truncating children) AFTER an HB-Enum-SB run had
+# read the old ones -- silently turning a same-enumeration comparison into a cross-enumeration one,
+# with no error and no way to notice from the outputs. A comparison that claims "same candidates"
+# has to freeze them. See $SNAPSHOT_ROOT/README.md.
+SNAPSHOT_ROOT=${SNAPSHOT_ROOT:-/scratch/markymoo/rgfn_runs/lsdflow_sparrow/_enum_snapshot_20260820}
 BASE=${BASE:-/scratch/markymoo/rgfn_runs/lsdflow/$CELL}
-ENUM=${ENUM:-$BASE/enum/enum_children.json}
-HUB_ROUTES=${HUB_ROUTES:-$BASE/sample/routes.json}
+ENUM=${ENUM:-$SNAPSHOT_ROOT/seed${SEED}/enum_children.json}
+HUB_ROUTES=${HUB_ROUTES:-$SNAPSHOT_ROOT/seed${SEED}/routes.json}
 SNAP=${SNAP:-$SNAP_DEF}
 TAG=${TAG:-hbenumR100_seed${SEED}_L1}
 GATE=${GATE:-7.0}
 CUTOFF=${CUTOFF:-0.5}
-# 50000 matches BC-Enum-SB's `enumR100_*_N50000` exactly, so pool size is NOT a free variable
-# between the two arms.
-SIZES=${SIZES:-50000}
+# POOL SIZE — read this before changing it. `--top-n 50000` was chosen to "match BC-Enum-SB
+# exactly", and that was true only by accident: every BC-Enum-SB pool was 31,399-41,817 candidates,
+# i.e. BELOW the cap, so the flag meant "no cap, take everything above the gate". After the
+# enumeration cap-fix (2026-08-19) the pools are 119,866-152,328, so the SAME flag now means "the top
+# 50,000 BY REWARD" -- a reward-biased subset that preferentially discards the diverse tail, which is
+# precisely the quantity this arm measures. Two variables moved at once.
+#
+# 0 = no cap, which is what BC-Enum-SB effectively had. That is the comparable setting; it is also a
+# far harder MILP. Whatever is chosen must be applied to BOTH enum arms and stated in the write-up.
+SIZES=${SIZES:-0}
 BUDGETS=${BUDGETS:-"50,100,150"}
 LAMBDA_DIV=${LAMBDA_DIV:-1.0}
-MILP_CAP=${MILP_CAP:-7200}
+# 7200 s no longer converges on the post-fix pools (both valid seeds came back TIME-CAPPED, and a
+# capped SB row is a LOWER bound on the competitor -> an UPPER bound on our advantage, the direction
+# that flatters us). Raised to 6 h.
+MILP_CAP=${MILP_CAP:-21600}
+# CBC is asked for a 1e-7 relative gap by default -- seven digits of optimality on a ~52k-variable
+# problem, for an effect measured in whole molecules. Relaxing it is the cheapest lever on a
+# TimeLimit solve: the earlier gap experiment showed it does NOT converge alone but leaves the
+# objective stable to 0.5% across 1e-7..1e-2, so it COMPOSES with a longer MILP_CAP.
+GAP_REL=${GAP_REL:-}
 OUT_ROOT=${OUT_ROOT:-/scratch/markymoo/rgfn_runs/lsdflow_sparrow/hb_enum_sb}
 
 export PYTHONUNBUFFERED=1
@@ -95,7 +117,8 @@ for N in $SIZES; do
         --gate "$GATE" --cutoff "$CUTOFF" \
         --out-dir "$OUT" --tag "${TAG}_N${N}" \
         --budgets "$BUDGETS" --max-seconds "$MILP_CAP" \
-        --lambda-div "$LAMBDA_DIV"
+        --lambda-div "$LAMBDA_DIV" \
+        ${GAP_REL:+--gap-rel "$GAP_REL"}
     RC=$?
     echo "  N=$N rc=$RC wall=$(( $(date +%s) - START ))s"
     if [ "$RC" -ne 0 ]; then

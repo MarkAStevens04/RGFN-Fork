@@ -122,8 +122,13 @@ def load_pool(path: Path, gate: float, top_n: int = 0, higher_is_better: bool = 
     return rows[:top_n] if top_n else rows
 
 
-def load_enum_pool(enum_path: Path, hub_routes_path: Path, gate: float, top_n: int = 0,
-                   higher_is_better: bool = True):
+def load_enum_pool(
+    enum_path: Path,
+    hub_routes_path: Path,
+    gate: float,
+    top_n: int = 0,
+    higher_is_better: bool = True,
+):
     """BC-Enum-SB's pool: the ENUMERATED CHILDREN of a hub set, with their routes ASSEMBLED.
 
     Why this cannot reuse the `native` path. An enumerated child is a molecule the generator never
@@ -454,6 +459,16 @@ def main() -> None:
     )
     ap.add_argument("--sparrow-env", default="sparrow")
     ap.add_argument("--max-seconds", type=int, default=600)
+    ap.add_argument(
+        "--gap-rel",
+        type=float,
+        default=None,
+        help="relative MIP gap handed to CBC. SPARROW hardcodes 1e-7 -- seven digits of optimality "
+        "on a ~52k-variable problem, for an effect we measure in whole molecules. Relaxing it is "
+        "the cheapest lever on a TimeLimit solve; measured on the earlier gap experiment it did NOT "
+        "achieve convergence alone but left the objective stable to 0.5% across 1e-7..1e-2, so it "
+        "composes with a longer --max-seconds rather than replacing it. Omitted = SPARROW's default.",
+    )
     ap.add_argument("--strip-stereo", type=lambda s: s.lower() != "false", default=True)
     a = ap.parse_args()
 
@@ -474,7 +489,10 @@ def main() -> None:
         )
     if a.route_source == "enum":
         pool, raw = load_enum_pool(
-            Path(a.routes), Path(a.hub_routes), a.gate, a.top_n,
+            Path(a.routes),
+            Path(a.hub_routes),
+            a.gate,
+            a.top_n,
             higher_is_better=a.higher_is_better,
         )
         print(
@@ -541,13 +559,17 @@ def main() -> None:
         # The run records its checkpoint in meta.json, and a snapshot lives under its own training
         # directory, so a provenance mismatch is detectable without reading either payload.
         run_ckpt = ""
-        for _m in (Path(a.pool).parent / "meta.json" if a.pool else None,
-                   Path(a.routes).parent / "meta.json" if a.routes else None,
-                   Path(a.hub_routes).parent / "meta.json" if a.hub_routes else None):
+        for _m in (
+            Path(a.pool).parent / "meta.json" if a.pool else None,
+            Path(a.routes).parent / "meta.json" if a.routes else None,
+            Path(a.hub_routes).parent / "meta.json" if a.hub_routes else None,
+        ):
             if _m and _m.exists():
                 try:
                     run_ckpt = json.loads(_m.read_text()).get("checkpoint", "") or run_ckpt
-                except Exception:  # noqa: BLE001 - a meta we cannot parse simply fails the check open
+                except (
+                    Exception
+                ):  # noqa: BLE001 - a meta we cannot parse simply fails the check open
                     pass
                 if run_ckpt:
                     break
@@ -569,8 +591,10 @@ def main() -> None:
                     "the RUN's fragments go unexpanded and SPARROW buys what count-once builds."
                 )
                 if os.environ.get("ALLOW_SNAPSHOT_MISMATCH"):
-                    print(f"[select] WARNING {msg} (ALLOW_SNAPSHOT_MISMATCH set — results are "
-                          f"NOT a like-for-like price)")
+                    print(
+                        f"[select] WARNING {msg} (ALLOW_SNAPSHOT_MISMATCH set — results are "
+                        f"NOT a like-for-like price)"
+                    )
                 else:
                     raise SystemExit(
                         f"[select] ABORT: {msg} Pass the snapshot from the run's own training "
@@ -585,8 +609,10 @@ def main() -> None:
         # an account of what the run ACTUALLY used, independent of whatever snapshot we were handed.
         # This is the substantive check; CHECK 1 only catches the common cause.
         run_promoted = set()
-        for _c in (Path(a.pool).parent / "compositions.json" if a.pool else None,
-                   Path(a.hub_routes).parent / "compositions.json" if a.hub_routes else None):
+        for _c in (
+            Path(a.pool).parent / "compositions.json" if a.pool else None,
+            Path(a.hub_routes).parent / "compositions.json" if a.hub_routes else None,
+        ):
             if _c and _c.exists():
                 try:
                     for _v in json.loads(_c.read_text()).values():
@@ -605,8 +631,10 @@ def main() -> None:
                     "bought rather than built). Coverage of the snapshot's own chosen_smiles is NOT "
                     "the same question and can read 100% while this reads 53%."
                 )
-            print(f"[select] run-fragment recipe coverage {rcov:.1%} of {len(run_promoted)} "
-                  f"fragments the run actually uses")
+            print(
+                f"[select] run-fragment recipe coverage {rcov:.1%} of {len(run_promoted)} "
+                f"fragments the run actually uses"
+            )
 
         cov = (sum(1 for s in promoted if s in recipes) / len(promoted)) if promoted else 1.0
         if promoted and cov < 0.95 and not os.environ.get("ALLOW_SNAPSHOT_MISMATCH"):
@@ -736,6 +764,8 @@ def main() -> None:
         ]  # fmt: skip
             if LD > 0:
                 cmd += ["--lambda-div", str(LD)]
+            if a.gap_rel is not None:
+                cmd += ["--gap-rel", str(a.gap_rel)]
             t1 = time.perf_counter()
             proc = subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True)
             solve_s = time.perf_counter() - t1

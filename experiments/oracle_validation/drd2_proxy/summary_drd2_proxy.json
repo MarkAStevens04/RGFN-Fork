@@ -1,0 +1,87 @@
+{
+  "model": "/home/markymoo/projects/RGFN_Fork/RGFN-Fork/external/scent/oracle/drd2_current.pkl",
+  "sets": {
+    "held_out": {
+      "n_actives": 2287,
+      "n_decoys": 2265,
+      "auroc": 0.948767339342922,
+      "ap": 0.9444934086223072,
+      "act_median": 0.7975299080320933,
+      "dec_median": 0.008162243689617833,
+      "youden": {
+        "bar": 0.13210634642594468,
+        "tpr": 0.8775688675120245,
+        "fpr": 0.0869757174392936,
+        "youden_j": 0.7905931500727309,
+        "enrichment": 10.089814644237237
+      },
+      "declared_bars": [
+        {
+          "bar": 0.5,
+          "tpr": 0.6523830345430696,
+          "fpr": 0.03620309050772627,
+          "youden_j": 0.6161799440353433,
+          "enrichment": 18.020092356586005
+        },
+        {
+          "bar": 0.7,
+          "tpr": 0.5601224311324879,
+          "fpr": 0.02075055187637969,
+          "youden_j": 0.5393718792561083,
+          "enrichment": 26.993134181172028
+        },
+        {
+          "bar": 0.9,
+          "tpr": 0.40227372103191955,
+          "fpr": 0.011479028697571744,
+          "youden_j": 0.3907946923343478,
+          "enrichment": 35.04422992835761
+        }
+      ]
+    },
+    "all_years": {
+      "n_actives": 7120,
+      "n_decoys": 2265,
+      "auroc": 0.9605660143363841,
+      "ap": 0.9854276384980137,
+      "act_median": 0.9024531016440397,
+      "dec_median": 0.008162243689617833,
+      "youden": {
+        "bar": 0.11843426656787405,
+        "tpr": 0.9011235955056179,
+        "fpr": 0.09006622516556291,
+        "youden_j": 0.811057370340055,
+        "enrichment": 10.005122273628553
+      },
+      "declared_bars": [
+        {
+          "bar": 0.5,
+          "tpr": 0.7367977528089887,
+          "fpr": 0.03620309050772627,
+          "youden_j": 0.7005946623012624,
+          "enrichment": 20.35179158673609
+        },
+        {
+          "bar": 0.7,
+          "tpr": 0.650561797752809,
+          "fpr": 0.02075055187637969,
+          "youden_j": 0.6298112458764293,
+          "enrichment": 31.351541955534305
+        },
+        {
+          "bar": 0.9,
+          "tpr": 0.5023876404494382,
+          "fpr": 0.011479028697571744,
+          "youden_j": 0.49090861175186645,
+          "enrichment": 43.765692523768365
+        }
+      ]
+    }
+  },
+  "memorisation_estimate": {
+    "auroc_all_years": 0.9605660143363841,
+    "auroc_held_out": 0.948767339342922,
+    "auroc_gap": 0.0117986749934621,
+    "note": "in-domain minus held-out; a large positive gap means the in-domain number is substantially memorisation and must not be quoted as validation"
+  }
+}

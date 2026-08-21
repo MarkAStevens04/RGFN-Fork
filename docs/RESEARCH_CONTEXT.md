@@ -292,6 +292,156 @@ is paid for, and aborts only below `--min-modes`, where there is genuinely nothi
 whatever it holds when a time limit stops it, so a capped row is a lower bound on the competitor, not
 a result.
 
+### What each run must log, audited before the big training run (2026-08-20)
+
+Audited against the question "could we answer this retroactively without retraining?". Three
+questions were tested: **modes vs oracle calls**, **where the wall-clock went**, and **per-step
+analysis (diversity / SPARROW) on the candidates**.
+
+| generator | per-molecule training record | oracle/step index | wall-clock | routes |
+|---|---|---|---|---|
+| Saturn | `oracle_history.csv`, 10,020 rows | **`oracle_calls`** | mineable from `saturn.log` (stamped every 60 calls) | MultiAiZ post-hoc |
+| REINVENT | `staged_learning_1.csv`, 128k rows | **`step`** | mineable from `.log`, one stamped line per step | MultiAiZ post-hoc |
+| SCENT (ours) | `paths.csv`, 278k rows | `iteration` (counts molecules, ÷64 — see [[flow-field-drifts-during-training]]) | **none** | **full verbose path** |
+| RGFN (ours) | `unique_molecules/molecules_N.json`, every 500 steps | snapshot granularity only | **none** | **none kept** (re-derivable by resampling the checkpoint) |
+| SynFormer | **none — SLURM stdout only** | partial (`N/10000` lines) | **none** | native, via `route_convert.py` |
+| S3-GFN | **none — only 1,000 final eval samples** | **none** | **none** | MultiAiZ post-hoc |
+
+**Two runs would have to be repeated to answer the questions, and both are the expensive ones.**
+S3-GFN discards its entire training history — at the old 5,000×64 budget that is ~320,000 molecules
+gone, leaving a 1,000-row eval sample. SynFormer's history exists only in SLURM stdout, unstructured
+and mixed with worker chatter, at ~36 h/cell to regenerate. Neither can answer "modes vs oracle calls"
+today.
+
+**SPARROW on the products: yes for our side, already proven.** `paths.csv`'s `path` column is an
+alternating sequence of intermediate SMILES and reaction SMARTS with each added building block — a
+complete route, strictly richer than what MultiAiZ returns for the baselines, and
+`sparrow_select_frontier.py --route-source native` already consumes it. Because `paths.csv` carries
+`iteration` alongside the path, **SPARROW can be re-run at any training step retroactively for SCENT**
+with no new compute. RGFN cannot: its snapshots are `{smiles: score}` with no route, so per-step
+SPARROW there needs re-enumeration from a checkpoint.
+
+**The minimal fix is one file per run.** Every external generator is already wrapped by our own
+adapter (`run_{reinvent,saturn,synformer,s3gfn}_fixed.py`), so a uniform trace written from the
+adapter costs ~20 lines each and removes every gap above:
+
+```
+trace.csv:  oracle_call_index, step, smiles, raw_score, elapsed_s
+```
+
+`oracle_call_index` makes the modes-vs-calls curve one query across all five entrants instead of five
+bespoke parsers; `elapsed_s` (seconds since run start, per record) is the only timing signal absent
+everywhere and is the cheapest thing on this list to add. Saturn and REINVENT already have the
+content — the trace just normalises it; S3-GFN and SynFormer genuinely need it written.
+
+**Cheap insurance worth taking at the same time:** periodic checkpoints on every entrant (RGFN already
+does this) so any per-step analysis we did not anticipate can be redone by resampling rather than
+retraining; and a `timing.json` per run with phase totals (train / oracle / sampling), which our
+LSD-Flow side already emits as `sweep_summary.json['compute_time']` (`hub_pick_s`,
+`hub_total_s_by_cutoff`, `extra_compute_s_by_cutoff`) and no external entrant emits at all.
+
+### The logging spec for the big run (decided 2026-08-20)
+
+Two artefacts, answering two different questions. Keeping them separate is what makes the cheap one
+cheap.
+
+**1. `trace.csv` — every scored molecule, written continuously.** One row per oracle call, including
+repeats (duplication rate is itself a mode-collapse signal, so it is recorded rather than deduped):
+
+```
+oracle_call_index, step, smiles, raw_score, is_duplicate, elapsed_s
+```
+
+At the 10,000-call budget this is ~10k rows per cell — negligible. **This file alone answers goal 1.**
+Any "X vs oracle calls" curve — modes, diversity, top-k, mean reward — is a slice of it, at maximum
+resolution, with no snapshots and no cadence to choose. Note that "save candidates every N calls" is
+strictly *less* informative than the trace and costs more, so it is deliberately not part of this spec.
+
+**2. Milestone checkpoints — model + candidates + routes, at log-spaced oracle counts.** Suggested
+500 / 1,000 / 2,000 / 5,000 / 10,000: log-spaced because early training changes fastest, and five
+points is enough to see a trend without five times the disk. Each milestone keeps the model weights,
+a sampled candidate pool, and (where the generator has them) routes. **This answers goal 2**, which
+the trace cannot: the trace records what the model *found while searching*, whereas a checkpoint
+answers what the model *would produce if deployed now*. Those are different questions and the
+distinction matters when reading any "performance at step N" claim.
+
+**The retroactive-SPARROW question resolves better than expected for the reaction-aware entrants.**
+SynFormer, TANGO and our own generators carry routes by construction, so a trace that includes the
+route means **any budget cutoff can be re-priced with SPARROW later at zero new compute** — take the
+first N oracle calls, filter to modes, price. No MultiAiZ, no resampling, no retraining. Only the
+route-less entrants (REINVENT, Saturn, S3-GFN) need route planning at analysis time, and only for the
+cutoffs actually asked about. So the expensive step is confined to exactly the generators that cannot
+avoid it, and only on demand.
+
+**Disk.** Routes are small (~1-2 KB/molecule, so ~10-20 MB per cell). Model weights are not: S3-GFN's
+checkpoint is 561 MB, so five milestones across ~15 cells is ~40 GB. That fits scratch comfortably but
+should be a deliberate choice rather than a surprise.
+
+**SynFormer's routes are already wired** and need no new work: `route_convert.patch_get_dataframe()`
+patches `Stack.get_tree()` — whose per-node `mol`/`rxn` are otherwise never serialized — to emit
+`route_steps_json` (`{step, reaction_idx, reaction_smarts, reactant, fragments, product}`), the runner
+writes `routes.jsonl`, and `sparrow_select_frontier.py --route-source external` prices it directly.
+The gap is *when*: those artefacts are written only at the end of a ~36 h run, so a job that dies at
+hour 35 loses everything. Writing the trace continuously is what fixes that, and it matters most for
+the most expensive entrant.
+
+### Baseline configs audited against their authors' defaults (2026-08-20)
+
+Every external generator's config was diffed against the authors' own shipped configs. Verdicts below;
+**budget is the systemic problem, not the per-knob settings.**
+
+**Saturn — CLEAN.** Our config is `experimental_reproduction/constrained_synthesizability/experiment.json`
+verbatim: budget 10,000, batch 64, `augmentation_rounds` 2, sigma 128, mamba,
+`IdenticalMurckoScaffold`/bucket 10, hallucinated memory and beam enumeration off. Worth knowing that
+their batch size and augmentation rounds **pair with** the budget — 9 of their 10 configs use
+budget 1,000 / batch 16 / aug_rounds 10, and only the budget-10,000 one uses 64 / 2 — so picking the
+10,000 config wholesale is internally consistent, whereas mixing knobs across their configs would not
+have been. The one unavoidably-ours choice is the sEH reward transform (sigmoid 4→9, k 0.5); they never
+scored sEH.
+
+**SynFormer — two minor deviations, both benign.** Everything algorithmic matches their
+`experiments/graphga_sf_opt.py`: budget 10,000 (their `max_oracle_calls` default), population 100,
+offspring 100, mutation 0.1, `search_width` 24, `exhaustiveness` 64, `time_limit` 180,
+`max_evolve_steps` 12, `max_results` 100. Deviations: `num_workers_per_gpu` **2 vs their 1** (pure
+wall-clock — each worker runs the identical per-molecule loop, two are just in flight at once), and
+starting population from the clone's `chembl_filtered_1k.txt` rather than **their random sample of
+TDC's ZINC**. The second is a real deviation and is disclosed; it was chosen so all entrants start from
+ChEMBL-like space, matching REINVENT's and Saturn's priors.
+
+**REINVENT — a serious budget error.** Everything else is theirs (sigma 128, lr 1e-4,
+`IdenticalMurckoScaffold` bucket 25 / minscore 0.4 / minsimilarity 0.4, `reinvent.prior`), but
+`batch_size` is **128 vs their 64** and `max_steps` **1,000 vs their example's 100**. REINVENT has no
+budget field — steps × batch *is* the budget — so the run scored **124,587 distinct molecules against
+Saturn's 10,020**, a **12.4× advantage**. Fix: `batch_size` 64 (theirs) and `max_steps` ≈ 157, which
+lands on ~10,048 molecules and satisfies both their batch size and the PMO budget at once.
+
+**S3-GFN — one slip, one deliberate deviation, one budget error.** Matching their maintained
+`experiments/pmo/main/s3gfn/hparams_default.yaml`: lr 1e-4, batch 64, `lr_z` 1e-3, beta 50,
+`use_retrosynthesis` true, `max_retro_steps` 3.
+- **`aux_coefficient` 0.0001 vs their 0.001 — a 10× slip.** No rationale is recorded anywhere in
+  `validation/`, `docs/` or `Logs/`; it is simply repeated across our three S3-GFN configs and
+  hardcoded as the fallback in `run_s3gfn_fixed.py`. Treat as an error to correct, not a decision.
+- `retro_env` `zincfrag_hb105` vs their `stock` — deliberate and recorded, see
+  [[competitor-catalogue-fairness]]; `stock` is not among the envs we hold.
+- `n_train_steps` 5,000 × batch 64 ≈ **320,000** molecules against their PMO `max_oracle_calls`
+  of 10,000, a ~**32×** advantage. Ours was matched to our *own* generators' 5,000 steps, not to their
+  paper.
+
+**THE SYSTEMIC FINDING: three budget conventions are running side by side.** ~10,000 oracle calls
+(Saturn, SynFormer — their paper defaults), ~128,000 (REINVENT), ~320,000 (S3-GFN, matched to our own
+generators). Every external generator's own paper default sits between 1,000 and 10,000. So
+baseline-vs-baseline rows in our tables are **not like-for-like**, and the asymmetry is not in our
+favour: the two entrants handed extra budget, **REINVENT and S3-GFN, are precisely the two that
+perform best against us** — REINVENT's pruned pool is what overtook our from-scratch arm at 46-51
+modes. Correcting this should therefore *improve* our headline, which is a reason to trust the
+correction rather than to hesitate over it. Decide one convention, apply it to all five, and re-run;
+until then, quote no baseline-vs-baseline comparison.
+
+**Reproducibility anchor: the TANGO authors dock against 7UVU**, the same human ClpP structure our ClpP
+cells use (bar −8.0, AUROC 0.895, Logs/045). Their objective is QuickVina2-GPU on 7UVU × QED ×
+syntheseus. Before trusting our TANGO numbers, reproduce their published result on that system — it is
+the only cell in this benchmark where an author-published number exists on our own receptor.
+
 ### TANGO: a reaction-aware entrant, and which inventory it gets (decided 2026-08-20)
 
 **TANGO is not a fifth model.** It is a *reward function* inside the Saturn repo
@@ -367,7 +517,70 @@ retrosynthesis inventory needs exactly those trivial reagents, because they are 
 *on*. Large and wrong-kind beats nothing, but not by much: an inventory missing bromobenzene cannot
 terminate a Suzuki coupling.
 
-**So TANGO needs a purchasable-compound stock in SMILES form, which we do not currently hold.** The
+**RESOLVED by using the authors' own stock (2026-08-20).** Their reproduction config
+(`external/saturn/experimental_reproduction/constrained_synthesizability/experiment.json`) names
+`frag-reac-zinc-stock.smi`, published with the paper at
+[figshare 27225483](https://figshare.com/articles/dataset/TANGO_paper_building_blocks_and_code-base/27225483).
+It is **17,721,980 SMILES** — the ZINC purchasable set, essentially the same scale as the 17.4M-key
+`zinc_stock.hdf5` MultiAiZ prices against, but in the SMILES form syntheseus needs. It contains
+**11 of 11** probe commodity reagents where ZINCFrag had 4. So the authors' default and our
+commensurability requirement coincide, and no deviation from the other cells is needed after all.
+
+**What the authors actually run** (their config, mirrored for our cells):
+
+| parameter | authors' value | note |
+|---|---|---|
+| `reaction_model` | **megan** | not RootAligned, which the first smoke used |
+| `building_blocks_file` | `frag-reac-zinc-stock.smi` | 17.7M, the general stock routes terminate on |
+| `enforced_building_blocks_file` | `enforced_stock_{5,10,100}.smi` | the *constraint* set, separate from the stock |
+| `time_limit_s` | 180 | per molecule |
+| `budget` | 10,000 | same PMO convention as REINVENT/Saturn/SynFormer |
+| `use_dense_reward` / `reward_type` | true / `tango_fms` | weights: tanimoto 0.5, fg 0.5, fms 0.5 |
+| `enforce_blocks` / `enforce_start` | true / false | intermediate constraint, not starting-material |
+| `parallelize` / `max_workers` | false / 4 | |
+
+**MEASURED: the authors' `num_top_results: 1` cripples their own search.** That field does double
+duty in syntheseus - it is both "how many routes to return at the end" and, via
+`get_model_fn(config, default_num_results=config.num_top_results)` (`cli/search.py:279`), **how many
+disconnections each expansion requests from the reaction model**. At 1 the search explores a single
+chain, so one bad top-1 prediction ends it. TANGO's config comment ("if 1 solution is found,
+Syntheseus stops") describes the first meaning and appears unaware of the second. Measured on 50
+REINVENT sEH molecules, authors' stock + MEGAN + `time_limit_s` 180:
+
+| `num_top_results` | solved | median rxn-model calls | wall / 50 mols | per 10,000-call cell |
+|---|---|---|---|---|
+| **1** (authors' config) | 10/50 = **20%** | 5 | 28 s | **~1.6 h** |
+| **5** | 47/50 = **94%** | 198 | 450 s | **~25 h** |
+
+So TANGO is affordable either way - the feared 180 s/molecule worst case does not materialise, and even
+the generous setting lands near SynFormer's ~36 h/cell. **Run at 5, not the authors' 1.** This is the
+same doctrine already adopted for catalogues in [[competitor-catalogue-fairness]]: where a baseline's
+shipped default demonstrably handicaps it, give it its best case and disclose the deviation, because
+publishing a 20% solve rate obtained under a setting we could see was crippling would read as
+sandbagging. State the measurement and the choice in the write-up.
+
+**Two consequences worth acting on.**
+
+1. **The 418-block arm has a natural home, and it is the authors' own mechanism.** TANGO separates the
+   general stock (where routes *terminate*) from the *enforced* blocks (which must *appear* in the
+   route). Their arms vary the enforced set at 5 / 10 / 100 blocks. So "constrained to our chemistry"
+   is simply `enforced_building_blocks_file = our 418 glue blocks`, with their stock unchanged —
+   no hack, and directly comparable to their published arms.
+2. **Their own experiment docks against 7UVU**, which is the same human ClpP structure our ClpP cells
+   use (bar −8.0, AUROC 0.895, Logs/045). Their objective is QuickVina2-GPU on 7UVU × QED ×
+   syntheseus. So running TANGO on our ClpP cell reproduces the authors' setup almost exactly — an
+   independent argument for keeping ClpP when 6TD3 was paused.
+
+**Environment gotchas, all fixed in the dedicated `syntheseus` env** (none affect results): numpy
+pinned `<2` for the pandas ABI; `gcc_linux-64` for Triton's runtime compiler; a `sitecustomize.py`
+restoring `torch.load(weights_only=False)` so OpenNMT-pickled checkpoints load under torch ≥ 2.6;
+`graphviz` because syntheseus plots 5 routes per target by default and TANGO's config writer never
+overrides it; and a patch to `megan.py` whose log cleanup races and raises a **fatal**
+`OSError(39) Directory not empty` *after* the model has loaded (backup at `megan.py.orig`).
+MEGAN also writes a `logs/` directory into the **current working directory**, so every invocation must
+run from a scratch cwd — it landed in the repo root once.
+
+**The superseded option, for the record.** The
 17.4M-entry `zinc_stock.hdf5` is the right *kind* but stores InChI keys, which are hashes and not
 invertible. Two ways forward, in preference order: (1) download a purchasable set — ZINC20 in-stock or
 eMolecules building blocks — on the login node, which is the clean fix and gives one honest definition
@@ -571,6 +784,7 @@ Chronological record; the objectives above cite these by number. Full entries in
 | [066](../Logs/066_drd2-oracle-gate-saturation.md) | 2026-08-19 | DRD2 — is the 0.5 hit bar miscalibrated, or has the generator saturated the oracle? | **The bar is SOUND; the generator has SATURATED it. 0 of 3,408 true-negative drug-like molecules score >0.5** (CDK12-DDB1 known glues n=160 median p=0.007; CDK12 decoys n=248 p=0.002; 3,000 ZINC building blocks p=0.003) **against 0.980 median for our 29,822 generated molecules.** DRD2 was the ONLY one of four targets with no oracle-validation entry — its 0.5 came from [028] as a BUG FIX (sEH's 7.0 was leaking onto a 0-1 scale and passing nothing), i.e. it is the midpoint of the range, never a calibration. Checked because 97.5% of our pool clears it, which is the exact pattern [045] diagnosed as a broken bar on ClpP. **CONSEQUENCE FOR THE PAPER: the gate is non-binding at EVERY declared variant** (0.5→97.5%, 0.7→94.6%, 0.9→83.0% of distinct molecules pass), so **DRD2 cells are a DIVERSITY-ONLY comparison** and must NOT be pooled with sEH, where the bar removes a real fraction. **NOT shown (open):** every molecule tested is a true negative, so this is SPECIFICITY against unrelated chemistry, not PRECISION — no known DRD2 actives were scored, and this oracle (TDC/Olivecrona SVM) is a known reward-hacking target, so 0.98-on-everything is also what being gamed looks like. A 79-171 Da median size gap (ours 515 vs negatives 343/436/184) is a live alternative explanation, cf. [007] where exactly that confound explained most of an apparent signal. Fix = the [045] protocol (known actives vs property-matched inactives). **Does NOT disturb the benchmark:** all arms share the identical oracle, so a gamed oracle is gamed equally and the batching comparison survives. Measurement only, no repo files changed. |
 | [067](../Logs/067_naive-vs-pruned-pool-design.md) | 2026-08-19 | Two ways to pick the 500 molecules we price: the **naive** top-500-by-score pool vs a **pruned** pool of 500 mutually distinct molecules, each reporting reactions/candidate AND reactions/mode | **The pool construction, not the generator, decides whether a cell is measurable — and Saturn is priceable after all.** Saturn sEH s42's top-500 holds **18** distinct molecules, on which basis it had been written off; the SAME 2,000 samples hold **338** overall (its training history holds 1,251), so the collapse sits in the highest-scoring band, NOT in its search. Pruning recovers those 338 with no config change, no extra sampling, no extra route planning, and 338 clears the ~100 modes a 100-reaction budget could buy, flipping the cell from `pool-exhausted expected` to `budget-binding possible`. Neither pool alone is honest: naive-only says "Saturn cannot produce diversity" (false), pruned-only hides an effect a chemist taking the top 500 would hit. Pool ceilings (sEH, gate 7.0, tau 0.5, s42): REINVENT 201 naive / 963 available / 500 pruned at scan depth 1,127; S3-GFN 206 / 732 / 500; Saturn 18 / 338 / **338 (short of 500, flagged, reported at true size)**. **Pool source resolved to `candidates.csv` uniformly** — it is a fresh sample from the TRAINED FINAL POLICY (`run_reinvent_fixed.py:301`, `run_saturn_fixed.py:285`), the protocol behind all 16 matrix cells; training history is a different object with no comparable form for our own generators, and nothing hinges on it (Saturn naive reads 18 from samples vs 16 from history, 0 overlap). **Three defects the design exposed:** (1) the saturation gate still asked the old fixed-MODE question and would have ABORTED Saturn's cell — the exact exclusion CLAUDE.md forbids — now predicts the stop reason and aborts only below `--min-modes`; (2) `build_s3gfn_pools.py` warned about a short pruned pool then silently skipped it, so Saturn's pool was never written — now emits at true size with a truthful dir name (`_N338`, never `_N500`) plus `pool_meta.json`; (3) these MILP solves CANNOT run on a login node — CBC held 99.8% CPU for 16 min on REINVENT R=50 against `ulimit -t` 3600, so it would have been SIGXCPU'd with no CSV. **CLAUDE.md's "the MILP converges at 100" QUALIFIED: tractability is POOL-dependent, not budget-dependent** — REINVENT's sEH network carries 5,597 intermediates vs S3-GFN's 2,943 for the same ~455 targets, so read `time_capped` before calling any SB row optimal (a capped row is a lower bound, i.e. it flatters us). Regression pin held bit-identical (206 modes at n=500, rate 0.412, 100 modes at 250 candidates); naive pool path verified bit-for-bit unchanged. **NO routed cost numbers yet** — reactions/candidate, reactions/mode and mean pairwise similarity for both variants are what jobs 74439/74457-74462 produce. Not committed (branch Hub-Analysis). |
 | [068](../Logs/068_scent-enumeration-cap-correction.md) | 2026-08-20 | The enumeration cap that was quietly shrinking ONE generator's pool — audited across all 16 cells, corrected, and re-measured | **The cap was truncating a lot (pools grew 8-61%) but moved the headline only +0.1% to +3.3%, every change IN OUR FAVOUR — so the published numbers were right and slightly conservative.** `058` found this on the docking half and fixed one cell (+10.6%); a co-agent then found it is WORSE on the surrogate cells that underpin `050`'s headline and `055`'s 380/380 claim — **scent_seh 57 truncated hubs at s42 vs scent_clpp's 25, rising 57->75->82 across seeds**; scent_drd2 31/12/23. Re-enumerated all six SCENT surrogate cell-seeds at **ENUM_MAX=50000**: cap stopped binding everywhere (0 hubs at 50k), children 438,984->644,759 / 474,870->702,574 / 492,471->791,503 (seh) and 344,469->485,398 / 298,491->317,957 / 352,046->503,616 (drd2). Corrected: scent_seh 3.10/2.93/2.96x (+0.1/+0.3/+0.7%), scent_drd2 3.25/3.38/3.31x (+2.5/+1.0/+3.3%). **The co-agent's 50,000-over-my-20,000 call was decisive**: scent_drd2 s44 came back at **17,147** children/hub, above scent_clpp's 14,943 max, so 20,000 would have re-truncated and we would only have found out after re-running everything downstream. **THE MECHANISM, MEASURED — the correction's size is set by WALK LENGTH, not by hub count.** A truncated hub only bites if the walk reaches it, and scent_seh's walk is **8 hubs at bar 5.0, 14 at 6.0, 44 at 7.0**, so the same defect gives +0.1% at our headline bar and **+4.7% at 7.0** (2.60x -> 2.722x vs `050`). That is why scent_clpp moved 10.6% (34-hub walk at its bar) while these barely moved, and it means the headline-bar choice (`5.0`, per `064`) and the cap interact — one sentence in the paper, not two caveats. `055`'s surfaces span bars 4-8 so they shift up to ~5%, ALL upward: the 380/380 claim is unaffected in kind and regeneration is precision, not correctness. **SCOPE: exclusively SCENT, verified matrix-wide** — 12 of 16 cells have ZERO truncated hubs on every seed (maxima 895-3,435), because only SCENT grows its own fragment vocabulary. Audited against the cap each cell ACTUALLY used, not a fixed 4,000. Still truncated: scent_6td3 s42 (51 hubs, recap running) and rgfn_6td3 s43 (**1** hub of 200 — reported, not worth ~160 GPU-h). **Method choice recorded:** re-ran FULL cells (~30 GPU-h) not just the truncated hubs (~15), because submit_cell.sh writes one un-sliced file so a subset run would overwrite 200 hubs with 57 and stitching it back needs a surrogate-side merge path that does not exist — 15 extra GPU-h was the cheaper risk than new code on the artifact behind published numbers. **Two shared-checkout failures, not science:** 12 of 16 docking-recap slices died `ModuleNotFoundError: No module named 'glue'` (a concurrent `from glue...` import added to the per-env artifact writer, which cannot work in a generator env — fixed by loading the dependency-free schema BY PATH, `7325abb`, verified in all 4 envs); and all 4 hub_order repairs died in 6 s with `/var/spool/validation/...` because that launcher derived REPO from BASH_SOURCE instead of \$SLURM_SUBMIT_DIR. `5a9156b`, `7325abb`, `2b7c39c`. |
+| [069](../Logs/069_oracle-validation-6td3-drd2-matched-decoys.md) | 2026-08-20 | 6TD3 + DRD2 — the two uncalibrated oracles vs PROPERTY-MATCHED (DUD-E style) decoys | **OPPOSITE VERDICTS. DRD2 PASSES and its 0.5 bar is justified; 6TD3's -2.0 gate COLLAPSES and is not defensible.** Reused `docking_clpp/make_matched_decoys.py` unchanged (MW/logP/HBD/HBA/RotB/charge matched, ECFP4 Tanimoto <0.35 to every active) from the cached background pool — no network. **6TD3:** the actives' scores are IDENTICAL between rows, only the negatives change — AUROC **0.946 -> 0.688**, and at the incumbent -2.0 gate decoy pass-rate goes **1% -> 31%**, enrichment **82.9x -> 2.1x**. **No cutoff rescues it:** the max-enrichment point on the matched set IS -2.02 at only 2.1x (Youden -1.66 is worse); medians are actives -2.20 vs decoys -1.52. Old decoys were warhead-matched but 93 Da lighter (MW 343 vs 436); new ones are MW 440. **AND THE DIFFERENTIAL'S ADVANTAGE REVERSES — contradicts [005]/[007]:** vs warhead-matched, differential 0.946 > absolute T2 0.890; vs property-matched, differential 0.688 < **absolute T2 0.744**. Mechanistically sensible (the differential cancels the kinase-pocket term — right when all decoys share the warhead, wasteful when none do); plausibly a right-sized molecule gains from DDB1's surface without binding the ATP pocket. ⇒ 6TD3 may survive as a RANKING signal but not as a pass/fail gate; keep it out of the headline (it was already parked — this is the number that justifies it). **DRD2:** 2,287 HELD-OUT actives (earliest ChEMBL evidence >=2017) vs 2,265 matched decoys → **AUROC 0.949**, and at bar 0.5 **18.0x** enrichment (0.7 -> 27x, 0.9 -> 35x). **Memorisation gap is NEGLIGIBLE: in-domain AUROC 0.961 - held-out 0.949 = +0.012**, so the number is generalisation, not recall — the check that mattered, because DRD2 alone is scored by a TRAINED model. **Provenance established from the paper:** the SVM is Olivecrona 2017, trained on **ExCAPE-DB** (7,218 actives at pIC50>5 + 100k sampled inactives, Butina 0.4 split), and ExCAPE-DB (posted 2017-03-07) is built from PubChem + ChEMBL — so nothing post-2017 entered the model and a 2017 holdout is SAFE. Residual leak: ExCAPE draws on PubChem too, so a molecule could have entered training via PubChem with a later ChEMBL date, which a date filter cannot see (the 0.012 gap suggests small). Decoys are PRESUMED, not measured, inactive. New `experiments/oracle_validation/{docking_6td3/{prep_actives_6td3.py,benchmark_6td3_gate.py,submit_dock_6td3_matched.sh},drd2_proxy/{fetch_drd2_actives.py,benchmark_drd2_proxy.py}}`; `dock_cluster.py` inputs now env-overridable. Job 74500. |
 
 ---
 

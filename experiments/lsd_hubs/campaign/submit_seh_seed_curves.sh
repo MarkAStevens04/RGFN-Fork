@@ -34,6 +34,8 @@ cd "$HOME/projects/RGFN_Fork/RGFN-Fork"
 SEED=${SEED:-43}
 RUN=${RUN:-/scratch/markymoo/rgfn_runs/lsdflow/t45_seh_seed${SEED}}
 ANALYSIS=${ANALYSIS:-$RUN/sample}
+# ENUM defaults to the live path, but for any SAME-ENUMERATION comparison pass the frozen snapshot
+# explicitly (see _enum_snapshot_20260820/README.md) — the live files are rewritten by other agents.
 ENUM=${ENUM:-$RUN/enum/enum_children.json}
 SNAPSHOT=${SNAPSHOT:-/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh_5k/seed${SEED}/additional_fragments/fragments_4000.json}
 THR=${THR:-7.0}

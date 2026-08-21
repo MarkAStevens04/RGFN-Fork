@@ -17,6 +17,7 @@ CNNaff: higher = stronger predicted affinity.
 Only status='ok' rows are used.
 """
 
+import os
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -26,8 +27,18 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[3]  # RGFN-Fork root
 T2D3 = ROOT / "experiments" / "oracle_validation" / "docking_6td3"
 
-KNOWN_CSV = T2D3 / "known_results.csv"
-DECOY_CSV = T2D3 / "decoy_cdk_results.csv"
+# INPUTS ARE OVERRIDABLE (added 2026-08-20, Logs/069). The entry-006 ranking that selected
+# Vina dT2-T1 as the oracle signal was measured against WARHEAD-matched decoys -- every decoy carries
+# the CR8-like purine, but MW is only range-bounded and no other property is matched. Against
+# PROPERTY-matched decoys the differential's AUROC falls 0.946 -> 0.688 and absolute Tier-2 overtakes
+# it, so the six-way ranking has to be re-read on the harder negatives. Same six panels, same stats,
+# different negative set:
+#   KNOWN_CSV=... DECOY_CSV=... OUT_SUFFIX=_matched SET_LABEL="property-matched" python <script>
+KNOWN_CSV = Path(os.environ.get("KNOWN_CSV", T2D3 / "known_results.csv"))
+DECOY_CSV = Path(os.environ.get("DECOY_CSV", T2D3 / "decoy_cdk_results.csv"))
+# Suffix keeps the two negative sets side by side instead of one overwriting the other.
+OUT_SUFFIX = os.environ.get("OUT_SUFFIX", "")
+SET_LABEL = os.environ.get("SET_LABEL", "warhead-matched")
 
 DECOY_COLOR = "#94A3B8"  # slate — fake glues (correct warhead, random arm)
 BINDER_COLOR = "#2563EB"  # blue — known CDK12-DDB1 glues
@@ -109,14 +120,14 @@ for ax, (title, col, ylabel, better) in zip(axes.flat, PANELS):
     draw_panel(ax, title, col, ylabel, better)
 
 fig.suptitle(
-    "6TD3 / CDK12-DDB1 oracle — known glues vs. decoys "
-    f"(Experiment 002 docking data, n={n_known} known / {n_decoy} decoy)",
+    "6TD3 / CDK12-DDB1 oracle — known glues vs. "
+    f"{SET_LABEL.upper()} decoys  (n={n_known} known / {n_decoy} decoy)",
     fontsize=13,
     y=0.995,
 )
 plt.tight_layout(rect=(0, 0, 1, 0.97))
 
-out = Path(__file__).parent / "violins_known_vs_decoy.png"
+out = Path(__file__).parent / f"violins_known_vs_decoy{OUT_SUFFIX}.png"
 fig.savefig(out, dpi=200, bbox_inches="tight")
 print(f"Saved: {out}")
 
@@ -129,7 +140,7 @@ for title, col, ylabel, better in PANELS:
     rows.append((title, col, dm, km, gap, better))
     print(f"{title:<40}{dm:>11.3f}{km:>11.3f}{gap:>+11.3f}")
 
-summary = Path(__file__).parent / "violin_medians.csv"
+summary = Path(__file__).parent / f"violin_medians{OUT_SUFFIX}.csv"
 pd.DataFrame(
     rows,
     columns=[
