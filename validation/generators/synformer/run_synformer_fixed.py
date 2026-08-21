@@ -95,6 +95,10 @@ def make_mating_pool(population_mol, population_scores, offspring_size: int):
     return np.random.choice(population_mol, p=population_probs, size=offspring_size, replace=True)
 
 
+# Module-level so the count survives across calls without threading state through the GA loop.
+_reproduce_failures = [0]
+
+
 def reproduce(mating_pool, mutation_rate):
     import crossover as co
     import mutate as mu
@@ -106,7 +110,15 @@ def reproduce(mating_pool, mutation_rate):
         if new_child is not None:
             new_child = mu.mutate(new_child, mutation_rate)
         return new_child
-    except ValueError:
+    except Exception:  # noqa: BLE001
+        # Upstream catches only ValueError here, which is not enough: their own
+        # `crossover.crossover_non_ring` does `rxn.RunReactants((fa, fb))[0]`
+        # (experiments/crossover.py:146) and raises IndexError whenever the reaction yields no
+        # product. That killed a seed-42 run 12 minutes in, AFTER a full 100-molecule projection
+        # (~12 min of GPU) had been paid for. Falling back to `parent_a` is upstream's own semantics
+        # for a failed cross -- widening the catch changes which failures reach it, not what happens
+        # when one does. Counted below so a systematically broken mating pool cannot hide as silence.
+        _reproduce_failures[0] += 1
         return parent_a
 
 
@@ -509,7 +521,12 @@ def main() -> None:
             population_scores = [t[0] for t in ranked]
             print(
                 f"[SF-FR] gen {gen}: {len(scored)}/{budget} scored | routed={len(routes)} | "
-                f"best={max(population_scores):.3f} mean={float(np.mean(population_scores)):.3f}",
+                f"best={max(population_scores):.3f} mean={float(np.mean(population_scores)):.3f}"
+                + (
+                    f" | crossover fallbacks={_reproduce_failures[0]}"
+                    if _reproduce_failures[0]
+                    else ""
+                ),
                 flush=True,
             )
 

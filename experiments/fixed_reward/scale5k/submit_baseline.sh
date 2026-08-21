@@ -78,6 +78,13 @@ esac
 export WANDB_MODE=offline
 export WANDB_DIR=$SCRATCH/wandb WANDB_CACHE_DIR=$SCRATCH/.cache/wandb
 export HF_HOME=$SCRATCH/.cache/huggingface TORCH_HOME=$SCRATCH/.cache/torch
+# $HOME IS READ-ONLY ON COMPUTE NODES. Anything that caches there kills the job minutes in, and a
+# login smoke can never reproduce it. Saturn/TANGO reach Triton through Mamba and died on
+# `/home/.../.triton/cache` (job 74608); matplotlib and the XDG default are the same hazard.
+export TRITON_CACHE_DIR=${TRITON_CACHE_DIR:-$SCRATCH/.cache/triton}
+export MPLCONFIGDIR=${MPLCONFIGDIR:-$SCRATCH/.cache/matplotlib}
+export XDG_CACHE_HOME=${XDG_CACHE_HOME:-$SCRATCH/.cache/xdg}
+mkdir -p "$TRITON_CACHE_DIR" "$MPLCONFIGDIR" "$XDG_CACHE_HOME"
 FR_ROOT_DIR=$SCRATCH/rgfn_runs/experiments
 mkdir -p "$WANDB_DIR" "$WANDB_CACHE_DIR" "$HF_HOME" "$TORCH_HOME" "$FR_ROOT_DIR"
 

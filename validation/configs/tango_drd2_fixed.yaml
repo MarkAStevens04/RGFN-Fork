@@ -92,9 +92,16 @@ saturn:
     # molecules, and holds only 4 of 11 probe commodity reagents (no bromobenzene, no acetyl
     # chloride), which made every one of 50 test molecules unsolvable. This stock holds 11/11.
     building_blocks_file: /scratch/markymoo/tango/authors_stock/frag-reac-zinc-stock.smi
-    # enforced_building_blocks_file: <set for the chemistry-homogenized arm; unset = general stock
-    #                                 only, which is the paper's unconstrained setting>
-    enforce_blocks: false                 # no enforced set in this arm, so nothing to enforce
+    # THE ENFORCED SET IS NOT OPTIONAL. TANGO's dense reward IS the constrained-synthesizability
+    # signal: `node_rewards` is only ever written inside `if self.enforce_blocks and solved`
+    # (syntheseus.py:252), so with enforce_blocks=false the component returns 0 for EVERY molecule --
+    # and with the authors' `product` aggregator that zeroes the whole objective, silently. Running
+    # TANGO without an enforced set is not "unconstrained TANGO", it is a broken run.
+    # This is the authors' own published constraint set (figshare 27225483), 99 blocks, the one their
+    # headline arm uses. The chemistry-homogenized arm swaps in our 418 glue blocks and changes
+    # nothing else.
+    enforced_building_blocks_file: /scratch/markymoo/tango/authors_stock/enforced_stock_100.smi
+    enforce_blocks: true
     enforce_start: false
     use_dense_reward: true
     reward_type: tango_fms
