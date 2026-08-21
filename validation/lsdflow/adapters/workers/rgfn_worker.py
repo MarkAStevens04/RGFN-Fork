@@ -75,12 +75,22 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # SEED THE SAMPLER. This worker declared --seed and never applied it, alone among the four: scent,
-    # rxnflow and fraggfn all call manual_seed/np.random.seed at setup. So every RGFN sample was
-    # irreproducible while REPORTING a seed, which is the worst of both -- a lost or route-less sample
-    # could not be regenerated even in principle, and a "seed 43" cell was not reproducibly seed 43.
-    # Matching the siblings makes a re-sample recoverable, which is the whole point of the route work:
-    # the cheapest insurance against losing an artifact is being able to reproduce it exactly.
-    # Enumeration is exhaustive and unaffected, so this changes only what sampling draws.
+    # rxnflow and fraggfn all call manual_seed/np.random.seed at setup. A worker that reports a seed it
+    # never used is a trap, so it is applied here.
+    #
+    # BUT THIS IS *NOT* SUFFICIENT FOR REPRODUCIBILITY, AND IT WAS MEASURED, NOT ASSUMED. Two runs at
+    # --seed 42, same checkpoint, same 100 trajectories, same CPU device produced 377 vs 387 routes
+    # sharing only 8 keys. Torch's global RNG is what Categorical(...).sample() draws from and
+    # manual_seed does seed it, so something outside torch's RNG is diverging -- most likely
+    # per-process set/dict iteration order (PYTHONHASHSEED) feeding action-space construction, since
+    # an identical RNG draw over a differently-ordered action list picks a different action. That
+    # hypothesis is UNTESTED: the check was killed by the login node's CPU limit (ulimit -t 3600)
+    # before it returned.
+    #
+    # So do NOT rely on --seed to regenerate a lost RGFN sample. Treat every RGFN sample as a
+    # one-of-a-kind artifact and back it up (scripts/backup_scratch_critical.sh TIER 2). Seeding is
+    # kept because it removes one real source of variance and matches the siblings, not because it
+    # makes a cell reproducible. Enumeration is exhaustive and unaffected either way.
     import random as _random
 
     import numpy as _np

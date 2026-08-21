@@ -1863,9 +1863,24 @@ this entry.
 four (scent, rxnflow and fraggfn all call `manual_seed`/`np.random.seed` at setup). So every RGFN
 sample was irreproducible while *reporting* a seed, which is the worst of both: a "seed 43" cell was
 not reproducibly seed 43, and a lost or route-less sample could not be regenerated even in principle.
-That is the same class of defect as the routes gap — the artifact looked complete and wasn't — and it
-is the cheapest possible insurance, so it is fixed rather than noted. Enumeration is exhaustive and
-unaffected; only what sampling draws changes.
+That is the same class of defect as the routes gap — the artifact looked complete and wasn't — so it is
+fixed rather than noted.
+
+**But seeding does NOT make RGFN sampling reproducible, and this was measured rather than assumed.**
+Two runs at `--seed 42`, same checkpoint, same 100 trajectories, same CPU device, produced **377 vs 387
+routes sharing only 8 keys**. `Categorical(...).sample()` draws from torch's global RNG and
+`manual_seed` does seed it, so the divergence is outside torch's RNG — most plausibly per-process
+set/dict iteration order (`PYTHONHASHSEED`) feeding action-space construction, since an identical draw
+over a differently-ordered action list picks a different action. **That hypothesis is untested**: the
+check was killed by the login node's CPU limit (`ulimit -t 3600`) before returning, and it did not
+seem worth more login-node CPU to chase.
+
+Consequence, and it is the practically important one: **an RGFN sample cannot be regenerated, seed or
+no seed.** Treat every one as a one-of-a-kind artifact and rely on the backup (TIER 2), not on
+re-running. This also means re-sampling a route-less RGFN cell draws a genuinely different pool, which
+changes its hubs and its published number — so the 23 route-less cells are not repairable for free even
+now that the emitter exists. Seeding is kept because it removes one real source of variance and matches
+the three sibling workers, not because it buys reproducibility.
 
 **Verified, on real runs:**
 
@@ -1882,6 +1897,11 @@ unaffected; only what sampling draws changes.
   molecules now get an explicit zero-step route (52 of them in the re-run), which took hub coverage
   99.0% → **100%**. Worth recording because it is exactly the kind of near-miss that only a live run
   surfaces: the code was "working" at 99%.
+- **The enumerate-mode check against real enumerations of all four generators**, run as the queued
+  slices will run it: rgfn 104,589 children at 100%, scent 644,759 at 100%, rxnflow 232,213 at 100%,
+  fraggfn correctly `not_applicable`. (Copied into a tempdir first — never validated into a live run
+  dir.) The call site was confirmed by inspection to sit inside `else:  # enumerate`, because the live
+  end-to-end enumerate smoke was killed by the login CPU limit after one hub.
 - `py_compile` across every touched file; the readiness checker against all three scratch trees
   (10 SPARROW-ready, 23 route-bearing cell-seeds with no routes, 14 control).
 - Enumerate-side reaction coverage is **100% wherever an enumeration exists**, matrix-wide — the
