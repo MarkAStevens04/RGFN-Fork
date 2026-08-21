@@ -84,8 +84,17 @@ export HF_HOME=$SCRATCH/.cache/huggingface TORCH_HOME=$SCRATCH/.cache/torch
 export TRITON_CACHE_DIR=${TRITON_CACHE_DIR:-$SCRATCH/.cache/triton}
 export MPLCONFIGDIR=${MPLCONFIGDIR:-$SCRATCH/.cache/matplotlib}
 export XDG_CACHE_HOME=${XDG_CACHE_HOME:-$SCRATCH/.cache/xdg}
-mkdir -p "$TRITON_CACHE_DIR" "$MPLCONFIGDIR" "$XDG_CACHE_HOME"
-FR_ROOT_DIR=$SCRATCH/rgfn_runs/experiments
+# TANGO shells out to `conda run -n syntheseus syntheseus search`, and that CHILD resolves its
+# reaction-model checkpoint through SYNTHESEUS_CACHE_DIR. Unset, it defaults to $HOME/.cache/torch,
+# tries to DOWNLOAD (compute nodes have no internet), fails, writes no output directory -- and the
+# oracle's bare `except Exception` turns that into "Error in parsing Syntheseus output" and a reward
+# of ZERO for every molecule. Silent, and it exits 0. Checkpoints are pre-staged on login.
+export SYNTHESEUS_CACHE_DIR=${SYNTHESEUS_CACHE_DIR:-/scratch/markymoo/tango/syntheseus_cache}
+mkdir -p "$TRITON_CACHE_DIR" "$MPLCONFIGDIR" "$XDG_CACHE_HOME" "$SYNTHESEUS_CACHE_DIR"
+# OUT_ROOT redirects the WHOLE run tree, which is what a smoke needs. Without it a smoke lands in
+# the real campaign directory and its 20-candidate output makes the real queued job no-op as
+# "already complete" -- which is exactly what happened on 2026-08-21 to tango_seh and saturn_clpp.
+FR_ROOT_DIR=${OUT_ROOT:-$SCRATCH/rgfn_runs/experiments}
 mkdir -p "$WANDB_DIR" "$WANDB_CACHE_DIR" "$HF_HOME" "$TORCH_HOME" "$FR_ROOT_DIR"
 
 # The `_5k` suffix belongs to the original three, whose campaign was defined by its 5,000-step
