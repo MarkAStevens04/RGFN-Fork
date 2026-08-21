@@ -147,6 +147,8 @@ re-running everything downstream.
 |---|---|---|---|
 | `scent_seh` s42 / s43 / s44 | 3.10× / 2.92× / 2.94× | 3.10× / 2.93× / 2.96× | +0.1% / +0.3% / +0.7% |
 | `scent_drd2` s42 / s43 / s44 | 3.17× / 3.35× / 3.20× | 3.25× / 3.38× / 3.31× | +2.5% / +1.0% / +3.3% |
+| `scent_6td3` s42 (docking) | 2.869× | 2.999× | **+4.5%** |
+| `scent_clpp` s42 (docking) | 2.65× | 2.931× | **+10.6%** |
 
 Every change is upward, which is the direction the truncation mechanism predicts: fewer children per
 scaffold means fewer library members per scaffold built, so the method needs more scaffolds and looks
@@ -166,12 +168,51 @@ cells by almost nothing at ours. Entry `055`'s surfaces span bars 4–8 and ther
 all upward — the "cheaper in 380/380 settings" claim is unaffected in kind, and the surfaces were
 regenerated for precision rather than correctness.
 
+**The same relationship holds ACROSS cells, which is what makes it a mechanism rather than a
+coincidence.** Once `scent_6td3`'s recap landed (2026-08-21) there were three independent cells to
+compare, and the correction orders exactly by how many scaffolds each one's walk uses at its own bar:
+
+| cell | bar | scaffolds used | correction |
+|---|---|---|---|
+| `scent_seh` s42 | 5.0 | 8 | +0.1% |
+| `scent_6td3` s42 | −2.0 | 17 | +4.5% |
+| `scent_clpp` s42 | −8.0 | 34 | +10.6% |
+
+Three cells, three different generators' targets, three different reward scales — and the ordering is
+monotone in scaffold count. `scent_6td3` was a genuine out-of-sample prediction: the walk length was
+knowable from the published run before the recap finished, and it placed the correction between the
+other two, which is where it landed. The practical statement for the paper is therefore not "the cap
+cost us up to 10%" but the sharper **the size of a truncation's effect is set by how hard the task is,
+because a harder task forces the method to use more scaffolds and so to touch more truncated ones.**
+Easy cells were never at risk; only the hardest cell was materially affected.
+
+**The corrected cells were re-swept across gates, and the edge does not depend on the bar.** Both SCENT
+docking cells' gate sweeps predated their re-enumeration, so they were regenerated (free — a re-scoring
+of child rewards already measured). The edge is monotone in gate stringency and never inverts:
+
+| gate | `scent_6td3` | | gate | `scent_clpp` |
+|---|---|---|---|---|
+| −4.0 | 2.767× | | −11.0 | 1.687× |
+| −3.0 | 2.930× | | −10.0 | 2.165× |
+| **−2.0** | **2.999×** | | −9.0 | 2.577× |
+| −1.0 | 3.054× | | **−8.0** | **2.931×** |
+
+Looser gates report a LARGER edge, which is the mechanism again: more qualifying children per scaffold
+means the shared scaffold amortises over more library members. So the calibrated bars we publish (bold)
+sit at the conservative end of their own sweeps. And nothing inverts even at ClpP −11.0, three
+kcal/mol beyond the calibrated bar — 1.687× is the worst number the cell yields under any gate we would
+defend. The result is not an artifact of where the bar was set. Both bold rows reproduce their committed
+`summary.json` exactly (1.107 and 1.167 r/m), so sweep and headline are one computation read at two
+thresholds, not two estimates. The other four docking cells' enumerations never changed, so their
+08-07/08-11 sweeps stand as-is.
+
 **Scope: this is one generator's problem, confirmed across the whole matrix.** Twelve of sixteen cells
 have zero truncated scaffolds on every seed, with maxima of 895–3,435 children — they were never near
 the cap. Only SCENT reaches it, because only SCENT grows its own building-block vocabulary during
-training. Two cells remain truncated at the time of writing: `scent_6td3` s42 (51 scaffolds, recap
-running) and `rgfn_6td3` s43 (**1** scaffold of 200, which we are choosing to report rather than spend
-~160 GPU-h re-running).
+training. `scent_6td3` s42's recap has since completed (2026-08-21): 36 slices merged to 200/200 scaffolds and
+657,236 children, up from 550,569, with a new maximum of 12,066 against the 20,000 cap — so nothing
+re-truncated. **Every cell in the matrix is now uncapped except one**: `rgfn_6td3` s43 retains **1**
+truncated scaffold of 200, which we are choosing to report rather than spend ~160 GPU-h re-running.
 
 **A method choice worth recording.** The co-agent proposed re-enumerating only the truncated scaffolds
 (~15 GPU-h). I re-ran the full cells (~30 GPU-h) instead. `submit_cell.sh` writes its enumeration
@@ -201,5 +242,5 @@ predated that fix and had only ever worked because it happened to be launched fr
 
 - Three seeds give a spread, not a confidence interval.
 - The corrected numbers are a re-scoring of new enumerations on unchanged checkpoints; nothing was retrained.
-- `scent_6td3`'s recap was still running at the time of writing, so that cell's correction is not yet measured.
+- `rgfn_6td3` s43 keeps a single truncated scaffold of 200; it is the one cell not re-enumerated, on cost grounds.
 - FragGFN remains a cost-model control throughout, as in every prior entry.
