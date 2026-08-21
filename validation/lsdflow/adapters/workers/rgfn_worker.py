@@ -78,19 +78,21 @@ def main() -> None:
     # rxnflow and fraggfn all call manual_seed/np.random.seed at setup. A worker that reports a seed it
     # never used is a trap, so it is applied here.
     #
-    # BUT THIS IS *NOT* SUFFICIENT FOR REPRODUCIBILITY, AND IT WAS MEASURED, NOT ASSUMED. Two runs at
-    # --seed 42, same checkpoint, same 100 trajectories, same CPU device produced 377 vs 387 routes
-    # sharing only 8 keys. Torch's global RNG is what Categorical(...).sample() draws from and
-    # manual_seed does seed it, so something outside torch's RNG is diverging -- most likely
-    # per-process set/dict iteration order (PYTHONHASHSEED) feeding action-space construction, since
-    # an identical RNG draw over a differently-ordered action list picks a different action. That
-    # hypothesis is UNTESTED: the check was killed by the login node's CPU limit (ulimit -t 3600)
-    # before it returned.
+    # BUT --seed ALONE IS NOT SUFFICIENT, AND BOTH HALVES OF THIS WERE MEASURED. Two runs at --seed 42,
+    # same checkpoint, same trajectories, same device, gave 377 vs 387 routes sharing only 8 keys.
+    # Categorical(...).sample() draws from torch's global RNG and manual_seed does seed it, so the
+    # divergence was outside torch: per-process set/dict iteration order feeding action-space
+    # construction, where an identical RNG draw over a differently-ordered action list picks a
+    # different action.
     #
-    # So do NOT rely on --seed to regenerate a lost RGFN sample. Treat every RGFN sample as a
-    # one-of-a-kind artifact and back it up (scripts/backup_scratch_critical.sh TIER 2). Seeding is
-    # kept because it removes one real source of variance and matches the siblings, not because it
-    # makes a cell reproducible. Enumeration is exhaustive and unaffected either way.
+    # ADDING PYTHONHASHSEED=0 CLOSES IT COMPLETELY: --seed 42 twice on a debug GPU gave 730/730
+    # BYTE-IDENTICAL routes (2026-08-21). So RGFN sampling IS reproducible, but only with BOTH knobs.
+    # submit_cell.sh and submit_docking_cell.sh now export PYTHONHASHSEED=0 for exactly this reason --
+    # if you invoke this worker by hand and want a regenerable sample, you must set it yourself.
+    #
+    # Note what this does and does not buy: FUTURE samples are regenerable. Samples already on disk
+    # were taken before either knob was live, so they remain one-of-a-kind and recoverable only from
+    # backup (scripts/backup_scratch_critical.sh TIER 2). Enumeration is exhaustive and unaffected.
     import random as _random
 
     import numpy as _np

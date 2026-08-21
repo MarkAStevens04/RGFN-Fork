@@ -1866,21 +1866,22 @@ not reproducibly seed 43, and a lost or route-less sample could not be regenerat
 That is the same class of defect as the routes gap — the artifact looked complete and wasn't — so it is
 fixed rather than noted.
 
-**But seeding does NOT make RGFN sampling reproducible, and this was measured rather than assumed.**
-Two runs at `--seed 42`, same checkpoint, same 100 trajectories, same CPU device, produced **377 vs 387
-routes sharing only 8 keys**. `Categorical(...).sample()` draws from torch's global RNG and
-`manual_seed` does seed it, so the divergence is outside torch's RNG — most plausibly per-process
-set/dict iteration order (`PYTHONHASHSEED`) feeding action-space construction, since an identical draw
-over a differently-ordered action list picks a different action. **That hypothesis is untested**: the
-check was killed by the login node's CPU limit (`ulimit -t 3600`) before returning, and it did not
-seem worth more login-node CPU to chase.
+**`--seed` alone does NOT reproduce an RGFN sample — but `--seed` plus `PYTHONHASHSEED=0` does, and
+both halves were measured.** Two runs at `--seed 42`, same checkpoint, same trajectories, same device,
+gave **377 vs 387 routes sharing only 8 keys**. `Categorical(...).sample()` draws from torch's global
+RNG and `manual_seed` does seed it, so the divergence was outside torch: per-process set/dict iteration
+order feeding action-space construction, where an identical draw over a differently-ordered action list
+picks a different action. Adding `PYTHONHASHSEED=0` closed it completely — `--seed 42` twice on a debug
+GPU gave **730/730 byte-identical routes**.
 
-Consequence, and it is the practically important one: **an RGFN sample cannot be regenerated, seed or
-no seed.** Treat every one as a one-of-a-kind artifact and rely on the backup (TIER 2), not on
-re-running. This also means re-sampling a route-less RGFN cell draws a genuinely different pool, which
-changes its hubs and its published number — so the 23 route-less cells are not repairable for free even
-now that the emitter exists. Seeding is kept because it removes one real source of variance and matches
-the three sibling workers, not because it buys reproducibility.
+`submit_cell.sh` and `submit_docking_cell.sh` now export `PYTHONHASHSEED=0`, so **future RGFN samples
+are regenerable**. (Editing those is safe with jobs queued: SLURM snapshots the batch script at submit
+time, so already-queued jobs run the version they were submitted with.)
+
+What this does NOT buy: every sample already on disk was taken before either knob was live, so those
+remain one-of-a-kind and recoverable only from backup (TIER 2). It also means re-sampling a route-less
+RGFN cell still draws a genuinely different pool — changing its hubs and its published number — so the
+23 route-less cell-seeds are not repairable for free even now that the emitter exists.
 
 **Verified, on real runs:**
 

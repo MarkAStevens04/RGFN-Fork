@@ -82,6 +82,15 @@ fi
 # Framework caches on $SCRATCH ($HOME read-only on compute nodes); offline W&B.
 export TORCH_HOME=$SCRATCH/.cache/torch HF_HOME=$SCRATCH/.cache/huggingface
 export WANDB_MODE=offline PYTHONUNBUFFERED=1
+# PYTHONHASHSEED IS LOAD-BEARING FOR REPRODUCIBILITY, NOT HYGIENE. --seed alone does NOT reproduce an
+# RGFN sample: two runs at --seed 42 gave 377 vs 387 routes sharing 8 keys. Categorical(...).sample()
+# draws from torch's global RNG and manual_seed does seed it, so the divergence was outside torch --
+# per-process set/dict iteration order feeding action-space construction, where an identical RNG draw
+# over a differently-ordered action list picks a different action. Measured 2026-08-21 on a debug GPU:
+# --seed 42 with PYTHONHASHSEED=0, twice, gave 730/730 BYTE-IDENTICAL routes. With it, a lost sample can
+# be regenerated; without it, a sample is a one-of-a-kind artifact recoverable only from backup.
+# Enumeration is exhaustive and unaffected either way.
+export PYTHONHASHSEED=0
 RUN_DIR=$SCRATCH/rgfn_runs/lsdflow/matrix16/$CELL_TAG/run
 mkdir -p "$SAMPLE_DIR" "$ENUM_DIR" "$RUN_DIR" "$TORCH_HOME" "$HF_HOME"
 

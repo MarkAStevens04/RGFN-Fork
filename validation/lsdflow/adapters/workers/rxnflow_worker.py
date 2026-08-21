@@ -199,7 +199,7 @@ def _collect_routes(data, routes: dict) -> None:
         if not tr:
             continue
         steps: list = []
-        seed = tr[0][0].smi if getattr(tr[0][0], "smi", None) else None
+        seed = tr[0][0].smi if getattr(tr[0][0], "smi", None) else None  # usually blank; see fallback
         for i, (g, act) in enumerate(tr):
             if getattr(act, "action", None) not in _RXN:
                 continue  # Stop and any non-reaction action carry no synthesis step
@@ -220,11 +220,26 @@ def _collect_routes(data, routes: dict) -> None:
                     block = str(act.block)
                 except Exception:
                     block = None
+            inp = getattr(g, "smi", None)
+            # RxnFlow trajectories begin from an EMPTY graph, so tr[0][0].smi is blank and the seed has
+            # to come from the first reaction's input instead. Measured: every route came out with
+            # "seed": null before this fallback.
+            if seed is None and inp:
+                seed = inp
+            # The first step's input IS the starting purchasable building block, and it needs its own
+            # zero-step route for the same reason as rgfn's depth-0 hubs: sparrow_select_frontier does
+            # hub_routes.get(hk) and on None drops that hub AND every child under it, silently.
+            # Measured on the first rxnflow smoke: 83 of 615 nodes were unrouted and every one was a
+            # small purchasable reagent (piperazine, cyclohexylamine, ...), i.e. 86.5% coverage.
+            if not steps and inp:
+                key0 = _stripped_key(inp)[0]
+                if key0 and key0 not in routes:
+                    routes[key0] = {"seed": inp, "num_reactions": 0, "steps": []}
             steps.append(
                 {
                     "reaction": getattr(act, "protocol", None),
                     "reactants": [block] if block else [],
-                    "input": getattr(g, "smi", None),
+                    "input": inp,
                     "product": prod,
                 }
             )
