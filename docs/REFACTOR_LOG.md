@@ -1908,11 +1908,48 @@ RGFN cell still draws a genuinely different pool — changing its hubs and its p
 - Enumerate-side reaction coverage is **100% wherever an enumeration exists**, matrix-wide — the
   enumeration repairs held, and the entire remaining gap is sample-side.
 
-**Not verified:** the **RxnFlow emitter has not been run** — it needs the `rxnflow` env and a
-checkpoint. The code path is modelled on the same worker's enumerate path, which already reads `g.smi`
-off trajectory states (L213), so the access pattern is known-good, but the emitter itself is untested
-and should be smoked before a production sample is trusted. Seeded-sampling reproducibility was being
-measured by two same-seed runs at the time of writing.
+**RxnFlow emitter: SMOKED AND VERIFIED, twice, independently.** My own debug run gave 611/611 coverage
+with 196/196 hub_keys routed after the depth-0 and seed fixes; a co-agent independently ran it in the
+`rxnflow` env against the real `rxnflow_seh_5k/seed42` checkpoint (job 74693, 15:02, i.e. after the
+14:44 fix) and got **1,150 routes at 100% of terminals** on 400 trajectories. Two environments, two
+operators, same verdict.
+
+**A SECOND BLOCKER EXISTS THAT ROUTES DO NOT FIX, and it is worth understanding before anyone plans
+native-route work.** A co-agent extended `check_route_readiness.py` with the recipe/snapshot dimension
+it had no visibility into, and SPARROW-ready drops **10 → 5**. Six cell-seeds have routes AND 100%
+reaction coverage and still cannot be priced natively, because their training snapshot has no
+`smiles_to_route` at all — recipe logging was off for runs launched 2026-07-14..07-26:
+
+    seed 42   scent_seh, scent_drd2, scent_clpp, scent_6td3   <- ALL of seed 42
+    seed 43   scent_clpp
+    seed 44   scent_clpp
+
+This is NOT repairable by re-sampling or re-enumerating: a promoted fragment's recipe is observable only
+while it is being BUILT (`recipe_logging.py` writes onto `dl._smiles_to_route` during training), so
+those cells would need a re-TRAIN — ~10-15 h each, ~78 GPU-h for the six, and re-training changes the
+model, so every published number on those cells moves and the whole cell has to be rebuilt behind it.
+Independently confirmed: an earlier audit of mine had already found `smiles_to_route` absent for every
+seed-42 cell.
+
+**But it does not block the comparison, and this is the operative point.** Recipe expansion is consulted
+only under `--route-source native|enum` (verified: the logic and both new provenance aborts sit inside
+`if is_native:`). The DEFAULT source is `multiaiz`, which routes every molecule independently through
+AiZynth and needs no snapshot, no recipes, and no `routes.json`. That is the plan's own MVP path, and
+T1.3/T1.4 were written for exactly this — "returns `total_reactions` for a MIXED (routed + route-less)
+library". So all 18 competitor-scope cells are priceable today at zero GPU cost.
+
+**There is also a FAIRNESS reason to prefer the from-scratch source for the headline, independent of
+cost.** Native routes measured 1.22 rxn/mode against from-scratch 1.85. Pricing SCENT natively while
+rgfn/rxnflow go from-scratch would let SCENT win on route PROVENANCE rather than chemistry — the same
+confound the project already polices on the mode metric (one metric reapplied to all four). One source
+across all four generators; native stays a supplementary result. Note the supplementary result can only
+be reported on **seeds 43/44** — none of the five route-and-recipe-complete cells is seed 42.
+
+**Not verified:** whether a fresh sample rediscovers a cell's original hubs, which is what the cheap
+`enum` route-source repair would depend on. A free proxy is discouraging: 200-trajectory debug samples
+of `rgfn_seh` s42 cover **0 of its 200 production hubs** — 1/150th the trajectory count, so not a bound,
+but not encouraging either. RxnFlow is the better bet there (its `--seed` was genuinely applied), and a
+co-agent is measuring it on one cell before committing the other eight.
 
 **Explicitly NOT fixed by any of this:** the 23 existing route-less cell-seeds. They need a
 **re-sample** — re-running the enumeration does nothing, because `routes.json` is written by the
