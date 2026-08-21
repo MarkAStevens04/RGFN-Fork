@@ -1,47 +1,37 @@
-# S3-GFN FIXED-REWARD baseline on sEH — the MARQUEE NON-reaction baseline (`[kim2026s3gfn]`)
-# for the LSD-Flow library-efficiency benchmark (docs/LSD_FLOW_BENCHMARK_PLAN.md T3.1).
+# S3-GFN on DRD2 — the non-reaction (SMILES-GFN) entrant on the second surrogate.
 #
-# S3-GFN is a SMILES/sequence GFlowNet that post-trains GP-MolFormer with SOFT synthesizability
-# (retro-solvability contrastive buffers) — NOT reaction templates. It produces per-molecule
-# synthesizable molecules that carry NO shared-route structure, so a *library* must recover shared
-# intermediates POST-HOC (AiZynth->SPARROW). It is the foil for the "reaction MDP is necessary for
-# library economics" headline: emitted with has_route=0 (unlike RGFN/RxnFlow/SCENT).
+# Identical to `s3gfn_seh_fixed.yaml` apart from the reward, so any sEH-vs-DRD2 difference is the
+# objective and not the setup. Budget is the authors' PMO default (157 x 64 = 10,048 scored, their
+# `max_oracle_calls` 10,000) and `aux_coefficient` is their 0.001 -- both corrected 2026-08-20.
 #
-# FAIRNESS: S3-GFN must optimize the SAME reward the reaction-GFN entrants do. We inject a frozen
-# reward provider (validation/generators/s3gfn/fixed_reward.py) in place of S3-GFN's native
-# get_scores (custom modular wiring). For sEH the provider IS the Bengio-2021 MPNN our benchmark +
-# S3-GFN both use -> this run is the VERIFICATION case (should reproduce S3-GFN's published sEH
-# result). The training-reward column matches native mol2seh exactly: clip(raw/8, 1e-4, 100).
-#
-# Run (from repo root, s3gfn env; candidate emission shells to the rgfn env):
-#   conda run -n s3gfn python validation/generators/s3gfn/run_s3gfn_fixed.py \
-#       --cfg validation/configs/s3gfn_seh_fixed.yaml \
-#       --root-dir $SCRATCH/rgfn_runs/experiments
+# ⚠ THE DRD2 GATE IS NON-BINDING (entry 066): 97.5% of generated molecules clear 0.5, and 0 of 3,408
+# true-negative drug-like molecules do. DRD2 cells are therefore a DIVERSITY-ONLY comparison and must
+# not be pooled with sEH, where the bar removes a real fraction.
 
 run:
-  name: fixed_reward/s3gfn_seh          # run dir: <root>/fixed_reward/s3gfn_seh/<timestamp>
+  name: fixed_reward/s3gfn_drd2          # run dir: <root>/fixed_reward/s3gfn_drd2/<timestamp>
   root_dir: experiments                 # overridden by --root-dir on Balam ($SCRATCH)
   seed: 42
 
 fixed_reward:
-  system: seh                           # target system (provenance + mode gate)
-  reward_name: seh_proxy                # fixed reward generator name (manifest 'oracle' field)
+  system: drd2                          # target system (provenance + mode gate)
+  reward_name: drd2                     # fixed reward generator name (manifest 'oracle' field)
   n_train_steps: 157                    # 157 x 64 = 10,048 scored -- their PMO max_oracle_calls.
                                         # WAS 5000 (=320,000), matched to OUR generators rather than
                                         # to their paper; a ~32x advantage (audit 2026-08-20).
   n_samples: 2000                       # unique valid molecules to emit as candidates
   sample_oversample: 6.0                # oversample factor for the final pool sampling
   max_sample_batches: 4000              # hard cap on generate() batches (degeneration guard)
-  score_units: "seh_mpnn_reward (higher is better)"
+  score_units: "DRD2 SVM activity probability in [0,1] (higher is better)"
 
 # Frozen reward provider. type: seh_proxy | drd2 | docking (only seh_proxy implemented; the others
 # are the modular seam — same interface, injected identically). See fixed_reward.py.
 reward:
-  type: seh_proxy
+  type: drd2
+  model_path: oracle/drd2_current.pkl   # the TDC/Olivecrona SVM, pre-staged (compute
+                                        # nodes have no internet; see the TDC note in memory)
   clip: 10.0
   batch_size: 128
-  # drd2:    model_path: oracle/drd2_current.pkl
-  # docking: oracle: docking_6td3_gpu   norm: 1.0   failed_score: 0.0   oracle_args: {}
 
 # S3-GFN generator hyperparams (defaults mirror src/s3gfn/train.py argparse; the paper's sEH run).
 s3gfn:

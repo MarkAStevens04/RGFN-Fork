@@ -47,6 +47,9 @@ for _p in (str(_REPO_ROOT), str(_S3GFN_SRC)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+# Imported AFTER the sys.path bootstrap above: these adapters run as scripts, so
+# `validation` is not importable until the repo root is on the path.
+from validation.generators._trace import TraceWriter, write_timing
 from validation.generators.s3gfn.fixed_reward import (  # noqa: E402
     DockingBridgeReward,
     DRD2FrozenReward,
@@ -89,15 +92,59 @@ class _OracleAdapter:
     (the verification guarantee). Other oracles use ``reward_scale=1.0`` (the provider already
     returns a training-suitable value); tune per-oracle here as they are wired in."""
 
-    def __init__(self, provider, reward_scale: float, lo: float = 1e-4, hi: float = 100.0):
+    def __init__(
+        self, provider, reward_scale: float, lo: float = 1e-4, hi: float = 100.0, trace=None
+    ):
         self.provider = provider
         self.reward_scale = float(reward_scale)
         self.lo = float(lo)
         self.hi = float(hi)
+        # THE ONLY PLACE S3-GFN'S TRAINING MOLECULES ARE VISIBLE TO US. Upstream persists nothing but
+        # a 1,000-row final eval sample, so before this hook existed a finished run could not answer
+        # "how many modes had been found by oracle call N" without retraining (audit 2026-08-20).
+        self.trace = trace
+
+    @staticmethod
+    def _caller_phase() -> str:
+        """``eval`` if any frame above us is S3-GFN's ``evaluate``; ``train`` otherwise."""
+        import inspect
+
+        frame = inspect.currentframe()
+        try:
+            depth = 0
+            while frame is not None and depth < 12:
+                if frame.f_code.co_name == "evaluate":
+                    return "eval"
+                frame = frame.f_back
+                depth += 1
+        finally:
+            del frame
+        return "train"
 
     def __call__(self, smiles, mode=None, vina=None, hist=None, **_kw):
+        smiles = list(smiles)
+        raw = list(self.provider.predict(smiles))
+        if self.trace is not None:
+            # RAW values, before scaling/clamping: the shaped reward is S3-GFN-specific and not
+            # comparable to another entrant's oracle value.
+            #
+            # TAG THE CALLER. `get_scores` is invoked from THREE places in upstream's train.py: the
+            # training loop (line 377) and twice inside `evaluate()` (681, 706), which scores a
+            # 1,000-molecule sample that the policy never learns from. Counting those as oracle calls
+            # would inflate the budget and pollute the modes-vs-calls curve with molecules that were
+            # never training signal -- measured on a 20-step smoke, 3,280 scored of which only ~1,280
+            # were training. `evaluate` is a method on the trainer, so its frame is the reliable
+            # discriminator; matching on batch size would not be (an eval chunk can be 64 too).
+            # For docking, predict() is clip(-vina); the trace wants raw Vina, because the
+            # mode gates are defined on the raw energy. Cached per SMILES, so no re-dock.
+            traced = (
+                list(self.provider.raw_scores(smiles))
+                if hasattr(self.provider, "raw_scores")
+                else raw
+            )
+            self.trace.add_many(smiles, traced, phase=self._caller_phase())
         out = []
-        for v in self.provider.predict(list(smiles)):
+        for v in raw:
             if v != v:  # NaN -> invalid molecule
                 out.append(self.lo)
             else:
@@ -272,16 +319,24 @@ def main() -> None:
     )
 
     provider, scale, rtype = _build_provider(reward_c, device, run_dir)
-    s3train.get_scores = _OracleAdapter(provider, reward_scale=scale)  # <-- the injection
+    trace = TraceWriter(run_dir / "trace.csv")
+    s3train.get_scores = _OracleAdapter(provider, reward_scale=scale, trace=trace)  # the injection
     print(f"[S3-FR] injected get_scores <- provider={rtype} (reward_scale={scale:g})", flush=True)
+    print(f"[S3-FR] trace -> {run_dir / 'trace.csv'}", flush=True)
 
     configs = _make_configs(s3_c, fr_c, seed, run_dir, s3train.TaskSpec)
 
     # --- train the SMILES GFlowNet ONCE against the frozen reward. -----------------------------
     trainer = s3train.SynthSmilesTrainer(logger=None, configs=configs)
+    run_t0 = time.time()
     t0 = time.time()
     trainer.train()
-    print(f"[S3-FR] training done in {time.time()-t0:.1f}s", flush=True)
+    train_s = time.time() - t0
+    print(
+        f"[S3-FR] training done in {train_s:.1f}s "
+        f"({trace.n_scored} scored, {trace.n_distinct} distinct)",
+        flush=True,
+    )
 
     # --- sample the candidate pool + re-score on the RAW provider value (the mode-gate scale). --
     t0 = time.time()
@@ -291,9 +346,18 @@ def main() -> None:
         temperature=float(s3_c.get("eval_sampling_temperature", 1.0)),
         max_batches=int(fr_c.get("max_sample_batches", 4000)),
     )
-    print(
-        f"[S3-FR] sampled {len(pool)} unique valid candidates in {time.time()-t0:.1f}s", flush=True
+    sample_s = time.time() - t0
+    print(f"[S3-FR] sampled {len(pool)} unique valid candidates in {sample_s:.1f}s", flush=True)
+    # Close the trace before the pool re-score below: the re-score is EVALUATION, not part of the
+    # training budget, and folding it in would inflate every entrant's oracle-call count differently
+    # depending on pool size.
+    trace.close()
+    write_timing(
+        run_dir / "timing.json",
+        {"train_s": train_s, "sample_s": sample_s},
+        total_s=time.time() - run_t0,
     )
+    print(f"[S3-FR] timing -> {run_dir / 'timing.json'}", flush=True)
 
     scores = provider.predict(pool)  # RAW value = the 'score' column (higher is better)
     raws = provider.raw_scores(pool) if hasattr(provider, "raw_scores") else None

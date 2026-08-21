@@ -55,8 +55,25 @@ case "$GEN" in
       seh)  CFG=validation/configs/scent_seh_fixed_5k.gin ;;
       drd2) CFG=validation/configs/scent_drd2_fixed_5k.gin ;;
     esac ;;
-  *) echo "FATAL: unknown GEN '$GEN' (want fraggfn|rxnflow|scent)"; exit 2 ;;
+  # --- the five EXTERNAL entrants added 2026-08-21 ------------------------------------------
+  # They reuse this script rather than getting their own because everything hard here is theirs
+  # too: the OpenCL health gate, the persistent docking server, the RGFN_DOCK_SOCKET handoff, and
+  # the resume/no-op logic. They run at their AUTHORS' budgets (set in their configs), NOT the 5k
+  # step count this file was originally written for, so no --n-train-steps is passed for them.
+  reinvent) ENVNAME=reinvent4; RUNNER=validation/generators/reinvent/run_reinvent_fixed.py
+    CFG=validation/configs/reinvent_${SYSTEM}_fixed.yaml ;;
+  saturn) ENVNAME=saturn; RUNNER=validation/generators/saturn/run_saturn_fixed.py
+    CFG=validation/configs/saturn_${SYSTEM}_fixed.yaml ;;
+  tango) ENVNAME=saturn; RUNNER=validation/generators/saturn/run_saturn_fixed.py
+    # TANGO is Saturn's agent with an extra oracle component, so same env and same runner.
+    CFG=validation/configs/tango_${SYSTEM}_fixed.yaml ;;
+  synformer) ENVNAME=synformer; RUNNER=validation/generators/synformer/run_synformer_fixed.py
+    CFG=validation/configs/synformer_${SYSTEM}_fixed.yaml ;;
+  s3gfn) ENVNAME=s3gfn; RUNNER=validation/generators/s3gfn/run_s3gfn_fixed.py
+    CFG=validation/configs/s3gfn_${SYSTEM}_fixed.yaml ;;
+  *) echo "FATAL: unknown GEN '$GEN' (want fraggfn|rxnflow|scent|reinvent|saturn|tango|synformer|s3gfn)"; exit 2 ;;
 esac
+[ -f "$CFG" ] || { echo "FATAL: no config at $CFG"; exit 2; }
 
 export WANDB_MODE=offline
 export WANDB_DIR=$SCRATCH/wandb WANDB_CACHE_DIR=$SCRATCH/.cache/wandb
@@ -64,7 +81,13 @@ export HF_HOME=$SCRATCH/.cache/huggingface TORCH_HOME=$SCRATCH/.cache/torch
 FR_ROOT_DIR=$SCRATCH/rgfn_runs/experiments
 mkdir -p "$WANDB_DIR" "$WANDB_CACHE_DIR" "$HF_HOME" "$TORCH_HOME" "$FR_ROOT_DIR"
 
-RUN_DIR="$FR_ROOT_DIR/fixed_reward/${GEN}_${SYSTEM}_5k/seed${SEED}"
+# The `_5k` suffix belongs to the original three, whose campaign was defined by its 5,000-step
+# budget. The external entrants run at their authors' budgets, so tagging them `_5k` would name
+# them after a number that is not theirs.
+case "$GEN" in
+  reinvent|saturn|tango|synformer|s3gfn) RUN_DIR="$FR_ROOT_DIR/fixed_reward/${GEN}_${SYSTEM}/seed${SEED}" ;;
+  *) RUN_DIR="$FR_ROOT_DIR/fixed_reward/${GEN}_${SYSTEM}_5k/seed${SEED}" ;;
+esac
 COMPLETE="$RUN_DIR/fixed_reward/candidates/candidates.csv"
 mkdir -p "$RUN_DIR"
 if [ -f "$COMPLETE" ]; then
@@ -102,8 +125,18 @@ if [ "$DOCKING" = 1 ]; then
 fi
 
 # --- smoke-test overrides (optional) -------------------------------------------------------
+# The "how much training" flag is NOT the same across runners -- passing the wrong one is an
+# argparse error (exit 2) nine seconds into the job, which is how this was found:
+#   fraggfn/rxnflow/s3gfn --n-train-steps | reinvent --max-steps | saturn/tango/synformer --budget
+# (saturn and synformer count ORACLE CALLS, not steps, so N_ITERS_OVERRIDE means calls for them.)
 OVR=()
-[ -n "${N_ITERS_OVERRIDE:-}" ] && OVR+=(--n-train-steps "$N_ITERS_OVERRIDE")
+if [ -n "${N_ITERS_OVERRIDE:-}" ]; then
+  case "$GEN" in
+    reinvent)                 OVR+=(--max-steps "$N_ITERS_OVERRIDE") ;;
+    saturn|tango|synformer)   OVR+=(--budget    "$N_ITERS_OVERRIDE") ;;
+    *)                        OVR+=(--n-train-steps "$N_ITERS_OVERRIDE") ;;
+  esac
+fi
 [ -n "${N_SAMPLES_OVERRIDE:-}" ] && OVR+=(--n-samples "$N_SAMPLES_OVERRIDE")
 
 # --- run the baseline training (its env), resuming from RUN_DIR's checkpoint if present -----

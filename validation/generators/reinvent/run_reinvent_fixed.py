@@ -48,6 +48,10 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+# Imported AFTER the sys.path bootstrap above: these adapters are executed as
+# scripts, so `validation` is not importable until the repo root is on the path.
+from validation.generators._trace import trace_from_reinvent, write_timing
+
 _CLONE = _REPO_ROOT / "external" / "reinvent"
 _PLUGINS = _REPO_ROOT / "validation" / "generators" / "reinvent" / "plugins"
 
@@ -109,11 +113,20 @@ def _write_training_toml(
         lines += [f"{k} = {_toml_scalar(v)}" for k, v in df.items()]
         lines += [""]
 
+    # ONE STAGE, ALWAYS. REINVENT's multi-stage mechanism looked like a way to get periodic
+    # checkpoints without patching upstream -- each stage writes `chkpt_file` and carries the same
+    # agent forward. It does NOT work under a fixed step budget: `optimize()` returns terminate=True
+    # whenever a stage ends on max_steps, and run_staged_learning.py:372 then breaks out of the whole
+    # stage loop ("Terminating all stages"). Since our budget guarantee is min_steps == max_steps,
+    # every stage ends that way, so a 10-stage run executed stage 1 and stopped -- 16 steps instead
+    # of 157, measured 2026-08-21. Multi-stage is for curriculum learning with SCORE-based
+    # transitions. Periodic checkpoints come from the documented learning.py patch instead
+    # (docs/PATCHES.md); see REINVENT_CHECKPOINT_EVERY.
     lines += [
         "[[stage]]",
         f'chkpt_file = "{chkpt}"',
         'termination = "simple"',
-        # FIXED BUDGET: the stage must end on max_steps for every seed and target, or the training
+        # FIXED BUDGET: every stage must end on max_steps for every seed and target, or the training
         # budget would depend on how easy the target is and the cells would stop being comparable.
         # The guarantee is `min_steps == max_steps`, NOT the score bound: SimpleTerminator fires on
         # `step > min_steps and score >= max_score`, and step never exceeds max_steps, so the first
@@ -135,6 +148,10 @@ def _write_training_toml(
         f'params.reward_type = "{reward_c.get("type", "seh_proxy")}"',
         f'params.model_path = "{reward_c.get("model_path", "")}"',
         f'params.device = "{reward_c.get("device", "cpu")}"',
+        # Docking-only; harmless (and defaulted) for the surrogate targets.
+        f'params.oracle = "{reward_c.get("oracle", "")}"',
+        f'params.workdir = "{run_dir / "reward_bridge"}"',
+        f'params.norm = {float(reward_c.get("norm", 1.0))!r}',
         "",
     ]
     # No transform block when the reward is already on [0, 1] (DRD2 is a probability). Emitting an
@@ -167,7 +184,9 @@ def _write_sampling_toml(
     )
 
 
-def _run_reinvent(toml_path: Path, log_path: Path, run_dir: Path, seed: int) -> None:
+def _run_reinvent(
+    toml_path: Path, log_path: Path, run_dir: Path, seed: int, ckpt_every: int = 0
+) -> None:
     """Invoke REINVENT through our seeding launcher, with the plugin dir on PYTHONPATH.
 
     Not the plain `reinvent` console script: v4.5.11 cannot be seeded through its own interface (the
@@ -178,6 +197,11 @@ def _run_reinvent(toml_path: Path, log_path: Path, run_dir: Path, seed: int) -> 
     env = os.environ.copy()
     env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(_PLUGINS), env.get("PYTHONPATH", "")]))
     env["PYTHONHASHSEED"] = str(seed)
+    # Periodic checkpoints, via the documented learning.py patch (docs/PATCHES.md). Observability
+    # only: unset these and the run is byte-identical to upstream.
+    if ckpt_every and int(ckpt_every) > 0:
+        env["REINVENT_CHECKPOINT_EVERY"] = str(int(ckpt_every))
+        env["REINVENT_CHECKPOINT_DIR"] = str(run_dir / "checkpoints")
     launcher = Path(__file__).resolve().parent / "_seeded_launcher.py"
     cmd = [sys.executable, str(launcher), str(seed), "-l", str(log_path), str(toml_path)]
     print(f"[RNV-FR] {' '.join(cmd)}", flush=True)
@@ -285,9 +309,17 @@ def main() -> None:
         reward_c=reward_c,
         rl_c=rl_c,
     )
+    run_t0 = time.time()
     t0 = time.time()
-    _run_reinvent(train_toml, run_dir / "staged_learning.log", run_dir, seed)
-    print(f"[RNV-FR] training done in {time.time() - t0:.1f}s", flush=True)
+    _run_reinvent(
+        train_toml,
+        run_dir / "staged_learning.log",
+        run_dir,
+        seed,
+        ckpt_every=int(rl_c.get("checkpoint_every_steps", 0) or 0),
+    )
+    train_s = time.time() - t0
+    print(f"[RNV-FR] training done in {train_s:.1f}s", flush=True)
     if not chkpt.exists():
         raise SystemExit(f"[RNV-FR] no agent checkpoint at {chkpt} — training did not complete.")
 
@@ -304,8 +336,9 @@ def main() -> None:
     t0 = time.time()
     _run_reinvent(sample_toml, run_dir / "sampling.log", run_dir, seed)
     pool = _read_sampled(sample_csv)[:n_samples]
+    sample_s = time.time() - t0
     print(
-        f"[RNV-FR] sampled {len(pool)} unique valid candidates in {time.time() - t0:.1f}s",
+        f"[RNV-FR] sampled {len(pool)} unique valid candidates in {sample_s:.1f}s",
         flush=True,
     )
 
@@ -335,16 +368,30 @@ def main() -> None:
         reward_type=reward_c.get("type", "seh_proxy"),
         device=reward_c.get("rescore_device", "cpu"),
         model_path=reward_c.get("model_path") or None,
+        # Docking passthrough. Inert for the surrogate rewards (build_provider ignores them
+        # unless reward_type == "docking"), so one call site serves all three targets.
+        oracle=reward_c.get("oracle") or None,
+        repo_root=str(_REPO_ROOT),
+        norm=float(reward_c.get("norm", 1.0)),
+        failed_score=float(reward_c.get("failed_score", 0.0)),
+        oracle_args=dict(reward_c.get("oracle_args") or {}),
+        workdir=str(run_dir / "reward_bridge"),
     )
     scores = provider.predict(pool)
 
     out_dir = run_dir / "fixed_reward"
     out_dir.mkdir(parents=True, exist_ok=True)
     pairs_path = out_dir / "pairs.csv"
+    # RAW SCORE IS LOAD-BEARING FOR THE DOCKING CELLS. `scores` is the provider's higher-is-better
+    # VALUE -- for docking that is clip(-vina), a positive number. The ClpP mode gate is -8.0 on the
+    # RAW Vina energy (Logs/045), so without this column a docking pool cannot be gated at all.
+    # None for the surrogates, where predict() already returns the raw oracle value.
+    raws = provider.raw_scores(pool) if hasattr(provider, "raw_scores") else None
     with open(pairs_path, "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["smiles", "score"])
-        w.writerows(zip(pool, scores))
+        w.writerow(["smiles", "score"] + (["raw_score"] if raws is not None else []))
+        for i, (smi, sc) in enumerate(zip(pool, scores)):
+            w.writerow([smi, sc] + ([raws[i]] if raws is not None else []))
 
     ingest_cmd = [
         "conda",
@@ -381,6 +428,24 @@ def main() -> None:
         ingest_env["LD_LIBRARY_PATH"] = _ingest_ld
     print(f"[RNV-FR] ingest -> {' '.join(ingest_cmd)}", flush=True)
     subprocess.run(ingest_cmd, check=True, cwd=str(_REPO_ROOT), env=ingest_env)
+
+    # Trace + timing, derived POST-HOC from staged_learning_1.csv and the stamped log. See the
+    # Saturn adapter for why this is a conversion rather than a loop hook. Non-fatal by design.
+    try:
+        n = trace_from_reinvent(run_dir)
+        write_timing(
+            run_dir / "timing.json",
+            {"train_s": train_s, "sample_s": sample_s},
+            total_s=time.time() - run_t0,
+        )
+        print(
+            f"[RNV-FR] trace -> {run_dir / 'trace.csv'} ({n} rows); timing -> timing.json",
+            flush=True,
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"[RNV-FR] WARNING: trace/timing not written ({type(exc).__name__}: {exc})", flush=True
+        )
 
     print(f"[RNV-FR] done. candidates at {out_dir / 'candidates'}", flush=True)
 

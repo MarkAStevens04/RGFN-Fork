@@ -1,0 +1,66 @@
+# SynFormer on ClpP — the STRUCTURE-BASED cell, docking against human ClpP 7UVU.
+#
+# Same entrant, same budget, same everything as `synformer_seh_fixed.yaml`; only the reward differs. That
+# is the point: any sEH-vs-ClpP difference is the objective, not the setup.
+#
+# THE REWARD IS REACHED ACROSS AN ENV BOUNDARY. This entrant's conda env has no docking stack, so
+# `DockingBridgeReward` shells out to `scripts/score_batch.py --oracle docking_clpp` in the `rgfn`
+# env (or to the persistent docking server when RGFN_DOCK_SOCKET is set). `predict()` returns the
+# higher-is-better VALUE clip(-raw/norm, 0, inf); `raw_scores()` returns raw Vina kcal/mol.
+#
+# ⚠ THE MODE GATE IS ON THE **RAW** VALUE, -8.0, LOWER-IS-BETTER (Logs/045: Youden-optimal over 183
+# ChEMBL ClpP binders vs property-matched decoys, AUROC 0.895). Gate on `raw_score`, never on the
+# `score` = ReLU(-raw) column. The old -2.0 bar was non-binding — every generator cleared ~100% of it.
+#
+# ⚠ ANY JOB THAT DOCKS MUST `source ~/bin/rgfn-smoke-env.sh` (CLAUDE.md): QuickVina2-GPU links against
+# boost libs that live outside the conda env, and omitting them looks exactly like a degraded GPU.
+#
+# COST: ~1.2 s/molecule of docking, so a 10,000-call budget is ~3.3 h of docking on top of training.
+
+run:
+  name: fixed_reward/synformer_clpp
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  system: clpp
+  reward_name: clpp_docking
+  # Upstream's Oracle defaults to max_oracle_calls = 10000 — the PMO convention, and the same budget
+  # Saturn's reference config uses. Counted over DISTINCT molecules, as their buffer does.
+  budget: 10000
+  n_samples: 2000                        # pool size to emit — matches the other entrants
+  score_units: "clip(-vina) value (higher is better; RAW Vina kcal/mol in raw_score)"
+
+reward:
+  type: docking
+  oracle: docking_clpp                  # scripts/score_batch.py ORACLES key
+  norm: 1.0
+  clip: 10.0
+  failed_score: 0.0                     # an undockable molecule scores 0, not NaN
+  # NO reward_shaping/transform: DockingBridgeReward.predict already returns a
+  # bounded higher-is-better value, and stacking a sigmoid on top would double-shape it.
+
+synformer:
+  model_path: ""                         # default: external/synformer/data/trained_weights/sf_ed_default.ckpt
+  starting_population: ""                # default: the clone's own data/chembl_filtered_1k.txt
+                                         # Their bundled ChEMBL set, not TDC's ZINC: it needs no
+                                         # external download, and ChEMBL matches REINVENT's and
+                                         # Saturn's priors so the entrants start from comparable space.
+  # GA settings — upstream's own (experiments/graphga_sf_opt.py `config` dict).
+  population_size: 100
+  offspring_size: 100
+  mutation_rate: 0.1
+  # Projection settings — upstream's own `projection()` defaults.
+  search_width: 24
+  exhaustiveness: 64
+  time_limit: 180
+  num_gpus: -1                           # -1 = all visible; a 1-GPU allocation gives 1
+  # 2 = the library default for run_parallel_sampling_return_smiles. Upstream's graphga_sf_opt.py
+  # passes 1, but that is a WALL-CLOCK choice with no algorithmic content: each worker runs the same
+  # per-molecule StatePool/evolve loop, two are simply in flight at once. Raised to 2 so the full
+  # 10,000-call budget is affordable. Each worker holds its own copy of the 4 GB index, so watch host
+  # RAM if this is raised much further.
+  num_workers_per_gpu: 2
+  backend: parallel                      # parallel = upstream's WorkerPool | inprocess = fallback
+  max_evolve_steps: 12                   # upstream's run_sampling_one_cpu default
+  max_results: 100

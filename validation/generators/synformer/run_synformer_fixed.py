@@ -57,6 +57,10 @@ for _p in (str(_REPO_ROOT), str(_CLONE), str(_CLONE / "experiments")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+# Imported AFTER the sys.path bootstrap above: these adapters run as scripts, so
+# `validation` is not importable until the repo root is on the path.
+from validation.generators._trace import TraceWriter, write_timing
+
 MINIMUM = 1e-10  # upstream's make_mating_pool constant
 
 
@@ -397,6 +401,11 @@ def main() -> None:
     # --- oracle bookkeeping: one score per DISTINCT molecule, capped at the budget --------------
     scored: dict = {}  # smiles -> raw reward
     routes: dict = {}  # smiles -> steps
+    run_t0 = time.time()
+    # run_dir, NOT out_dir: `out_dir = run_dir / "fixed_reward"` is not defined until the emit stage
+    # far below, and the trace has to exist before the first molecule is scored.
+    trace = TraceWriter(run_dir / "trace.csv")
+    print(f"[SF-FR] trace -> {run_dir / 'trace.csv'}", flush=True)
 
     def score(smiles_list):
         """Score, charging the budget only for molecules never seen before."""
@@ -407,7 +416,17 @@ def main() -> None:
         elif len(todo) > room:
             todo = todo[:room]
         if todo:
-            for s, v in zip(todo, provider.predict(todo)):
+            raw = list(provider.predict(todo))
+            # For docking, predict() returns clip(-vina); the TRACE wants the oracle's own
+            # value, since the mode gate is defined on raw Vina. Surrogates have no
+            # raw_scores() and are unaffected. No re-dock: results are cached per SMILES.
+            traced = list(provider.raw_scores(todo)) if hasattr(provider, "raw_scores") else raw
+            # THE ONLY DURABLE RECORD OF SYNFORMER'S SEARCH. Before this hook the history existed
+            # solely in SLURM stdout, interleaved with per-worker chatter, at ~36 h/cell to
+            # regenerate (audit 2026-08-20). RAW values, pre-clamp: the clamp below exists to protect
+            # a probability distribution, not to describe the oracle.
+            trace.add_many(todo, traced)
+            for s, v in zip(todo, raw):
                 # Clamp at 0. `make_mating_pool` turns scores into selection PROBABILITIES
                 # (`p / sum_scores`), so a single negative value silently corrupts the whole
                 # distribution — and the sEH proxy can return small negatives for poor molecules.
@@ -443,6 +462,14 @@ def main() -> None:
         reward_type=reward_c.get("type", "seh_proxy"),
         device=reward_c.get("device", "cpu"),
         model_path=reward_c.get("model_path") or None,
+        # Docking passthrough. Inert for the surrogate rewards (build_provider ignores them
+        # unless reward_type == "docking"), so one call site serves all three targets.
+        oracle=reward_c.get("oracle") or None,
+        repo_root=str(_REPO_ROOT),
+        norm=float(reward_c.get("norm", 1.0)),
+        failed_score=float(reward_c.get("failed_score", 0.0)),
+        oracle_args=dict(reward_c.get("oracle_args") or {}),
+        workdir=str(run_dir / "reward_bridge"),
     )
     print(
         f"[SF-FR] reward provider ready ({reward_c.get('type')}) — built AFTER the fork", flush=True
@@ -460,6 +487,7 @@ def main() -> None:
         population_scores = score([Chem.MolToSmiles(m) for m in population_mol])
 
         gen = 0
+        last_ckpt_bucket = 0
         while len(scored) < budget:
             gen += 1
             mating_pool = make_mating_pool(population_mol, population_scores, pop_size)
@@ -484,6 +512,22 @@ def main() -> None:
                 f"best={max(population_scores):.3f} mean={float(np.mean(population_scores)):.3f}",
                 flush=True,
             )
+
+            # PERIODIC CHECKPOINT = THE POPULATION, not model weights. SynFormer's transformer is
+            # FROZEN (`sf_ed_default.ckpt` is loaded and never updated); the only state that evolves
+            # is the GA population, so dumping it is the exact analogue of the other entrants'
+            # weight checkpoints -- it is what a later run would have to be resumed from. Cadence is
+            # ~1,000 SCORED molecules to match Saturn (oracle calls) and S3-GFN (16 steps x 64).
+            ckpt_bucket = len(scored) // 1000
+            if ckpt_bucket > last_ckpt_bucket:
+                last_ckpt_bucket = ckpt_bucket
+                ck_dir = run_dir / "population_checkpoints"
+                ck_dir.mkdir(parents=True, exist_ok=True)
+                with open(ck_dir / f"pop_{ckpt_bucket * 1000}.csv", "w", newline="") as fh:
+                    w = csv.writer(fh)
+                    w.writerow(["smiles", "score", "n_scored", "generation"])
+                    for sc, m in zip(population_scores, population_mol):
+                        w.writerow([Chem.MolToSmiles(m), sc, len(scored), gen])
 
     finally:
         projector.close()
@@ -512,10 +556,16 @@ def main() -> None:
     out_dir = run_dir / "fixed_reward"
     out_dir.mkdir(parents=True, exist_ok=True)
     pairs_path = out_dir / "pairs.csv"
+    # RAW SCORE IS LOAD-BEARING FOR THE DOCKING CELLS. `scores` is the provider's higher-is-better
+    # VALUE -- for docking that is clip(-vina), a positive number. The ClpP mode gate is -8.0 on the
+    # RAW Vina energy (Logs/045), so without this column a docking pool cannot be gated at all.
+    # None for the surrogates, where predict() already returns the raw oracle value.
+    raws = provider.raw_scores([s for s, _ in pool]) if hasattr(provider, "raw_scores") else None
     with open(pairs_path, "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["smiles", "score"])
-        w.writerows(pool)
+        w.writerow(["smiles", "score"] + (["raw_score"] if raws is not None else []))
+        for i, (smi, sc) in enumerate(pool):
+            w.writerow([smi, sc] + ([raws[i]] if raws is not None else []))
 
     # routes.jsonl in the schema scripts/ingest_candidates.py joins by SMILES
     routes_path = out_dir / "routes.jsonl"
@@ -535,6 +585,22 @@ def main() -> None:
             )
     n_buyable = sum(1 for smi, _ in pool if len(routes[smi]) == 0)
     print(f"[SF-FR] wrote {len(pool)} routes -> {routes_path}", flush=True)
+
+    trace.close()
+    # Only a total here. SynFormer's wall-clock is dominated by PROJECTION (the transformer mapping
+    # each GA proposal into synthesizable space), which happens inside the worker pool and is not
+    # separately timed in this process; a train/oracle split would be a guess. The per-molecule
+    # elapsed_s column in trace.csv is the finer-grained record.
+    write_timing(
+        run_dir / "timing.json",
+        {"total_run_s": time.time() - run_t0},
+        total_s=time.time() - run_t0,
+    )
+    print(
+        f"[SF-FR] trace closed: {trace.n_scored} scored / {trace.n_distinct} distinct "
+        f"-> {run_dir / 'trace.csv'}",
+        flush=True,
+    )
     if n_buyable:
         # A ZERO-STEP route is not a failure: SynFormer projected the molecule onto a catalogue
         # building block, so it costs ZERO reactions — which under a fixed reaction budget makes it

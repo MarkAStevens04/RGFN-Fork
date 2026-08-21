@@ -79,6 +79,13 @@ class Parameters:
     reward_type: List[str]
     model_path: List[str]
     device: List[str]
+    # Docking-only; optional so the surrogate configs need not carry them. REINVENT builds this
+    # dataclass from the TOML's `params.*` keys, and a missing key must not be an error.
+    # NOTE this is a PYDANTIC dataclass (`from pydantic.dataclasses import dataclass`), not the
+    # stdlib one, so `dataclasses.field` is not in scope -- pydantic handles mutable defaults itself.
+    oracle: List[str] = ("",)
+    workdir: List[str] = ("",)
+    norm: List[float] = (1.0,)
 
 
 @add_tag("__component")
@@ -91,8 +98,16 @@ class GlueSurrogate:
         if model_path and not Path(model_path).is_absolute():
             model_path = str(_REPO_ROOT / model_path)
 
+        # Docking is reached across the env boundary (this env has no docking stack); for the
+        # surrogates these extra arguments are ignored by build_provider.
         self.provider = build_provider(
-            reward_type=reward_type, device=device, model_path=model_path or None
+            reward_type=reward_type,
+            device=device,
+            model_path=model_path or None,
+            oracle=(params.oracle[0] or "").strip() or None,
+            repo_root=str(_REPO_ROOT),
+            norm=float(params.norm[0]),
+            workdir=(params.workdir[0] or "").strip() or None,
         )
         self.reward_type = reward_type
         logger.info(f"GlueSurrogate: frozen {reward_type} reward on {device} (raw value)")

@@ -1,26 +1,22 @@
-# Saturn FIXED-REWARD baseline on sEH — a ROUTE-LESS SMILES entrant, same class as S3-GFN/REINVENT.
+# TANGO on SEH — Saturn's agent plus a CONSTRAINED-SYNTHESIZABILITY reward.
 #
-# Saturn is a Mamba-based SMILES language model trained with Augmented Memory, built for SAMPLE
-# EFFICIENCY. No reaction model, so no routes: the pool is emitted with has_route=0 and a library
-# built from it must have its shared intermediates recovered post-hoc (MultiAiZ -> SPARROW).
+# TANGO IS NOT A SEPARATE MODEL. It is a reward function inside the same Saturn repo
+# ([guo2026tango]); this config is `saturn_seh_fixed.yaml` with one extra oracle component, which is
+# exactly how the authors' own experimental_reproduction/constrained_synthesizability/experiment.json
+# is built. Everything below the `tango:` block is unchanged from the Saturn entrant, so any
+# TANGO-vs-Saturn difference is attributable to the reward and nothing else.
 #
-# FAIRNESS: Saturn optimizes the SAME frozen reward as every other entrant — the Bengio-2021 sEH
-# MPNN, reached through our `glue_surrogate` oracle component. The pool is then RE-SCORED on the RAW
-# proxy value, the scale the benchmark's mode gate (sEH > 7.0) is defined on. The reward provider
-# code is byte-for-byte the REINVENT adapter's, and the two envs agree numerically (ethanol -> 0.0273).
+# WHY IT MATTERS HERE: syntheseus writes a real synthesis route per solved molecule, so TANGO joins
+# SynFormer as a REACTION-AWARE entrant whose molecules are priced through
+# `sparrow_select_frontier.py --route-source external` — no MultiAiZ, and no route-planning
+# asymmetry against our own generators.
 #
-# EVERY SATURN-SIDE VALUE BELOW IS THE AUTHORS' OWN, taken from their published reference config
-# (experimental_reproduction/constrained_synthesizability/experiment.json): budget 10,000, product
-# aggregator, batch 64, sigma 128, augmented memory with 2 rounds, diversity filter ON, and BOTH
-# hallucinated memory and beam enumeration OFF. Only the reward and the run plumbing are ours.
-#
-# Run (repo root, saturn env; candidate emission shells to the rgfn env):
-#   conda run -p /scratch/markymoo/conda_envs/saturn python \
-#     validation/generators/saturn/run_saturn_fixed.py \
-#     --cfg validation/configs/saturn_seh_fixed.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+# Run:
+#   TARGET=seh SEED=42 CFG=validation/configs/tango_seh_fixed.yaml \
+#     sbatch experiments/lsd_hubs/campaign/submit_saturn.sh
 
 run:
-  name: fixed_reward/saturn_seh
+  name: fixed_reward/tango_seh
   root_dir: experiments
   seed: 42
 
@@ -89,3 +85,30 @@ saturn:
     execute_hallucinated_memory: false
   beam_enumeration:
     execute_beam_enumeration: false
+
+  # ---- TANGO ---------------------------------------------------------------------------------
+  tango:
+    enabled: true
+    env_name: syntheseus                  # `conda run -n syntheseus`; /scratch/markymoo/conda_envs
+                                          # is registered in envs_dirs so the NAME resolves.
+    reaction_model: megan                 # THE AUTHORS' choice in their reproduction config.
+    # The authors' own general stock, published with the paper (figshare 27225483): 17,721,980
+    # purchasable SMILES. NOT ZINCFrag — that is a combinatorial FRAGMENT set for assembling
+    # molecules, and holds only 4 of 11 probe commodity reagents (no bromobenzene, no acetyl
+    # chloride), which made every one of 50 test molecules unsolvable. This stock holds 11/11.
+    building_blocks_file: /scratch/markymoo/tango/authors_stock/frag-reac-zinc-stock.smi
+    # enforced_building_blocks_file: <set for the chemistry-homogenized arm; unset = general stock
+    #                                 only, which is the paper's unconstrained setting>
+    enforce_blocks: false                 # no enforced set in this arm, so nothing to enforce
+    enforce_start: false
+    use_dense_reward: true
+    reward_type: tango_fms
+    tango_weights:
+      tanimoto: 0.5
+      fg: 0.5
+      fms: 0.5
+    time_limit_s: 180                     # the authors' per-molecule search cap
+    parallelize: false                    # the authors' value
+    max_workers: 4
+    num_top_results: 5                    # OUR DEVIATION, measured: upstream hardcodes 1, which
+                                          # solved 10/50 molecules; 5 solves 47/50. Disclosed.

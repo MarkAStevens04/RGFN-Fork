@@ -1,32 +1,30 @@
-# Saturn FIXED-REWARD baseline on sEH — a ROUTE-LESS SMILES entrant, same class as S3-GFN/REINVENT.
+# Saturn on ClpP — the STRUCTURE-BASED cell, docking against human ClpP 7UVU.
 #
-# Saturn is a Mamba-based SMILES language model trained with Augmented Memory, built for SAMPLE
-# EFFICIENCY. No reaction model, so no routes: the pool is emitted with has_route=0 and a library
-# built from it must have its shared intermediates recovered post-hoc (MultiAiZ -> SPARROW).
+# Same entrant, same budget, same everything as `saturn_seh_fixed.yaml`; only the reward differs. That
+# is the point: any sEH-vs-ClpP difference is the objective, not the setup.
 #
-# FAIRNESS: Saturn optimizes the SAME frozen reward as every other entrant — the Bengio-2021 sEH
-# MPNN, reached through our `glue_surrogate` oracle component. The pool is then RE-SCORED on the RAW
-# proxy value, the scale the benchmark's mode gate (sEH > 7.0) is defined on. The reward provider
-# code is byte-for-byte the REINVENT adapter's, and the two envs agree numerically (ethanol -> 0.0273).
+# THE REWARD IS REACHED ACROSS AN ENV BOUNDARY. This entrant's conda env has no docking stack, so
+# `DockingBridgeReward` shells out to `scripts/score_batch.py --oracle docking_clpp` in the `rgfn`
+# env (or to the persistent docking server when RGFN_DOCK_SOCKET is set). `predict()` returns the
+# higher-is-better VALUE clip(-raw/norm, 0, inf); `raw_scores()` returns raw Vina kcal/mol.
 #
-# EVERY SATURN-SIDE VALUE BELOW IS THE AUTHORS' OWN, taken from their published reference config
-# (experimental_reproduction/constrained_synthesizability/experiment.json): budget 10,000, product
-# aggregator, batch 64, sigma 128, augmented memory with 2 rounds, diversity filter ON, and BOTH
-# hallucinated memory and beam enumeration OFF. Only the reward and the run plumbing are ours.
+# ⚠ THE MODE GATE IS ON THE **RAW** VALUE, -8.0, LOWER-IS-BETTER (Logs/045: Youden-optimal over 183
+# ChEMBL ClpP binders vs property-matched decoys, AUROC 0.895). Gate on `raw_score`, never on the
+# `score` = ReLU(-raw) column. The old -2.0 bar was non-binding — every generator cleared ~100% of it.
 #
-# Run (repo root, saturn env; candidate emission shells to the rgfn env):
-#   conda run -p /scratch/markymoo/conda_envs/saturn python \
-#     validation/generators/saturn/run_saturn_fixed.py \
-#     --cfg validation/configs/saturn_seh_fixed.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+# ⚠ ANY JOB THAT DOCKS MUST `source ~/bin/rgfn-smoke-env.sh` (CLAUDE.md): QuickVina2-GPU links against
+# boost libs that live outside the conda env, and omitting them looks exactly like a degraded GPU.
+#
+# COST: ~1.2 s/molecule of docking, so a 10,000-call budget is ~3.3 h of docking on top of training.
 
 run:
-  name: fixed_reward/saturn_seh
+  name: fixed_reward/saturn_clpp
   root_dir: experiments
   seed: 42
 
 fixed_reward:
-  system: seh
-  reward_name: seh_proxy
+  system: clpp
+  reward_name: clpp_docking
   # THE STOPPING CONDITION. Saturn runs `while not oracle.budget_exceeded()` — there is no step
   # count. 10,000 is its published default, an order of magnitude below REINVENT's ~128,000 and
   # S3-GFN's ~320,000. All three are their authors' defaults; the benchmark REPORTS that asymmetry
@@ -37,23 +35,16 @@ fixed_reward:
   n_samples: 2000                        # unique valid molecules to emit — matches S3-GFN/REINVENT
   sample_batch_size: 256
   max_sample_batches: 4000
-  score_units: "seh_mpnn_reward (higher is better)"
+  score_units: "clip(-vina) value (higher is better; RAW Vina kcal/mol in raw_score)"
 
 reward:
-  type: seh_proxy
-  model_path: ""                         # unused for seh_proxy (weights ship with gflownet)
-  device: cpu                            # component device — Saturn's Mamba agent owns the GPU
-  rescore_device: cpu
-  # RAW -> [0,1] for Saturn's reward aggregation. Same parameters as the REINVENT adapter's
-  # transform, so the two entrants chase an identically shaped objective. Deliberately NOT centred
-  # on the 7.0 mode gate: shaping at the gate would make the generator optimize the benchmark's own
-  # threshold, which is circular.
-  reward_shaping:
-    transformation_function: sigmoid
-    parameters:
-      low: 4.0
-      high: 9.0
-      k: 0.5
+  type: docking
+  oracle: docking_clpp                  # scripts/score_batch.py ORACLES key
+  norm: 1.0
+  clip: 10.0
+  failed_score: 0.0                     # an undockable molecule scores 0, not NaN
+  # NO reward_shaping/transform: DockingBridgeReward.predict already returns a
+  # bounded higher-is-better value, and stacking a sigmoid on top would double-shape it.
 
 saturn:
   device: cuda

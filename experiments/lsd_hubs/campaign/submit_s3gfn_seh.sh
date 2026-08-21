@@ -33,6 +33,14 @@ export HF_HOME=$SCRATCH/.cache/huggingface           # pre-fetched GP-MolFormer 
 export PYTHONUNBUFFERED=1
 mkdir -p "$TORCH_HOME" "$HF_HOME" "$OUT_DIR"
 
+# REFUSE TO CLOBBER A COMPLETED RUN. This script DOES honour OUT_DIR, but its default is keyed on
+# $SLURM_JOB_ID, so an explicit OUT_DIR pointing at a finished cell would silently replace it.
+if [ -s "$OUT_DIR/fixed_reward/candidates/candidates.csv" ] && [ "${FORCE_OVERWRITE:-0}" != "1" ]; then
+    echo "FATAL: $OUT_DIR already holds a completed run; set FORCE_OVERWRITE=1 to replace it." >&2
+    exit 1
+fi
+
+
 # dgl/graphbolt CUDA-11.8 runtime for the INGEST child (rgfn env imports glue->rgfn->dgl). Safe for
 # the s3gfn parent: cuda 11.8 exposes .11 sonames, torch cu121 loads its bundled .12 libs via RUNPATH.
 module load cuda/11.8.0

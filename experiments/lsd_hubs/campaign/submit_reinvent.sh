@@ -90,7 +90,25 @@ FAILED=""
 for CELL in $CELLS; do
     TARGET=${CELL%%:*}; SEED=${CELL##*:}
     CFG_C=${CFG:-validation/configs/reinvent_${TARGET}_fixed.yaml}
+    # OUT_DIR is derived from TARGET/SEED, NOT from the caller's environment. A `RUN_DIR=...` on
+    # the sbatch line is silently ignored here, which on 2026-08-21 let a 6-step debug smoke land on
+    # top of the completed seed-42 run and truncate its 127,997-row history to 384 rows. Override the
+    # destination with OUT_ROOT, which IS honoured.
     OUT_DIR="$OUT_ROOT/reinvent_${TARGET}/seed${SEED}"
+    if [ -n "${RUN_DIR:-}" ]; then
+        echo "FATAL: RUN_DIR is not supported by this script and would be ignored." >&2
+        echo "  You probably meant:  OUT_ROOT=<dir> ... sbatch $0" >&2
+        exit 1
+    fi
+    # REFUSE TO CLOBBER A COMPLETED RUN. A finished cell owns a candidates.csv; re-running onto it
+    # destroys the training history that produced every published number for that cell. Set
+    # FORCE_OVERWRITE=1 only when the intent really is to replace it.
+    if [ -s "$OUT_DIR/fixed_reward/candidates/candidates.csv" ] && [ "${FORCE_OVERWRITE:-0}" != "1" ]; then
+        echo "FATAL: $OUT_DIR already holds a completed run" >&2
+        echo "  ($(($(wc -l < "$OUT_DIR/fixed_reward/candidates/candidates.csv") - 1)) candidates)." >&2
+        echo "  Use OUT_ROOT=<somewhere-else>, or FORCE_OVERWRITE=1 to replace it deliberately." >&2
+        exit 1
+    fi
     echo ""
     echo "================ CELL $CELL ================"
     if [ ! -s "$CFG_C" ]; then

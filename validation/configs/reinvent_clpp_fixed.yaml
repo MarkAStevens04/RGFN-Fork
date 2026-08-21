@@ -1,44 +1,42 @@
-# REINVENT 4 FIXED-REWARD baseline on sEH — a ROUTE-LESS SMILES entrant, same class as S3-GFN.
+# REINVENT 4 on ClpP — the STRUCTURE-BASED cell, docking against human ClpP 7UVU.
 #
-# REINVENT is AstraZeneca's production de-novo tool: a ChEMBL-pretrained SMILES RNN fine-tuned by
-# reinforcement learning (DAP) against a weighted score. No reaction model, so no routes: the pool is
-# emitted with has_route=0 and a library built from it must have its shared intermediates recovered
-# post-hoc (MultiAiZ -> SPARROW). It is the baseline reviewers name first.
+# Same entrant, same budget, same everything as `reinvent_seh_fixed.yaml`; only the reward differs. That
+# is the point: any sEH-vs-ClpP difference is the objective, not the setup.
 #
-# FAIRNESS: REINVENT optimizes the SAME frozen reward as every other entrant — the Bengio-2021 sEH
-# MPNN, reached through our GlueSurrogate plugin component. The pool is then RE-SCORED on the RAW
-# proxy value, which is the scale the benchmark's mode gate (sEH > 7.0) is defined on.
+# THE REWARD IS REACHED ACROSS AN ENV BOUNDARY. This entrant's conda env has no docking stack, so
+# `DockingBridgeReward` shells out to `scripts/score_batch.py --oracle docking_clpp` in the `rgfn`
+# env (or to the persistent docking server when RGFN_DOCK_SOCKET is set). `predict()` returns the
+# higher-is-better VALUE clip(-raw/norm, 0, inf); `raw_scores()` returns raw Vina kcal/mol.
 #
-# Run (repo root, reinvent4 env; candidate emission shells to the rgfn env):
-#   conda run -n reinvent4 python validation/generators/reinvent/run_reinvent_fixed.py \
-#       --cfg validation/configs/reinvent_seh_fixed.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+# ⚠ THE MODE GATE IS ON THE **RAW** VALUE, -8.0, LOWER-IS-BETTER (Logs/045: Youden-optimal over 183
+# ChEMBL ClpP binders vs property-matched decoys, AUROC 0.895). Gate on `raw_score`, never on the
+# `score` = ReLU(-raw) column. The old -2.0 bar was non-binding — every generator cleared ~100% of it.
+#
+# ⚠ ANY JOB THAT DOCKS MUST `source ~/bin/rgfn-smoke-env.sh` (CLAUDE.md): QuickVina2-GPU links against
+# boost libs that live outside the conda env, and omitting them looks exactly like a degraded GPU.
+#
+# COST: ~1.2 s/molecule of docking, so a 10,000-call budget is ~3.3 h of docking on top of training.
 
 run:
-  name: fixed_reward/reinvent_seh        # run dir: <root>/fixed_reward/reinvent_seh/<timestamp>
+  name: fixed_reward/reinvent_clpp        # run dir: <root>/fixed_reward/reinvent_clpp/<timestamp>
   root_dir: experiments                  # overridden by --root-dir on Balam ($SCRATCH)
   seed: 42
 
 fixed_reward:
-  system: seh
-  reward_name: seh_proxy
+  system: clpp
+  reward_name: clpp_docking
   n_samples: 2000                        # unique valid molecules to emit — matches S3-GFN's pool
   sample_oversample: 6.0                 # draws requested from the trained agent to reach n_samples
-  score_units: "seh_mpnn_reward (higher is better)"
+  score_units: "clip(-vina) value (higher is better; RAW Vina kcal/mol in raw_score)"
 
 reward:
-  type: seh_proxy
-  model_path: ""                         # unused for seh_proxy (weights ship with gflownet)
-  device: cpu                            # scoring component device — see comp_glue_surrogate.py
-  rescore_device: cpu                    # device for the final raw re-score of the pool
-  # RAW -> [0,1] for REINVENT's DAP objective. Deliberately NOT centred on the 7.0 mode gate:
-  # transforming at the gate would make REINVENT optimize the benchmark's own threshold, which is
-  # circular. This is a smooth ramp across the proxy's useful range (calibrated 5-6, Logs/034), so
-  # the gate at 7.0 sits high on the curve without being encoded in it.
-  transform:
-    type: sigmoid
-    low: 4.0
-    high: 9.0
-    k: 0.5
+  type: docking
+  oracle: docking_clpp                  # scripts/score_batch.py ORACLES key
+  norm: 1.0
+  clip: 10.0
+  failed_score: 0.0                     # an undockable molecule scores 0, not NaN
+  # NO reward_shaping/transform: DockingBridgeReward.predict already returns a
+  # bounded higher-is-better value, and stacking a sigmoid on top would double-shape it.
 
 reinvent:
   device: cuda:0

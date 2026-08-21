@@ -1,0 +1,109 @@
+# TANGO on ClpP — the STRUCTURE-BASED cell, docking against human ClpP 7UVU.
+#
+# Same entrant, same budget, same everything as `tango_seh_fixed.yaml`; only the reward differs. That
+# is the point: any sEH-vs-ClpP difference is the objective, not the setup.
+#
+# THE REWARD IS REACHED ACROSS AN ENV BOUNDARY. This entrant's conda env has no docking stack, so
+# `DockingBridgeReward` shells out to `scripts/score_batch.py --oracle docking_clpp` in the `rgfn`
+# env (or to the persistent docking server when RGFN_DOCK_SOCKET is set). `predict()` returns the
+# higher-is-better VALUE clip(-raw/norm, 0, inf); `raw_scores()` returns raw Vina kcal/mol.
+#
+# ⚠ THE MODE GATE IS ON THE **RAW** VALUE, -8.0, LOWER-IS-BETTER (Logs/045: Youden-optimal over 183
+# ChEMBL ClpP binders vs property-matched decoys, AUROC 0.895). Gate on `raw_score`, never on the
+# `score` = ReLU(-raw) column. The old -2.0 bar was non-binding — every generator cleared ~100% of it.
+#
+# ⚠ ANY JOB THAT DOCKS MUST `source ~/bin/rgfn-smoke-env.sh` (CLAUDE.md): QuickVina2-GPU links against
+# boost libs that live outside the conda env, and omitting them looks exactly like a degraded GPU.
+#
+# COST: ~1.2 s/molecule of docking, so a 10,000-call budget is ~3.3 h of docking on top of training.
+
+run:
+  name: fixed_reward/tango_clpp
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  system: clpp
+  reward_name: clpp_docking
+  # THE STOPPING CONDITION. Saturn runs `while not oracle.budget_exceeded()` — there is no step
+  # count. 10,000 is its published default, an order of magnitude below REINVENT's ~128,000 and
+  # S3-GFN's ~320,000. All three are their authors' defaults; the benchmark REPORTS that asymmetry
+  # rather than forcing a parity that would misrepresent a method whose entire claim is efficiency.
+  budget: 10000
+  allow_oracle_repeats: false
+  aggregator: product
+  n_samples: 2000                        # unique valid molecules to emit — matches S3-GFN/REINVENT
+  sample_batch_size: 256
+  max_sample_batches: 4000
+  score_units: "clip(-vina) value (higher is better; RAW Vina kcal/mol in raw_score)"
+
+reward:
+  type: docking
+  oracle: docking_clpp                  # scripts/score_batch.py ORACLES key
+  norm: 1.0
+  clip: 10.0
+  failed_score: 0.0                     # an undockable molecule scores 0, not NaN
+  # NO reward_shaping/transform: DockingBridgeReward.predict already returns a
+  # bounded higher-is-better value, and stacking a sigmoid on top would double-shape it.
+
+saturn:
+  device: cuda
+  logging_frequency: 1000               # checkpoint every 1,000 ORACLE CALLS (Saturn's own unit).
+                                        # Authors use 5000; this is logging cadence only -- the branch at
+                                        # reinforcement_learning.py:198 does write_out_results + agent.save and
+                                        # nothing else, so it cannot affect training.
+  model_architecture: mamba              # rnn | decoder | mamba — Mamba is the paper's contribution
+  prior: ""                              # default: external/saturn/.../chembl-33-mamba-epoch-18.prior
+                                         # ChEMBL-33 chosen over zinc-250k: it is the same training
+                                         # corpus family as REINVENT's prior, so the two route-less
+                                         # entrants start from comparable chemical space.
+  reinforcement_learning:
+    batch_size: 64
+    learning_rate: 0.0001
+    sigma: 128.0
+    augmented_memory: true
+    augmentation_rounds: 2
+    selective_memory_purge: true
+  experience_replay:
+    memory_size: 100
+    sample_size: 10
+  # ON by design and by the authors' default. Saturn's RL is reward-maximizing; a collapsed pool
+  # cannot reach the 100-mode deliverable, and we would only find out after ~2.25 h of route
+  # discovery. Also the charitable setting.
+  diversity_filter:
+    name: IdenticalMurckoScaffold
+    bucket_size: 10
+  # Both OFF, matching the authors' reference config. Beam enumeration additionally carries a
+  # `patience` early-stop that would end a run before the oracle budget was spent, which would make
+  # the training budget vary between seeds and targets.
+  hallucinated_memory:
+    execute_hallucinated_memory: false
+  beam_enumeration:
+    execute_beam_enumeration: false
+
+  # ---- TANGO ---------------------------------------------------------------------------------
+  tango:
+    enabled: true
+    env_name: syntheseus                  # `conda run -n syntheseus`; /scratch/markymoo/conda_envs
+                                          # is registered in envs_dirs so the NAME resolves.
+    reaction_model: megan                 # THE AUTHORS' choice in their reproduction config.
+    # The authors' own general stock, published with the paper (figshare 27225483): 17,721,980
+    # purchasable SMILES. NOT ZINCFrag — that is a combinatorial FRAGMENT set for assembling
+    # molecules, and holds only 4 of 11 probe commodity reagents (no bromobenzene, no acetyl
+    # chloride), which made every one of 50 test molecules unsolvable. This stock holds 11/11.
+    building_blocks_file: /scratch/markymoo/tango/authors_stock/frag-reac-zinc-stock.smi
+    # enforced_building_blocks_file: <set for the chemistry-homogenized arm; unset = general stock
+    #                                 only, which is the paper's unconstrained setting>
+    enforce_blocks: false                 # no enforced set in this arm, so nothing to enforce
+    enforce_start: false
+    use_dense_reward: true
+    reward_type: tango_fms
+    tango_weights:
+      tanimoto: 0.5
+      fg: 0.5
+      fms: 0.5
+    time_limit_s: 180                     # the authors' per-molecule search cap
+    parallelize: false                    # the authors' value
+    max_workers: 4
+    num_top_results: 5                    # OUR DEVIATION, measured: upstream hardcodes 1, which
+                                          # solved 10/50 molecules; 5 solves 47/50. Disclosed.

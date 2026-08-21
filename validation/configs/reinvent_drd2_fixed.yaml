@@ -34,8 +34,17 @@ reward:
 reinvent:
   device: cuda:0
   prior_file: ""
-  batch_size: 128
-  max_steps: 1000                        # ~128,000 reward calls; see reinvent_seh_fixed.yaml
+  batch_size: 64                         # AUTHORS' value (configs/toml/staged_learning.toml)
+  max_steps: 157                         # 157 x 64 = 10,048 scored -- the PMO budget.
+                                         # WAS 1000 x 128 = 128,000, a 12.4x advantage over
+                                         # Saturn's 10,020 (audit 2026-08-20). REINVENT has no
+                                         # budget field: steps x batch IS the budget.
+  checkpoint_every_steps: 16             # ~1,024 scored molecules per checkpoint (16 x 64).
+                                         # Implemented as REINVENT's OWN multi-stage mechanism
+                                         # (10 stages summing to 157), not an upstream patch: its
+                                         # RL loop has no save hook. purge_memories=false and a
+                                         # top-level diversity filter mean nothing resets between
+                                         # stages, so training is unchanged.
   sigma: 128
   learning_rate: 0.0001
   diversity_filter:

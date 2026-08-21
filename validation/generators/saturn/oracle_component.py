@@ -76,10 +76,17 @@ class GlueSurrogateOracle(OracleComponent):
         model_path = (sp.get("model_path") or "").strip()
         if model_path and not Path(model_path).is_absolute():
             model_path = str(_REPO_ROOT / model_path)
+        # Docking is reached across the env boundary (this env has no docking stack); for the
+        # surrogates these extra arguments are ignored by build_provider.
         self.provider = build_provider(
             reward_type=reward_type,
-            device=(sp.get("device") or "cpu").strip(),
-            model_path=model_path or None,
+            device=sp.get("device", "cpu"),
+            model_path=(sp.get("model_path") or "").strip() or None,
+            oracle=(sp.get("oracle") or "").strip() or None,
+            repo_root=str(_REPO_ROOT),
+            norm=float(sp.get("norm", 1.0)),
+            oracle_args=dict(sp.get("oracle_args") or {}),
+            workdir=(sp.get("workdir") or "").strip() or None,
         )
         self.reward_type = reward_type
 

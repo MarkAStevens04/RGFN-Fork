@@ -102,6 +102,20 @@ for CELL in $CELLS; do
     TARGET=${CELL%%:*}; SEED=${CELL##*:}
     CFG_C=${CFG:-validation/configs/synformer_${TARGET}_fixed.yaml}
     OUT_DIR="$OUT_ROOT/synformer_${TARGET}/seed${SEED}"
+    # REFUSE TO CLOBBER A COMPLETED RUN, and reject the RUN_DIR override this script does not honour.
+    # On 2026-08-21 a 6-step debug smoke passed RUN_DIR=..., which submit_reinvent.sh silently
+    # ignored, and the smoke overwrote a finished cell -- truncating its 127,997-row training history
+    # to 384 rows. Same shape of hazard here.
+    if [ -n "${RUN_DIR:-}" ]; then
+        echo "FATAL: RUN_DIR is ignored by this script; use OUT_ROOT=<dir> instead." >&2
+        exit 1
+    fi
+    if [ -s "$OUT_DIR/fixed_reward/candidates/candidates.csv" ] && [ "${FORCE_OVERWRITE:-0}" != "1" ]; then
+        echo "FATAL: $OUT_DIR already holds a completed run" >&2
+        echo "  ($(($(wc -l < "$OUT_DIR/fixed_reward/candidates/candidates.csv") - 1)) candidates)." >&2
+        echo "  Use OUT_ROOT=<somewhere-else>, or FORCE_OVERWRITE=1 to replace it deliberately." >&2
+        exit 1
+    fi
     echo ""
     echo "================ CELL $CELL ================"
     if [ ! -s "$CFG_C" ]; then

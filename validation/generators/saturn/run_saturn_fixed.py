@@ -53,6 +53,9 @@ for _p in (str(_REPO_ROOT), str(_CLONE)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
+# Imported AFTER the sys.path bootstrap above: these adapters run as scripts, so
+# `validation` is not importable until the repo root is on the path.
+from validation.generators._trace import trace_from_saturn, write_timing
 from validation.generators.saturn._stubs import stub_unused_oracle_deps  # noqa: E402
 
 
@@ -206,14 +209,78 @@ def main() -> None:
             "reward_type": reward_c.get("type", "seh_proxy"),
             "model_path": reward_c.get("model_path", ""),
             "device": reward_c.get("device", "cpu"),
+            # Docking-only; ignored by build_provider for the surrogate targets.
+            "oracle": reward_c.get("oracle", ""),
+            "norm": float(reward_c.get("norm", 1.0)),
+            "oracle_args": dict(reward_c.get("oracle_args") or {}),
+            "workdir": str(run_dir / "reward_bridge"),
         },
         "reward_shaping_function_parameters": dict(
             reward_c.get("reward_shaping") or {"transformation_function": "no_transformation"}
         ),
     }
+    # ---- TANGO: a SECOND oracle component, not a second generator --------------------------------
+    # TANGO is a reward function layered on this same Saturn agent (Guo & Schwaller 2026), so the
+    # entrant differs from plain Saturn only by adding syntheseus-backed constrained
+    # synthesizability to the objective. Mirrors the authors' own
+    # experimental_reproduction/constrained_synthesizability/experiment.json, whose aggregator is
+    # "product" -- exactly what `fixed_reward.aggregator` already defaults to.
+    components = [component]
+    tango_c = sat_c.get("tango") or {}
+    if tango_c.get("enabled"):
+        sp = {
+            "env_name": tango_c.get("env_name", "syntheseus"),
+            "reaction_model": tango_c.get("reaction_model", "megan"),
+            "building_blocks_file": tango_c["building_blocks_file"],
+            "enforce_blocks": bool(tango_c.get("enforce_blocks", True)),
+            "enforce_start": bool(tango_c.get("enforce_start", False)),
+            "use_dense_reward": bool(tango_c.get("use_dense_reward", True)),
+            "reward_type": tango_c.get("reward_type", "tango_fms"),
+            "tango_weights": dict(
+                tango_c.get("tango_weights") or {"tanimoto": 0.5, "fg": 0.5, "fms": 0.5}
+            ),
+            "route_extraction_script_path": str(
+                _CLONE
+                / "oracles"
+                / "synthesizability"
+                / "utils"
+                / "extract_syntheseus_route_data.py"
+            ),
+            "time_limit_s": int(tango_c.get("time_limit_s", 180)),
+            "optimize_path_length": bool(tango_c.get("optimize_path_length", False)),
+            "parallelize": bool(tango_c.get("parallelize", False)),
+            "max_workers": int(tango_c.get("max_workers", 4)),
+            # Routes land here and are what makes TANGO priceable WITHOUT MultiAiZ: syntheseus
+            # writes route_0.pkl per solved molecule and the oracle copies it into this directory.
+            "results_dir": str(run_dir / "syntheseus_results"),
+            # OUR DEVIATION, measured: upstream hardcodes 1, which halves-and-then-some the solve
+            # rate (20% -> 94% on a 50-molecule probe). See the patch note in the clone's
+            # syntheseus.py and docs/RESEARCH_CONTEXT.md.
+            "num_top_results": int(tango_c.get("num_top_results", 5)),
+        }
+        if tango_c.get("enforced_building_blocks_file"):
+            sp["enforced_building_blocks_file"] = tango_c["enforced_building_blocks_file"]
+        components.append(
+            {
+                "name": "syntheseus",
+                "weight": float(tango_c.get("weight", 1.0)),
+                "preliminary_check": False,
+                "specific_parameters": sp,
+                "reward_shaping_function_parameters": dict(
+                    tango_c.get("reward_shaping")
+                    or {"transformation_function": "no_transformation"}
+                ),
+            }
+        )
+        print(
+            f"[SAT-FR] TANGO ON: model={sp['reaction_model']} stock={sp['building_blocks_file']} "
+            f"num_top_results={sp['num_top_results']} time_limit_s={sp['time_limit_s']}",
+            flush=True,
+        )
+
     oracle = Oracle(
         OracleConfiguration(
-            components=[component],
+            components=components,
             budget=budget,
             allow_oracle_repeats=bool(fr_c.get("allow_oracle_repeats", False)),
             aggregator=fr_c.get("aggregator", "product"),
@@ -254,13 +321,15 @@ def main() -> None:
     # substructure-pool artifacts as run provenance instead of scattering them.
     _cwd = os.getcwd()
     os.chdir(run_dir)
+    run_t0 = time.time()
     t0 = time.time()
     try:
         agent_runner.run()
     finally:
         os.chdir(_cwd)
+    train_s = time.time() - t0
     print(
-        f"[SAT-FR] training done in {time.time() - t0:.1f}s "
+        f"[SAT-FR] training done in {train_s:.1f}s "
         f"({oracle.calls} oracle calls of a {budget} budget)",
         flush=True,
     )
@@ -286,8 +355,9 @@ def main() -> None:
         batch_size=int(fr_c.get("sample_batch_size", 256)),
         max_batches=int(fr_c.get("max_sample_batches", 4000)),
     )
+    sample_s = time.time() - t0
     print(
-        f"[SAT-FR] sampled {len(pool)} unique valid candidates in {time.time() - t0:.1f}s",
+        f"[SAT-FR] sampled {len(pool)} unique valid candidates in {sample_s:.1f}s",
         flush=True,
     )
 
@@ -308,16 +378,30 @@ def main() -> None:
         reward_type=reward_c.get("type", "seh_proxy"),
         device=reward_c.get("rescore_device", "cpu"),
         model_path=reward_c.get("model_path") or None,
+        # Docking passthrough. Inert for the surrogate rewards (build_provider ignores them
+        # unless reward_type == "docking"), so one call site serves all three targets.
+        oracle=reward_c.get("oracle") or None,
+        repo_root=str(_REPO_ROOT),
+        norm=float(reward_c.get("norm", 1.0)),
+        failed_score=float(reward_c.get("failed_score", 0.0)),
+        oracle_args=dict(reward_c.get("oracle_args") or {}),
+        workdir=str(run_dir / "reward_bridge"),
     )
     scores = provider.predict(pool)
 
     out_dir = run_dir / "fixed_reward"
     out_dir.mkdir(parents=True, exist_ok=True)
     pairs_path = out_dir / "pairs.csv"
+    # RAW SCORE IS LOAD-BEARING FOR THE DOCKING CELLS. `scores` is the provider's higher-is-better
+    # VALUE -- for docking that is clip(-vina), a positive number. The ClpP mode gate is -8.0 on the
+    # RAW Vina energy (Logs/045), so without this column a docking pool cannot be gated at all.
+    # None for the surrogates, where predict() already returns the raw oracle value.
+    raws = provider.raw_scores(pool) if hasattr(provider, "raw_scores") else None
     with open(pairs_path, "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["smiles", "score"])
-        w.writerows(zip(pool, scores))
+        w.writerow(["smiles", "score"] + (["raw_score"] if raws is not None else []))
+        for i, (smi, sc) in enumerate(zip(pool, scores)):
+            w.writerow([smi, sc] + ([raws[i]] if raws is not None else []))
 
     ingest_cmd = [
         "conda",
@@ -351,6 +435,26 @@ def main() -> None:
         ingest_env["LD_LIBRARY_PATH"] = _ingest_ld
     print(f"[SAT-FR] ingest -> {' '.join(ingest_cmd)}", flush=True)
     subprocess.run(ingest_cmd, check=True, cwd=str(_REPO_ROOT), env=ingest_env)
+
+    # Trace + timing, derived POST-HOC from Saturn's own oracle_history.csv and saturn.log rather
+    # than by hooking its training loop: the content is already there, and converting after the fact
+    # cannot perturb the run being measured. Non-fatal by design -- a bookkeeping artifact must never
+    # sink a finished 10,000-call run.
+    try:
+        n = trace_from_saturn(run_dir)
+        write_timing(
+            run_dir / "timing.json",
+            {"train_s": train_s, "sample_s": sample_s},
+            total_s=time.time() - run_t0,
+        )
+        print(
+            f"[SAT-FR] trace -> {run_dir / 'trace.csv'} ({n} rows); timing -> timing.json",
+            flush=True,
+        )
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"[SAT-FR] WARNING: trace/timing not written ({type(exc).__name__}: {exc})", flush=True
+        )
 
     print(f"[SAT-FR] done. candidates at {out_dir / 'candidates'}", flush=True)
 
