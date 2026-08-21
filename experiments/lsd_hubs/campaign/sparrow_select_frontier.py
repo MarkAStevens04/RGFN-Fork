@@ -64,7 +64,34 @@ from validation.lsdflow.metrics.diversity import (  # noqa: E402
 SPARROW_WORKER = "validation/lsdflow/adapters/workers/sparrow_worker.py"
 
 
-def load_pool(path: Path, gate: float, top_n: int = 0):
+def passes_gate(val: float, gate: float, higher_is_better: bool) -> bool:
+    """Is this molecule a hit? The ONE place the gate's direction is decided.
+
+    Docking targets are lower-is-better (raw Vina; ClpP's bar is -8.0), surrogate targets are
+    higher-is-better (sEH 5.0, DRD2 0.5). Getting this backwards does not error -- it silently
+    selects the WORST molecules and reports them as a library, so the rule lives in one function
+    that every pool loader calls rather than being re-expressed per call site.
+    """
+    return val > gate if higher_is_better else val < gate
+
+
+def sparrow_reward(val: float, higher_is_better: bool) -> float:
+    """The value handed to SPARROW, which MAXIMIZES total reward.
+
+    A lower-is-better raw score has to be flipped or the MILP would prefer the worst binders. We use
+    the project's existing convention, ``ReLU(-raw)`` -- the same transform the 16-cell matrix scores
+    docking cells with (gate on ``raw_score``, optimise ``score``). On a gated pool this is identical
+    to plain ``-raw`` (every survivor has raw < gate < 0); the clip only matters for a failed pose
+    with a positive raw (we observe up to +42.4), which would otherwise become a large NEGATIVE
+    reward instead of a harmless zero.
+
+    It also keeps the scale comparable across targets -- ClpP lands ~8-15 against sEH's ~7-8 -- so
+    the lambda_div ladder swept on sEH transfers to docking rather than needing a re-sweep.
+    """
+    return val if higher_is_better else max(0.0, -val)
+
+
+def load_pool(path: Path, gate: float, top_n: int = 0, higher_is_better: bool = True):
     """[(smiles, reward)] above the gate, DEDUPLICATED by SMILES, best-reward-first.
 
     Dedup is load-bearing, not hygiene. A GFlowNet samples the same molecule many times, so a
@@ -84,13 +111,19 @@ def load_pool(path: Path, gate: float, top_n: int = 0):
                 val = float(raw)
             except (TypeError, ValueError):
                 continue
-            if smi and val > gate and (smi not in best or val > best[smi]):
+            if not smi or not passes_gate(val, gate, higher_is_better):
+                continue
+            # "best observed" is direction-aware too: for docking the best repeat is the LOWEST.
+            if smi not in best or (val > best[smi] if higher_is_better else val < best[smi]):
                 best[smi] = val
-    rows = sorted(best.items(), key=lambda t: -t[1])
+    # Sorted best-first in the TARGET's own direction, because `top_n` means "the N best candidates"
+    # and every downstream consumer relies on that ordering.
+    rows = sorted(best.items(), key=lambda t: (-t[1] if higher_is_better else t[1]))
     return rows[:top_n] if top_n else rows
 
 
-def load_enum_pool(enum_path: Path, hub_routes_path: Path, gate: float, top_n: int = 0):
+def load_enum_pool(enum_path: Path, hub_routes_path: Path, gate: float, top_n: int = 0,
+                   higher_is_better: bool = True):
     """BC-Enum-SB's pool: the ENUMERATED CHILDREN of a hub set, with their routes ASSEMBLED.
 
     Why this cannot reuse the `native` path. An enumerated child is a molecule the generator never
@@ -108,6 +141,21 @@ def load_enum_pool(enum_path: Path, hub_routes_path: Path, gate: float, top_n: i
     """
     data = json.loads(Path(enum_path).read_text())
     hub_routes = json.loads(Path(hub_routes_path).read_text())
+    # THE OTHER HALF of the guard below. The n_no_rxn checks catch "children carry no reaction", but
+    # they are gated on `if routes`, so they cannot fire when the HUB side is what is missing: an empty
+    # routes.json skips every hub, leaves `routes` empty, and returns an empty pool that SPARROW
+    # reports as Optimal at zero cost -- the same wrong-and-flattering answer, reached from the other
+    # direction. 36 of 40 sampled cell-seeds have an empty routes.json (only SCENT emitted them before
+    # 2026-08-21), so this is the common case, not a hypothetical.
+    if not hub_routes:
+        raise SystemExit(
+            f"[enum] ABORT: hub-routes file is EMPTY ({hub_routes_path}).\n"
+            f"Every hub would be skipped and SPARROW would price an empty library as trivially "
+            f"optimal -- a wrong answer that looks like a crushing win for us and never raises.\n"
+            f"routes.json is written by the SAMPLE stage, so re-running the enumeration does NOT fix "
+            f"this; the cell needs a re-sample with a route-emitting worker. Check which cells are "
+            f"usable with:  python experiments/lsd_hubs/matrix16/check_route_readiness.py"
+        )
     best, routes, n_missing_hub = {}, {}, 0
     child_rxn = {}  # smiles -> did THIS child carry its own reaction? (guard below)
     for hub in data.get("hubs", []):
@@ -119,10 +167,12 @@ def load_enum_pool(enum_path: Path, hub_routes_path: Path, gate: float, top_n: i
         prefix = list(hr.get("steps") or [])
         for c in hub.get("children", []):
             smi, rew = c.get("smiles"), c.get("reward")
-            if not smi or rew is None or float(rew) <= gate:
+            if not smi or rew is None:
                 continue
             rew = float(rew)
-            if smi in best and rew <= best[smi]:
+            if not passes_gate(rew, gate, higher_is_better):
+                continue
+            if smi in best and not (rew > best[smi] if higher_is_better else rew < best[smi]):
                 continue
             own = list(c.get("reaction") or [])
             steps = prefix + own
@@ -177,7 +227,7 @@ def load_enum_pool(enum_path: Path, hub_routes_path: Path, gate: float, top_n: i
                 f"[enum] ABORT: {msg} Re-enumerate with a worker that records reactions, or set "
                 f"ALLOW_PARTIAL_ROUTES=1 if you are deliberately quantifying the gap."
             )
-    rows = sorted(best.items(), key=lambda t: -t[1])
+    rows = sorted(best.items(), key=lambda t: (-t[1] if higher_is_better else t[1]))
     if top_n:
         rows = rows[:top_n]
     keep = {s for s, _ in rows}
@@ -237,7 +287,7 @@ def _greedy_frontier(a, out_dir, pool, routed, entries):
     reps = mode_representatives(
         routed_list,
         [rewards[s] for s in routed_list],
-        higher_is_better=True,
+        higher_is_better=a.higher_is_better,
         reward_threshold=a.gate,
         similarity_threshold=a.cutoff,
     )
@@ -356,6 +406,14 @@ def main() -> None:
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--tag", default="sparrow_select")
     ap.add_argument("--gate", type=float, default=7.0)
+    ap.add_argument(
+        "--higher-is-better",
+        type=lambda v: v.lower() != "false",
+        default=True,
+        help="direction of the reward. TRUE for surrogate targets (sEH 5.0, DRD2 0.5); FALSE for "
+        "docking (raw Vina, ClpP -8.0). Setting this wrongly does NOT error -- it selects the worst "
+        "molecules and reports them as a library -- so it is explicit rather than inferred.",
+    )
     ap.add_argument("--cutoff", type=float, default=0.5, help="tau for mode counting")
     ap.add_argument(
         "--budgets", default="", help="comma-separated reaction budgets (default: auto)"
@@ -415,7 +473,10 @@ def main() -> None:
             "[select] --pool is required unless --route-source enum (which derives it)"
         )
     if a.route_source == "enum":
-        pool, raw = load_enum_pool(Path(a.routes), Path(a.hub_routes), a.gate, a.top_n)
+        pool, raw = load_enum_pool(
+            Path(a.routes), Path(a.hub_routes), a.gate, a.top_n,
+            higher_is_better=a.higher_is_better,
+        )
         print(
             f"[enum] {len(pool)} distinct children above gate>{a.gate}, routes assembled "
             "(hub prefix + the child's own reaction)"
@@ -438,10 +499,10 @@ def main() -> None:
                 if c:
                     raw.setdefault(c, []).append(rec)
         print(f"[external] {len(raw)} molecules carry a by-construction route")
-        pool = load_pool(Path(a.pool), a.gate, a.top_n)
+        pool = load_pool(Path(a.pool), a.gate, a.top_n, higher_is_better=a.higher_is_better)
     else:
         raw = json.loads(Path(a.routes).read_text())
-        pool = load_pool(Path(a.pool), a.gate, a.top_n)
+        pool = load_pool(Path(a.pool), a.gate, a.top_n, higher_is_better=a.higher_is_better)
     if not pool:
         raise SystemExit(f"[select] no pool molecules above gate {a.gate} in {a.pool}")
 
@@ -467,8 +528,88 @@ def main() -> None:
         snap = json.loads(Path(a.snapshot).read_text())
         recipes = snap.get("smiles_to_route") or {}
         promoted = set(snap.get("chosen_smiles", []))
+
+        # ---- CHECK 1: does this snapshot even belong to this run? --------------------------------
+        # The original version of this guard asked only "does the snapshot have recipes for its OWN
+        # chosen_smiles". A snapshot from a DIFFERENT model is internally complete, so it scored
+        # 100% and sailed through while half the run's fragments went unexpanded. Measured on
+        # matrix16/scent_seh (trained from scent_seh_5k/seed42) paired with the dated
+        # scent_seh/2026-07-10 snapshot: guard said 100%, reality was 53% -- 549 of 1,169 promoted
+        # fragments silently BOUGHT rather than BUILT. That is the Logs/049 62.7% failure with a
+        # green light on top.
+        #
+        # The run records its checkpoint in meta.json, and a snapshot lives under its own training
+        # directory, so a provenance mismatch is detectable without reading either payload.
+        run_ckpt = ""
+        for _m in (Path(a.pool).parent / "meta.json" if a.pool else None,
+                   Path(a.routes).parent / "meta.json" if a.routes else None,
+                   Path(a.hub_routes).parent / "meta.json" if a.hub_routes else None):
+            if _m and _m.exists():
+                try:
+                    run_ckpt = json.loads(_m.read_text()).get("checkpoint", "") or run_ckpt
+                except Exception:  # noqa: BLE001 - a meta we cannot parse simply fails the check open
+                    pass
+                if run_ckpt:
+                    break
+        if run_ckpt:
+            # both paths pass through .../fixed_reward/<run-id>/..., so compare that segment
+            def _run_id(path: str) -> str:
+                parts = Path(path).parts
+                if "fixed_reward" in parts:
+                    i = parts.index("fixed_reward")
+                    return "/".join(parts[i + 1 : i + 3])
+                return ""
+
+            ck_id, sn_id = _run_id(run_ckpt), _run_id(a.snapshot)
+            if ck_id and sn_id and ck_id != sn_id:
+                msg = (
+                    f"snapshot/run PROVENANCE MISMATCH — the run was sampled from {ck_id} "
+                    f"but the snapshot belongs to {sn_id}. A snapshot from another model is "
+                    "internally consistent, so a coverage check on its own fragments passes while "
+                    "the RUN's fragments go unexpanded and SPARROW buys what count-once builds."
+                )
+                if os.environ.get("ALLOW_SNAPSHOT_MISMATCH"):
+                    print(f"[select] WARNING {msg} (ALLOW_SNAPSHOT_MISMATCH set — results are "
+                          f"NOT a like-for-like price)")
+                else:
+                    raise SystemExit(
+                        f"[select] ABORT: {msg} Pass the snapshot from the run's own training "
+                        "directory, or set ALLOW_SNAPSHOT_MISMATCH=1 if you are deliberately "
+                        "quantifying that gap."
+                    )
+            else:
+                print(f"[select] provenance OK — run and snapshot both from {ck_id or sn_id}")
+
+        # ---- CHECK 2: coverage of the RUN's OWN promoted fragments ------------------------------
+        # compositions.json lists, per sampled molecule, the promoted fragments it is built from --
+        # an account of what the run ACTUALLY used, independent of whatever snapshot we were handed.
+        # This is the substantive check; CHECK 1 only catches the common cause.
+        run_promoted = set()
+        for _c in (Path(a.pool).parent / "compositions.json" if a.pool else None,
+                   Path(a.hub_routes).parent / "compositions.json" if a.hub_routes else None):
+            if _c and _c.exists():
+                try:
+                    for _v in json.loads(_c.read_text()).values():
+                        run_promoted.update(_v.get("promoted") or [])
+                except Exception:  # noqa: BLE001
+                    pass
+                if run_promoted:
+                    break
+        if run_promoted:
+            rcov = sum(1 for s in run_promoted if s in recipes) / len(run_promoted)
+            if rcov < 0.95 and not os.environ.get("ALLOW_SNAPSHOT_MISMATCH"):
+                raise SystemExit(
+                    f"[select] ABORT: the snapshot can route only {rcov:.1%} of the "
+                    f"{len(run_promoted)} promoted fragments THIS RUN actually uses "
+                    f"({len(run_promoted) - sum(1 for s in run_promoted if s in recipes)} would be "
+                    "bought rather than built). Coverage of the snapshot's own chosen_smiles is NOT "
+                    "the same question and can read 100% while this reads 53%."
+                )
+            print(f"[select] run-fragment recipe coverage {rcov:.1%} of {len(run_promoted)} "
+                  f"fragments the run actually uses")
+
         cov = (sum(1 for s in promoted if s in recipes) / len(promoted)) if promoted else 1.0
-        if promoted and cov < 0.95:
+        if promoted and cov < 0.95 and not os.environ.get("ALLOW_SNAPSHOT_MISMATCH"):
             raise SystemExit(
                 f"[select] ABORT: snapshot has recipes for only {cov:.1%} of its {len(promoted)} "
                 "promoted fragments. Native routes cannot be expanded, so SPARROW would treat them "
@@ -492,7 +633,17 @@ def main() -> None:
             continue
         routed.add(smi)
         for r_ in rts:
-            entries.append({"smiles": smi, "reward": rew, "route": r_})
+            # SPARROW MAXIMIZES this. `rew` is the target's own raw score, which for docking is
+            # lower-is-better -- handing it over unflipped would have the MILP buy the WORST
+            # binders. sparrow_reward() applies the project's ReLU(-raw) convention; it is the
+            # identity for higher-is-better targets, so sEH/DRD2 numbers are bit-for-bit unchanged.
+            entries.append(
+                {
+                    "smiles": smi,
+                    "reward": sparrow_reward(rew, a.higher_is_better),
+                    "route": r_,
+                }
+            )
     if not entries:
         raise SystemExit("[select] no pool molecule has a route in the artifact — wrong pairing?")
 
@@ -526,7 +677,7 @@ def main() -> None:
         groups = mode_assignments(
             pool_smis,
             [rewards_all[s_] for s_ in pool_smis],
-            higher_is_better=True,
+            higher_is_better=a.higher_is_better,
             reward_threshold=a.gate,
             similarity_threshold=a.cutoff,
         )
@@ -607,7 +758,8 @@ def main() -> None:
             #     because its picks are distinct by construction -- so this is symmetric, not a handout.
             keep_idx = mode_representatives(
             sel, [rewards.get(x, 0.0) for x in sel],
-            higher_is_better=True, reward_threshold=a.gate, similarity_threshold=a.cutoff,
+            higher_is_better=a.higher_is_better, reward_threshold=a.gate,
+            similarity_threshold=a.cutoff,
         )  # fmt: skip
             kept = [sel[i] for i in keep_idx]
             cost_kept = (

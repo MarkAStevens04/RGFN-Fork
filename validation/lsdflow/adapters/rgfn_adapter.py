@@ -27,10 +27,12 @@ import gin
 import torch
 
 import glue  # noqa: F401  (registers our gin-configurable components)
-from glue.samplers.lsdflow.rgfn_extract import extract_flow_records
+from glue.samplers.lsdflow.rgfn_extract import _stripped_key, extract_flow_records
+from glue.samplers.lsdflow.route_steps import reaction_step
 from rgfn.trainer.trainer import (  # noqa: F401  (registers @Trainer, as scripts/*.py do)
     Trainer,
 )
+from rgfn.gfns.reaction_gfn.api.reaction_api import ReactionAction0, ReactionActionC
 from validation.lsdflow.adapters.base import FlowSample, GFNAdapter
 
 
@@ -98,11 +100,84 @@ class RGFNAdapter(GFNAdapter):
         )
 
     # ---------------------------------------------------------------- phase 1 sampling
+    @staticmethod
+    def _collect_routes(traj, routes: dict, strip_stereo: bool = True) -> None:
+        """Record a canonical synthesis route for EVERY molecule on every trajectory in ``traj``.
+
+        WHY EVERY MOLECULE, NOT JUST THE TERMINALS. A hub is an INTERIOR node -- the useful ones sit at
+        depth 1-2 of a max-depth-4 tree -- and which molecules become hubs is decided later, by
+        ``pick_hubs``, from the sampled pool. Emitting only terminal routes would therefore leave every
+        actual hub without one, and the hub prefix is exactly the half that ``enum_children.json``
+        cannot supply. SCENT already does it this way (its routes.json spans depths 1-4: 11,780 /
+        21,928 / 15,600 / 8,412 on scent_seh), so matching it also keeps the two generators' artifacts
+        interchangeable for the competitor arm.
+
+        Keyed by ``_stripped_key`` -- the SAME function ``rgfn_extract`` uses for record and hub keys.
+        Reusing it rather than re-canonicalising here is deliberate: a route keyed even slightly
+        differently from its hub is worse than no route, because the lookup returns nothing and the
+        caller prices the hub instead of the child WITHOUT any error (the failure that cost the six
+        rgfn re-enumerations).
+
+        Schema is ``glue.samplers.lsdflow.route_steps`` -- the one shared definition -- not
+        ``extract_route``'s AL-flavoured dict. Two schemas for "the step from X to Y" is the exact
+        hazard route_steps.py was written to prevent.
+        """
+        states_list = getattr(traj, "_states_list", None)
+        actions_list = getattr(traj, "_actions_list", None)
+        if not states_list or not actions_list:
+            return
+        for i, states in enumerate(states_list):
+            if i >= len(actions_list) or not states:
+                continue
+            seed = None
+            steps: list = []
+            # A DEPTH-0 hub is a bare purchasable building block, so its route is legitimately EMPTY --
+            # but "no entry in routes.json" and "zero-step route" are not the same thing downstream:
+            # sparrow_select_frontier does `hub_routes.get(hk)` and on None skips the hub AND every
+            # child hanging off it. Measured on the first smoke: 2 of 193 hub_keys were depth-0 and
+            # would have silently dropped their whole subtree. Emit the zero-step route explicitly; a
+            # purchasable starting material is something SPARROW models natively.
+            for act in actions_list[i] or ():
+                # ReactionAction0 picks the initial building block; ReactionActionC commits a
+                # reaction. Anything else (stop, backward bookkeeping) carries no synthesis step.
+                if isinstance(act, ReactionAction0):
+                    frag = getattr(act, "fragment", None)
+                    seed = getattr(frag, "smiles", None) or seed
+                    if seed:
+                        key0 = _stripped_key(frag)[0] if strip_stereo else seed
+                        if key0 and key0 not in routes:
+                            routes[key0] = {"seed": seed, "num_reactions": 0, "steps": []}
+                    continue
+                if not isinstance(act, ReactionActionC):
+                    continue
+                step = reaction_step(act)
+                if not step.get("product"):
+                    continue
+                steps.append(step)
+                if seed is None:
+                    seed = step.get("input")
+                mol = getattr(act, "output_molecule", None)
+                if mol is None:
+                    continue
+                key = _stripped_key(mol)[0] if strip_stereo else getattr(mol, "smiles", None)
+                # First route wins: identical molecules reached by different paths are the same
+                # library item, and re-keying it on every rediscovery would make routes.json depend on
+                # sampling order. Cheapest-route selection is the count-once cost model's job, not
+                # this writer's.
+                if key and key not in routes:
+                    routes[key] = {
+                        "seed": seed,
+                        "num_reactions": len(steps),
+                        "steps": list(steps),
+                    }
+
     def sample_flow_records(self, n_trajectories: int) -> FlowSample:
         records = []
         visit_counts: dict = {}
+        routes: dict = {}
         total_traj = 0
         for traj in self.sampler.get_trajectories_iterator(n_trajectories, self.batch_size):
+            self._collect_routes(traj, routes, strip_stereo=self.strip_stereo)
             recs, visits, n = extract_flow_records(
                 self.objective,
                 traj,
@@ -128,6 +203,7 @@ class RGFNAdapter(GFNAdapter):
             higher_is_better=self.higher_is_better,
             model=self.model_name,
             reward_name=self.reward_name,
+            routes=routes,
         )
 
     # ---------------------------------------------------------------- phase 2 enumeration

@@ -32,6 +32,7 @@ from pathlib import Path
 # the cross-env workers' import style even though it runs in the rgfn env.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _artifacts as A  # noqa: E402
+import _routes  # noqa: E402
 
 from validation.lsdflow.adapters.rgfn_adapter import RGFNAdapter  # noqa: E402
 
@@ -73,6 +74,22 @@ def main() -> None:
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # SEED THE SAMPLER. This worker declared --seed and never applied it, alone among the four: scent,
+    # rxnflow and fraggfn all call manual_seed/np.random.seed at setup. So every RGFN sample was
+    # irreproducible while REPORTING a seed, which is the worst of both -- a lost or route-less sample
+    # could not be regenerated even in principle, and a "seed 43" cell was not reproducibly seed 43.
+    # Matching the siblings makes a re-sample recoverable, which is the whole point of the route work:
+    # the cheapest insurance against losing an artifact is being able to reproduce it exactly.
+    # Enumeration is exhaustive and unaffected, so this changes only what sampling draws.
+    import random as _random
+
+    import numpy as _np
+    import torch as _torch
+
+    _torch.manual_seed(args.seed)
+    _np.random.seed(args.seed)
+    _random.seed(args.seed)
+
     adapter = RGFNAdapter(
         config_path=args.config,
         checkpoint_path=args.checkpoint,
@@ -104,7 +121,17 @@ def main() -> None:
         comps = A.compositions_from_records(rows)
         json.dump(sample.visit_counts, open(out_dir / "visit_counts.json", "w"))
         json.dump(comps, open(out_dir / "compositions.json", "w"))
-        json.dump(sample.routes or {}, open(out_dir / "routes.json", "w"))
+        routes = sample.routes or {}
+        json.dump(routes, open(out_dir / "routes.json", "w"))
+        # Contract check: RGFN is route-bearing, so an empty routes.json here is an unrecoverable
+        # defect (the trajectory is gone once sampling ends) and must stop the run rather than be
+        # discovered by the competitor arm months later. See _routes.py.
+        # Denominator is distinct molecule NODES, not compositions: routes cover every molecule on
+        # every trajectory (interior included), which is the visit_counts population. Using
+        # compositions gave a nonsensical 178.7% on the first smoke.
+        _routes.validate_sample_routes(
+            "rgfn", out_dir, routes=routes, n_terminals=len(sample.visit_counts) or None
+        )
         meta.update(
             {
                 "n_trajectories": sample.n_trajectories,
@@ -194,6 +221,11 @@ def main() -> None:
                 )
         records = all_records
         A.write_enum_children(out_dir / "enum_children.json", enum_hubs)
+        # Contract check on the FINAL write only (the 10-hub partial flushes above are legitimately
+        # incomplete). A child with no reaction cannot be priced: its route stops at the hub, so
+        # SPARROW prices the hub and returns an empty library as trivially optimal, silently. That is
+        # the defect that cost six 24-hour re-enumerations.
+        _routes.validate_enum_reactions("rgfn", out_dir)
         A.write_records(out_dir / "enumerated_records.csv", all_records)
         A.write_json(out_dir / "enum_per_hub.json", {"per_hub": per_hub})
         tmeta = A.write_enum_timings(

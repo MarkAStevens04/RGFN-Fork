@@ -56,6 +56,7 @@ torch.set_num_threads(1)
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _artifacts as A  # noqa: E402
+import _routes  # noqa: E402
 import _docking  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -311,7 +312,13 @@ def _run_sample(args, trainer, reward, beta, clip, out_dir, device):
     # FragGFN "reactions" = fragment attachments, an approximation; the meaningful library cost
     # comes from post-hoc retrosynthesis (the researcher's downstream step), not this number.
     json.dump(A.compositions_from_records(all_records), open(out_dir / "compositions.json", "w"))
+    # FragGFN emits NO routes on purpose: its move is a fragment ATTACHMENT, not a reaction
+    # (docs/LSD_FLOW_PROPOSAL.md L274), so a "route" here would not be a synthesis plan and SPARROW
+    # would price a library nobody can make. The validator records that as a DECLARED not-applicable
+    # with its reason, so this empty file can never again be mistaken for an unimplemented emitter --
+    # which is precisely how the rgfn/rxnflow gaps hid for months.
     json.dump({}, open(out_dir / "routes.json", "w"))
+    _routes.validate_sample_routes("fraggfn", out_dir, routes={})
     pickle.dump(hub_graphs, open(out_dir / "hub_graphs.pkl", "wb"))  # for enumerate (§ hub-state)
     A.write_json(
         out_dir / "meta.json",
@@ -605,6 +612,7 @@ def _run_enumerate(args, trainer, reward, beta, clip, out_dir):
     )
     A.write_records(out_dir / "enumerated_records.csv", all_records)
     A.write_enum_children(out_dir / "enum_children.json", enum_hubs)
+    _routes.validate_enum_reactions("fraggfn", out_dir)
     A.write_json(out_dir / "enum_per_hub.json", {"per_hub": per_hub})
     A.write_json(
         out_dir / "meta.json",

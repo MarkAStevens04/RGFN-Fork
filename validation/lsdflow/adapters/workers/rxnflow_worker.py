@@ -35,6 +35,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _artifacts as A  # noqa: E402
+import _routes  # noqa: E402
 import _docking  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -171,6 +172,69 @@ def _build_trainer(config_path, reward_name, device, seed, out_dir):
 
 
 # ============================================================ sample mode
+def _collect_routes(data, routes: dict) -> None:
+    """Record a canonical synthesis route for every molecule on every sampled RxnFlow trajectory.
+
+    WHY THIS IS POSSIBLE AND WAS NOT BEING DONE. ``routes.json`` here used to be a hardcoded ``{}``
+    with the note "routes extractable later (ctx.read_traj)". That was never implemented, and "later"
+    turned out to be impossible: the trajectory is discarded when sampling ends and
+    ``compositions.json`` keeps only ``num_reactions``, so 36 of 40 sampled cell-seeds have no route
+    and cannot get one without a full re-sample. Meanwhile everything needed was already in hand --
+    ``d["traj"]`` is the ``(state, action)`` sequence and every state carries ``.smi`` (the same access
+    ``_extract_batch`` already makes at line ~213). So this writes the route at the one moment the run
+    actually knows it.
+
+    Every molecule, not just terminals: hubs are INTERIOR nodes chosen later by ``pick_hubs``, and the
+    hub prefix is exactly the half ``enum_children.json`` cannot supply.
+
+    Canonical ``route_steps`` shape -- ``{reaction, reactants, input, product}`` -- to match SCENT, so
+    the competitor arm reads one schema across generators. RxnFlow's protocol IS the reaction identity
+    and its block IS the added reactant, so this is a faithful rendering rather than a re-labelling.
+    NOTE: this worker's ENUMERATE path emits the older ``{op, protocol, block, input, product}`` shape
+    for children[].reaction; that is left alone here because committed artifacts already use it, but a
+    route assembler must accept both. Flagged rather than silently changed.
+    """
+    for d in data:
+        tr = d.get("traj") or []
+        if not tr:
+            continue
+        steps: list = []
+        seed = tr[0][0].smi if getattr(tr[0][0], "smi", None) else None
+        for i, (g, act) in enumerate(tr):
+            if getattr(act, "action", None) not in _RXN:
+                continue  # Stop and any non-reaction action carry no synthesis step
+            # The product of this reaction is the NEXT state, or the trajectory's result if this was
+            # the final reaction (a Stop action may or may not follow).
+            if i + 1 < len(tr):
+                prod = getattr(tr[i + 1][0], "smi", None)
+            else:
+                prod = getattr(d.get("result"), "smi", None)
+            if not prod:
+                continue
+            # RxnAction.block is an ASSERTING property: it RAISES when _block is None (a UniRxn has
+            # no building block), and getattr's default does NOT catch an AssertionError. Read it only
+            # for BiRxn, guarded. Same trap the enumerate path documents.
+            block = None
+            if getattr(act, "action", None) is RxnActionType.BiRxn:
+                try:
+                    block = str(act.block)
+                except Exception:
+                    block = None
+            steps.append(
+                {
+                    "reaction": getattr(act, "protocol", None),
+                    "reactants": [block] if block else [],
+                    "input": getattr(g, "smi", None),
+                    "product": prod,
+                }
+            )
+            key = _stripped_key(prod)[0]
+            # First route wins -- the same molecule reached by two paths is one library item, and
+            # re-keying on rediscovery would make routes.json depend on sampling order.
+            if key and key not in routes:
+                routes[key] = {"seed": seed, "num_reactions": len(steps), "steps": list(steps)}
+
+
 def _extract_batch(trainer, beta, clip, enc, data, _score):
     """§2 flow records for one sampled batch (both terminal kinds). Returns (records, visit_counts)."""
     algo, task, dev = trainer.algo, trainer.task, trainer.device
@@ -253,6 +317,7 @@ def _run_sample(args, trainer, beta, clip, out_dir, device):
     _score, _dstats = _make_scorer(trainer.task.proxy, beta, clip)
     all_records, visit_counts, total = [], {}, 0
     remaining = args.n_trajectories
+    routes: dict = {}
     enc = None
     while remaining > 0:
         b = min(args.batch_size, remaining)
@@ -263,6 +328,7 @@ def _run_sample(args, trainer, beta, clip, out_dir, device):
                 trainer.model, b, enc, random_action_prob=0.0
             )
         recs, visits = _extract_batch(trainer, beta, clip, enc, data, _score)
+        _collect_routes(data, routes)
         all_records.extend(recs)
         for k, c in visits.items():
             visit_counts[k] = visit_counts.get(k, 0) + c
@@ -279,7 +345,10 @@ def _run_sample(args, trainer, beta, clip, out_dir, device):
     # No promoted fragments; charge each molecule its flat reaction depth so the count-once cost
     # charges best-candidate correctly (not the =1 fallback). RxnFlow reactions are real steps.
     json.dump(A.compositions_from_records(all_records), open(out_dir / "compositions.json", "w"))
-    json.dump({}, open(out_dir / "routes.json", "w"))  # routes extractable later (ctx.read_traj)
+    json.dump(routes, open(out_dir / "routes.json", "w"))
+    _routes.validate_sample_routes(
+        "rxnflow", out_dir, routes=routes, n_terminals=len(visit_counts) or None
+    )
     A.write_json(
         out_dir / "meta.json",
         {
@@ -638,6 +707,7 @@ def _run_enumerate(args, trainer, beta, clip, out_dir):
     )
     A.write_records(out_dir / "enumerated_records.csv", all_records)
     A.write_enum_children(out_dir / "enum_children.json", enum_hubs)
+    _routes.validate_enum_reactions("rxnflow", out_dir)
     A.write_json(out_dir / "enum_per_hub.json", {"per_hub": per_hub})
     A.write_json(
         out_dir / "meta.json",

@@ -52,9 +52,26 @@ class FlowSample:
     # ``{node_key: {"promoted": [fragment_smiles...], "num_reactions": k}}``. Empty for models
     # with no promoted fragments (RGFN — all base blocks free), so the cost model is a no-op there.
     compositions: Dict[str, dict] = field(default_factory=dict)
-    # Full synthesis route per product molecule (for reconstruction / "how to make it" — Logs/032):
-    # ``{smiles: {"seed": <smiles>, "num_reactions": k, "steps": [{reaction, reactants, input,
-    # product}...]}}``. Empty for adapters that don't emit routes yet (e.g. RGFN).
+    # Full synthesis route per molecule (for reconstruction / "how to make it" — Logs/032):
+    # ``{stripped_smiles: {"seed": <smiles>, "num_reactions": k, "steps": [{reaction, reactants,
+    # input, product}...]}}``, canonical schema = ``glue.samplers.lsdflow.route_steps``.
+    #
+    # THIS DEFAULT IS A LANDMINE, AND IT WENT OFF. It used to be documented as "empty for adapters
+    # that don't emit routes yet (e.g. RGFN)", which made silence look sanctioned: three of four
+    # adapters took the default, every run wrote a well-formed routes.json containing ``{}``, exited
+    # 0, and was promoted -- and the loss only surfaced when the competitor arm needed routes months
+    # later. It is UNRECOVERABLE by then: the trajectory is gone once sampling ends and
+    # ``compositions`` keeps only num_reactions, so 36 of 40 sampled cell-seeds need a full re-sample.
+    #
+    # So an empty dict is no longer an acceptable outcome for a route-bearing generator. Every worker
+    # now calls ``_routes.validate_sample_routes`` before exiting, which fails the run on empty and
+    # writes route_status.json beside the artifacts. If a generator genuinely has no synthesis routes
+    # (FragGFN: its move is an attachment, not a reaction), DECLARE it in ``_routes.ROUTE_CONTRACT``
+    # rather than leaving this dict empty and hoping the reader notices.
+    #
+    # Keys must come from the SAME key function as the flow records (``rgfn_extract._stripped_key``).
+    # A route keyed differently from its hub is worse than no route: the lookup returns nothing and
+    # the caller prices the hub instead of the child, with no error.
     routes: Dict[str, dict] = field(default_factory=dict)
 
     @property

@@ -1789,3 +1789,119 @@ behaviourally with `git check-ignore` before relying on it.
 **Not yet verified:** any SynFormer run at all — the first smoke is in flight. Wall-clock is unknown
 and the submit script's 6 h is a guess, because the bottleneck is projection (transformer decode at
 search_width 24 over ~200 molecules/generation, 4 GB index per worker), not the oracle.
+
+---
+
+## 2026-08-21 — the route contract: making "no synthesis route" a checked, declared condition
+
+**Problem.** Recovering a synthesis route after a run is over costs a full re-run, and we have paid
+that twice. `enum_children.json` `children[].reaction` was omitted by `rgfn_worker` for months and
+cost six 24-hour re-enumerations to repair. `routes.json` was worse: empty for **36 of 40** sampled
+cell-seeds, and **not repairable at all** — the trajectory is discarded when sampling ends and
+`compositions.json` keeps only `num_reactions`, so there is nothing left to reconstruct from. Only
+SCENT ever emitted routes. Every non-SCENT cell needs a re-sample before it can feed the competitor
+arm.
+
+Neither failure crashed. Both were a **silent default**:
+
+```python
+routes: Dict[str, dict] = field(default_factory=dict)
+# "Empty for adapters that don't emit routes yet (e.g. RGFN)."
+```
+
+Three of four adapters took the default, `rxnflow_worker` and `fraggfn_worker` hardcoded
+`json.dump({})`, every run wrote a well-formed `routes.json` containing `{}`, exited 0, and the
+harvester promoted it. The defect was never the missing implementation — that is ordinary — it was
+that **nothing anywhere asserted the artifact was usable.**
+
+**Change.** A route contract, enforced at write time.
+
+- **`validation/lsdflow/adapters/workers/_routes.py`** (new) — declares per generator whether its
+  output is route-bearing, and validates the artifact against that declaration. Writes
+  `route_status.json` beside the artifacts (machine-readable, so harvest/frontier can refuse a cell in
+  seconds) and raises on unambiguous violation. Stdlib-only, imported by the same sibling convention
+  as `_artifacts` so it works unchanged in all four generator envs.
+- **"Not applicable" is now a declared answer with a reason, not an empty dict.** FragGFN's move is a
+  fragment *attachment*, not a reaction (`docs/LSD_FLOW_PROPOSAL.md` L274), so a FragGFN route is not
+  a synthesis plan and SPARROW would price a library nobody can make. That is a different fact from
+  "nobody implemented it", and on disk today the two look identical. Now they don't.
+- **RGFN route emission implemented** (`rgfn_adapter._collect_routes`) — the machinery already existed
+  in `glue/` and was already used by the AL acquisition path; this is plumbing, not new science.
+- **RxnFlow route emission implemented** (`rxnflow_worker._collect_routes`) — replaces the
+  `json.dump({})` whose comment promised "routes extractable later (`ctx.read_traj`)". That was never
+  implemented and "later" was never possible. Everything needed was already in hand: `d["traj"]` is
+  the `(state, action)` sequence and every state carries `.smi`.
+- **Both emit for EVERY molecule, not just terminals.** A hub is an interior node chosen later by
+  `pick_hubs`, and the hub prefix is exactly the half `enum_children.json` cannot supply. SCENT
+  already did this (its routes span depths 1–4), and `sparrow_select_frontier.py` L130 measures "64 of
+  64 hub_keys" present — so matching it is what makes hub lookup work at all.
+- **Keys come from `rgfn_extract._stripped_key`,** the same function the flow records use. A route
+  keyed even slightly differently from its hub is *worse* than no route: the lookup returns nothing
+  and the caller prices the hub instead of the child, with no error.
+- **Canonical schema** (`glue/samplers/lsdflow/route_steps`) for both new emitters, so the competitor
+  arm reads one shape across generators.
+- **`sparrow_select_frontier.py`** gained the missing half of its own guard. Its `n_no_rxn` aborts are
+  gated on `if routes`, so they could not fire when the HUB side was empty: an empty `routes.json`
+  skips every hub, leaves `routes` empty, and hands SPARROW a pool it prices as optimal at zero cost —
+  the same wrong-and-flattering answer reached from the other direction.
+- **`experiments/lsd_hubs/matrix16/check_route_readiness.py`** (new) — one command answers "which
+  cell-seeds can feed the competitor arm?". That question previously took a session of manual
+  archaeology across three scratch trees.
+
+**Design rule, deliberate and worth keeping:** *a validator must never be why a good run dies.* These
+are 24-hour GPU jobs. So the checks raise only on unambiguous evidence (a route-bearing stage that
+produced **zero** routes / zero reaction coverage), soft cases are reported rather than enforced, and
+every internal error in the check itself is caught and downgraded to a warning. A guard that kills a
+good 24-hour job gets switched off within a week, and then protects nothing. Verified: a corrupt
+`enum_children.json` yields `state=check_failed` and a warning, not an exception.
+
+**Unknown generators default to route-bearing (REQUIRED),** so a new adapter added without a thought
+about routes fails loudly on its first run — a five-minute fix. The opposite default is what produced
+this entry.
+
+**Also fixed while in here: `rgfn_worker` declared `--seed` and never applied it** — alone among the
+four (scent, rxnflow and fraggfn all call `manual_seed`/`np.random.seed` at setup). So every RGFN
+sample was irreproducible while *reporting* a seed, which is the worst of both: a "seed 43" cell was
+not reproducibly seed 43, and a lost or route-less sample could not be regenerated even in principle.
+That is the same class of defect as the routes gap — the artifact looked complete and wasn't — and it
+is the cheapest possible insurance, so it is fixed rather than noted. Enumeration is exhaustive and
+unaffected; only what sampling draws changes.
+
+**Verified, on real runs:**
+
+- All eight validator paths: raise on empty, ok, partial, N/A-with-reason, unknown-generator default,
+  enum zero-coverage raise, enum full-coverage ok, and corrupt-input **warn** (not raise).
+- **RGFN emission end-to-end**, 200 trajectories against the trained seed-42 sEH checkpoint:
+  `routes.json` 524 KB where it had been 2 bytes (`{}`), **667 routes / 667 distinct nodes = 100%
+  coverage**, **180/180 hub_keys carry a route**, 615/615 final products equal their key
+  (stereo-stripped), 908/908 step-chain integrity (`product[i] == input[i+1]`, so these are connected
+  chains and not a bag of steps), 0 canonical-schema violations, and depths 0–4 all populated.
+- **The first smoke caught a real gap**: 2 of 193 hub_keys were **depth-0** — bare purchasable
+  building blocks with no reaction steps — and had no entry at all. `hub_routes.get(hk)` returns None
+  there, and the frontier skips such a hub *and every child hanging off it*, silently. Depth-0
+  molecules now get an explicit zero-step route (52 of them in the re-run), which took hub coverage
+  99.0% → **100%**. Worth recording because it is exactly the kind of near-miss that only a live run
+  surfaces: the code was "working" at 99%.
+- `py_compile` across every touched file; the readiness checker against all three scratch trees
+  (10 SPARROW-ready, 23 route-bearing cell-seeds with no routes, 14 control).
+- Enumerate-side reaction coverage is **100% wherever an enumeration exists**, matrix-wide — the
+  enumeration repairs held, and the entire remaining gap is sample-side.
+
+**Not verified:** the **RxnFlow emitter has not been run** — it needs the `rxnflow` env and a
+checkpoint. The code path is modelled on the same worker's enumerate path, which already reads `g.smi`
+off trajectory states (L213), so the access pattern is known-good, but the emitter itself is untested
+and should be smoked before a production sample is trusted. Seeded-sampling reproducibility was being
+measured by two same-seed runs at the time of writing.
+
+**Explicitly NOT fixed by any of this:** the 23 existing route-less cell-seeds. They need a
+**re-sample** — re-running the enumeration does nothing, because `routes.json` is written by the
+sample stage. And because RGFN sampling was unseeded, an RGFN re-sample draws a *different pool*, so it
+would change that cell's hubs and its published number; it is not a free repair. Those cells can still
+feed the **from-scratch** SPARROW arm today via AiZynth recovery
+(`validation/lsdflow/eval/route_recovery.py`), which is a different and already-planned comparison
+(measured: from-scratch 1.85 vs native 1.22 rxn/mode) — but not the native-route arm. Whether to spend
+the compute is a decision for the user, not a code change.
+
+**Deliberately not built:** copying the hub routes into `enum/` to make that directory self-contained
+against a `$SCRATCH` purge. `sample/` is already covered by the backup script's TIER 2, so the marginal
+value is low, and it would mean editing `submit_cell.sh` while 18 jobs are live.

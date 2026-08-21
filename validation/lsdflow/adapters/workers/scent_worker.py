@@ -55,6 +55,7 @@ from pathlib import Path
 # safe to import from the scent env.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import _artifacts as A  # noqa: E402
+import _routes  # noqa: E402
 import _docking  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
@@ -872,6 +873,7 @@ def main():
         json.dump(visit_counts, open(out_dir / "visit_counts.json", "w"))
         json.dump(compositions, open(out_dir / "compositions.json", "w"))
         json.dump(routes, open(out_dir / "routes.json", "w"))
+        _routes.validate_sample_routes("scent", out_dir, routes=routes)
         json.dump(
             {
                 "meta": {
@@ -1106,6 +1108,7 @@ def main():
         _write_records(out_dir / "enumerated_records.csv", all_records)
         json.dump({"per_hub": per_hub}, open(out_dir / "enum_per_hub.json", "w"), indent=2)
         json.dump({"hubs": enum_hubs}, open(out_dir / "enum_children.json", "w"))
+        _routes.validate_enum_reactions("scent", out_dir)
         # Measured compute-time sidecar (Logs/039): per-hub enumeration / reward-gen / flow-extract
         # wall-clock + the one-time setup, joined to enum_children by hub_key. When the 200-hub run is
         # split into hub slices, merge these per-hub (union) and take setup_s once.
