@@ -1,0 +1,129 @@
+{
+  "tag": "scent_6td3",
+  "reward_threshold": -2.0,
+  "similarity": 0.5,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "child_policy": "free_frag",
+  "prebuild_k": 20,
+  "rank_by": "build_score",
+  "best_candidate": {
+    "strategy": "best_candidate",
+    "total_modes": 300,
+    "total_reactions": 1152,
+    "reactions_per_mode": 3.84,
+    "total_reward_gen_calls": 0,
+    "reward_gen_calls_per_mode": 0.0,
+    "distinct_promoted_fragments": 90,
+    "distinct_hubs_used": 295,
+    "n_scaffolds": 296,
+    "best_reward": -8.242,
+    "median_reward": -6.208,
+    "case1_modes_at_100rxn": 25,
+    "case2_reactions_at_300modes": 1152,
+    "stop_reason": "modes"
+  },
+  "hub_batching": {
+    "strategy": "hub_batching",
+    "total_modes": 300,
+    "total_reactions": 447,
+    "reactions_per_mode": 1.49,
+    "total_reward_gen_calls": 80267,
+    "reward_gen_calls_per_mode": 267.56,
+    "distinct_promoted_fragments": 35,
+    "distinct_hubs_used": 46,
+    "n_scaffolds": 290,
+    "best_reward": -7.892,
+    "median_reward": -4.838,
+    "case1_modes_at_100rxn": 72,
+    "case2_reactions_at_300modes": 447,
+    "stop_reason": "modes"
+  },
+  "compute_time": {
+    "enum_timings_meta": {
+      "setup_s": 28.523,
+      "slice_setups_s": [
+        37.154,
+        29.623,
+        38.267,
+        28.523,
+        37.119,
+        28.267,
+        29.536,
+        28.033,
+        27.74,
+        28.295,
+        27.377
+      ],
+      "merged_from": [
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice1of40/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice1of8/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice2of40/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice2of8/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice3of40/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice3of8/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice4of8/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice5of8/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice6of8/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice7of8/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16_seed43/scent_6td3/enum/slice8of8/enum_timings.json"
+      ],
+      "n_slices": 11,
+      "n_hubs": 200,
+      "n_children": 347376,
+      "totals_s": {
+        "enumeration_s": 6494.197,
+        "reward_gen_s": 432777.551,
+        "flow_extract_s": 1939.909
+      },
+      "device": "cuda",
+      "reward_name": "6td3",
+      "component_split": null,
+      "partial": false
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "setup_s": 28.523,
+      "hub_pick_s": 0.182,
+      "enumeration_s": 1593.3891,
+      "reward_gen_s": 102434.8308,
+      "flow_extract_s": 453.0304,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 17.5497,
+      "n_hubs_walked": 46,
+      "n_children_scored": 80267,
+      "missing_hub_keys": [],
+      "total_s": 104527.5051
+    },
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "setup_s": 0.0,
+      "hub_pick_s": 0.0,
+      "enumeration_s": 0.0,
+      "reward_gen_s": 0.0,
+      "flow_extract_s": 0.0,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.8034,
+      "n_hubs_walked": 0,
+      "n_children_scored": 0,
+      "missing_hub_keys": [],
+      "total_s": 0.8034
+    },
+    "head_to_head": {
+      "hub_total_s": 104527.5051,
+      "best_total_s": 0.8034,
+      "extra_compute_s": 104526.7017,
+      "ratio_hub_over_best": 130112.706,
+      "per_component_delta_s": {
+        "setup_s": 28.523,
+        "hub_pick_s": 0.182,
+        "enumeration_s": 1593.3891,
+        "reward_gen_s": 102434.8308,
+        "flow_extract_s": 453.0304,
+        "unattributed_s": 0.0,
+        "mode_selection_s": 16.7463
+      },
+      "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+    }
+  }
+}

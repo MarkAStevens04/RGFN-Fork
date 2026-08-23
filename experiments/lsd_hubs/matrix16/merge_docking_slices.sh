@@ -50,9 +50,17 @@ for p in slices:
         key = h.get("hub_input") or h["hub_key"]
         n = len(h.get("children", []))
         n_copies[key] = n_copies.get(key, 0) + 1
+        # Reaction-bearing copies win TIES. Depth is still the primary key, but a strict `n > prev`
+        # left ties to glob order, and that is exactly the case a reaction repair creates: the old
+        # slices and the new ones enumerate the SAME hubs at the same cap, so their child counts are
+        # identical and the arbitrary winner could be the 0-reaction copy -- silently handing the
+        # campaign an unroutable pool that looks complete. At equal depth a copy carrying reactions is
+        # strictly more informative, so prefer it. (Live case: rgfn_clpp s43 and rgfn_6td3 s43 both
+        # sit at 200/200 hubs with `"reaction": []` on every child.)
+        n_rxn = sum(1 for c in (h.get("children") or []) if c.get("reaction"))
         prev = best.get(key)
-        if prev is None or n > prev[2]:
-            best[key] = (h, grp, n)
+        if prev is None or n > prev[2] or (n == prev[2] and n_rxn > prev[3]):
+            best[key] = (h, grp, n, n_rxn)
 
 # Preserve hubs.csv order so the walk order is reproducible, then append any extras.
 seen = set(best)
@@ -64,9 +72,10 @@ missing = [h for h in want if h not in seen]
 n_children = sum(len(h.get("children", [])) for h in hubs)
 print(f"[merge] {len(slices)} slice(s) -> {len(hubs)}/{len(want)} hubs, {n_children:,} children")
 if deeper:
-    print(f"[merge] {len(deeper)} hub(s) present in MORE THAN ONE slice -> kept the deepest copy of each:")
-    for k, (_h, grp, n) in sorted(deeper.items(), key=lambda kv: -kv[1][2])[:5]:
-        print(f"[merge]   {n:>7,} children from {grp}")
+    print(f"[merge] {len(deeper)} hub(s) present in MORE THAN ONE slice -> kept the deepest "
+          f"reaction-bearing copy of each:")
+    for k, (_h, grp, n, nr) in sorted(deeper.items(), key=lambda kv: -kv[1][2])[:5]:
+        print(f"[merge]   {n:>7,} children ({nr:,} with reactions) from {grp}")
     print(f"[merge]   (a re-enumeration; deeper is a superset of shallower for the same hub)")
 if missing and force != "--force":
     raise SystemExit(
