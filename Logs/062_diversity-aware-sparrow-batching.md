@@ -549,6 +549,41 @@ curves were all regenerated 08-20 11:00-11:02, i.e. *after* the enum fix, so the
 
 ---
 
+## Update 2026-08-23 — HB-Enum-SB does not converge on the corrected pools; the arm is reported as a BOUND
+
+The 2026-08-19 enumeration cap-fix multiplied the qualifying pools ~6× (21k → 123k-150k above gate),
+and SPARROW's MILP does not solve at that size. Every attempt at R=100 on sEH:
+
+| run | pool | selected | distinct | solve | status |
+|---|---|---|---|---|---|
+| seed 42 (pre-fix enum) | 21,073 | 98 | 42 | 405 s | Optimal |
+| seed 43 (pre-fix enum) | 21,581 | 94 | 37 | 3,308 s | Optimal |
+| seed 44 (pre-fix enum) | 27,250 | 97 | 23 | 1,146 s | Optimal |
+| seed 43, `--top-n 50000` | 50,000 | 89 | 12 | 7,589 s | ⚠️ TimeLimit |
+| seed 44, `--top-n 50000` | 50,000 | 87 | 39 | 7,322 s | ⚠️ TimeLimit |
+| seed 43, uncapped, 12 h | 123,298 | 88 | 27 | 43,080 s | ⚠️ TimeLimit |
+| seed 44, uncapped, 12 h | 149,604 | 93 | 25 | 43,012 s | ⚠️ TimeLimit |
+
+**Raising the cap 2 h → 12 h and relaxing `gapRel` to 1e-3 did not achieve convergence**, and the
+capped answers do not trend toward the converged ones — seed 43 reads 12, 27 and 37 distinct on three
+pool sizes with no ordering. So the capped numbers are not "nearly right"; they are lower bounds whose
+distance from the optimum is unknown and evidently large.
+
+**Consequence for the paper: on the corrected enumerations, HB-Enum-SB is reportable only as a bound
+on the competitor, and a bound in the direction that FLATTERS US.** It cannot carry a ratio. The
+converged rows all used the pre-fix (truncated) enumerations, so they are not usable either — the same
+mixing that Result 15's withdrawal was about.
+
+This is not a defect in the arm; it is the measurement CLAUDE.md already anticipates
+("solver-truncated (SB arm only) — this is COMPUTE-limited and is a completely different claim"). The
+honest framing is that the optimizer cannot solve the selection problem at the scale our enumeration
+produces, which is itself a result: our greedy returns its answer in ~1 s on the same pool.
+
+**Results 13-15 stay withdrawn.** The 2.51× BC-Enum-SB headline is unaffected — different arm,
+different pools, all converged.
+
+---
+
 ## Update 2026-08-20 — our side reaches n=3, and a new arm returns a NULL
 
 Jobs 74441/74442 (our seeds 43/44) and 74444-74446 (the new HB-Enum-SB arm) completed. All five

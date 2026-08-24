@@ -44,11 +44,18 @@ cd "$HOME/projects/RGFN_Fork/RGFN-Fork"
 
 # SEED picks the matrix16 cell; every one carries its own paired sample/routes.json.
 SEED=${SEED:-42}
+# TGT selects the target. Only SCENT cells can run this arm at all -- rgfn/rxnflow have an empty
+# routes.json and their originals are unreproducible (both are PYTHONHASHSEED-sensitive, measured
+# 2026-08-21), so there is no generator axis here to parameterise.
+TGT=${TGT:-seh}
 case "$SEED" in
-    42) CELL=matrix16/scent_seh
-        SNAP_DEF=/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh/2026-07-10_17-28-06/additional_fragments/fragments_4000.json ;;
-    *)  CELL=matrix16_seed${SEED}/scent_seh
-        SNAP_DEF=/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_seh_5k/seed${SEED}/additional_fragments/fragments_4000.json ;;
+    # Seed 42 is served by the DATED training run, seeds 43/44 by the _5k ones -- an irregular
+    # mapping, so it is spelled out rather than derived. NOTE seed 42's snapshot carries NO recipes
+    # for any target, so its provenance check ABORTS by design; seed 42 needs a re-train, not a flag.
+    42) CELL=matrix16/scent_${TGT}
+        SNAP_DEF=/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_${TGT}/2026-07-10_17-28-06/additional_fragments/fragments_4000.json ;;
+    *)  CELL=matrix16_seed${SEED}/scent_${TGT}
+        SNAP_DEF=/scratch/markymoo/rgfn_runs/experiments/fixed_reward/scent_${TGT}_5k/seed${SEED}/additional_fragments/fragments_4000.json ;;
 esac
 # READ FROM THE FROZEN SNAPSHOT, not the live path. Other agents rewrite these artifacts in the
 # shared scratch tree: on 2026-08-19 all three scent_seh enumerations were re-run between 21:13 and
@@ -58,10 +65,10 @@ esac
 # has to freeze them. See $SNAPSHOT_ROOT/README.md.
 SNAPSHOT_ROOT=${SNAPSHOT_ROOT:-/scratch/markymoo/rgfn_runs/lsdflow_sparrow/_enum_snapshot_20260820}
 BASE=${BASE:-/scratch/markymoo/rgfn_runs/lsdflow/$CELL}
-ENUM=${ENUM:-$SNAPSHOT_ROOT/seed${SEED}/enum_children.json}
-HUB_ROUTES=${HUB_ROUTES:-$SNAPSHOT_ROOT/seed${SEED}/routes.json}
+ENUM=${ENUM:-$SNAPSHOT_ROOT/${TGT}_seed${SEED}/enum_children.json}
+HUB_ROUTES=${HUB_ROUTES:-$SNAPSHOT_ROOT/${TGT}_seed${SEED}/routes.json}
 SNAP=${SNAP:-$SNAP_DEF}
-TAG=${TAG:-hbenumR100_seed${SEED}_L1}
+TAG=${TAG:-hbenum_${TGT}_seed${SEED}_L1}
 GATE=${GATE:-7.0}
 CUTOFF=${CUTOFF:-0.5}
 # POOL SIZE — read this before changing it. `--top-n 50000` was chosen to "match BC-Enum-SB
@@ -101,7 +108,7 @@ export LD_LIBRARY_PATH="$(ls -d /home/markymoo/miniconda3/envs/rgfn/lib/python*/
 for P in "$ENUM" "$HUB_ROUTES" "$SNAP"; do
     [ -s "$P" ] || { echo "FATAL: missing input $P" >&2; exit 1; }
 done
-echo "host=$(hostname)  SEED=$SEED  TAG=$TAG  sizes=$SIZES  lambda=$LAMBDA_DIV"
+echo "host=$(hostname)  TGT=$TGT  SEED=$SEED  TAG=$TAG  sizes=$SIZES  lambda=$LAMBDA_DIV  gate=$GATE"
 echo "  ENUM=$ENUM"; echo "  HUB_ROUTES=$HUB_ROUTES"
 FIRST_N=$(echo $SIZES | awk '{print $1}')
 for N in $SIZES; do
