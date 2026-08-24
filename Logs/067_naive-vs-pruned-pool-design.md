@@ -1,5 +1,33 @@
 # Competitor pipeline — two ways to pick the 500 molecules we price
 
+> ⚠ **CORRECTION (2026-08-24). The headline number in this entry measured our own budget error, not
+> a property of the baselines, and must not be quoted.** Every result below was computed from
+> REINVENT running at **12.4x its authors' oracle budget** (batch 128 x 1000 steps = 124,587 distinct
+> molecules, against the ~10,000 its paper uses; audit in docs/RESEARCH_CONTEXT.md, "Baseline configs
+> audited against their authors' defaults"). Over-training collapsed REINVENT into a narrow
+> high-reward band, and the "pruning is worth 2.3-2.9x" result is that collapse.
+>
+> Re-measured at the corrected budget, on the same cell and seeds:
+>
+> | REINVENT sEH | above gate | naive modes | pruned modes | lift | naive mean sim |
+> |---|---|---|---|---|---|
+> | old (124,587 calls) | 1,860 | 201 | 500 | **2.5x** | 0.40 |
+> | new (10,048 calls)  | 464-728 | 369-417 | 417-500 | **1.0-1.36x** | 0.17-0.22 |
+>
+> On seed 44 the two pools are *identical*: its whole above-gate set is smaller than 500.
+>
+> **What survives.** The two-pool DESIGN survives, and so does the reason for it — but the finding is
+> narrower and sharper than this entry claims. Pruning matters exactly where a generator genuinely
+> collapses, and at their own authors' budgets only the Saturn-family entrants do: Saturn 13.7x (sEH)
+> / 5.2x (DRD2) / 4.0x (ClpP), TANGO 7.4x / 2.7x / 3.3x, against REINVENT ~1.2x and S3-GFN 1.00x on
+> sEH and ClpP. So the naive pool is the honest default, and it under-reports only for a
+> mode-collapsed generator. Saturn's own numbers in this entry were never affected — it was already
+> at its authors' budget and was never re-run.
+>
+> **What does not survive.** The "our advantage is ~3.7x naive / ~1.6x pruned" framing, and the claim
+> that the pruned baseline overtakes our from-scratch arm. Both rest on the inflated REINVENT.
+> Superseded by the re-measurement in progress; see the entry that follows this one.
+
 **Date:** 2026-08-19, ~5pm (design + pool diagnostics); routed cost results added 2026-08-20, ~11am
 
 ## Question

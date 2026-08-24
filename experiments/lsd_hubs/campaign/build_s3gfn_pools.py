@@ -49,12 +49,32 @@ import json
 from pathlib import Path
 
 
-def load_ranked(path: Path, gate: float = 0.0):
+def load_ranked(
+    path: Path,
+    gate: float = 0.0,
+    higher_is_better: bool = True,
+    score_column: str = "score",
+):
     """[(smiles, best_score)] sorted best-first, one entry per distinct SMILES.
 
-    ``gate`` is a lower bound on score (0.0 = keep everything). It exists because the pool feeds a
-    reward-maximizing selector downstream, so admitting molecules below the benchmark's quality bar
-    would let the planner spend its budget on material that cannot count as a delivered mode.
+    ``gate`` is the benchmark's quality bar. It exists because the pool feeds a reward-maximizing
+    selector downstream, so admitting molecules the bar excludes would let the planner spend its
+    budget on material that cannot count as a delivered mode.
+
+    ``score_column`` AND ``higher_is_better`` must BOTH be set for a docking target, and getting
+    either wrong is silent. `candidates.csv` carries two columns: ``score`` is the generator's
+    training reward -- for docking that is clip(-vina), a POSITIVE 0..11 number -- and ``raw_score``
+    is the oracle's own value, raw Vina kcal/mol. The gates are defined on the RAW value, so a ClpP
+    pool must read ``raw_score`` with ``higher_is_better=False``. Reading ``score`` with the -8.0
+    gate keeps all 2,000 molecules (every clip(-vina) exceeds -8.0) and ranks them by training
+    reward; reading ``raw_score`` with the surrogate default keeps only non-binders. Neither failure
+    is visible downstream.
+
+    ``higher_is_better`` FLIPS BOTH the gate test and the ranking, and it is not optional for the
+    docking targets. ClpP's bar is raw Vina <= -8.0 (Logs/045), so with the surrogate default this
+    function would keep everything ABOVE -8.0 and rank the WORST binders first -- a pool built
+    backwards, which no downstream stage could detect. Read the target's convention from
+    ``experiments/lsd_hubs/matrix16/targets.py``; never infer it from the column name.
     """
     best: dict[str, float] = {}
     order: dict[str, int] = {}
@@ -62,18 +82,23 @@ def load_ranked(path: Path, gate: float = 0.0):
     with open(path, newline="") as fh:
         for i, r in enumerate(csv.DictReader(fh)):
             smi = r.get("smiles") or r.get("SMILES")
-            raw = r.get("score", r.get("reward"))
+            raw = r.get(score_column)
+            if raw is None:
+                raw = r.get("score", r.get("reward"))
             try:
                 val = float(raw)
             except (TypeError, ValueError):
                 continue
-            if not smi or val < gate:
+            if not smi:
+                continue
+            if (val < gate) if higher_is_better else (val > gate):
                 continue
             n_rows += 1
-            if smi not in best or val > best[smi]:
+            if smi not in best or ((val > best[smi]) if higher_is_better else (val < best[smi])):
                 best[smi] = val
             order.setdefault(smi, i)
-    ranked = sorted(best.items(), key=lambda t: (-t[1], order[t[0]]))
+    sign = -1.0 if higher_is_better else 1.0
+    ranked = sorted(best.items(), key=lambda t: (sign * t[1], order[t[0]]))
     return ranked, n_rows
 
 
@@ -117,7 +142,19 @@ def main() -> None:
         default="500",
         help="comma-separated pool sizes; each is a PREFIX of the largest (nested)",
     )
-    ap.add_argument("--gate", type=float, default=0.0, help="drop candidates scoring below this")
+    ap.add_argument("--gate", type=float, default=0.0, help="the target's quality bar")
+    ap.add_argument(
+        "--lower-is-better",
+        action="store_true",
+        help="docking targets: the gate is an UPPER bound on a raw energy (ClpP -8.0) and better "
+        "means smaller. Mirrors the same flag on mode_saturation.py.",
+    )
+    ap.add_argument(
+        "--score-column",
+        default=None,
+        help="which candidates.csv column carries the gated value. Defaults to `raw_score` when "
+        "--lower-is-better is set (the docking convention) and `score` otherwise.",
+    )
     ap.add_argument("--verify", default="", help="compare against this existing pool dir and exit")
     ap.add_argument(
         "--pruned",
@@ -133,10 +170,14 @@ def main() -> None:
     )
     a = ap.parse_args()
 
-    rows, n_rows = load_ranked(Path(a.candidates), a.gate)
+    hib = not a.lower_is_better
+    # Default the column to the target's own convention rather than making every caller remember it.
+    col = a.score_column or ("score" if hib else "raw_score")
+    rows, n_rows = load_ranked(Path(a.candidates), a.gate, higher_is_better=hib, score_column=col)
     print(
         f"[pools] {a.candidates}\n  {n_rows} rows -> {len(rows)} distinct molecules "
-        f"(gate>={a.gate}); best={rows[0][1]:.4f} worst={rows[-1][1]:.4f}"
+        f"(gate {col}{'>=' if hib else '<='}{a.gate}); best={rows[0][1]:.4f} "
+        f"worst={rows[-1][1]:.4f}"
     )
 
     if a.pruned:
@@ -156,7 +197,7 @@ def main() -> None:
         idx = mode_representatives(
             smis,
             rews,
-            higher_is_better=True,
+            higher_is_better=hib,
             reward_threshold=a.gate,
             similarity_threshold=a.cutoff,
             fps=fps,

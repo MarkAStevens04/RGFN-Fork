@@ -45,19 +45,37 @@ set -uo pipefail
 cd "$HOME/projects/RGFN_Fork/RGFN-Fork"
 
 GENERATOR=${GENERATOR:?set GENERATOR (reinvent | saturn | s3gfn)}
-TARGET=${TARGET:?set TARGET (seh | drd2)}
+TARGET=${TARGET:?set TARGET (seh | drd2 | clpp)}
 SEED=${SEED:-42}
 RUN_DIR=${RUN_DIR:?set RUN_DIR to the generator run dir (contains fixed_reward/candidates)}
 N=${N:-500}
 
 # Per-target reward gate — value AND direction. These are the project's calibrated bars
 # (docs/paper_planning/lsd-flow-iclr-evidence-handoff.md section 3); they are NOT free parameters.
+# DIR carries the direction, and it is as load-bearing as the value: for ClpP the bar is an UPPER
+# bound on a raw Vina energy, so a run that treats it as a lower bound keeps every molecule and ranks
+# the worst binders first -- silently, since nothing downstream can tell. The gated column differs
+# too: `score` is the generator's training reward (clip(-vina) for docking, a positive number) while
+# `raw_score` is the oracle's own value, and the bars are defined on raw.
 case "$TARGET" in
-    seh)  GATE=${GATE:-7.0} ;;
-    drd2) GATE=${GATE:-0.5} ;;
-    *)    echo "FATAL: unknown TARGET '$TARGET' (expected seh or drd2). A docking target needs the" >&2
-          echo "       lower-is-better gate handling, which this script does not carry." >&2; exit 1 ;;
+    seh)  GATE=${GATE:-7.0}  ; DIR=higher ;;
+    drd2) GATE=${GATE:-0.5}  ; DIR=higher ;;
+    clpp) GATE=${GATE:--8.0} ; DIR=lower  ;;   # calibrated, Logs/045: AUROC 0.895 vs matched decoys
+    *)    echo "FATAL: unknown TARGET '$TARGET' (expected seh | drd2 | clpp). 6TD3 is PAUSED: its" >&2
+          echo "       -2.0 bar rests on warhead-matched rather than property-matched decoys and is" >&2
+          echo "       not yet defensible (entry 065)." >&2; exit 1 ;;
 esac
+# Two different spellings for the same fact, because the tools were written separately:
+# build_s3gfn_pools.py / mode_saturation.py take a --lower-is-better switch, while
+# sparrow_select_frontier.py takes --higher-is-better true|false. Both are derived from DIR here so a
+# caller can never set one and forget the other.
+if [ "$DIR" = lower ]; then
+    DIR_FLAGS="--lower-is-better"
+    HIB=false
+else
+    DIR_FLAGS=""
+    HIB=true
+fi
 CUTOFF=${CUTOFF:-0.5}
 TARGET_MODES=${TARGET_MODES:-100}          # SECONDARY readout's mode target
 RXN_BUDGET=${RXN_BUDGET:-100}              # PRIMARY readout's reaction budget
@@ -104,7 +122,7 @@ echo "=== [0/3] mode-saturation pre-flight (gate) ==="
 # two differ enormously — Saturn sEH s42 is 18 vs 338. It aborts only below --min-modes.
 conda run --no-capture-output -n rgfn python experiments/lsd_hubs/campaign/mode_saturation.py \
     --candidates "$CANDS" --gate "$GATE" --cutoff "$CUTOFF" --target-modes "$TARGET_MODES" \
-    --rxn-budget "$RXN_BUDGET" --min-modes "$MIN_MODES" --pool "$POOL" \
+    --rxn-budget "$RXN_BUDGET" --min-modes "$MIN_MODES" --pool "$POOL" $DIR_FLAGS \
     --sizes "50,100,250,${N}" --tag "$TAG" --out-dir "$RES_ROOT/${TAG}_saturation" || {
         echo "" >&2
         echo "ABORT: $TAG holds fewer than $MIN_MODES modes in its $POOL pool — nothing to measure." >&2
@@ -116,7 +134,7 @@ conda run --no-capture-output -n rgfn python experiments/lsd_hubs/campaign/mode_
 echo "=== [1/3] pool ==="
 conda run --no-capture-output -n rgfn python experiments/lsd_hubs/campaign/build_s3gfn_pools.py \
     --candidates "$CANDS" --out-root "$POOL_ROOT" --tag "$TAG" --sizes "$N" \
-    --gate "$GATE" $POOL_FLAG || exit 1
+    --gate "$GATE" $DIR_FLAGS $POOL_FLAG || exit 1
 
 # A pruned pool is emitted at the size the generator can actually supply, and the directory is named
 # for that size — Saturn sEH s42 asks for 500 and writes _N338. Resolve the real directory instead of
@@ -160,7 +178,8 @@ RC=0
 conda run --no-capture-output -n rgfn python \
     experiments/lsd_hubs/campaign/sparrow_select_frontier.py \
     --routes "$ROUTES" --pool "$POOL_DIR/pool_scores.csv" --route-source multiaiz \
-    --selection greedy --gate "$GATE" --cutoff "$CUTOFF" --mode-points "$MODE_POINTS" \
+    --selection greedy --gate "$GATE" --higher-is-better "$HIB" \
+    --cutoff "$CUTOFF" --mode-points "$MODE_POINTS" \
     --out-dir "$RES_ROOT/${TAG}_greedy_N${N}" \
     --tag "${TAG}_multiaiz_greedy" || RC=1
 
@@ -168,7 +187,7 @@ if [ "${RUN_SB:-1}" = "1" ]; then
     conda run --no-capture-output -n rgfn python \
         experiments/lsd_hubs/campaign/sparrow_select_frontier.py \
         --routes "$ROUTES" --pool "$POOL_DIR/pool_scores.csv" --route-source multiaiz \
-        --gate "$GATE" --cutoff "$CUTOFF" --budgets "$BUDGETS" \
+        --gate "$GATE" --higher-is-better "$HIB" --cutoff "$CUTOFF" --budgets "$BUDGETS" \
         --max-seconds "${SB_MAX_SECONDS:-1800}" \
         --out-dir "$RES_ROOT/${TAG}_select_N${N}" \
         --tag "${TAG}_multiaiz_select_N${N}" || RC=1
