@@ -1963,3 +1963,46 @@ the compute is a decision for the user, not a code change.
 **Deliberately not built:** copying the hub routes into `enum/` to make that directory self-contained
 against a `$SCRATCH` purge. `sample/` is already covered by the backup script's TIER 2, so the marginal
 value is low, and it would mean editing `submit_cell.sh` while 18 jobs are live.
+
+---
+
+## 2026-08-24 — the RGFN reaction repairs verified, and a metric that is not as stable as it looks
+
+**All four completed repairs may stand** — `rgfn_seh` s42 and `rgfn_drd2` s42/s43/s44, each 200/200 hubs
+at 100% reaction coverage with the recorded final product reconstructing the child (stereo-stripped) on
+400/400 sampled. `rgfn_seh` s42's count-once summary came out bit-identical to the committed value.
+
+**The three DRD2 seeds "failed" check 3, and the failure was uninformative.** Every headline field was
+bit-identical — `reactions_per_mode` (1.197 / 1.310 / 1.243), `total_reactions`, `total_modes`,
+`case1_modes_at_100rxn` (82 / 84 / 89), `distinct_hubs_used`, `total_reward_gen_calls`. Only
+`n_scaffolds` (±1–2 of ~270) and `median_reward` (±0.002) moved.
+
+The chemistry was verified identical rather than assumed: same 200 hubs, same **168,006** distinct
+children, **zero** hubs whose child set differs — while child ORDER differed in **200/200** hubs. Greedy
+mode selection takes the first of any equally-good candidates, so a reordering swaps membership without
+changing count or cost. Recorded as correctness trap 3 in `docs/RESEARCH_CONTEXT.md`, with the reason it
+hits DRD2 and not sEH: **51.6%** of DRD2's enumerated children share a reward with another child (top
+value ×302) versus **30.4%** on sEH (top value ×6) — a saturated classifier versus a continuous proxy.
+
+**What this says about the verifier, and why I have NOT changed it yet.** Check 3 has only two tiers: a
+field is either in `VOLATILE` (ignored) or must be bit-identical. `n_scaffolds` is neither — exempting it
+would hide a genuine 50-scaffold regression, while demanding bit-identity cries wolf on a tie. The fix is
+a third tier:
+
+    headline     reactions_per_mode, total_reactions, total_modes, case1_modes_at_100rxn,
+                 case2_reactions_at_300modes, distinct_hubs_used, total_reward_gen_calls
+                 -> bit-identical or FAIL
+    descriptive  n_scaffolds, median_reward, best_reward
+                 -> print the drift; FAIL only beyond what tie-breaking can produce (±3 / ±0.01)
+    volatile     compute_time, wall_s, enum_timings_meta  -> ignore
+
+The bound is the point. It passes today's tie noise and still fails real breakage, which is precisely
+what moving these fields into `VOLATILE` would give up. Left unimplemented pending the user's call,
+because relaxing a gate so that a currently-failing artifact passes is not a change to make on my own
+judgement — the gate exists to be strict, and I have already been over-confident once today.
+
+**Not verified:** whether any published figure or table currently quotes `n_scaffolds` or
+`median_reward` for a DRD2 or docking cell. Both appear in eight analysis scripts
+(`analyze_matrix.py`, `hub_stats.py`, `preselect_sweep.py`, `strategy_compute_summary.py`,
+`run_campaign.py`, `audit_greedy_libraries.py`, `plot_greedy.py`, `compare_hub_order.py`); I checked
+that they are referenced, not what consumes their output.
