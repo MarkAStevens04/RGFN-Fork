@@ -581,18 +581,33 @@ def main() -> None:
         last_ckpt_bucket = 0
         while len(scored) < budget:
             gen += 1
+            # Per-phase timing. Projection is only ~8 min of an observed ~60 min generation on the
+            # real cells, and its s/molecule is FLAT across a run, so the remaining ~52 min is
+            # somewhere else -- most likely the memory pressure documented in Projector.recycle,
+            # but that is a hypothesis until this says so.
+            _phase_t = {}
+            _gen_t0 = time.time()
+            _t = time.time()
             mating_pool = make_mating_pool(population_mol, population_scores, pop_size)
             offspring_mol = [reproduce(mating_pool, mut_rate) for _ in range(off_size)]
+            _phase_t["ga_s"] = time.time() - _t
 
+            _t = time.time()
             population_mol = sanitize(population_mol + offspring_mol)
+            _phase_t["sanitize_s"] = time.time() - _t
+
+            _t = time.time()
             projected = projector([Chem.MolToSmiles(m) for m in population_mol])
+            _phase_t["project_s"] = time.time() - _t
             if not projected:
                 print(f"[SF-FR] gen {gen}: projection returned nothing; stopping early", flush=True)
                 break
             routes.update(projected)
             population_mol = [Chem.MolFromSmiles(s) for s in projected]
 
+            _t = time.time()
             population_scores = score([Chem.MolToSmiles(m) for m in population_mol])
+            _phase_t["score_s"] = time.time() - _t
             ranked = sorted(
                 zip(population_scores, population_mol), key=lambda t: t[0], reverse=True
             )[:pop_size]
@@ -631,6 +646,15 @@ def main() -> None:
                     w.writerow(["smiles", "score", "n_scored", "generation"])
                     for sc, m in zip(population_scores, population_mol):
                         w.writerow([Chem.MolToSmiles(m), sc, len(scored), gen])
+
+            _phase_t["gen_wall_s"] = time.time() - _gen_t0
+            _named = sum(v for k, v in _phase_t.items() if k != "gen_wall_s")
+            print(
+                "[SF-TIME] gen %d: " % gen
+                + " ".join(f"{k}={v:.0f}" for k, v in _phase_t.items())
+                + f" RESIDUAL={_phase_t['gen_wall_s'] - _named:.0f}s",
+                flush=True,
+            )
 
     finally:
         projector.close()
