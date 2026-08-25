@@ -1,0 +1,127 @@
+{
+  "tag": "rgfn_clpp",
+  "reward_threshold": -8.0,
+  "similarity": 0.5,
+  "budget_reactions": 100,
+  "budget_modes": 300,
+  "child_policy": "reward",
+  "prebuild_k": 0,
+  "rank_by": null,
+  "best_candidate": {
+    "strategy": "best_candidate",
+    "total_modes": 300,
+    "total_reactions": 1102,
+    "reactions_per_mode": 3.673,
+    "total_reward_gen_calls": 0,
+    "reward_gen_calls_per_mode": 0.0,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 295,
+    "n_scaffolds": 298,
+    "best_reward": -12.7,
+    "median_reward": -10.2,
+    "case1_modes_at_100rxn": 27,
+    "case2_reactions_at_300modes": 1102,
+    "stop_reason": "modes"
+  },
+  "hub_batching": {
+    "strategy": "hub_batching",
+    "total_modes": 300,
+    "total_reactions": 448,
+    "reactions_per_mode": 1.493,
+    "total_reward_gen_calls": 57555,
+    "reward_gen_calls_per_mode": 191.85,
+    "distinct_promoted_fragments": 0,
+    "distinct_hubs_used": 57,
+    "n_scaffolds": 266,
+    "best_reward": -13.1,
+    "median_reward": -9.8,
+    "case1_modes_at_100rxn": 90,
+    "case2_reactions_at_300modes": 448,
+    "stop_reason": "modes"
+  },
+  "compute_time": {
+    "enum_timings_meta": {
+      "setup_s": 24.762,
+      "slice_setups_s": [
+        24.706,
+        25.267,
+        25.361,
+        24.178,
+        25.305,
+        25.472,
+        25.009,
+        24.762,
+        24.433,
+        24.737,
+        24.721
+      ],
+      "merged_from": [
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice10of10/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice1of1/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice1of10/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice2of10/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice3of10/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice4of10/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice5of10/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice6of10/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice7of10/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice8of10/enum_timings.json",
+        "/scratch/markymoo/rgfn_runs/lsdflow/matrix16/rgfn_clpp/enum/slice9of10/enum_timings.json"
+      ],
+      "n_slices": 11,
+      "n_hubs": 200,
+      "n_children": 197591,
+      "totals_s": {
+        "unattributed_s": 380376.341
+      },
+      "device": "auto",
+      "reward_name": "clpp",
+      "component_split": "lumped",
+      "partial": false
+    },
+    "hub_batching": {
+      "strategy": "hub_batching",
+      "setup_s": 24.762,
+      "hub_pick_s": 0.189,
+      "enumeration_s": 0.0,
+      "reward_gen_s": 0.0,
+      "flow_extract_s": 0.0,
+      "unattributed_s": 108959.3411,
+      "mode_selection_s": 10.1574,
+      "n_hubs_walked": 57,
+      "n_children_scored": 57555,
+      "missing_hub_keys": [],
+      "total_s": 108994.4494
+    },
+    "best_candidate": {
+      "strategy": "best_candidate",
+      "setup_s": 0.0,
+      "hub_pick_s": 0.0,
+      "enumeration_s": 0.0,
+      "reward_gen_s": 0.0,
+      "flow_extract_s": 0.0,
+      "unattributed_s": 0.0,
+      "mode_selection_s": 0.3874,
+      "n_hubs_walked": 0,
+      "n_children_scored": 0,
+      "missing_hub_keys": [],
+      "total_s": 0.3874
+    },
+    "head_to_head": {
+      "hub_total_s": 108994.4494,
+      "best_total_s": 0.3874,
+      "extra_compute_s": 108994.062,
+      "ratio_hub_over_best": 281323.238,
+      "per_component_delta_s": {
+        "setup_s": 24.762,
+        "hub_pick_s": 0.189,
+        "enumeration_s": 0.0,
+        "reward_gen_s": 0.0,
+        "flow_extract_s": 0.0,
+        "unattributed_s": 108959.3411,
+        "mode_selection_s": 9.7699
+      },
+      "note": "Stage-1 sampling (shared pool) excluded; it cancels in the marginal."
+    }
+  }
+}
