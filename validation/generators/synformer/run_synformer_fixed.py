@@ -99,6 +99,45 @@ def make_mating_pool(population_mol, population_scores, offspring_size: int):
 _reproduce_failures = [0]
 
 
+def _rss_report(tag: str) -> str:
+    """Parent RSS plus the sum over children, in GiB.
+
+    Added while diagnosing an OOM: four cells were killed at ~260 GB MaxRSS, which SLURM reports at
+    the JOB level as TIMEOUT while only the batch STEP says OUT_OF_MEMORY -- so the runs read as slow
+    rather than as leaking. Splitting parent from children says which side is growing: the parent
+    holds `scored`/`routes` (plain dicts, tens of MB at most), each worker holds its own copy of the
+    ~4 GB index plus a torch model.
+    """
+    import os
+
+    def _kb(pid):
+        try:
+            for line in open(f"/proc/{pid}/status"):
+                if line.startswith("VmRSS:"):
+                    return int(line.split()[1])
+        except OSError:
+            pass
+        return 0
+
+    me = os.getpid()
+    parent = _kb(me)
+    kids = 0
+    try:
+        for t in os.listdir(f"/proc/{me}/task"):
+            for c in open(f"/proc/{me}/task/{t}/children").read().split():
+                kids += _kb(int(c))
+                # one level deeper: the pool's workers fork their own helpers
+                try:
+                    for tt in os.listdir(f"/proc/{c}/task"):
+                        for g in open(f"/proc/{c}/task/{tt}/children").read().split():
+                            kids += _kb(int(g))
+                except OSError:
+                    pass
+    except OSError:
+        pass
+    return f"[SF-MEM] {tag}: parent {parent/1048576:.1f} GiB | children {kids/1048576:.1f} GiB"
+
+
 def reproduce(mating_pool, mutation_rate):
     import crossover as co
     import mutate as mu
@@ -173,7 +212,8 @@ class Projector:
             n_gpus = int(sf_c.get("num_gpus", -1))
             n_gpus = n_gpus if n_gpus > 0 else _count_gpus()
             self._nw = int(sf_c.get("num_workers_per_gpu", 2)) * n_gpus
-            self._pool = WorkerPool(
+            # Kept so the pool can be rebuilt mid-run; see recycle().
+            self._pool_kwargs = dict(
                 gpu_ids=list(range(n_gpus)),
                 num_workers_per_gpu=int(sf_c.get("num_workers_per_gpu", 2)),
                 task_qsize=0,
@@ -182,6 +222,8 @@ class Projector:
                 state_pool_opt=self._opt,
                 time_limit=self._time_limit,
             )
+            self._WorkerPool = WorkerPool
+            self._pool = WorkerPool(**self._pool_kwargs)
             print(
                 f"[SF-FR] projector: upstream WorkerPool, {self._nw} worker(s) on {n_gpus} GPU(s), "
                 f"forked in {_time.time()-t0:.1f}s (BEFORE any torch model exists in this process)",
@@ -316,6 +358,41 @@ class Projector:
                 continue
         return out
 
+    def recycle(self) -> bool:
+        """Tear the worker pool down and fork a fresh one, releasing whatever it accumulated.
+
+        THE WORKERS LEAK. Measured 2026-08-25 on a live cell: parent RSS is a flat 0.6 GiB while the
+        two workers start at ~13 GiB each and climb ~0.4 GiB/min between them. Four cells were killed
+        at ~260 GiB MaxRSS -- the node's entire memory -- losing 2 to 3 days of GPU each. SLURM
+        reports those at the JOB level as TIMEOUT and only the batch STEP as OUT_OF_MEMORY, which is
+        why they read as merely slow for days.
+
+        The leak is inside the worker process, not in anything this file owns: `scored` and `routes`
+        hold plain dicts worth tens of MB, and the worker rebuilds its StatePool per molecule. Rather
+        than chase it through upstream's sampler, recycling resets the workers to their ~13 GiB
+        baseline. The cost is one pool fork plus a model reload; the benefit is that a cell can reach
+        its full budget instead of dying at 60% of it.
+
+        Returns False for the in-process backend, which has no pool.
+        """
+        if self._backend != "parallel":
+            return False
+        try:
+            self._pool.end()
+        except Exception:  # noqa: BLE001
+            try:
+                self._pool.kill()
+            except Exception:  # noqa: BLE001
+                pass
+        import gc
+        import time as _t
+
+        gc.collect()
+        t0 = _t.time()
+        self._pool = self._WorkerPool(**self._pool_kwargs)
+        print(f"[SF-FR] recycled worker pool in {_t.time()-t0:.1f}s", flush=True)
+        return True
+
     def close(self):
         if self._backend == "parallel":
             try:
@@ -414,6 +491,8 @@ def main() -> None:
     scored: dict = {}  # smiles -> raw reward
     routes: dict = {}  # smiles -> steps
     run_t0 = time.time()
+    # 0 disables recycling; see Projector.recycle for why the default is not 0.
+    recycle_every = int(sf_c.get("recycle_workers_every_gens", 10) or 0)
     # run_dir, NOT out_dir: `out_dir = run_dir / "fixed_reward"` is not defined until the emit stage
     # far below, and the trace has to exist before the first molecule is scored.
     trace = TraceWriter(run_dir / "trace.csv")
@@ -535,6 +614,13 @@ def main() -> None:
             # is the GA population, so dumping it is the exact analogue of the other entrants'
             # weight checkpoints -- it is what a later run would have to be resumed from. Cadence is
             # ~1,000 SCORED molecules to match Saturn (oracle calls) and S3-GFN (16 steps x 64).
+            print(_rss_report(f"gen {gen}"), flush=True)
+
+            # Recycle before the workers can reach the node's memory ceiling. Every 10 generations
+            # is well short of the ~260 GiB that killed the earlier cells, and costs one pool fork.
+            if recycle_every > 0 and gen % recycle_every == 0:
+                projector.recycle()
+
             ckpt_bucket = len(scored) // 1000
             if ckpt_bucket > last_ckpt_bucket:
                 last_ckpt_bucket = ckpt_bucket
