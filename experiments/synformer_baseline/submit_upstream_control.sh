@@ -33,6 +33,9 @@ export HF_HOME=$SCRATCH/.cache/hf
 export XDG_CACHE_HOME=$SCRATCH/.cache
 mkdir -p "$TRITON_CACHE_DIR" "$MPLCONFIGDIR" "$HF_HOME"
 export PYTHONUNBUFFERED=1
+# The tdc stub must be importable by joblib/loky CHILD processes too, not just the parent --
+# they re-import graphga_sf_opt to unpickle `reproduce`. See the stub for why not PyTDC.
+export PYTHONPATH=/scratch/markymoo/rgfn_runs/synformer_control_stubs${PYTHONPATH:+:$PYTHONPATH}
 
 echo "host=$(hostname)"; nvidia-smi -L
 echo "generations=$GENERATIONS workers=$WORKERS routes=$ROUTES torch_in_parent=$TORCH_IN_PARENT"

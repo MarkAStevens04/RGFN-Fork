@@ -269,8 +269,22 @@ def main() -> None:
             break
         population_scores = oracle([Chem.MolToSmiles(m) for m in population_mol])
 
+        # TRUNCATE TO population_size, which upstream does at their line 332 and this control did
+        # not. Without it the population grows by ~offspring_size every generation (measured
+        # 100 -> 200 -> 299), so each generation projects more than the last and cost climbs
+        # quadratically -- a 16-generation run needs ~30 h rather than ~7.5. It also means the
+        # memory series would have been read under a growing workload instead of upstream's steady
+        # one. run_synformer_fixed.py already truncates at its line 707; the control was the
+        # unfaithful one.
+        ranked = sorted(zip(population_scores, population_mol), key=lambda t: t[0], reverse=True)[
+            : args.population
+        ]
+        population_mol = [t[1] for t in ranked]
+        population_scores = [t[0] for t in ranked]
+
         print(
-            f"[CTL] gen {gen}: {len(projected)} projected | project {proj_s:.0f}s | "
+            f"[CTL] gen {gen}: {len(projected)} projected | pop {len(population_mol)} | "
+            f"project {proj_s:.0f}s | "
             f"gen {time.time()-g0:.0f}s | best {max(population_scores):.3f} | "
             f"elapsed {(time.time()-run_t0)/3600:.2f} h",
             flush=True,
