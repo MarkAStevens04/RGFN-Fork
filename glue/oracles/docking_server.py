@@ -55,6 +55,7 @@ from typing import Dict, List, Optional
 # --------------------------------------------------------------------------- protocol
 # Kept import-light (stdlib only above) so the client half is importable from any env.
 _RECV_BUF = 1 << 20  # 1 MiB readline cap per message; a 200-SMILES batch is a few KB.
+_DOCK_CHUNK = 200  # molecules per round-trip; see DockingServerClient.dock for why.
 
 
 class DockingServerClient:
@@ -66,9 +67,10 @@ class DockingServerClient:
     per-molecule oracle failure), mirroring ``scripts/score_batch.py`` semantics.
     """
 
-    def __init__(self, socket_path: str, timeout: float = 3600.0):
+    def __init__(self, socket_path: str, timeout: float = 3600.0, chunk: int = _DOCK_CHUNK):
         self.socket_path = str(socket_path)
         self.timeout = timeout
+        self.chunk = int(chunk) if chunk and int(chunk) > 0 else 0
 
     def _roundtrip(self, msg: Dict) -> Dict:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
@@ -82,9 +84,40 @@ class DockingServerClient:
             return json.loads(line.decode())
 
     def dock(self, smiles: List[str]):
-        """Return ``(labels, details)`` for a batch; ``details`` is None or per-mol dicts."""
-        resp = self._roundtrip({"cmd": "dock", "smiles": list(smiles)})
-        return resp.get("labels", []), resp.get("details")
+        """Return ``(labels, details)`` for a batch; ``details`` is None or per-mol dicts.
+
+        SPLIT INTO CHUNKS, because ``timeout`` bounds ONE round-trip and the caller's batch size is
+        not bounded at all. Training steps are small (tens of molecules) but the same client scores
+        the FINAL POOL in one call -- 2,000 molecules at ~4 s each is ~8,000 s against a 3,600 s
+        socket timeout, so the request could never have returned. That is not hypothetical: it lost
+        saturn_clpp seed 43 on 2026-08-25 after the run had already spent its full 10,000-call
+        training budget, and it presents as a bare ``TimeoutError`` with no partial result, because
+        an un-chunked request has nothing partial to hand back.
+
+        200 is the measured sweet spot for a single QuickVina2-GPU process (Logs/036: 3.3x over
+        per-molecule calls, and memory-flat), and it keeps a chunk at ~800 s -- comfortably inside
+        the timeout even if a chunk docks several times slower than the fleet average.
+        """
+        smiles = list(smiles)
+        if not self.chunk or len(smiles) <= self.chunk:
+            resp = self._roundtrip({"cmd": "dock", "smiles": smiles})
+            return resp.get("labels", []), resp.get("details")
+
+        labels: List = []
+        details: Optional[List] = None
+        for i in range(0, len(smiles), self.chunk):
+            resp = self._roundtrip({"cmd": "dock", "smiles": smiles[i : i + self.chunk]})
+            got = resp.get("labels", [])
+            d = resp.get("details")
+            # Pad against the RUNNING LABEL COUNT, not the loop index: a chunk that comes back short
+            # would otherwise slide every later detail out of line with its molecule, and a silently
+            # misaligned pose is worse than a missing one.
+            if d is not None and details is None:
+                details = [None] * len(labels)
+            if details is not None:
+                details.extend(d if d is not None else [None] * len(got))
+            labels.extend(got)
+        return labels, details
 
     def ping(self) -> Dict:
         return self._roundtrip({"cmd": "ping"})
@@ -109,7 +142,9 @@ class DockingServerClient:
         return False
 
 
-def client_from_env(env_var: str = "RGFN_DOCK_SOCKET", timeout: float = 3600.0):
+def client_from_env(
+    env_var: str = "RGFN_DOCK_SOCKET", timeout: float = 3600.0, chunk: int = _DOCK_CHUNK
+):
     """Return a :class:`DockingServerClient` if ``env_var`` names a socket, else ``None``.
 
     A docking reward bridge calls this at construction: if the submit script launched a
@@ -119,7 +154,7 @@ def client_from_env(env_var: str = "RGFN_DOCK_SOCKET", timeout: float = 3600.0):
     path = os.environ.get(env_var)
     if not path:
         return None
-    return DockingServerClient(path, timeout=timeout)
+    return DockingServerClient(path, timeout=timeout, chunk=chunk)
 
 
 # ----------------------------------------------------------------------------- server

@@ -26,6 +26,15 @@
 # Deliberately NOT the full 10-point ladder: the middle budgets are where the MILP wall lives
 # (S3-GFN R=200/300 both hit a 1800 s cap) and they are not what the paper reports.
 #
+# ROUTE SOURCE. Defaults to the MultiAiZ artifact each pool dir carries. The route-BEARING entrants
+# (SynFormer, TANGO) instead ship their own routes.jsonl, and TANGO ships two — one per route arm —
+# so the file is named rather than assumed. Point ROUTES_NAME at a file INSIDE each pool dir, which
+# keeps this a single loop over POOLS and makes "same pool, different route source" the natural way
+# to run an arm comparison:
+#   POOLS="tango_seh_seed42_N500 tango_seh_seed42_pruned_N218" \
+#       ROUTE_SOURCE=external ROUTES_NAME=routes_arm2.jsonl TAG_SUFFIX=ARM2 \
+#       sbatch experiments/lsd_hubs/campaign/submit_sb_readout.sh
+#
 # Usage — POOLS is a space-separated list of pool directory NAMES under multiaiz_pools/:
 #   POOLS="reinvent_seh_seed42_N500 reinvent_seh_seed43_N500" \
 #       sbatch experiments/lsd_hubs/campaign/submit_sb_readout.sh
@@ -42,6 +51,9 @@ GATE=${GATE:-7.0}
 CUTOFF=${CUTOFF:-0.5}
 BUDGETS=${BUDGETS:-50,100}
 MAX_SECONDS=${MAX_SECONDS:-3600}
+ROUTE_SOURCE=${ROUTE_SOURCE:-multiaiz}
+ROUTES_NAME=${ROUTES_NAME:-multiaiz_routes.json}
+TAG_SUFFIX=${TAG_SUFFIX:-SB}
 
 # Compute nodes cannot write $HOME. Anything that caches there must be redirected or the job dies
 # minutes in with a PermissionError (job 73617).
@@ -55,24 +67,25 @@ source /home/markymoo/miniconda3/etc/profile.d/conda.sh
 
 echo "host=$(hostname)  POOLS=$POOLS"
 echo "budgets=$BUDGETS  max_seconds=$MAX_SECONDS  gate=$GATE  cutoff=$CUTOFF"
+echo "route_source=$ROUTE_SOURCE  routes_name=$ROUTES_NAME  tag_suffix=$TAG_SUFFIX"
 
 FAILED=""
 for P in $POOLS; do
     D="$POOL_ROOT/$P"
     echo ""
     echo "############ $P ############"
-    if [ ! -s "$D/multiaiz_routes.json" ]; then
-        echo "SKIP $P — no cached routes at $D/multiaiz_routes.json" >&2
+    if [ ! -s "$D/$ROUTES_NAME" ]; then
+        echo "SKIP $P — no cached routes at $D/$ROUTES_NAME" >&2
         FAILED="$FAILED $P(noroutes)"; continue
     fi
     # DRD2 pools use a different gate; infer it rather than making the caller remember.
     G="$GATE"; case "$P" in *_drd2_*) G=${DRD2_GATE:-0.5} ;; esac
-    OUT="$RES_ROOT/${P}_SB_R${BUDGETS//,/_}"
+    OUT="$RES_ROOT/${P}_${TAG_SUFFIX}_R${BUDGETS//,/_}"
     conda run --no-capture-output -n rgfn python \
         experiments/lsd_hubs/campaign/sparrow_select_frontier.py \
-        --routes "$D/multiaiz_routes.json" --pool "$D/pool_scores.csv" --route-source multiaiz \
+        --routes "$D/$ROUTES_NAME" --pool "$D/pool_scores.csv" --route-source "$ROUTE_SOURCE" \
         --gate "$G" --cutoff "$CUTOFF" --budgets "$BUDGETS" --max-seconds "$MAX_SECONDS" \
-        --out-dir "$OUT" --tag "${P}_SB"
+        --out-dir "$OUT" --tag "${P}_${TAG_SUFFIX}"
     rc=$?
     if [ "$rc" -eq 0 ]; then echo "$P OK -> $OUT"; else echo "$P FAILED rc=$rc" >&2; FAILED="$FAILED $P"; fi
 done

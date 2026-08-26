@@ -256,6 +256,15 @@ class Projector:
         from synformer.chem.mol import Molecule
 
         frames, t0 = [], _time.time()
+
+        # SUBMIT NEEDS THE GUARD MORE THAN FETCH DOES. Upstream's `submit` is
+        # `JoinableQueue.put(block=True, timeout=None)` on a BOUNDED queue, so once the workers stop
+        # draining it the parent blocks in `put` forever -- before it ever reaches the guarded fetch
+        # loop below. That is exactly how the 2026-08-23 ClpP cells were lost: SLURM logged 1-3
+        # `oom_kill` events per step, the workers died, and each job then sat in `put` for ~60 h of
+        # its 72 h walltime having written nothing since hour 10. The fetch timeout could not fire
+        # because control never got there. So: verify the pool is alive, and recycle it if not.
+        self._ensure_workers_alive()
         for smi in smiles_list:
             self._pool.submit(Molecule(smi))
         # A TIMEOUT, unlike upstream's blocking fetch. A worker that dies or deadlocks must surface
@@ -358,7 +367,28 @@ class Projector:
                 continue
         return out
 
-    def recycle(self) -> bool:
+    def _ensure_workers_alive(self) -> None:
+        """Recycle the pool if any worker has died, so an OOM kill costs a fork, not the walltime.
+
+        The OOM killer reaps a WORKER, never the parent -- the parent is the small process (0.6 GiB
+        against the workers' tens of GiB). Nothing in upstream notices: the queues stay valid, the
+        parent stays healthy, and the run wedges silently at the next `submit`. Checking `is_alive()`
+        is the whole detection, and `recycle()` is already the repair.
+        """
+        if self._backend != "parallel":
+            return
+        dead = [(i, w.exitcode) for i, w in enumerate(self._pool._workers) if not w.is_alive()]
+        if not dead:
+            return
+        print(
+            f"[SF-FR] WARNING: {len(dead)}/{len(self._pool._workers)} projection workers are dead "
+            f"(index, exitcode) = {dead} -- almost certainly OOM-killed. Recycling the pool. "
+            "Results already fetched are kept; the tasks those workers held are lost.",
+            flush=True,
+        )
+        self.recycle(force=True)
+
+    def recycle(self, force: bool = False) -> bool:
         """Tear the worker pool down and fork a fresh one, releasing whatever it accumulated.
 
         THE WORKERS LEAK. Measured 2026-08-25 on a live cell: parent RSS is a flat 0.6 GiB while the
@@ -377,13 +407,23 @@ class Projector:
         """
         if self._backend != "parallel":
             return False
-        try:
-            self._pool.end()
-        except Exception:  # noqa: BLE001
+        # `force` MUST skip end(). Upstream's end() puts one sentinel per worker on the BOUNDED task
+        # queue and then calls JoinableQueue.join() -- so against a pool whose workers are already
+        # dead it blocks on a full queue and then waits forever for task_done() calls that will never
+        # come. The graceful path is only graceful when the workers are alive to be graceful with.
+        if force:
             try:
                 self._pool.kill()
             except Exception:  # noqa: BLE001
                 pass
+        else:
+            try:
+                self._pool.end()
+            except Exception:  # noqa: BLE001
+                try:
+                    self._pool.kill()
+                except Exception:  # noqa: BLE001
+                    pass
         import gc
         import time as _t
 
