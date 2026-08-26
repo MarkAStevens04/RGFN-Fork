@@ -208,6 +208,14 @@ def main() -> None:
                     route_stats["with_route"] += int((df[_route_col].fillna("") != "").sum())
             return df.smiles.to_list()
 
+    # CHDIR INTO THE CLONE, for the same reason run_synformer_fixed.py does at its line 633: the
+    # checkpoint stores chem.fpindex / chem.rxn_matrix as RELATIVE paths ("data/processed/comp_2048/
+    # fpindex.pkl") and each worker resolves them against cwd, so from the repo root every worker
+    # dies with FileNotFoundError and the parent then waits on results that will never come. Every
+    # path this script holds is absolute, so the chdir is safe.
+    os.chdir(_CLONE)
+    print(f"[CTL] cwd -> {os.getcwd()} (checkpoint stores relative data paths)", flush=True)
+
     start_file = _CLONE / "data" / "chembl_filtered_1k.txt"
     all_smiles = [l.strip() for l in open(start_file) if l.strip()]
     rng = np.random.default_rng(42)
