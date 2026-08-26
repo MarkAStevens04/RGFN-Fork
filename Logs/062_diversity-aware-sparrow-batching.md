@@ -549,6 +549,42 @@ curves were all regenerated 08-20 11:00-11:02, i.e. *after* the enum fix, so the
 
 ---
 
+## Update 2026-08-25 — DRD2 CONVERGES, so the arm is not bound-only after all
+
+Jobs 74727/74728 ran HB-Enum-SB on DRD2 (seeds 43/44, gate 0.5, λ=1) and **all six budget points
+returned `Optimal`** — no `TimeLimit` anywhere, in 2 h and 3 h 54 m against a 12 h cap. This partially
+revises the 2026-08-23 update below: the arm is compute-limited on sEH, not in general.
+
+| seed | ours | HB-Enum-SB | ratio | rxn/mode (theirs) | solver |
+|---|---|---|---|---|---|
+| 43 | 78 | 28 | **2.79×** | 1.25 | Optimal |
+| 44 | 78 | 15 | **5.20×** | 1.40 | Optimal |
+
+**Why DRD2 solved where sEH did not, stated plainly because it is the caveat.** DRD2 was capped at
+`--top-n 50000` to match its own competitor arm (every `drd2_enumR100_*` row used N=50000), while the
+sEH runs were uncapped at 123k–150k. So the DRD2 MILP faced roughly a third of the variables. The cap
+choice is defensible *within* DRD2 — it keeps that head-to-head like-for-like — but it means **the two
+targets are not comparable on pool size**, and a table carrying both must say so rather than implying
+the arm behaves differently on DRD2 chemistry.
+
+**The spread is the competitor's, not ours.** Our side is 78 / 78 — identical across seeds. Theirs is
+28 / 15. So the 2.79×–5.20× range is entirely SPARROW's sensitivity to its candidate set, the same
+instability as the CV of 29% in Result 13. **Quote the range, not a two-seed mean**; a mean here would
+imply a precision the measurement does not have.
+
+**Reaction efficiency is near parity at this budget**, unlike at 300 reactions: theirs 1.25 / 1.40
+rxn/mode against ours ≈1.28. Consistent with the standing explanation — SPARROW optimises exactly that
+and carries no diversity term — and worth stating rather than quoting only the count advantage.
+
+**Both new guards fired green**, their first clean end-to-end run on fresh work:
+`provenance OK — run and snapshot both from scent_drd2_5k/seed43` and `run-fragment recipe coverage
+100.0% of 301 fragments the run actually uses`.
+
+**So the arm's status is split, and should be reported that way:** a converged comparison on DRD2
+(2.8–5.2×, n=2, capped pool), and a lower bound on sEH (uncapped, non-convergent). Not "bound only".
+
+---
+
 ## Update 2026-08-23 — HB-Enum-SB does not converge on the corrected pools; the arm is reported as a BOUND
 
 The 2026-08-19 enumeration cap-fix multiplied the qualifying pools ~6× (21k → 123k-150k above gate),
