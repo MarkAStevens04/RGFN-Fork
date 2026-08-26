@@ -497,6 +497,39 @@ Three caveats before those routes are priced:
   inflates TANGO's reaction count, i.e. it flatters us, so it is a fairness lever worth raising rather
   than a bug to leave in place.
 
+#### Which route arm TANGO gets: ARM 2, the pool sweep (measured 2026-08-26)
+
+TANGO's in-loop routes are a **by-product of training**, not a plan for the pool it finally emits, so
+there are two ways to get routes for the 2,000 molecules it hands us:
+
+* **ARM 1 — reuse the in-loop `route_0.pkl`s.** Free; they already exist.
+* **ARM 2 — re-run syntheseus over the emitted pool.** 3.5 h on one GPU for 2,000 targets.
+
+Both were priced on the SAME pool so the route source is the only variable, at the primary R=100
+readout, sEH seed 42:
+
+| pool | arm | routed | modes @ R=100 | used_rxns | stop reason |
+|---|---|---|---|---|---|
+| naive N=500 | ARM 1 | 228 (46%) | 4 | 100 | budget-binding |
+| naive N=500 | ARM 2 | 485 (97%) | 5 | 100 | budget-binding |
+| pruned N=218 | ARM 1 | **7 (3%)** | 7 | **29** | **pool-exhausted — NOT comparable** |
+| pruned N=218 | ARM 2 | 201 (92%) | **47** | 100 | budget-binding |
+
+**Lead with ARM 2 on the pruned pool: 47 modes at 100 reactions.** The reason is not that ARM 2 finds
+better routes — on the naive pool the two arms are within one mode of each other, because that pool is
+too collapsed for coverage to matter. It is that **ARM 1's coverage is correlated with the collapse**.
+TANGO solves routes in-loop for the molecules it is generating most of, which are the near-duplicates
+in the high-scoring band; on the pruned pool — the mutually dissimilar molecules — ARM 1 covers 7 of
+218. ARM 1 cannot spend even a 100-reaction budget there (`used_rxns` 29), so its 7 modes are a
+pool-exhausted cell that must be flagged, never quoted as "7 modes at 100 reactions".
+
+Two things to carry into the paper. First, ARM 2 costs 3.5 h/cell and is the only arm that makes
+TANGO's pruned pool priceable at all, so it is the fair arm, not merely the flattering one. Second,
+TANGO's whole above-gate set of 1,853 molecules contains only **218 distinct** at tau=0.5 — the same
+Saturn-family collapse TANGO inherits from its generator — so even its best case (47) sits below
+REINVENT's naive pool (58) and well below REINVENT pruned (71). Report the collapse as the finding;
+do not let the arm choice hide it.
+
 **Which inventory TANGO gets: ZINCFrag, the 200k-SMILES ZINC-derived set S3-GFN was given.** The
 first choice was "whatever stock MultiAiZ prices against", for commensurability — but that stock
 (`data/models/aizynthfinder/zinc_stock.hdf5`, 17.4M rows) stores **InChI keys, not SMILES**, because
