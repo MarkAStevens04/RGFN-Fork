@@ -70,12 +70,22 @@ from validation.lsdflow.metrics.diversity import (  # noqa: E402
 )
 
 
-def load_ranked(path: Path, gate: float, higher_is_better: bool):
+def load_ranked(path: Path, gate: float, higher_is_better: bool, score_column: str = "score"):
     """[(smiles, score)] above the gate, DEDUPLICATED, best-score-first.
 
     Dedup is load-bearing for the same reason it is in ``build_s3gfn_pools.py``: a row in a generator
     dump is a sampling EVENT, not a candidate. Counting modes over raw rows would report the pool as
-    both larger and less diverse than it is."""
+    both larger and less diverse than it is.
+
+    ``score_column`` MUST match ``higher_is_better``, and this gate read the wrong one for every
+    docking target until 2026-08-26. candidates.csv carries both ``score`` -- the generator's training
+    reward, which for docking is clip(-vina), a POSITIVE 0..11 number -- and ``raw_score``, raw Vina
+    kcal/mol. The mode gates are defined on the RAW value (ClpP -8.0, Logs/045). Reading ``score``
+    against -8.0 finds NOTHING below the bar, so this pre-flight aborted all sixteen ClpP chain-cells
+    as "fewer than 10 modes -- nothing to measure" while 645 of 2,000 molecules were in fact passing
+    on ``raw_score``. That would have entered the paper as a pool-size finding about the baselines.
+    ``build_s3gfn_pools.py`` already resolved this correctly; the two must agree or the pre-flight
+    gates a pool the builder would happily have built."""
     best: dict = {}
     n_rows = 0
     with open(path, newline="") as fh:
@@ -83,7 +93,10 @@ def load_ranked(path: Path, gate: float, higher_is_better: bool):
             n_rows += 1
             smi = row.get("smiles") or row.get("SMILES") or row.get("child_key")
             try:
-                val = float(row.get("score", row.get("reward")))
+                raw = row.get(score_column)
+                if raw is None:
+                    raw = row.get("score", row.get("reward"))
+                val = float(raw)
             except (TypeError, ValueError):
                 continue
             if not smi:
@@ -135,6 +148,13 @@ def main() -> None:
         "(naive = the top-N prefix, pruned = N mutually distinct drawn from the whole set)",
     )
     ap.add_argument(
+        "--score-column",
+        default=None,
+        help="which candidates.csv column carries the gated value. Defaults to `raw_score` when "
+        "--lower-is-better is set (the docking convention) and `score` otherwise -- the SAME rule "
+        "build_s3gfn_pools.py uses; they must not diverge.",
+    )
+    ap.add_argument(
         "--lower-is-better",
         action="store_true",
         help="docking targets: the gate is an upper bound on a raw energy",
@@ -148,7 +168,12 @@ def main() -> None:
     a = ap.parse_args()
 
     hib = not a.lower_is_better
-    ranked, n_rows = load_ranked(Path(a.candidates), a.gate, hib)
+    score_col = a.score_column or ("score" if hib else "raw_score")
+    ranked, n_rows = load_ranked(Path(a.candidates), a.gate, hib, score_column=score_col)
+    print(
+        f"[saturation] gating column: {score_col} (higher_is_better={hib}, gate={a.gate})",
+        flush=True,
+    )
     if not ranked:
         raise SystemExit(
             f"[saturation] NO molecules pass the gate ({'>' if hib else '<'} {a.gate}) in "
