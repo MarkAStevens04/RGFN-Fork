@@ -265,31 +265,85 @@ class Projector:
         # its 72 h walltime having written nothing since hour 10. The fetch timeout could not fire
         # because control never got there. So: verify the pool is alive, and recycle it if not.
         self._ensure_workers_alive()
+
+        # POLL, DO NOT PARK. One blocking fetch(timeout=budget) cannot tell "this molecule is genuinely
+        # taking 40 minutes" from "the worker holding it was OOM-killed and no answer is ever coming",
+        # so it has to wait out the full budget before it can say anything -- and then the only honest
+        # thing left to say is SystemExit, losing a ~19 h cell to one dead worker. Polling on a short
+        # timeout and re-checking liveness separates the two cases in seconds, and the outstanding
+        # molecules can simply be resubmitted to a fresh pool. Worth the extra bookkeeping: SLURM
+        # logged 1-3 oom_kill events on EVERY ClpP job, so this is the common failure, not the rare one.
+        poll_s = 30.0
+        budget = self._time_limit * self._max_evolve + 300  # per-molecule patience, unchanged
+        pending = {s: None for s in smiles_list}  # insertion-ordered; value unused
         for smi in smiles_list:
             self._pool.submit(Molecule(smi))
-        # A TIMEOUT, unlike upstream's blocking fetch. A worker that dies or deadlocks must surface
-        # as an error in minutes, not consume the job's entire walltime in silence.
-        budget = self._time_limit * self._max_evolve + 300
-        for i in range(len(smiles_list)):
+
+        n_done = 0
+        n_lost = 0
+        recycles = 0
+        deadline = _time.time() + budget
+        total = len(smiles_list)
+        while n_done + n_lost < total:
             try:
-                _, df = self._pool.fetch(block=True, timeout=budget)
+                task, df = self._pool.fetch(block=True, timeout=poll_s)
             except _q.Empty:
-                alive = [(w.is_alive(), w.exitcode) for w in self._pool._workers]
-                raise SystemExit(
-                    f"[SF-FR] worker pool produced nothing for {budget}s after {i}/"
-                    f"{len(smiles_list)} results; workers (alive, exitcode) = {alive}. "
-                    "If they are alive with exitcode None this is the fork-after-torch deadlock — "
-                    "see the Projector docstring."
-                )
+                dead = [
+                    (i, w.exitcode) for i, w in enumerate(self._pool._workers) if not w.is_alive()
+                ]
+                if dead:
+                    # Recycle and resubmit whatever never came back. The tasks the dead workers held
+                    # are gone from the queue with them, so without the resubmit those molecules would
+                    # never be fetched and this loop would spin to the deadline.
+                    if recycles >= 3:
+                        print(
+                            f"[SF-FR] giving up on this generation after {recycles} recycles; "
+                            f"dropping {len(pending)} unprojected molecules and continuing.",
+                            flush=True,
+                        )
+                        n_lost += len(pending)
+                        pending.clear()
+                        break
+                    recycles += 1
+                    print(
+                        f"[SF-FR] {len(dead)} worker(s) died mid-generation (index, exitcode) = "
+                        f"{dead}; recycling and resubmitting {len(pending)} outstanding molecule(s) "
+                        f"[{n_done}/{total} already in hand].",
+                        flush=True,
+                    )
+                    self.recycle(force=True)
+                    for smi in list(pending):
+                        self._pool.submit(Molecule(smi))
+                    deadline = _time.time() + budget
+                    continue
+                if _time.time() > deadline:
+                    alive = [(w.is_alive(), w.exitcode) for w in self._pool._workers]
+                    raise SystemExit(
+                        f"[SF-FR] worker pool produced nothing for {budget}s after {n_done}/"
+                        f"{total} results; workers (alive, exitcode) = {alive}. "
+                        "If they are alive with exitcode None this is the fork-after-torch "
+                        "deadlock — see the Projector docstring."
+                    )
+                continue
+
+            # A result landed: the pool is making progress, so the patience window restarts.
+            deadline = _time.time() + budget
+            pending.pop(getattr(task, "smiles", None), None)
+            n_done += 1
             if len(df):
                 frames.append(df)
-            if (i + 1) % 20 == 0 or (i + 1) == len(smiles_list):
+            if n_done % 20 == 0 or n_done == total:
                 el = _time.time() - t0
                 print(
-                    f"[SF-FR]   projected {i+1}/{len(smiles_list)} in {el:.0f}s "
-                    f"({el/(i+1):.1f}s/molecule)",
+                    f"[SF-FR]   projected {n_done}/{total} in {el:.0f}s "
+                    f"({el/n_done:.1f}s/molecule)",
                     flush=True,
                 )
+        if n_lost:
+            print(
+                f"[SF-FR]   generation lost {n_lost}/{total} molecules to worker deaths.",
+                flush=True,
+            )
         return frames
 
     def _project_inprocess(self, smiles_list):
