@@ -139,7 +139,11 @@ conda run --no-capture-output -n rgfn python experiments/lsd_hubs/campaign/build
 # A pruned pool is emitted at the size the generator can actually supply, and the directory is named
 # for that size — Saturn sEH s42 asks for 500 and writes _N338. Resolve the real directory instead of
 # assuming _N$N, or a pool-limited cell dies here on a path that was never going to exist.
-if [ ! -s "$POOL_DIR/pool.smi" ] && [ "$POOL" = pruned ]; then
+# Applies to BOTH pool variants as of 2026-08-26: the naive builder now clamps to availability
+# instead of skipping, so a naive cell short of N also writes _N<actual> (S3-GFN sEH s43 asks for
+# 500 and writes _N65). Restricting this resolution to pruned is what turned eight short cells into
+# "FATAL: pool not built" and lost them, seven of the eight being S3-GFN.
+if [ ! -s "$POOL_DIR/pool.smi" ]; then
     ACTUAL=$(ls -d "$POOL_ROOT/${TAG}"_N[0-9]* 2>/dev/null | head -1)
     if [ -n "$ACTUAL" ] && [ -s "$ACTUAL/pool.smi" ]; then
         echo "  pool-limited: requested N=$N, using $(basename "$ACTUAL")"

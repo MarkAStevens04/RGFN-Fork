@@ -155,6 +155,13 @@ def main() -> None:
         help="which candidates.csv column carries the gated value. Defaults to `raw_score` when "
         "--lower-is-better is set (the docking convention) and `score` otherwise.",
     )
+    ap.add_argument(
+        "--strict-naive",
+        action="store_true",
+        help="restore the pre-2026-08-26 behaviour: SKIP a naive pool that cannot supply N distinct "
+        "molecules instead of clamping to what exists. Skipping loses the cell entirely, which "
+        "disproportionately deletes weak-baseline cells (7 of the 8 short cells are S3-GFN).",
+    )
     ap.add_argument("--verify", default="", help="compare against this existing pool dir and exit")
     ap.add_argument(
         "--pruned",
@@ -235,14 +242,39 @@ def main() -> None:
         raise SystemExit("[pools] --out-root and --tag are required unless --verify")
 
     sizes = [int(x) for x in a.sizes.split(",") if x.strip()]
+    if not a.pruned and not a.strict_naive:
+        # CLAMP THE NAIVE POOL TOO (changed 2026-08-26). The strict skip this replaces was a
+        # deliberate choice -- its reasoning, preserved below, is that an _N500 directory holding 300
+        # molecules misstates the pool. That is right, but it argues against MISNAMING, not against
+        # building: the pruned path answered the same objection by naming the directory for the size
+        # actually written, and an _N154 dir claims nothing it does not hold.
+        #
+        # The skip had to go because of WHICH cells it deletes. Eight of thirty-five fall short of
+        # 500 on the naive arm and SEVEN are S3-GFN -- 154/65/168 above the sEH gate across its three
+        # seeds, 263/243/302 on ClpP, 97 on DRD2 s44 -- against Saturn's ~1,900 every time. So the
+        # skip silently removed exactly the cells where a baseline is weakest, and a published table
+        # with S3-GFN's sEH column blank would be hiding its worst result rather than reporting it.
+        # A pool of 65 is a finding; a missing directory is a pipeline artifact.
+        #
+        # Clamped naive pools are marked pool_limited in pool_meta.json so downstream can never quote
+        # one as a 500-molecule pool, and their stop reason is pool-exhausted, not budget-binding.
+        # --strict-naive restores the old behaviour.
+        clamped = sorted({min(n, len(rows)) for n in sizes})
+        if clamped != sorted(set(sizes)):
+            print(
+                f"  WARNING: only {len(rows)} distinct molecules above the gate. This cell is "
+                f"POOL-LIMITED on the naive pool — report it as such."
+            )
+            print(f"  naive: sizes clamped to availability {sorted(set(sizes))} -> {clamped}")
+        sizes = clamped
     if a.pruned:
         # A pruned pool SHORT of the request is the RESULT, not an error, so emit it at its true
         # size rather than skipping. Clamping (not skipping) is what makes a mode-collapsed entrant
         # priceable at all: Saturn sEH s42 supplies 338 of a requested 500, and 338 still clears the
         # ~100 modes a 100-reaction budget could buy. The directory is named for the size actually
         # written, so an _N338 dir never claims to be 500.
-        # The NAIVE path deliberately keeps the strict skip below: there a shortfall means the gate
-        # left too few molecules, and an _N500 dir holding 300 would misstate the pool.
+        # The NAIVE path clamps the same way as of 2026-08-26 -- see the block above for why the
+        # strict skip it used to keep was removed, and --strict-naive to get it back.
         clamped = sorted({min(n, len(rows)) for n in sizes})
         if clamped != sorted(set(sizes)):
             print(f"  pruned: sizes clamped to availability {sorted(set(sizes))} -> {clamped}")
@@ -258,13 +290,24 @@ def main() -> None:
             print(f"  N={n:<6} SKIP — {out_dir} already has multiaiz_routes.json (planned pool)")
             continue
         write_pool(out_dir, rows[:n])
+        n_requested = max(int(x) for x in a.sizes.split(",") if x.strip())
         if a.pruned:
-            meta = dict(
-                pruned_meta, n_requested=max(int(x) for x in a.sizes.split(",") if x.strip())
-            )
-            meta["n_written"] = n
-            meta["pool_limited"] = meta["n_written"] < meta["n_requested"]
-            (out_dir / "pool_meta.json").write_text(json.dumps(meta, indent=2))
+            meta = dict(pruned_meta, n_requested=n_requested)
+        else:
+            # A clamped NAIVE pool needs the same marker as a clamped pruned one, or nothing
+            # downstream can tell an _N154 pool from a 154-molecule slice of a larger one -- and the
+            # difference is whether the cell is pool-exhausted or budget-binding.
+            meta = {
+                "pool": "naive",
+                "gate": a.gate,
+                "score_column": col,
+                "higher_is_better": not a.lower_is_better,
+                "n_distinct_above_gate": len(rows),
+                "n_requested": n_requested,
+            }
+        meta["n_written"] = n
+        meta["pool_limited"] = meta["n_written"] < meta["n_requested"]
+        (out_dir / "pool_meta.json").write_text(json.dumps(meta, indent=2))
         print(f"  N={n:<6} -> {out_dir}/pool.smi")
 
 
