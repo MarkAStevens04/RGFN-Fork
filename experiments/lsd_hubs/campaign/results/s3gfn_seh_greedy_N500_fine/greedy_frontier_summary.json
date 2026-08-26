@@ -1,0 +1,235 @@
+{
+  "tag": "s3gfn_seh_multiaiz_greedy_fine",
+  "selection": "greedy",
+  "gate": 7.0,
+  "cutoff": 0.5,
+  "n_modes_available": 192,
+  "n_routed": 478,
+  "rows": [
+    {
+      "n_modes": 26,
+      "used_rxns": 73,
+      "n_selected": 26,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.8077,
+      "milp_status": "Optimal",
+      "n_targets_priced": 26
+    },
+    {
+      "n_modes": 27,
+      "used_rxns": 75,
+      "n_selected": 27,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.7778,
+      "milp_status": "Optimal",
+      "n_targets_priced": 27
+    },
+    {
+      "n_modes": 28,
+      "used_rxns": 77,
+      "n_selected": 28,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.75,
+      "milp_status": "Optimal",
+      "n_targets_priced": 28
+    },
+    {
+      "n_modes": 29,
+      "used_rxns": 78,
+      "n_selected": 29,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.6897,
+      "milp_status": "Optimal",
+      "n_targets_priced": 29
+    },
+    {
+      "n_modes": 30,
+      "used_rxns": 81,
+      "n_selected": 30,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.7,
+      "milp_status": "Optimal",
+      "n_targets_priced": 30
+    },
+    {
+      "n_modes": 31,
+      "used_rxns": 83,
+      "n_selected": 31,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.6774,
+      "milp_status": "Optimal",
+      "n_targets_priced": 31
+    },
+    {
+      "n_modes": 32,
+      "used_rxns": 85,
+      "n_selected": 32,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.6562,
+      "milp_status": "Optimal",
+      "n_targets_priced": 32
+    },
+    {
+      "n_modes": 33,
+      "used_rxns": 87,
+      "n_selected": 33,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.6364,
+      "milp_status": "Optimal",
+      "n_targets_priced": 33
+    },
+    {
+      "n_modes": 34,
+      "used_rxns": 89,
+      "n_selected": 34,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.6176,
+      "milp_status": "Optimal",
+      "n_targets_priced": 34
+    },
+    {
+      "n_modes": 35,
+      "used_rxns": 91,
+      "n_selected": 35,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.6,
+      "milp_status": "Optimal",
+      "n_targets_priced": 35
+    },
+    {
+      "n_modes": 36,
+      "used_rxns": 93,
+      "n_selected": 36,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5833,
+      "milp_status": "Optimal",
+      "n_targets_priced": 36
+    },
+    {
+      "n_modes": 37,
+      "used_rxns": 96,
+      "n_selected": 37,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5946,
+      "milp_status": "Optimal",
+      "n_targets_priced": 37
+    },
+    {
+      "n_modes": 38,
+      "used_rxns": 98,
+      "n_selected": 38,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5789,
+      "milp_status": "Optimal",
+      "n_targets_priced": 38
+    },
+    {
+      "n_modes": 39,
+      "used_rxns": 101,
+      "n_selected": 39,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5897,
+      "milp_status": "Optimal",
+      "n_targets_priced": 39
+    },
+    {
+      "n_modes": 40,
+      "used_rxns": 103,
+      "n_selected": 40,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.575,
+      "milp_status": "Optimal",
+      "n_targets_priced": 40
+    },
+    {
+      "n_modes": 41,
+      "used_rxns": 105,
+      "n_selected": 41,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.561,
+      "milp_status": "Optimal",
+      "n_targets_priced": 41
+    },
+    {
+      "n_modes": 42,
+      "used_rxns": 107,
+      "n_selected": 42,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5476,
+      "milp_status": "Optimal",
+      "n_targets_priced": 42
+    },
+    {
+      "n_modes": 43,
+      "used_rxns": 109,
+      "n_selected": 43,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5349,
+      "milp_status": "Optimal",
+      "n_targets_priced": 43
+    },
+    {
+      "n_modes": 44,
+      "used_rxns": 111,
+      "n_selected": 44,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5227,
+      "milp_status": "Optimal",
+      "n_targets_priced": 44
+    },
+    {
+      "n_modes": 45,
+      "used_rxns": 113,
+      "n_selected": 45,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5111,
+      "milp_status": "Optimal",
+      "n_targets_priced": 45
+    },
+    {
+      "n_modes": 46,
+      "used_rxns": 116,
+      "n_selected": 46,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5217,
+      "milp_status": "Optimal",
+      "n_targets_priced": 46
+    },
+    {
+      "n_modes": 47,
+      "used_rxns": 118,
+      "n_selected": 47,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5106,
+      "milp_status": "Optimal",
+      "n_targets_priced": 47
+    },
+    {
+      "n_modes": 48,
+      "used_rxns": 120,
+      "n_selected": 48,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.5,
+      "milp_status": "Optimal",
+      "n_targets_priced": 48
+    },
+    {
+      "n_modes": 49,
+      "used_rxns": 125,
+      "n_selected": 49,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.551,
+      "milp_status": "Optimal",
+      "n_targets_priced": 49
+    },
+    {
+      "n_modes": 50,
+      "used_rxns": 128,
+      "n_selected": 50,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 2.56,
+      "milp_status": "Optimal",
+      "n_targets_priced": 50
+    }
+  ]
+}

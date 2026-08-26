@@ -347,3 +347,44 @@ uniformly good or bad.
 | candidate pool the selector saw | 500 | 26,069 candidates / 64 hubs |
 | surrogate calls | ~500 | far higher (155,764 for 300 modes at K=20, entry [050]) |
 | route-planning compute | 2.25 h | 0 |
+
+---
+
+## Update 2026-08-26 — the greedy arm now reads EXACTLY at the 100-reaction budget
+
+The primary readout is modes at a fixed reaction budget (`CLAUDE.md`, decided 2026-08-17), and this
+entry's diversity-aware greedy arm could not be read on it. Its frontier was priced at
+`--mode-points 25,50,75,100,125,150`, so around 100 reactions the grid jumps 25 modes / 70 rxns →
+50 modes / 128 rxns. Nothing lands at 100, and the arm could only be **bounded** to [25, 49] modes.
+That is a 2× spread on the number the paper's Table 1 divides by, and it is the *competitor's
+strongest* arm, so the bound was doing real damage: reported conservatively it flattered them,
+reported optimistically it flattered us.
+
+Re-priced at 1-mode granularity (`--mode-points 26..50`, 25 MILP solves, all `Optimal`, minutes of
+wall-clock) against the **same frozen inputs** — `multiaiz_routes.json` mtime 2026-08-04 18:05,
+untouched since this entry's original run on 08-05, so this is a granularity refinement and not a
+re-measurement:
+
+| modes | reactions | |
+|---|---|---|
+| 37 | 96 | |
+| **38** | **98** | **the readout at R=100** |
+| 39 | 101 | first step that exceeds the budget |
+
+**The competitor's strongest pipeline delivers 38 distinct molecules at 100 reactions.** Against our
+82 (`scent_seh_freefrag`, gate 7.0, free-frag K=0) that is **2.16×**, and against the SPARROW-selects
+arm's 24 it is 3.42×. **Lead with 2.16×** — it is the conservative comparator and the one this entry
+was built to supply. Their reactions/mode at that point is 2.58 against our 1.22.
+
+Note the pool directory has since been renamed `OLDBUDGET_s3gfn_seh_seed42_N500` by another agent,
+with no explanation recorded in the repo. It is the only `s3gfn_seh` MultiAiZ pool that exists, and
+it is the pool this entry's published numbers were measured on, so the refinement is self-consistent
+— but **what convention the rename marks is an open question**, and it should be answered before the
+number is quoted in a submission.
+
+### Files
+
+- `./experiments/lsd_hubs/campaign/results/s3gfn_seh_greedy_N500_fine/greedy_frontier.csv` — **new**.
+  The 1-mode grid, 26–50 modes. `greedy_frontier_summary.json` beside it carries the config.
+- Command: `sparrow_select_frontier.py --selection greedy --mode-points 26,...,50 --gate 7.0
+  --cutoff 0.5` against the pool + routes above.
