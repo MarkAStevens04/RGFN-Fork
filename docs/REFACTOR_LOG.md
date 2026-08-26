@@ -2006,3 +2006,62 @@ judgement — the gate exists to be strict, and I have already been over-confide
 (`analyze_matrix.py`, `hub_stats.py`, `preselect_sweep.py`, `strategy_compute_summary.py`,
 `run_campaign.py`, `audit_greedy_libraries.py`, `plot_greedy.py`, `compare_hub_order.py`); I checked
 that they are referenced, not what consumes their output.
+
+---
+
+## 2026-08-26 — competitor-campaign guards, and the SynFormer control harness
+
+### Three fixes to campaign code (each would have produced a false claim about a baseline)
+
+**`mode_saturation.py` gated docking cells on the training reward.** It accepted `--lower-is-better`
+but hardcoded `row.get("score")`; for docking that column is `clip(-vina)`, positive 0..11, so the
+ClpP gate of -8.0 admitted nothing and all sixteen ClpP chain-cells aborted as "fewer than 10 modes
+— nothing to measure", a message phrased as a POOL-SIZE finding. 645 of 2,000 molecules were in fact
+passing on `raw_score`. Now takes `--score-column`, defaulting to `raw_score` under
+`--lower-is-better` — the same rule `build_s3gfn_pools.py` already used — and prints the resolved
+column every run. Commit `c5f428e`.
+
+**`build_s3gfn_pools.py` skipped any NAIVE pool short of N**, writing no directory, so the cell died
+downstream on `FATAL: pool not built`. Eight of thirty-five cells fall short and seven are S3-GFN
+(154/65/168 distinct above the sEH gate, against Saturn's ~1,900), so the skip deleted exactly the
+cells where a baseline is weakest. Now clamps to availability and names the directory for the size
+written (`_N65`), with `pool_limited: true` in `pool_meta.json`; `--strict-naive` restores the old
+behaviour. `submit_competitor_routes.sh` resolves a clamped directory for both variants now, not
+only pruned. Commit `5ffe0e9`. **This overrides a documented decision** — the original rationale was
+that an `_N500` directory holding 300 misstates the pool, which is an argument against misnaming,
+answered by naming honestly.
+
+**`DockingServerClient.dock` sent unbounded batches.** `timeout` bounds one round-trip while the
+caller's batch is not bounded at all; the final 2,000-molecule pool scoring at ~4 s/mol could never
+return inside the 3,600 s socket timeout, and it lost `saturn_clpp` seed 43 after that run had spent
+its full 10,000-call training budget. Now chunks at 200 per round-trip in the shared client rather
+than in each of the six adapters. Commit `e6b6a1d`.
+
+### SynFormer: diagnosis corrected twice, still one thing open
+
+Nine cells died at hour 9-12 of 72 h. SLURM logs `oom_kill` events on every one. **Two explanations I
+published and then had to withdraw**: "blocked in `submit()` on a bounded queue" (the queue is
+`task_qsize=0`, i.e. unbounded) and "the fetch guard should have fired" (it was present since commit
+`7442376` and never fired). Seven of eight cells stopped INSIDE the projection fetch loop, 16-39
+molecules short; one had already degraded to 246 s/molecule against a healthy 3. **The exact frame
+the parent blocks in is still unknown** and needs a live stack (`py-spy` is not installed in either
+env), not more reasoning.
+
+What IS established: upstream tears the worker pool down every generation and children return to
+**0.0-0.1 GiB**, so their cadence bounds the leak completely. Holding the pool open across
+generations is our divergence and the cause of the ~260 GiB growth. Our `recycle()` cannot substitute
+because it forks after the reward model exists — see `[[fork-after-torch-deadlock]]`; and
+`set_start_method("spawn")` is disqualified rather than merely imperfect, because a spawned worker
+re-imports synformer and loses `patch_get_dataframe()`, emptying every route column while every other
+check passes.
+
+`experiments/synformer_baseline/` is new: upstream's own GraphGA-SF loop with one flag per divergence
+(`--workers`, `--routes`, `--torch-in-parent`) so each can be blamed or cleared alone. The route
+variant asserts the column is POPULATED, not that the run finished.
+
+**Not verified:** whether memory stays flat beyond three teardown cycles (74999, 16 generations,
+queued); whether fork-after-torch blocks under upstream's cadence (75029, on debug); whether routes
+survive that cadence (75001, queued). Nine SynFormer cells (~170 GPU-h) stay unsubmitted until those
+answer. Four defects were found in this control harness itself — missing `tdc` import, relative
+`fpindex` path, a `sys.modules` stub that loky children never saw, and a missing population
+truncation that upstream performs at its line 332 — all mine, none SynFormer's.
