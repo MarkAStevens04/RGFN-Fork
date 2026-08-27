@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import random
 import sys
 import time
 from pathlib import Path
@@ -99,6 +100,16 @@ def main() -> None:
         "count changed, which is our only wall-clock divergence (3.9 vs 11.4 s/mol).",
     )
     ap.add_argument(
+        "--patched-reproduce",
+        action="store_true",
+        help="use our widened crossover catch instead of upstream's. Upstream's reproduce() catches "
+        "only ValueError, but their own crossover_non_ring does RunReactants((fa,fb))[0] and raises "
+        "IndexError when the reaction yields no product -- so their raw loop dies stochastically "
+        "(measured: job 74999 crashed partway through generation 2 of 16). This is the one divergence "
+        "that is a BUG FIX rather than a preference; falling back to parent_a is upstream's own "
+        "semantics for a failed cross. Needed to run long enough to measure anything.",
+    )
+    ap.add_argument(
         "--routes",
         action="store_true",
         help="apply patch_get_dataframe() so StatePool emits the route column, and ASSERT it is "
@@ -141,6 +152,25 @@ def main() -> None:
 
     # Upstream's own loop pieces, imported unmodified.
     from graphga_sf_opt import make_mating_pool, projection, reproduce, sanitize
+
+    reproduce_failures = [0]
+    if args.patched_reproduce:
+        import crossover as _co
+        import mutate as _mu
+
+        def reproduce(mating_pool, mutation_rate):  # noqa: F811
+            a = random.choice(mating_pool)
+            b = random.choice(mating_pool)
+            try:
+                child = _co.crossover(a, b)
+                if child is not None:
+                    child = _mu.mutate(child, mutation_rate)
+                return child
+            except Exception:  # noqa: BLE001
+                reproduce_failures[0] += 1
+                return a
+
+        print("[CTL] using the WIDENED crossover catch (upstream's IndexError bug)", flush=True)
 
     print(f"[CTL] upstream projection() from {sys.modules['graphga_sf_opt'].__file__}", flush=True)
     print(
@@ -304,6 +334,12 @@ def main() -> None:
             )
         print("[CTL-ROUTE] PASS", flush=True)
 
+    if reproduce_failures[0]:
+        print(
+            f"[CTL] {reproduce_failures[0]} crossover failures fell back to parent_a "
+            "(upstream's IndexError path)",
+            flush=True,
+        )
     print(
         f"[CTL] DONE {args.generations} generations in {(time.time()-run_t0)/3600:.2f} h",
         flush=True,

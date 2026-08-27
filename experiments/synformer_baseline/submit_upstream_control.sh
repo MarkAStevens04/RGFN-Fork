@@ -24,6 +24,7 @@ ENV_PREFIX=${SYNFORMER_ENV_PREFIX:-/scratch/markymoo/conda_envs/synformer}
 
 EXTRA=()
 [ "$ROUTES" = "1" ] && EXTRA+=(--routes)
+[ "${PATCHED_REPRODUCE:-0}" = "1" ] && EXTRA+=(--patched-reproduce)
 [ "$TORCH_IN_PARENT" = "1" ] && EXTRA+=(--torch-in-parent)
 
 # Compute nodes cannot write $HOME; anything that caches there kills the job minutes in.
