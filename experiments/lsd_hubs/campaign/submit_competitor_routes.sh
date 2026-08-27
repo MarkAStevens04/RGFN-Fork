@@ -97,7 +97,9 @@ case "$POOL" in
     pruned) POOL_FLAG="--pruned --cutoff $CUTOFF" ;;
     *) echo "FATAL: POOL must be naive or pruned, got '$POOL'" >&2; exit 1 ;;
 esac
-TAG=${GENERATOR}_${TARGET}_seed${SEED}$([ "$POOL" = pruned ] && echo "_pruned" || echo "")
+# TAG_SUFFIX keeps a variant pool (e.g. an enlarged _bigsample draw) in its own pool/results
+# namespace, so it can never be confused with the budget-faithful cell of the same name.
+TAG=${GENERATOR}_${TARGET}_seed${SEED}${TAG_SUFFIX:-}$([ "$POOL" = pruned ] && echo "_pruned" || echo "")
 POOL_DIR="$POOL_ROOT/${TAG}_N${N}"
 # Results to $SCRATCH: $HOME is READ-ONLY on Balam compute nodes, and a job writing into the repo
 # "COMPLETES" in seconds with exit 0 having done nothing (the Logs/059 failure).
