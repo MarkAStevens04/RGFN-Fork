@@ -1122,6 +1122,16 @@ def main():
                     "cuda_synchronized": _use_cuda,
                     "reward_name": args.reward_name,
                     "model": args.model_name,
+                    # DECLARE the split rather than leaving it to be inferred. This worker measures
+                    # all three components separately (_tt_keys above), so "full" is the truth -- but
+                    # it predates _artifacts.write_enum_timings and never stamped the field, while the
+                    # other three do ("full" by that writer's default for rxnflow/fraggfn, an honest
+                    # "lumped" for rgfn, which can only get a per-hub total). run_campaign reads it
+                    # with a default of "unknown", so every SCENT cell has been writing "unknown" into
+                    # the component_split column of compute_time.csv while holding the real breakdown
+                    # in per_hub. Report-only downstream -- nothing branches on it -- so this changes
+                    # no measurement; it stops the artifact under-describing itself.
+                    "component_split": "full",
                     "n_hubs": len(hub_timings),
                     "n_children": sum(h["n_children"] for h in hub_timings),
                     "totals_s": {k: round(v, 3) for k, v in totals.items()},
