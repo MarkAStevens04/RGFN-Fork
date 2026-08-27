@@ -420,8 +420,15 @@ def _greedy_frontier(a, out_dir, pool, routed, entries):
                 "n_targets_priced": res.get("n_targets_selected"),
             }
         )
+        # rx CAN be None -- SPARROW returns no total_reactions when the pricing MILP finds no
+        # solution for this mode set. `{rx:<5}` then raises TypeError and takes the WHOLE greedy arm
+        # with it, after the row was already appended: the run dies with no greedy_frontier.csv, the
+        # cell reports rc=1, and the SPARROW arm's results sit there looking like the cell half-ran.
+        # That is why three s3gfn cells had SPARROW but no greedy on 2026-08-27, and why the failure
+        # read as "greedy cannot reach the mode target" when it was a crash in a log line.
+        _rx = "n/a" if rx is None else f"{rx:<5}"
         print(
-            f"  modes={m:<5} rxns={rx:<5} rxn/mode={rows[-1]['rxn_per_mode']} "
+            f"  modes={m:<5} rxns={_rx} rxn/mode={rows[-1]['rxn_per_mode']} "
             f"({res.get('milp_status')}, priced {res.get('n_targets_selected')}/{m})"
         )
 
