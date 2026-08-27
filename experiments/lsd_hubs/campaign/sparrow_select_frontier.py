@@ -161,15 +161,46 @@ def load_enum_pool(
             f"this; the cell needs a re-sample with a route-emitting worker. Check which cells are "
             f"usable with:  python experiments/lsd_hubs/matrix16/check_route_readiness.py"
         )
-    best, routes, n_missing_hub = {}, {}, 0
+    # A hub with no route is not always a gap: a DEPTH-0 hub is a purchasable catalogue compound, so
+    # its prefix is legitimately EMPTY rather than missing. Distinguishing the two needs the hub's
+    # promoted-fragment list, which lives in compositions.json beside the enumeration.
+    comps_path = Path(enum_path).parent / "compositions.json"
+    comps = json.loads(comps_path.read_text()) if comps_path.exists() else {}
+
+    best, routes, n_missing_hub, n_buyable_hub = {}, {}, 0, 0
     child_rxn = {}  # smiles -> did THIS child carry its own reaction? (guard below)
     for hub in data.get("hubs", []):
         hk = hub.get("hub_key")
         hr = hub_routes.get(hk) if hk else None
         if hr is None:
-            n_missing_hub += 1
-            continue  # a hub with no route cannot price its children; count it, never silently drop
-        prefix = list(hr.get("steps") or [])
+            # DEPTH-0 = BOUGHT, NOT BROKEN. Such a hub has no synthesis route because a chemist buys
+            # it; the correct prefix is [] (zero reactions), and skipping it discards every child of
+            # the cheapest hubs there are. That matters far more than the raw hub count suggests,
+            # because flow concentrates on exactly these: a bought scaffold costs 0 reactions and
+            # still carries thousands of children, so it ranks near the top by flow. Measured on the
+            # flow-prefix pools (2026-08-27), skipping them dropped 26-27% of the qualifying
+            # candidates -- INCLUDING the hub our own arm builds its largest R=100 batch off -- which
+            # silently inflated our advantage. On the full 200-hub pools the same skip costs only
+            # 1.6-3.1%, which is why this went unnoticed until the pool was restricted to high-flow
+            # hubs. Our own cost model already prices these at zero
+            # (campaign.shallow_couplings(depth=0, promoted=()) == 0), so this restores parity rather
+            # than granting the competitor anything it was not owed.
+            #
+            # A route-less hub at depth > 0 is a REAL gap and is still skipped. Those are hubs that
+            # ARE a promoted fragment, whose recipe is stored under its stereo-bearing SMILES while
+            # the hub key is stereo-stripped (meta.json `strip_stereo: true`), so the lookup misses --
+            # e.g. promoted `C[C@@H](N)c1nc2cc(...)` against hub_key `CC(N)c1nc2cc(...)`. Pretending
+            # their prefix is empty would price two reactions of scaffold at zero and flatter the
+            # COMPETITOR, so it must stay a counted skip until the stereo lookup is fixed.
+            promoted = (comps.get(hk) or {}).get("promoted") if hk else None
+            if int(hub.get("depth", -1)) == 0 and not promoted:
+                n_buyable_hub += 1
+                prefix = []
+            else:
+                n_missing_hub += 1
+                continue  # count it, never silently drop
+        else:
+            prefix = list(hr.get("steps") or [])
         for c in hub.get("children", []):
             smi, rew = c.get("smiles"), c.get("reward")
             if not smi or rew is None:
@@ -184,9 +215,15 @@ def load_enum_pool(
             best[smi] = rew
             child_rxn[smi] = bool(own)
             routes[smi] = {"product_smiles": smi, "num_reactions": len(steps), "steps": steps}
+    if n_buyable_hub:
+        print(
+            f"[enum] {n_buyable_hub} depth-0 hub(s) are purchasable (no route because bought) — "
+            f"priced with an EMPTY prefix, children kept"
+        )
     if n_missing_hub:
         print(
-            f"[enum] WARNING {n_missing_hub} hub(s) had no route in hub-routes — their children skipped"
+            f"[enum] WARNING {n_missing_hub} hub(s) at depth>0 had no route in hub-routes — their "
+            f"children skipped (likely the stereo-stripped promoted-fragment lookup)"
         )
     # A child with no ``reaction`` inherits ONLY the hub's steps, so its route's product is the HUB,
     # not the child. SPARROW then prices a network in which almost nothing is reachable and returns
