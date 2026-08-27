@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import subprocess
@@ -392,12 +393,67 @@ def _greedy_frontier(a, out_dir, pool, routed, entries):
     for e in entries:
         by_smiles.setdefault(e["smiles"], []).append(e)
 
+    # SELECT ONLY MODES THAT CAN ACTUALLY BE MADE. `routed` means "this molecule has route entries
+    # in the artifact", NOT "those routes terminate in purchasable stock" -- MultiAiZ promotes
+    # discovered intermediates to stock during its own iterations, so a target can be reported routed
+    # and still have no complete path to real ZINC. Greedy prices in FORCED mode (every selected mode
+    # must be synthesized), so a single such target makes the MILP infeasible and the arm returns
+    # nothing at all. Measured 2026-08-27 on s3gfn_seh_seed42_pruned: m=1/2/5 price Optimal at 3/4/7
+    # reactions, m=10 comes back `RuntimeError: Problem is infeasible`, and all 65 modes were
+    # "routed". Before this, that cell contributed no greedy row at any budget.
+    #
+    # Dropping the unmakeable ones is what a chemist does and what this arm is FOR: it is the
+    # competitor's STRONGEST configuration, so handing it targets it cannot synthesize and then
+    # recording a failure understates it. SPARROW's own selection mode already skips them freely,
+    # which is exactly why the SPARROW arm produced results on cells where greedy produced none --
+    # so leaving this unfixed biases the headline comparison TOWARD SPARROW.
+    #
+    # Lazy and exact: costs nothing when the whole set prices (the common case), and only when a set
+    # comes back infeasible does it price candidates individually to find the culprits. Both counts
+    # are reported so a pool whose modes are mostly unmakeable cannot look like a healthy one.
+    known_good: list = []
+    known_bad: set = set()
+    checked = 0
+
+    def _prices_alone(smi):
+        sub1 = by_smiles[smi]
+        # hashed dir name: SMILES contain / and \ and would otherwise create paths
+        snap1 = out_dir / "feas" / hashlib.md5(smi.encode()).hexdigest()[:16]  # nosec - not crypto
+        net1 = build_network(sub1, strip_stereo=a.strip_stereo)
+        t1, g1 = net1.write(snap1)
+        r1 = _run_sparrow(
+            REPO, a.sparrow_env, t1, g1, snap1 / "milp.json", snap1 / "run", a.max_seconds,
+        )  # fmt: skip
+        return bool(r1) and r1.get("total_reactions") is not None
+
+    def _extend_good(k):
+        """Grow known_good to k entries, walking ordered_modes and testing unknowns individually."""
+        nonlocal checked
+        i = 0
+        while len(known_good) < k and i < len(ordered_modes):
+            smi = ordered_modes[i]
+            i += 1
+            if smi in known_good or smi in known_bad:
+                continue
+            checked += 1
+            (known_good.append(smi) if _prices_alone(smi) else known_bad.add(smi))
+        return known_good[:k]
+
     rows = []
+    use_feasible_only = False
     for m in [int(x) for x in a.mode_points.split(",") if x.strip()]:
-        if m > len(ordered_modes):
+        if not use_feasible_only and m > len(ordered_modes):
             print(f"  modes={m:<5} SKIP (only {len(ordered_modes)} available)")
             continue
-        sel = ordered_modes[:m]
+        if use_feasible_only:
+            sel = _extend_good(m)
+            if len(sel) < m:
+                print(
+                    f"  modes={m:<5} SKIP (only {len(sel)} SYNTHESIZABLE of {len(ordered_modes)})"
+                )
+                continue
+        else:
+            sel = ordered_modes[:m]
         sub = [e for s in sel for e in by_smiles[s]]
         snap = out_dir / f"network_m{m}"
         net = build_network(sub, strip_stereo=a.strip_stereo)
@@ -406,6 +462,28 @@ def _greedy_frontier(a, out_dir, pool, routed, entries):
             REPO, a.sparrow_env, tree, targets, out_dir / f"milp_m{m}.json",
             out_dir / f"sparrow_run_m{m}", a.max_seconds,
         )  # fmt: skip
+        if (res is None or res.get("total_reactions") is None) and not use_feasible_only:
+            # First infeasible set: some selected mode cannot be made. Switch to feasible-only
+            # selection from here on and retry THIS mode point, so no budget is silently lost.
+            print(
+                f"  modes={m:<5} infeasible on the raw top-{m}; re-selecting from synthesizable "
+                "modes only (see the comment in _greedy_frontier)"
+            )
+            use_feasible_only = True
+            sel = _extend_good(m)
+            if len(sel) < m:
+                print(
+                    f"  modes={m:<5} SKIP (only {len(sel)} SYNTHESIZABLE of {len(ordered_modes)})"
+                )
+                continue
+            sub = [e for s_ in sel for e in by_smiles[s_]]
+            snap = out_dir / f"network_m{m}"
+            net = build_network(sub, strip_stereo=a.strip_stereo)
+            tree, targets = net.write(snap)
+            res = _run_sparrow(
+                REPO, a.sparrow_env, tree, targets, out_dir / f"milp_m{m}.json",
+                out_dir / f"sparrow_run_m{m}", a.max_seconds,
+            )  # fmt: skip
         if res is None:
             continue
         rx = res.get("total_reactions")
