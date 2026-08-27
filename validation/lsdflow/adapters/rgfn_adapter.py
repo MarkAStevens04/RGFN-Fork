@@ -29,10 +29,10 @@ import torch
 import glue  # noqa: F401  (registers our gin-configurable components)
 from glue.samplers.lsdflow.rgfn_extract import _stripped_key, extract_flow_records
 from glue.samplers.lsdflow.route_steps import reaction_step
+from rgfn.gfns.reaction_gfn.api.reaction_api import ReactionAction0, ReactionActionC
 from rgfn.trainer.trainer import (  # noqa: F401  (registers @Trainer, as scripts/*.py do)
     Trainer,
 )
-from rgfn.gfns.reaction_gfn.api.reaction_api import ReactionAction0, ReactionActionC
 from validation.lsdflow.adapters.base import FlowSample, GFNAdapter
 
 
@@ -207,7 +207,9 @@ class RGFNAdapter(GFNAdapter):
         )
 
     # ---------------------------------------------------------------- phase 2 enumeration
-    def enumerate_hub_children(self, hubs, *, max_children: int = 2000, reaction_out=None):
+    def enumerate_hub_children(
+        self, hubs, *, max_children: int = 2000, reaction_out=None, timing=None, sync=None
+    ):
         """Exhaustively enumerate one-reaction terminal children for each hub (§4b, §6).
 
         Args:
@@ -220,6 +222,17 @@ class RGFNAdapter(GFNAdapter):
                 it every child's route stops at its hub, so SPARROW prices the hub rather than the
                 child and returns an empty library as trivially optimal — with no error. Passing it
                 is what ``rgfn_worker`` does to fill ``enum_children.json`` children[].reaction.
+            timing: optional dict accumulator for the per-component wall-clock (Logs/039) --
+                ``enumeration_s`` / ``reward_gen_s`` / ``flow_extract_s``. WITHOUT it RGFN is the one
+                generator with no component breakdown: the worker can only wall-clock the whole call
+                and report a lumped per-hub total under ``unattributed_s``, which reads on disk as
+                three zero columns beside one huge bucket and has already been reported twice as
+                "compute-time attribution is broken". It was never broken -- it was unmeasured, and
+                the measurement hooks were sitting unused in ``enumerate_terminal_children`` the whole
+                time. Pass this and the split is real, not fabricated.
+            sync: optional no-arg callable (``torch.cuda.synchronize``) fired at timing boundaries so
+                async CUDA work lands in the component that caused it. Pass it whenever the adapter is
+                on a GPU or ``reward_gen_s`` silently absorbs the enumeration's queued kernels.
 
         Returns:
             ``(records, per_hub_stats)`` — flow records for all enumerated children (mergeable
@@ -260,6 +273,8 @@ class RGFNAdapter(GFNAdapter):
                 strip_stereo=self.strip_stereo,
                 gate_component=self.gate_component,
                 reaction_out=reaction_out,
+                timing=timing,
+                sync=sync,
             )
             all_records.extend(recs)
             per_hub.append(

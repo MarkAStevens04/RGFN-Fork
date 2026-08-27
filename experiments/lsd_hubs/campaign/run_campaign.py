@@ -357,11 +357,40 @@ def plot_compute_time(path: Path, section: dict, tag: str) -> None:
 
 
 def write_compute_time_csv(path: Path, section: dict) -> None:
-    """One row per strategy: each component (s) + total_s + the counts, for the paper table."""
+    """One row per strategy: each component (s) + total_s + the counts, for the paper table.
+
+    Two columns exist purely so this file cannot be misread, because it twice has been:
+
+    ``component_split`` -- "full" = the three components were timed separately; "lumped" = the
+    generator could only measure a per-hub TOTAL, which lands in ``unattributed_s``. A lumped cell
+    therefore shows three 0.0 columns beside one very large bucket, which looks *exactly* like broken
+    attribution. It is not: the total is exact, only the breakdown is coarse. The marker was already
+    recorded in enum_timings.json and simply never propagated here, so every reader had to go and find
+    it -- and two did not, and filed the zeros as a defect instead.
+
+    ``n_hubs_enumerated`` -- the denominator for ``n_hubs_walked``. Time is attributed only over the
+    hubs a strategy actually WALKED, which is correct (you do not pay to enumerate a hub you never
+    used) but means this file's total is legitimately a FRACTION of the total in enum_timings.json:
+    measured on rgfn_6td3, 184,069 s here against 551,682 s there, because the walk touched 68 of 200
+    hubs. Without the denominator that gap reads as lost time.
+    """
     comps = [c[0] for c in COMPUTE_COMPONENTS]
+    meta = section.get("enum_timings_meta") or {}
+    split = meta.get("component_split", "unknown")
+    n_avail = meta.get("n_hubs", "")
     with open(path, "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["strategy", *comps, "total_s", "n_hubs_walked", "n_children_scored"])
+        w.writerow(
+            [
+                "strategy",
+                *comps,
+                "total_s",
+                "n_hubs_walked",
+                "n_hubs_enumerated",
+                "n_children_scored",
+                "component_split",
+            ]
+        )
         for skey in ("hub_batching", "best_candidate"):
             bd = section.get(skey, {})
             w.writerow(
@@ -370,7 +399,9 @@ def write_compute_time_csv(path: Path, section: dict) -> None:
                 + [
                     bd.get("total_s", 0.0),
                     bd.get("n_hubs_walked", 0),
+                    n_avail,
                     bd.get("n_children_scored", 0),
+                    split,
                 ]
             )
 

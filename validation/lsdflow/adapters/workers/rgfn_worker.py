@@ -170,15 +170,39 @@ def main() -> None:
         # a disjoint group). enum_children.json is rewritten every 10 hubs so a timeout leaves a
         # usable partial (whatever hubs finished), not nothing.
         all_records, per_hub, enum_hubs = [], [], []
-        # Measured per-hub compute time (Logs/039). RGFN differs from the other three workers: its
-        # enumeration + reward + flow-extraction all happen inside ONE adapter call
-        # (glue/samplers/lsdflow/rgfn_enumerate.enumerate_terminal_children), so the per-component
-        # split is not observable from here. We record the true per-hub TOTAL under
-        # ``unattributed_s`` and mark component_split="lumped" rather than fabricating a breakdown —
-        # the head-to-head total stays exact, only the stacked breakdown is coarser for this cell.
-        # Splitting it properly means timing inside glue/, which is shared code (coordinate first).
+        # Measured per-hub compute time (Logs/039), split by component.
+        #
+        # THIS USED TO BE LUMPED, AND IT WAS NOT NECESSARY. The note here previously said RGFN's
+        # enumeration + reward + flow-extraction happen inside one adapter call so the split "is not
+        # observable from here", and that splitting it "means timing inside glue/, which is shared
+        # code (coordinate first)". Both were out of date: ``enumerate_terminal_children`` has
+        # accepted a ``timing`` accumulator and recorded all three components for as long as Logs/039
+        # has existed -- the hooks were simply never wired up, because ``enumerate_hub_children`` had
+        # no ``timing`` parameter to pass one through. No glue/ change was needed.
+        #
+        # The cost of leaving it lumped was not cosmetic: compute_time.csv showed three zero columns
+        # beside one 184,069 s bucket, and that has now been reported twice as "compute-time
+        # attribution is broken" -- an unmeasured quantity reads exactly like a broken one. Compute
+        # time is a paper exhibit, so RGFN was the one cell that could not appear in the stacked
+        # breakdown.
+        #
+        # ``unattributed_s`` survives as the RESIDUAL (measured hub total minus the three components
+        # = worker-side overhead: hub_state construction, record conversion, artifact building), so
+        # total_s still reconciles against the wall clock instead of quietly shedding time.
         hub_timings = []
         _use_cuda = str(getattr(adapter, "device", args.device)).startswith("cuda")
+        # cuda_synchronized was already being asserted in enum_timings.json while nothing actually
+        # synchronized -- with no sync callable reaching glue/, async kernels queued during
+        # enumeration landed in whichever component happened to touch the GPU next. Passing it makes
+        # that claim true rather than aspirational.
+        _sync = None
+        if _use_cuda:
+            try:
+                import torch
+
+                _sync = torch.cuda.synchronize
+            except Exception:  # noqa: BLE001 - no torch => no GPU work to serialise anyway
+                _sync = None
         for i, (smiles, depth) in enumerate(hubs):
             _h0 = time.perf_counter()
             # reaction_by_child is NOT optional bookkeeping: enum_children.json children[].reaction
@@ -186,10 +210,13 @@ def main() -> None:
             # for months, and the failure is silent — SPARROW prices the hub instead of the child
             # and reports the empty library as Optimal. Every other worker passes it.
             rxn_by_child = {}
+            _hub_t: dict = {}
             recs_r, ph = adapter.enumerate_hub_children(
                 [(smiles, depth)],
                 max_children=args.enum_max_children,
                 reaction_out=rxn_by_child,
+                timing=_hub_t,
+                sync=_sync,
             )
             _hub_s = time.perf_counter() - _h0
             rows = [_rec_to_dict(r) for r in recs_r]
@@ -205,13 +232,22 @@ def main() -> None:
                     reaction_by_child=rxn_by_child,
                 )
             )
+            _split = {
+                _c: round(float(_hub_t.get(_c, 0.0)), 6)
+                for _c in ("enumeration_s", "reward_gen_s", "flow_extract_s")
+            }
+            # Clamp at 0: the components are summed from perf_counter deltas inside the call, so
+            # rounding can leave the sum a hair above the outer measurement. A negative residual
+            # would be reported as time that did not happen.
+            _resid = round(max(0.0, _hub_s - sum(_split.values())), 6)
             hub_timings.append(
                 {
                     "hub_input": smiles,  # stereo-aware join key (EnumTimings._hub_id)
                     "hub_key": hub_key,
                     "depth": int(depth),
                     "n_children": len(rows),
-                    "unattributed_s": round(_hub_s, 6),
+                    **_split,
+                    "unattributed_s": _resid,
                 }
             )
             print(
@@ -229,7 +265,7 @@ def main() -> None:
                     reward_name=args.reward_name,
                     model=args.model_name,
                     cuda_synchronized=_use_cuda,
-                    component_split="lumped",
+                    component_split="full",
                 )
         records = all_records
         A.write_enum_children(out_dir / "enum_children.json", enum_hubs)
@@ -248,12 +284,19 @@ def main() -> None:
             reward_name=args.reward_name,
             model=args.model_name,
             cuda_synchronized=_use_cuda,
-            component_split="lumped",
+            component_split="full",
         )
+        _tot = tmeta["totals_s"]
         print(
-            f"[rgfn_worker] compute-time: setup {tmeta['setup_s']:.1f}s | "
-            f"per-hub total {tmeta['totals_s'].get('unattributed_s', 0):.1f}s (lumped — no component "
-            f"split available) over {len(hub_timings)} hubs -> enum_timings.json",
+            "[rgfn_worker] compute-time: setup {:.1f}s | enum {:.1f}s reward {:.1f}s flow {:.1f}s "
+            "residual {:.1f}s over {} hubs -> enum_timings.json".format(
+                tmeta["setup_s"],
+                _tot.get("enumeration_s", 0.0),
+                _tot.get("reward_gen_s", 0.0),
+                _tot.get("flow_extract_s", 0.0),
+                _tot.get("unattributed_s", 0.0),
+                len(hub_timings),
+            ),
             flush=True,
         )
         meta.update(
