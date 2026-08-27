@@ -111,11 +111,18 @@ def greedy_at_budget(tag: str, budget: float):
     if nxt:
         n0 = min(nxt, key=lambda r: _num(r["used_rxns"]))
         over = _num(n0["used_rxns"]) - budget
-        if over <= 0.25 * budget:
+        # Fire on the MODE gap, not the reaction overshoot. A fine ladder legitimately has its next
+        # rung just past the budget -- clpp_43_pruned on a 5-mode ladder gives 45@95 and 50@101, so
+        # 45 is the answer to within 5 modes and there is nothing to warn about. The artefact is a
+        # COARSE ladder: 25 modes of uncertainty is half the answer, which is what the original
+        # 25-rung sweep produced. Warning on overshoot alone cried wolf on exactly the runs that
+        # had just been fixed, which would train the reader to ignore the flag.
+        mode_gap = int(n0["n_modes"]) - int(best["n_modes"])
+        if over <= 0.25 * budget and mode_gap > 10:
             print(
                 f"    ! {tag}: next greedy rung is m={n0['n_modes']} at {_num(n0['used_rxns']):.0f} "
-                f"rxns, only {over:.0f} over R={budget:.0f}. Reported {best['n_modes']} modes is a "
-                "LADDER ARTEFACT, not greedy's real answer — re-run with finer --mode-points."
+                f"rxns, only {over:.0f} over R={budget:.0f} and {mode_gap} modes above the reported "
+                f"{best['n_modes']}. LADDER ARTEFACT — re-run with finer --mode-points."
             )
     return int(best["n_modes"]), int(_num(best["used_rxns"])), largest, len(priced)
 
