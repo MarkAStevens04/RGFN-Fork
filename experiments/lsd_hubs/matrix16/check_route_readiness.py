@@ -59,26 +59,52 @@ def _n_routes(sample_dir: Path):
 
 
 def _enum_rxn_coverage(enum_dir: Path):
-    """(n_children, n_with_reaction, n_hubs_seen) unioned over slices and any top-level file."""
-    paths = sorted(glob.glob(str(enum_dir / "slice*of*" / "enum_children.json")))
+    """(n_children, n_with_reaction, n_hubs_seen) for the artifact DOWNSTREAM ACTUALLY READS.
+
+    JUDGE THE MERGED FILE, NOT THE MERGED FILE PLUS ITS OWN INPUTS. This previously globbed the
+    slices AND appended the top-level file, then counted ``n_child += 1`` over all of them. Its
+    docstring claimed a union, but only ``hubs_seen`` was a set -- children were summed, so every
+    child of a merged cell was counted TWICE: once in its slice, once in the merge that superseded it.
+
+    That is not a cosmetic miscount; it is wrong in both directions, and this script decides which
+    24-hour GPU jobs get re-run:
+      * it INVENTS partial cells. rgfn_clpp seed 43 reported "partial reactions 332,056/394,634"
+        = 84%. The merged artifact is 166,028/166,028 = 100% COMPLETE. 332,056 is exactly 2x the
+        merged count, and the extra 62,578 in the denominator are children from PRE-FIX slices the
+        merge had already replaced -- so a finished cell was condemned for the state of its own
+        discarded inputs, and re-enumerating it would have bought nothing.
+      * it inflates every count (rgfn_6td3 seed 43: 477,554 reported, 238,777 real = 2x), and it can
+        equally MASK a genuine partial by padding the numerator with complete slices.
+
+    The merged ``enum_children.json`` is what ``run_cell_campaign.sh`` and
+    ``sparrow_select_frontier.py`` open, so readiness has to be judged on that file alone. Slices are
+    inputs to the merge, not extra evidence. They are used only when no merged file exists yet (a
+    run still in flight), and then deduplicated by (hub, child) so a re-run slice cannot double-count
+    either.
+    """
     top = enum_dir / "enum_children.json"
-    if top.exists():
-        paths.append(str(top))
+    slices = sorted(glob.glob(str(enum_dir / "slice*of*" / "enum_children.json")))
+    paths = [str(top)] if top.exists() else slices
     if not paths:
         return None
-    n_child = n_rxn = 0
+    n_rxn = 0
     hubs_seen = set()
-    for p in paths:
+    seen: set = set()  # (hub, child) -- only load-bearing on the slice-only path
+    for _p in paths:
         try:
-            for h in json.loads(Path(p).read_text()).get("hubs", []):
-                hubs_seen.add(h.get("hub_input") or h.get("hub_key"))
+            for h in json.loads(Path(_p).read_text()).get("hubs", []):
+                hk = h.get("hub_input") or h.get("hub_key")
+                hubs_seen.add(hk)
                 for c in h.get("children", []) or []:
-                    n_child += 1
+                    key = (hk, c.get("smiles"))
+                    if key in seen:
+                        continue
+                    seen.add(key)
                     if c.get("reaction"):
                         n_rxn += 1
         except Exception:
             continue
-    return n_child, n_rxn, len(hubs_seen)
+    return len(seen), n_rxn, len(hubs_seen)
 
 
 def _n_hubs_wanted(enum_dir: Path):
@@ -149,7 +175,7 @@ def _recipe_health(cell_dir: Path):
         return None  # no dynamic library -> nothing to expand, correct for non-SCENT
     snap = Path(snaps[-1])
     if not _has_key(snap):
-        return 0.0, str(snap)          # the 07-14..07-26 logging window; no parse needed
+        return 0.0, str(snap)  # the 07-14..07-26 logging window; no parse needed
     try:
         d = json.loads(snap.read_text())
     except Exception:
@@ -176,8 +202,11 @@ def scan(seeds):
             nr = _n_routes(sample)
             cov = _enum_rxn_coverage(enum)
             want = _n_hubs_wanted(enum)
-            status = json.loads((sample / "route_status.json").read_text()) \
-                if (sample / "route_status.json").exists() else None
+            status = (
+                json.loads((sample / "route_status.json").read_text())
+                if (sample / "route_status.json").exists()
+                else None
+            )
             rec = _recipe_health(cell_dir)
             row = {
                 "seed": seed,
@@ -228,7 +257,9 @@ def scan(seeds):
 
 
 def main():
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("--seed", type=int, nargs="+", default=[42, 43, 44])
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
@@ -236,32 +267,42 @@ def main():
     if a.json:
         print(json.dumps(rows, indent=2))
     else:
-        print(f"{'seed':>4}  {'cell':<15} {'routes':>9} {'children':>10} {'rxn%':>6}"
-              f" {'recipes':>8}  verdict")
+        print(
+            f"{'seed':>4}  {'cell':<15} {'routes':>9} {'children':>10} {'rxn%':>6}"
+            f" {'recipes':>8}  verdict"
+        )
         print("-" * 86)
         for r in rows:
             pct = ""
             if r["enum_children"]:
                 pct = f"{100*r['enum_with_reaction']/r['enum_children']:.0f}%"
             rcp = "n/a" if r["recipe_coverage"] is None else f"{100*r['recipe_coverage']:.0f}%"
-            print(f"{r['seed']:>4}  {r['cell']:<15} {str(r['n_routes'] or '-'):>9} "
-                  f"{str(r['enum_children'] or '-'):>10} {pct:>6} {rcp:>8}  {r['verdict']}")
+            print(
+                f"{r['seed']:>4}  {r['cell']:<15} {str(r['n_routes'] or '-'):>9} "
+                f"{str(r['enum_children'] or '-'):>10} {pct:>6} {rcp:>8}  {r['verdict']}"
+            )
         bad = [r for r in rows if r["route_bearing"] and not r["n_routes"]]
         ready = [r for r in rows if r["verdict"] == "READY"]
         print("-" * 86)
-        print(f"  {len(ready)} SPARROW-ready | {len(bad)} route-bearing cell-seeds with NO routes"
-              f" | {len([r for r in rows if not r['route_bearing']])} control (n/a: {NA_REASON})")
+        print(
+            f"  {len(ready)} SPARROW-ready | {len(bad)} route-bearing cell-seeds with NO routes"
+            f" | {len([r for r in rows if not r['route_bearing']])} control (n/a: {NA_REASON})"
+        )
         norec = [r for r in rows if str(r["verdict"]).startswith("NO RECIPES")]
         if norec:
-            print(f"\n  {len(norec)} cell-seed(s) have routes AND reactions but cannot be priced: the"
-                  "\n  snapshot cannot expand the promoted fragments they are built from. This needs a"
-                  "\n  RE-TRAIN with --log-recipes (default ON since 2026-07-29) -- a fragment's route is"
-                  "\n  observable only while it is being built, so no re-sample or re-enum recovers it:"
-                  + "".join(f"\n    seed {r['seed']} {r['cell']}" for r in norec))
+            print(
+                f"\n  {len(norec)} cell-seed(s) have routes AND reactions but cannot be priced: the"
+                "\n  snapshot cannot expand the promoted fragments they are built from. This needs a"
+                "\n  RE-TRAIN with --log-recipes (default ON since 2026-07-29) -- a fragment's route is"
+                "\n  observable only while it is being built, so no re-sample or re-enum recovers it:"
+                + "".join(f"\n    seed {r['seed']} {r['cell']}" for r in norec)
+            )
         if bad:
-            print("\n  Cells with no routes need a RE-SAMPLE -- the trajectory is not recoverable from"
-                  "\n  existing artifacts (compositions.json keeps only num_reactions). Re-running the"
-                  "\n  ENUMERATION alone does not help: routes.json is written by the SAMPLE stage.")
+            print(
+                "\n  Cells with no routes need a RE-SAMPLE -- the trajectory is not recoverable from"
+                "\n  existing artifacts (compositions.json keeps only num_reactions). Re-running the"
+                "\n  ENUMERATION alone does not help: routes.json is written by the SAMPLE stage."
+            )
     return 1 if any(r["route_bearing"] and not r["n_routes"] for r in rows) else 0
 
 
