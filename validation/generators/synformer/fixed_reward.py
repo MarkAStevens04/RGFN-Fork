@@ -317,7 +317,19 @@ class DockingBridgeReward:
             import gc
 
             gc.collect()
-            if torch.cuda.is_available():
+            # GATE ON is_initialized(), NEVER is_available(). Measured 2026-08-27:
+            # `torch.cuda.is_available()` OPENS six /dev/nvidia* descriptors (fds 0 -> 6) while
+            # is_initialized() opens none. A parent holding those descriptors cannot fork a worker
+            # that initializes CUDA, so this one call -- reached every docking batch from _dock --
+            # poisoned SynFormer's per-generation pool rebuild on the ClpP cells, and only on ClpP,
+            # because DRD2 never docks. Caught by _cuda_probe printing
+            # "nvidia_fds=6 <-- FORK IS POISONED" on job 75089 before any worker died.
+            #
+            # The intent (Logs/014: free this process's VRAM so the docking subprocess can allocate)
+            # is preserved exactly where it applies. If CUDA was never initialized here there is no
+            # cache to free, so the call was doing nothing but harm -- and asking whether a GPU is
+            # available is what created the harm.
+            if torch.cuda.is_initialized():
                 torch.cuda.empty_cache()
         except Exception:
             pass
