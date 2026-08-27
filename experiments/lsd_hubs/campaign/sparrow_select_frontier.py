@@ -122,12 +122,27 @@ def load_pool(path: Path, gate: float, top_n: int = 0, higher_is_better: bool = 
     return rows[:top_n] if top_n else rows
 
 
+def _flat_smiles(smi: str) -> str:
+    """Canonical SMILES with stereochemistry removed; "" when unparseable.
+
+    Used only to bridge stereo-stripped hub keys to stereo-bearing recipe keys.
+    """
+    from rdkit import Chem
+
+    m = Chem.MolFromSmiles(smi)
+    if m is None:
+        return ""
+    Chem.RemoveStereochemistry(m)
+    return Chem.MolToSmiles(m)
+
+
 def load_enum_pool(
     enum_path: Path,
     hub_routes_path: Path,
     gate: float,
     top_n: int = 0,
     higher_is_better: bool = True,
+    hub_recipes: dict | None = None,
 ):
     """BC-Enum-SB's pool: the ENUMERATED CHILDREN of a hub set, with their routes ASSEMBLED.
 
@@ -167,7 +182,32 @@ def load_enum_pool(
     comps_path = Path(enum_path).parent / "compositions.json"
     comps = json.loads(comps_path.read_text()) if comps_path.exists() else {}
 
-    best, routes, n_missing_hub, n_buyable_hub = {}, {}, 0, 0
+    # PROMOTED-FRAGMENT HUBS ARE NOT A MISSING-DATA PROBLEM. A hub that IS a promoted fragment has no
+    # entry in routes.json for a legitimate reason: routes.json holds routes for molecules the
+    # generator SAMPLED, and a promoted fragment used as a hub is a building block, not a sampled
+    # terminal molecule. Its route is its RECIPE, which the run's fragment snapshot already carries in
+    # `smiles_to_route` -- the very dict this script loads for child recipe expansion. Verified on the
+    # frozen sEH snapshots (2026-08-27): all 5 such hubs across seeds 43/44 have a recipe, 3 keyed
+    # exactly and 2 under a stereo-bearing variant. So NO re-sample or re-train fixes this; only the
+    # lookup does, and a re-run would reproduce the identical gap.
+    #
+    # The stereo index is needed because hub keys are stereo-stripped (meta.json `strip_stereo: true`)
+    # while recipe keys are not -- e.g. recipe `C[C@@H](N)c1nc2cc(...)` against hub_key
+    # `CC(N)c1nc2cc(...)`. Stripping is many-to-one, so an ambiguous collapse (two distinct recipes
+    # landing on one stripped key) is NOT resolved by guessing: those stay skipped and counted.
+    recipe_by_flat: dict = {}
+    if hub_recipes:
+        from rdkit import Chem, RDLogger
+
+        RDLogger.DisableLog("rdApp.*")
+        for _k in hub_recipes:
+            _m = Chem.MolFromSmiles(_k)
+            if _m is None:
+                continue
+            Chem.RemoveStereochemistry(_m)
+            recipe_by_flat.setdefault(Chem.MolToSmiles(_m), []).append(_k)
+
+    best, routes, n_missing_hub, n_buyable_hub, n_recipe_hub = {}, {}, 0, 0, 0
     child_rxn = {}  # smiles -> did THIS child carry its own reaction? (guard below)
     for hub in data.get("hubs", []):
         hk = hub.get("hub_key")
@@ -193,9 +233,16 @@ def load_enum_pool(
             # their prefix is empty would price two reactions of scaffold at zero and flatter the
             # COMPETITOR, so it must stay a counted skip until the stereo lookup is fixed.
             promoted = (comps.get(hk) or {}).get("promoted") if hk else None
+            rec = (hub_recipes or {}).get(hk)
+            if rec is None and hk:
+                cand = recipe_by_flat.get(_flat_smiles(hk)) or []
+                rec = (hub_recipes or {}).get(cand[0]) if len(cand) == 1 else None
             if int(hub.get("depth", -1)) == 0 and not promoted:
                 n_buyable_hub += 1
                 prefix = []
+            elif rec is not None:
+                n_recipe_hub += 1
+                prefix = list(rec.get("steps") or [])
             else:
                 n_missing_hub += 1
                 continue  # count it, never silently drop
@@ -219,6 +266,11 @@ def load_enum_pool(
         print(
             f"[enum] {n_buyable_hub} depth-0 hub(s) are purchasable (no route because bought) — "
             f"priced with an EMPTY prefix, children kept"
+        )
+    if n_recipe_hub:
+        print(
+            f"[enum] {n_recipe_hub} hub(s) ARE promoted fragments — priced from the snapshot's "
+            f"smiles_to_route recipe (routes.json holds sampled molecules only)"
         )
     if n_missing_hub:
         print(
@@ -524,6 +576,10 @@ def main() -> None:
         raise SystemExit(
             "[select] --pool is required unless --route-source enum (which derives it)"
         )
+    # The fragment snapshot is needed in TWO places -- the promoted-fragment hub-prefix fallback
+    # inside load_enum_pool, and child recipe expansion further down. It carries several 400k-entry
+    # dicts, so read it once and share it rather than loading it twice.
+    _snap = json.loads(Path(a.snapshot).read_text()) if a.snapshot else {}
     if a.route_source == "enum":
         pool, raw = load_enum_pool(
             Path(a.routes),
@@ -531,6 +587,7 @@ def main() -> None:
             a.gate,
             a.top_n,
             higher_is_better=a.higher_is_better,
+            hub_recipes=_snap.get("smiles_to_route") or {},
         )
         print(
             f"[enum] {len(pool)} distinct children above gate>{a.gate}, routes assembled "
@@ -580,7 +637,7 @@ def main() -> None:
             raise SystemExit(
                 "[select] --route-source native requires --snapshot (recipe expansion)"
             )
-        snap = json.loads(Path(a.snapshot).read_text())
+        snap = _snap
         recipes = snap.get("smiles_to_route") or {}
         promoted = set(snap.get("chosen_smiles", []))
 
