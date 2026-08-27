@@ -2065,3 +2065,42 @@ survive that cadence (75001, queued). Nine SynFormer cells (~170 GPU-h) stay uns
 answer. Four defects were found in this control harness itself — missing `tdc` import, relative
 `fpindex` path, a `sys.modules` stub that loky children never saw, and a missing population
 truncation that upstream performs at its line 332 — all mine, none SynFormer's.
+
+### 2026-08-27 addendum — the fourth fork hazard, and what "verified" required
+
+`_free_gpu_cache()` gated on `torch.cuda.is_available()`, which OPENS six `/dev/nvidia*` descriptors
+(`is_initialized()` opens none). Reached from `_dock` on every docking batch, so it poisoned
+SynFormer's per-generation pool rebuild on the ClpP cells and only there — DRD2 never docks. Now gates
+on `is_initialized()`; where a CUDA context genuinely exists the Logs/014 behaviour is unchanged.
+Commit `f35f82b`.
+
+**Caught by instrumentation, not by a corpse.** `_cuda_probe` printed
+`nvidia_fds=6 threads=3 <-- FORK IS POISONED` at the rebuild site before any worker died. The three
+preceding hazards each cost a smoke plus a diagnosis. The probe can only do this because it counts
+`/proc/<pid>/fd` nvidia links directly and never calls `is_available()`/`device_count()` — those
+create the fault they would be measuring.
+
+**Verification status of every change made 2026-08-26/27** (this is the list to trust, not the commit
+messages):
+
+| change | evidence |
+|---|---|
+| `DockingServerClient.dock` chunking | real server: `n_requests` 10 for 2,000 molecules, `saturn_clpp:43` recovered and completed |
+| `mode_saturation.py --score-column` | ClpP 0 -> 587 distinct above gate; sEH saturn s42 unchanged at 18/338 |
+| naive-pool clamping | `s3gfn_seh_seed43` writes `_N65` with `pool_limited: true`; `reinvent_seh_seed42` `_N500` bit-identical to the pool its cached routes were planned over |
+| lazy `bengio2021flow` import | DRD2 smoke: 5 recycles, budget reached, routes written, candidates ingested |
+| `is_available` -> `is_initialized` | job 75094 ClpP through the production chain: gen 1 233/400, recycle, gen 2 353/400, children 40.1 -> 22.0 GiB, fds=0 at every rebuild |
+
+**NOT verified, and stated as such:** the smokes run 120-400 molecule budgets where production cells
+use 10,000, and the original nine-cell failure only surfaced at hour 10. These results support "safe
+to launch", not "will finish". sEH remains blocked entirely — job 75080 showed any in-parent proxy
+load breaks fork regardless of fd/thread hygiene, so it needs subprocess scoring and
+`scripts/score_batch.py` registers only docking oracles.
+
+**A retraction.** An earlier entry attributed `s3gfn_drd2_seed43`'s greedy failure to the mode target
+exceeding the pool (46 modes available, 50 requested). The saved solve says otherwise:
+`milp_status=Error, total_reactions=None, n_targets_selected=0, n_targets_requested=25` — the arm died
+at m=25, well below 46, so it was the unsynthesizable-target bug (`c802026`), not pool size. The
+`m25/` artifacts on disk were a recorded failure, not a success. Both mechanisms are real and can
+appear in one cell; they separate on whether the failing mode point is above or below
+`modes available` — SKIPs are pool size, Errors are stock coverage.
