@@ -64,6 +64,42 @@ from validation.generators._trace import TraceWriter, write_timing
 MINIMUM = 1e-10  # upstream's make_mating_pool constant
 
 
+def _cuda_probe(tag: str) -> None:
+    """Report whether THIS process has a CUDA context, and how it can tell.
+
+    WHY. A parent that holds a CUDA context cannot fork a worker that initializes CUDA -- the child
+    dies with `RuntimeError: CUDA error: initialization error`. Measured 2026-08-27 on a DRD2 smoke
+    (job 75066, whose parent holds NO torch model): the first two pool forks succeeded, every
+    rebuild after that failed, and the parent had 6 open /dev/nvidia* descriptors. So the parent
+    ACQUIRES a context partway through the run and something in our own loop is doing it. The fd
+    count is the reliable signal: `torch.cuda.is_initialized()` stays False for a probe that merely
+    enumerated devices, while the descriptors are already open and fork is already poisoned.
+    """
+    import os
+
+    n = 0
+    try:
+        for fd in os.listdir(f"/proc/{os.getpid()}/fd"):
+            try:
+                if "nvidia" in os.readlink(f"/proc/{os.getpid()}/fd/{fd}"):
+                    n += 1
+            except OSError:
+                continue
+    except OSError:
+        pass
+    init = "?"
+    if "torch" in sys.modules:
+        try:
+            init = str(sys.modules["torch"].cuda.is_initialized())
+        except Exception:  # noqa: BLE001
+            init = "err"
+    print(
+        f"[SF-CUDA] {tag}: nvidia_fds={n} torch_imported={'torch' in sys.modules} "
+        f"cuda_initialized={init}",
+        flush=True,
+    )
+
+
 def _timestamp() -> str:
     return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
@@ -229,6 +265,7 @@ class Projector:
                 f"forked in {_time.time()-t0:.1f}s (BEFORE any torch model exists in this process)",
                 flush=True,
             )
+            _cuda_probe("after pool fork")
         else:
             self._load_inprocess(model_path)
             print(f"[SF-FR] projector: in-process, ready in {_time.time()-t0:.1f}s", flush=True)
@@ -482,6 +519,7 @@ class Projector:
         import time as _t
 
         gc.collect()
+        _cuda_probe("before rebuilding the pool")
         t0 = _t.time()
         self._pool = self._WorkerPool(**self._pool_kwargs)
         print(f"[SF-FR] recycled worker pool in {_t.time()-t0:.1f}s", flush=True)
@@ -659,9 +697,11 @@ def main() -> None:
     print(
         f"[SF-FR] reward provider ready ({reward_c.get('type')}) — built AFTER the fork", flush=True
     )
+    _cuda_probe("after build_provider")
     try:
         t0 = time.time()
         projected = projector(starting_population)
+        _cuda_probe("after initial projection")
         routes.update(projected)
         population_smiles = list(projected)
         if not population_smiles:

@@ -25,7 +25,6 @@ from typing import Dict, List, Optional
 
 import numpy as np
 import torch
-from gflownet.models import bengio2021flow
 from rdkit import Chem
 
 
@@ -38,6 +37,19 @@ class SEHFrozenReward:
         self.device = device
         self.clip = float(clip)
         self.batch_size = int(batch_size)
+        # IMPORTED LAZILY, AND THAT IS LOAD-BEARING FOR THE WHOLE ADAPTER.
+        # `from gflownet.models import bengio2021flow` opens SIX /dev/nvidia* descriptors at IMPORT
+        # time -- measured 2026-08-27: 0 fds after `import torch`, 6 immediately after this import,
+        # while `torch.cuda.is_initialized()` stays False the entire time. A parent holding those
+        # descriptors cannot fork a child that initializes CUDA: the child dies with
+        # `RuntimeError: CUDA error: initialization error`. At module scope this poisoned fork for
+        # EVERY target, including DRD2 (sklearn pickle) and ClpP (a socket path) which never touch
+        # this module -- job 75066 forked its first pool fine, then lost every rebuilt worker.
+        # Keeping it inside the one class that uses it means the DRD2 and ClpP parents stay
+        # fork-clean, so upstream's per-generation pool teardown works there.
+        from gflownet.models import bengio2021flow
+
+        self._bf = bengio2021flow
         self.model = bengio2021flow.load_original_model()
         self.model.to(device)
         self.model.eval()
@@ -54,7 +66,7 @@ class SEHFrozenReward:
                 g = None
                 if mol is not None:
                     try:
-                        g = bengio2021flow.mol2graph(mol)
+                        g = self._bf.mol2graph(mol)
                     except Exception:
                         # Atom/feature outside the sEH featurizer's set. An unconstrained SMILES
                         # generator can emit these; treat as invalid, exactly as the S3-GFN adapter
@@ -66,7 +78,7 @@ class SEHFrozenReward:
                     graphs.append(g)
             preds: List[float] = []
             if graphs:
-                batch = bengio2021flow.mols2batch(graphs).to(self.device)
+                batch = self._bf.mols2batch(graphs).to(self.device)
                 preds = self.model(batch).view(-1).cpu().numpy().tolist()
             it = iter(preds)
             for ok in valid:

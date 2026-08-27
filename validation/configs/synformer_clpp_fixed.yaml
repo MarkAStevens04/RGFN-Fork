@@ -61,6 +61,13 @@ synformer:
   # 10,000-call budget is affordable. Each worker holds its own copy of the 4 GB index, so watch host
   # RAM if this is raised much further.
   num_workers_per_gpu: 2
+  # UPSTREAM'S CADENCE. graphga_sf_opt.py builds a WorkerPool per projection() call and end()s it,
+  # so a worker never outlives one generation. Holding the pool open was OUR divergence and it is
+  # what let the workers reach ~260 GiB and get OOM-killed. Measured 2026-08-27 on the control:
+  # after each teardown the children return to 0.0-0.1 GiB, so this bounds the leak completely.
+  # Only viable since the parent was made fork-clean -- see fixed_reward.py's lazy bengio2021flow
+  # import; with a CUDA context in the parent every rebuilt worker dies at .to("cuda").
+  recycle_workers_every_gens: 1
   backend: parallel                      # parallel = upstream's WorkerPool | inprocess = fallback
   max_evolve_steps: 12                   # upstream's run_sampling_one_cpu default
   max_results: 100
