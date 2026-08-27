@@ -121,11 +121,11 @@ def greedy_at_budget(tag: str, budget: float):
 
 
 def sparrow_at_budget(tag: str, budget: float):
-    """SPARROW row at exactly this budget: (modes, used_rxns, cost_kept, status, capped)."""
+    """SPARROW row at this budget: (modes, used, cost_kept, status, capped, n_selected)."""
     rows = _rows(RESULTS / f"{tag}_select_N500" / "select_frontier.csv")
     hit = [r for r in rows if _num(r.get("budget_rxns")) == budget]
     if not hit:
-        return (None,) * 5
+        return (None,) * 6
     r = hit[0]
     modes = _num(r.get("n_modes_kept"))
     if modes is None:  # older runs wrote n_modes; never mix the two in one table
@@ -136,15 +136,40 @@ def sparrow_at_budget(tag: str, budget: float):
         _num(r.get("cost_kept_rxns")),
         r.get("milp_status"),
         str(r.get("time_capped")).lower() == "true",
+        _num(r.get("n_selected")),
     )
 
 
-def stop_reason(used, budget, slack, capped, exhausted_hint):
+def stop_reason(used, budget, slack, capped, exhausted_hint, cost_kept=None, n_selected=None):
+    """Classify the SB row, using the used-vs-cost_kept GAP rather than trusting used_rxns.
+
+    The SB arm does not merely leave the budget unspent when it exhausts the pool: its reported
+    used_rxns INFLATES, climbing with the budget while the true cost of the identical selected set
+    stays flat (measured 2026-08-20 on Saturn's pruned sEH cell -- 65 molecules priced at 247
+    reactions while used_rxns read 300->387 across R=300..1000). So `used >= budget - slack` alone
+    calls an exhausted cell budget-binding, which is exactly the misreading the convention warns
+    about: it implies the cell could have spent R and chose not to.
+
+    The gap IS the detector. When cost_kept is far below used, the selection is pool-exhausted no
+    matter what used_rxns says, and only cost_kept may be quoted.
+    """
     if capped:
         return "solver-truncated"
     if used is None:
         return "-"
-    if used >= budget - slack:
+    spent = used >= budget - slack
+    lopsided = cost_kept is not None and used > 0 and cost_kept < 0.5 * used
+    if lopsided and spent and n_selected and n_selected >= 0.5 * used:
+        # NOT exhaustion. SPARROW bought a full budget's worth of molecules and they collapsed to few
+        # distinct modes -- measured here at R=100: used=100, n_selected=100, n_modes_kept=15,
+        # mode_rate 0.15, mean_pairwise_sim 0.48. That is the diversity blind spot (cheap syntheses
+        # come from shared intermediates, which come from similar molecules), and it is a RESULT, not
+        # a caveat. Calling it pool-exhausted would bury the finding and wrongly excuse the number.
+        return "redundant"
+    if lopsided:
+        return "pool-exhausted*"  # gap with FEW selected: the SB used_rxns inflation on an
+        #                           exhausted set, where only cost_kept may be quoted
+    if spent:
         return "budget-binding"
     return "pool-exhausted" if exhausted_hint else "under-budget"
 
@@ -180,10 +205,12 @@ def main() -> None:
     for tag in cells:
         pdir, psize, plimited = pool_info(tag)
         gm, gr, gmake, gpts = greedy_at_budget(tag, a.budget)
-        sm, su, sc, sstat, scap = sparrow_at_budget(tag, a.budget)
+        sm, su, sc, sstat, scap, ssel = sparrow_at_budget(tag, a.budget)
         if pdir is None and gm is None and sm is None:
             continue
-        sstop = stop_reason(su, a.budget, a.slack, scap, bool(plimited))
+        sstop = stop_reason(
+            su, a.budget, a.slack, scap, bool(plimited), cost_kept=sc, n_selected=ssel
+        )
         print(
             "  %-30s %5s %8s | %7s %6s | %7s %6s %6s %-16s"
             % (
