@@ -47,6 +47,23 @@ class SEHFrozenReward:
         # this module -- job 75066 forked its first pool fine, then lost every rebuilt worker.
         # Keeping it inside the one class that uses it means the DRD2 and ClpP parents stay
         # fork-clean, so upstream's per-generation pool teardown works there.
+        # NOT wrapped in CUDA_VISIBLE_DEVICES / thread-limit guards any more. Three such guards were
+        # tried on 2026-08-27 and each fixed its own measured symptom while the fork still failed:
+        # blanking the GPU stopped the 6 descriptors, constraining threads stopped the 128-191 pool,
+        # and device_count.cache_clear() stopped the stale zero. Job 75080 then tested the premise
+        # directly, with SynFormer removed entirely -- fork a child before the proxy loads, and one
+        # after:
+        #
+        #     fork BEFORE any sEH load   child -> OK  device_count=1
+        #     after sEH build+predict    fds=0 threads=33
+        #     fork AFTER sEH load        child -> FAIL RuntimeError: No CUDA GPUs are available
+        #
+        # The parent measured CLEAN on every metric the probe reports and the fork failed anyway, so
+        # those metrics are necessary but not sufficient and the guards were treating symptoms. Any
+        # in-parent sEH load is incompatible with forking a CUDA child; the fix has to keep this
+        # module out of the parent entirely (subprocess scoring, as the docking path already does),
+        # not make its footprint smaller. Removed rather than left in place, because dead guards that
+        # look like a fix are how the next person loses another day.
         from gflownet.models import bengio2021flow
 
         self._bf = bengio2021flow

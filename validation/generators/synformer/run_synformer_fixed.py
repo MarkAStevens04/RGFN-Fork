@@ -87,15 +87,30 @@ def _cuda_probe(tag: str) -> None:
                 continue
     except OSError:
         pass
+    # THREADS MATTER AS MUCH AS DESCRIPTORS, and reporting only the latter cost a whole smoke.
+    # Two independent hazards poison fork, with different symptoms: open /dev/nvidia* descriptors
+    # make the child DIE (`CUDA error: initialization error`), while a large parent thread pool makes
+    # it HANG (2.9 GiB, futex_do_wait, forever). Loading the sEH MPNN takes the parent from 64 to
+    # 128-191 threads; DRD2 forks happily at 64. So both numbers belong on the same line.
+    #
+    # DELIBERATELY does NOT call torch.cuda.device_count()/is_available(): those OPEN the very
+    # descriptors this is measuring, so probing would create the fault it reports.
+    try:
+        threads = len(os.listdir(f"/proc/{os.getpid()}/task"))
+    except OSError:
+        threads = -1
     init = "?"
     if "torch" in sys.modules:
         try:
             init = str(sys.modules["torch"].cuda.is_initialized())
         except Exception:  # noqa: BLE001
             init = "err"
+    warn = ""
+    if n or threads > 70:
+        warn = "  <-- FORK IS POISONED: rebuilt workers will die or hang"
     print(
-        f"[SF-CUDA] {tag}: nvidia_fds={n} torch_imported={'torch' in sys.modules} "
-        f"cuda_initialized={init}",
+        f"[SF-CUDA] {tag}: nvidia_fds={n} threads={threads} "
+        f"torch_imported={'torch' in sys.modules} cuda_initialized={init}{warn}",
         flush=True,
     )
 
