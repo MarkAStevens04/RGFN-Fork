@@ -236,8 +236,14 @@ def main() -> None:
     ap.add_argument(
         "--generator",
         required=True,
-        choices=["reinvent", "saturn", "s3gfn", "tango"],
-        help="synformer is deliberately absent: a GA population cannot be upsampled",
+        choices=["reinvent", "saturn", "s3gfn", "tango", "fraggfn"],
+        help="fraggfn added 2026-08-28 when it moved into the competitor block: it is a "
+        "fragment-based GFlowNet with a real sampler, so `--n-samples N` on a trained checkpoint "
+        "draws more molecules exactly as reinvent/saturn/s3gfn do. synformer stays absent because "
+        "its candidates are a slice of an accumulated GA population (`pool = have[:n_samples]`), "
+        "not draws from a sampler -- more molecules there means more GA generations, which is more "
+        "TRAINING. That is an architectural difference between generate-then-sample methods and a "
+        "GA, so synformer cells are reported pool-limited rather than upsampled.",
     )
     ap.add_argument("--target", required=True, choices=sorted(DEFAULT_CAP))
     ap.add_argument("--seed", type=int, required=True)
