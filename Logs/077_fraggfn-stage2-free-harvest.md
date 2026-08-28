@@ -32,8 +32,7 @@ measures the free-versus-paid split.
 ## Answer
 
 **Six of nine FragGFN cells reached the full 500-mode pool from their training history alone, at zero
-additional scoring calls** (five confirmed by a completed Stage-2 run, the sixth measured from its
-finished training trace with its job still queued). Only DRD2 needed to sample, and it needed one short round per seed —
+additional scoring calls.** Only DRD2 needed to sample, and it needed one short round per seed —
 about 2,000 extra calls, a ~20% surcharge on the 10,048-call training budget, in 1.3–1.4 minutes.
 Harvesting the training trace, rather than throwing it away and drawing a fresh sample, is what
 makes Stage 2 nearly free for this generator; on ClpP, where every scoring call is a GPU docking,
@@ -172,15 +171,9 @@ molecules scored by Stage-2 sampling, i.e. the surcharge.
 | fraggfn/drd2/44 | 0.345 | 9,512 | 435 | 435 | 1,998 | target-reached |
 | fraggfn/clpp/42 | −9.1 | 9,364 | 673 | **500** | 0 | target-reached |
 | fraggfn/clpp/43 | −9.1 | 9,369 | 618 | **500** | 0 | target-reached |
-| fraggfn/clpp/44 | −9.1 | 9,249 | 572 | **500** \* | 0 \* | *Stage 2 queued (75159)* |
+| fraggfn/clpp/44 | −9.1 | 9,249 | 572 | **500** | 0 | target-reached |
 
-\* `clpp/44`'s free-mode count is measured — its training trace is complete (10,049 rows) and was
-read through the same `load_trace`/`count_modes` path as every other row — but its Stage-2 job was
-still held on a `--dependency` behind Stage 1 when this was written, so no `upsample_log.json` exists
-for it yet. Treat that row as a measurement of the input, not a completed run.
-
-**Eight of nine cells are confirmed at 500/500 modes, none pool-limited; the ninth is predicted free
-from its completed trace.** Total Stage-2 surcharge across the eight: **5,992
+**All nine cells reached 500/500 modes; none was pool-limited.** Total Stage-2 surcharge: **5,992
 scoring calls**, entirely on DRD2 (~2,000 per seed, ~20% of that cell's 10,048-call training budget),
 in one sampling round of 1.3–1.4 minutes each. The four sEH and ClpP jobs completed in about two
 minutes of wall-clock combined, since no sampling ran.
@@ -191,11 +184,15 @@ unlike the others, so the diversity filter removes essentially nothing and the s
 shortage of gate-clearing chemistry, not redundancy. sEH is the opposite — 990–1,303 above the gate
 collapse to 500 modes only because the cap stops the count.
 
+**Deliverable check, all nine cells.** `modes.smi` holds exactly 500 lines and 500 *unique* SMILES
+in every cell, and all 500 appear in that cell's `stage2_candidates.csv` — so the pool handed to
+Stage 3 actually contains the representatives Stage 4 will be asked to select from.
+
 **One prediction made here was wrong, and the correction matters for how partial traces are read.**
 Midway through, `clpp/44` was still training and its partial trace showed a 4.25% gate-clearing rate
 against its siblings' 7.2% and 6.6%, which projected to roughly 400 modes — i.e. the first cell that
 would need docking-based sampling. Once its trace completed the rate had caught up to 6.2% (572 of
-9,249) and it reached 500 modes free. **A gate-clearing rate measured mid-training is not an
+9,249), and job 75159 confirmed it: 500 modes from the training history, zero sampling. **A gate-clearing rate measured mid-training is not an
 estimate of the final rate**, because the policy is still improving; the projection should not have
 been made from it.
 
