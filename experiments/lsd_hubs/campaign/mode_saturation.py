@@ -113,7 +113,10 @@ def main() -> None:
     ap.add_argument("--candidates", required=True, help="candidates.csv (or any smiles+score CSV)")
     ap.add_argument("--out-dir", default="", help="write saturation.csv + summary.json here")
     ap.add_argument(
-        "--gate", type=float, default=7.0, help="per-target reward gate (sEH 7.0, DRD2 0.5)"
+        "--gate",
+        type=float,
+        required=True,
+        help="per-target reward gate — see experiments/lsd_hubs/matrix16/targets.py (5%-FPR standard, 2026-08-21); passing a stale hand-picked bar is the bug this replaced",
     )
     ap.add_argument("--cutoff", type=float, default=0.5, help="tau for mode counting")
     ap.add_argument(

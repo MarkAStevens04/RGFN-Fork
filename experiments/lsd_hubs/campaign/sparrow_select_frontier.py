@@ -584,7 +584,12 @@ def main() -> None:
     )
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--tag", default="sparrow_select")
-    ap.add_argument("--gate", type=float, default=7.0)
+    ap.add_argument(
+        "--gate",
+        type=float,
+        required=True,
+        help="per-target reward gate — see experiments/lsd_hubs/matrix16/targets.py (5%-FPR standard, 2026-08-21); passing a stale hand-picked bar is the bug this replaced",
+    )
     ap.add_argument(
         "--higher-is-better",
         type=lambda v: v.lower() != "false",

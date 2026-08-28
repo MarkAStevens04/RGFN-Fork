@@ -68,6 +68,34 @@ class Target:
         return self.oracle
 
 
+# ============================================================================================
+# ⛔ THE HIT-GATE STANDARD — 5% FPR against property-matched decoys (decided 2026-08-21)
+#
+# Every gate below is the score at which **5% of that target's property-matched decoys pass**,
+# measured on its own known-actives-vs-decoys set. Nothing else. Do not hand-pick a bar, do not
+# reuse a published convention, and do not carry one target's number to another.
+#
+# WHY A COMMON CRITERION RATHER THAN A COMMON NUMBER. The four rewards live on four incompatible
+# scales (an arbitrary proxy value, a probability, kcal/mol, a pK estimate), so "the same bar"
+# is meaningless. What CAN be equalised is the effect of the bar. Before this rule the decoy
+# pass-rate ranged from 4% (DRD2, 6TD3-B) to 23% (ClpP): a "mode" on ClpP admitted realistic
+# non-binders six times more often than a mode on DRD2, which quietly made mode counts
+# non-comparable across targets — the one thing a four-target matrix has to get right.
+#
+# WHY FPR AND NOT TPR OR YOUDEN. The gate answers "does this molecule COUNT", and the failure
+# that corrupts the benchmark is decoys inflating a mode count. Fixing FPR bounds that
+# contamination identically everywhere. Fixing TPR equalises something we never report and lets
+# contamination float (at TPR 75% the sEH gate admits 49% of decoys — barely a gate). Youden's J
+# weights a false positive and a false negative equally, which is wrong here: admitting junk
+# costs more than missing a hit, because every arm's headline number is a COUNT.
+#
+# WHY 5% AND NOT 1%. At 1% the weaker oracles starve — sEH would retain 3% of known actives, and
+# a gate that discards 97% of actives makes most cells pool-limited, which is a different failure.
+#
+# The bars are empirical grid points, not round numbers, ON PURPOSE: rounding breaks the exact
+# property the standard is defined by. Re-derive with `calibrate_gates.py` if a decoy set changes.
+# ============================================================================================
+
 TARGETS: Dict[str, Target] = {
     "seh": Target(
         name="seh",
@@ -85,18 +113,18 @@ TARGETS: Dict[str, Target] = {
         # hub-batching (entry 055 saw the same thing on one seed; three seeds confirm it is
         # systematic, not seed luck). At 5.0 every clean cell reaches 300/300 and the seed spread is
         # 1.9-3.2%. 7.0 remains in threshold_variants so the paper-comparable number stays quotable.
-        mode_reward_threshold=5.0,
+        mode_reward_threshold=5.68,  # 5% FPR (TPR 13%, 2.5x). WAS 5.0 -> 16% FPR.
         reward_type="surrogate",
-        threshold_variants=[5.0, 6.0, 7.0],
+        threshold_variants=[5.0, 5.68, 6.0, 7.0],
         reward_note="proxy value; HEADLINE 5.0 (calibrated, Logs/034/051); 7.0 = paper-comparable variant",
     ),
     "drd2": Target(
         name="drd2",
         reward_name="drd2",
         higher_is_better=True,
-        mode_reward_threshold=0.5,
+        mode_reward_threshold=0.345,  # 5% FPR (TPR 74%, 14.9x). WAS 0.5 -> 4% FPR.
         reward_type="surrogate",
-        threshold_variants=[0.5, 0.7, 0.9],
+        threshold_variants=[0.345, 0.5, 0.7, 0.9],
         reward_note="activity probability in [0,1]; 0.5 = calibrated active cutoff (Logs/028), "
         "0.7/0.9 = stricter bars for the gate-sensitivity sweep (symmetric to sEH 5/6/7)",
     ),
@@ -108,17 +136,62 @@ TARGETS: Dict[str, Target] = {
         reward_type="docking",
         oracle="docking_6td3_gpu",  # two-tier differential; num_modes/exhaustiveness from the cfg
         threshold_variants=[-2.0],
-        reward_note="PROVISIONAL: neosubstrate differential (Vina T2-T1), lower-is-better; "
-        "confirm recorded reward-column sign/scale when docking cells activate",
+        reward_note=(
+            "SUPERSEDED for TRAINING by `6td3b` (Logs/072): the generator GAMES this "
+            "differential -- its candidates clear this gate 78% of the time against 67% "
+            "for real glues, while clearing the CNN gate 0 times out of 400. Retained "
+            "UNCHANGED so published numbers stay reproducible, and still emitted by every "
+            "run. Separately, -2.0 gives only 2.1x enrichment against property-matched "
+            "decoys (Logs/069) versus 82.9x against the older warhead-matched set."
+        ),
+    ),
+    "6td3b": Target(
+        name="6td3b",
+        reward_name="6td3b",
+        higher_is_better=True,
+        # 6TD3-B: gnina's CNN_VS = CNNaffinity x CNNscore on the selected Tier-2 pose, HIGHER better.
+        # Replaces 6TD3's Vina T2-T1 differential as the reward for all new CDK12-DDB1 runs
+        # (Logs/072). Gate on the `cnn_vs` column.
+        #
+        # WHY THE PRODUCT, not either head. gnina emits two independent numbers whose authors note
+        # "need not agree": CNNscore = P(pose within 2 A of true), CNNaffinity = predicted pK.
+        #   * cnnaff_t2 ALONE is blind to our failure mode -- AUROC 0.521 (chance) separating real
+        #     glues from our own reward-optimised candidates. gnina's affinity head is trained with a
+        #     HINGE on high-RMSD poses (penalised only for over-predicting), so an affinity read off a
+        #     low-confidence pose is weakly supervised.
+        #   * cnnsc_t2 ALONE catches it (0.965) but is bounded [0,1] and saturates (glue p90 0.987),
+        #     leaving a GFlowNet no headroom.
+        # CNN_VS is gnina's OWN documented virtual-screening metric, so this is published practice
+        # rather than our invention.
+        #
+        #   signal      AUROC vs decoys   AUROC vs our candidates   glues kept @5% FPR
+        #   cnnaff_t2       0.804              0.521 (chance)             37.5%
+        #   cnnsc_t2        0.923              0.965                      78.8%
+        #   CNN_VS          0.917              0.946                      78.1%
+        #
+        # GATE 6.718 = the 5%-FPR standard (see the header block). Keeps 78.1% of real glues, admits
+        # 5.0% of property-matched decoys and 3.5% of our candidates; enrichment 17.9x. Training
+        # landscape is wide open -- our candidates median 2.63 vs 7.59 for real glues.
+        mode_reward_threshold=6.718,
+        reward_type="docking",
+        oracle="docking_6td3b_gpu",
+        threshold_variants=[6.0, 6.718, 7.0],
+        reward_note=(
+            "CALIBRATED (Logs/069/072): gnina CNN_VS = CNNaffinity x CNNscore on the selected "
+            "Tier-2 pose, HIGHER is better. Gate on `cnn_vs`. 6.718 = the 5%-FPR standard "
+            "(78.1% of glues, 5.0% of decoys, 17.9x). Supersedes `6td3` as the training reward; "
+            "`6td3` is retained unchanged so published numbers stay reproducible."
+        ),
     ),
     "clpp": Target(
         name="clpp",
         reward_name="clpp",
         higher_is_better=False,
-        mode_reward_threshold=-8.0,
+        mode_reward_threshold=-9.1,  # 5% FPR (TPR 47%, 9.5x). WAS -8.0 -> 23% FPR, the
+        # loosest gate of the four and the reason mode counts were not comparable.
         reward_type="docking",
         oracle="docking_clpp",  # single-target human ClpP 7UVU (Logs/045)
-        threshold_variants=[-8.0, -9.0],
+        threshold_variants=[-9.1, -9.0, -8.0],
         reward_note="CALIBRATED (Logs/045): raw QuickVina2-GPU Vina energy vs human ClpP "
         "(7UVU), lower-is-better. Gate on the RAW docking value (candidates.csv `raw_score` / "
         "snapshot `term_raw_score`), NOT the `score`=ReLU(-raw) reward column. -8.0 is the "

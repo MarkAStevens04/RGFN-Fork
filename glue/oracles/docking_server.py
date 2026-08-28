@@ -253,6 +253,7 @@ class _ThreadingUnixServer(socketserver.ThreadingUnixStreamServer):
 def _load_oracle(name: str, oracle_kwargs: Dict):
     """Registry mirroring scripts/score_batch.py (lazy glue import — server side only)."""
     from glue.oracles import (
+        Docking6TD3BGpuOracle,
         Docking6TD3GpuOracle,
         Docking6TD3Oracle,
         DockingClpPOracle,
@@ -262,6 +263,9 @@ def _load_oracle(name: str, oracle_kwargs: Dict):
 
     registry = {
         "docking_6td3_gpu": Docking6TD3GpuOracle,
+        # 6TD3-B: same docking pass, CNNaffinity reward (Logs/072). Registered
+        # ALONGSIDE the incumbent so old configs keep resolving unchanged.
+        "docking_6td3b_gpu": Docking6TD3BGpuOracle,
         "docking_6td3": Docking6TD3Oracle,
         "docking_seh": DockingSEHOracle,
         "docking_clpp": DockingClpPOracle,

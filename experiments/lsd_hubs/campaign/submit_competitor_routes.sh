@@ -57,14 +57,34 @@ N=${N:-500}
 # the worst binders first -- silently, since nothing downstream can tell. The gated column differs
 # too: `score` is the generator's training reward (clip(-vina) for docking, a positive number) while
 # `raw_score` is the oracle's own value, and the bars are defined on raw.
-case "$TARGET" in
-    seh)  GATE=${GATE:-7.0}  ; DIR=higher ;;
-    drd2) GATE=${GATE:-0.5}  ; DIR=higher ;;
-    clpp) GATE=${GATE:--8.0} ; DIR=lower  ;;   # calibrated, Logs/045: AUROC 0.895 vs matched decoys
-    *)    echo "FATAL: unknown TARGET '$TARGET' (expected seh | drd2 | clpp). 6TD3 is PAUSED: its" >&2
-          echo "       -2.0 bar rests on warhead-matched rather than property-matched decoys and is" >&2
-          echo "       not yet defensible (entry 065)." >&2; exit 1 ;;
-esac
+# RESOLVE THE GATE FROM targets.py, NEVER FROM A DEFAULT HERE. This script is the competitor
+# pipeline's entry point, and it used to carry seh 7.0 / drd2 0.5 / clpp -8.0 as shell defaults --
+# the PRE-STANDARD bars. Since 2026-08-21 every gate is the score at which 5% of that target's
+# property-matched decoys pass (5.68 / 0.345 / -9.10 / 7.97), and a stale default here is worse than
+# a stale default anywhere else: sparrow_select_frontier, mode_saturation, s3gfn_sample_more and
+# build_s3gfn_pools were all made `required=True` precisely so a caller could not supply the wrong
+# bar silently, and this script is the caller. On ClpP the old -8.0 admitted 23% of decoys against
+# the intended 5%, so a "mode" there was ~6x more contaminated than a DRD2 one.
+#
+# Reading the source of truth also means 6TD3-B needs no branch here: the old `*)` arm hard-failed it
+# with a "PAUSED, -2.0 rests on warhead-matched decoys" message that stopped being true when 6td3b
+# was calibrated at 7.97. An unknown target now fails on targets.py's own error, which stays correct
+# as targets are added or retired.
+read -r GATE DIR <<EOF
+$(conda run --no-capture-output -n rgfn python - "$TARGET" <<'PYGATE'
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path.cwd() / "experiments" / "lsd_hubs" / "matrix16"))
+from targets import get_target
+
+t = get_target(sys.argv[1])
+print(t.mode_reward_threshold, "higher" if t.higher_is_better else "lower")
+PYGATE
+)
+EOF
+[ -n "${GATE:-}" ] && [ -n "${DIR:-}" ] || {
+    echo "FATAL: could not resolve a gate for TARGET='$TARGET' from matrix16/targets.py" >&2; exit 1; }
+echo "  gate: $GATE ($DIR is better) — resolved from matrix16/targets.py, 5%-FPR standard"
 # Two different spellings for the same fact, because the tools were written separately:
 # build_s3gfn_pools.py / mode_saturation.py take a --lower-is-better switch, while
 # sparrow_select_frontier.py takes --higher-is-better true|false. Both are derived from DIR here so a

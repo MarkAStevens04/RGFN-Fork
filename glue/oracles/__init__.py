@@ -20,6 +20,7 @@ Add new oracle modules here and import them below so `glue.registry` picks them 
 from glue.oracles.base import GlueOracle  # noqa: F401
 from glue.oracles.docking_6td3_oracle import Docking6TD3Oracle  # noqa: F401
 from glue.oracles.docking_gpu_differential_oracle import (  # noqa: F401
+    Docking6TD3BGpuOracle,
     Docking6TD3GpuOracle,
     GpuDifferentialDockingOracle,
 )
@@ -32,6 +33,7 @@ from glue.oracles.mock_oracle import MockGlueOracle  # noqa: F401
 __all__ = [
     "GlueOracle",
     "Docking6TD3Oracle",
+    "Docking6TD3BGpuOracle",
     "Docking6TD3GpuOracle",
     "GpuDifferentialDockingOracle",
     "DockingSEHOracle",

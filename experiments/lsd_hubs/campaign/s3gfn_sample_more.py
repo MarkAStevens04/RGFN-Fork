@@ -58,7 +58,12 @@ def main() -> None:
         "--run-dir", required=True, help="the finished S3-GFN run (holds run_config.yaml + ckpt)"
     )
     ap.add_argument("--target-above-gate", type=int, default=500)
-    ap.add_argument("--gate", type=float, default=7.0)
+    ap.add_argument(
+        "--gate",
+        type=float,
+        required=True,
+        help="per-target reward gate — see experiments/lsd_hubs/matrix16/targets.py (5%-FPR standard, 2026-08-21)",
+    )
     ap.add_argument("--lower-is-better", action="store_true", help="docking targets")
     ap.add_argument("--max-samples", type=int, default=60000, help="hard cap on unique valid drawn")
     ap.add_argument(

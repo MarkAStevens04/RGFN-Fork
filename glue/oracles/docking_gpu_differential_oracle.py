@@ -194,8 +194,10 @@ class GpuDifferentialDockingOracle(GlueOracle):
     def score_detailed(self, smiles: List[str]) -> List[Dict]:
         """Per-molecule dict with the full breakdown (used by score() and by the
         validation harness): ``vina_t2``, ``vina_t1``, ``dvina``, ``cnnsc_t2``
-        (selected pose's CNNscore), ``qv2_t2`` (QV2's own best score, diagnostic),
-        ``n_poses``, ``status``. Order matches ``smiles``."""
+        (selected pose's CNNscore), ``cnnaff_t2`` (its CNNaffinity), ``cnn_vs``
+        (CNNaffinity x CNNscore — gnina's virtual-screening metric and the 6TD3-B reward),
+        ``qv2_t2`` (QV2's own best score, diagnostic), ``n_poses``, ``status``.
+        Order matches ``smiles``."""
         self._check_inputs()
         n = len(smiles)
         out = [
@@ -204,6 +206,8 @@ class GpuDifferentialDockingOracle(GlueOracle):
                 "vina_t1": float("nan"),
                 "dvina": float("nan"),
                 "cnnsc_t2": float("nan"),
+                "cnnaff_t2": float("nan"),
+                "cnn_vs": float("nan"),
                 "qv2_t2": float("nan"),
                 "n_poses": 0,
                 "status": "no_pose",
@@ -250,9 +254,14 @@ class GpuDifferentialDockingOracle(GlueOracle):
         tier2_sdf = work / "tier2_all.sdf"
         tier2_sdf.write_text("".join(blocks))
 
-        # 3. gnina --score_only against Tier 2 -> per-pose (Affinity, CNNscore).
+        # 3. gnina --score_only against Tier 2 -> per-pose (Affinity, CNNscore, CNNaffinity).
+        # CNNaffinity used to be discarded here. It is the 6TD3-B reward (Logs/072): a pK-scale
+        # estimate on an UNBOUNDED scale, where CNNscore is a bounded [0,1] pose-quality
+        # probability that saturates (real glues p90 = 0.987) and so makes a poor gradient. Keeping
+        # it costs nothing -- the same gnina call already computes it -- and not keeping it is the
+        # exact failure that made Logs/069 expensive: the number we later wanted was never recorded.
         with self._timer.step("tier2_score", len(index)):
-            affs, cnnsc, _ = self._score_only(self.tier2_path, tier2_sdf)
+            affs, cnnsc, cnnaff = self._score_only(self.tier2_path, tier2_sdf)
         if not (len(affs) == len(cnnsc) == len(index)):
             # Count mismatch would misalign poses -> refuse to guess; nan the batch.
             for d in out:
@@ -261,11 +270,18 @@ class GpuDifferentialDockingOracle(GlueOracle):
             return out
 
         # 4. Select the most native-like pose (max CNNscore) per molecule.
-        best: Dict[int, tuple] = {}  # mol idx -> (entry_pos, affinity_t2, cnnscore)
+        # Selection criterion is UNCHANGED (max CNNscore, entry 008): only the extra column
+        # travels with the winner, so every pose and every existing number is bit-for-bit identical.
+        best: Dict[int, tuple] = {}  # mol idx -> (entry_pos, affinity_t2, cnnscore, cnnaffinity)
         with self._timer.step("pose_select", n):
             for pos, i in enumerate(index):
                 if i not in best or cnnsc[pos] > best[i][2]:
-                    best[i] = (pos, affs[pos], cnnsc[pos])
+                    best[i] = (
+                        pos,
+                        affs[pos],
+                        cnnsc[pos],
+                        cnnaff[pos] if pos < len(cnnaff) else float("nan"),
+                    )
 
         # 5. Tier 1 score-only on the frozen selected poses (one batched call).
         order = sorted(best)
@@ -276,6 +292,12 @@ class GpuDifferentialDockingOracle(GlueOracle):
         for k, i in enumerate(order):
             out[i]["vina_t2"] = float(best[i][1])
             out[i]["cnnsc_t2"] = float(best[i][2])
+            out[i]["cnnaff_t2"] = float(best[i][3])
+            # gnina's own virtual-screening metric: CNNaffinity x CNNscore. The two heads answer
+            # different questions and need not agree, and the affinity head is trained with a HINGE
+            # on high-RMSD poses (penalised only for over-predicting), so an affinity read off a
+            # low-confidence pose is weakly supervised. Multiplying discounts exactly that case.
+            out[i]["cnn_vs"] = float(best[i][3]) * float(best[i][2])
             out[i]["status"] = "ok"
             if k < len(t1affs):
                 out[i]["vina_t1"] = float(t1affs[k])
@@ -393,3 +415,57 @@ class Docking6TD3GpuOracle(GpuDifferentialDockingOracle):
             work_dir=work_dir,
             name="docking_6td3_gpu",
         )
+
+
+class Docking6TD3BGpuOracle(Docking6TD3GpuOracle):
+    """**6TD3-B** — same docking, different reward: gnina's ``CNN_VS`` = CNNaffinity x CNNscore.
+
+    WHY A NEW REWARD AT ALL (Logs/069, Logs/072). The incumbent ``docking_6td3_gpu`` rewards the
+    Tier2-Tier1 Vina differential. Our generator drove that to -7.97 where the best real glue reaches
+    -4.09, and the resulting molecules clear the differential's own gate 78% of the time against 67%
+    for genuine glues -- while clearing a CNN-based gate 0 times out of 400.
+
+    WHY THE PRODUCT AND NOT EITHER HEAD ALONE. gnina emits two independent numbers: ``CNNscore``,
+    the probability the pose is within 2 A of the true pose, and ``CNNaffinity``, a predicted pK. The
+    authors note they need not agree. Each fails differently as a reward:
+
+      * ``cnnaff_t2`` alone is BLIND to our failure mode -- AUROC 0.521 (chance) separating real
+        glues from our own reward-optimised candidates, which clear an affinity gate at 35.8% against
+        37.5% for glues. The reason is in gnina's training: the affinity head uses a hinge on
+        high-RMSD poses, penalised only for predicting too HIGH, so an affinity read off a
+        low-confidence pose is weakly supervised and should not be trusted on its own.
+      * ``cnnsc_t2`` alone catches it (AUROC 0.965) but is a bounded [0,1] probability whose real-glue
+        p90 is 0.987 -- little headroom above the bar for a GFlowNet to climb.
+
+    ``CNN_VS`` is gnina's OWN documented virtual-screening metric (the authors report the product
+    beats either head alone for screening), so this is a published combination rather than one we
+    invented. Measured on 160 glues / 160 property-matched decoys / 400 of our candidates:
+
+        signal        AUROC vs decoys   AUROC vs our candidates   glues kept @5% FPR
+        cnnaff_t2         0.804              0.521 (chance)             37.5%
+        cnnsc_t2          0.923              0.965                      78.8%
+        CNN_VS            0.917              0.946                      78.1%
+
+    It keeps 78% of real glues where affinity keeps 37%, rejects our candidates (3.5%), and stays
+    continuous on the affinity axis so the reward has gradient: our candidates sit at a median 2.63
+    against 7.59 for real glues -- a long climb, not a ceiling.
+
+    NOTHING IS SHARED-STATE MUTATED. Only which key ``score()`` returns and the direction of
+    improvement differ from the parent. Receptors, pose search, and the pose SELECTION criterion
+    (still max CNNscore, entry 008) are identical, so a 6TD3 and a 6TD3-B run of the same molecules
+    give the same poses and the same ``dvina``, and the two oracles are directly comparable.
+
+    Tier 1 is still scored though this reward ignores it: a near-fixed ~4 s gnina model load (2.3% of
+    a 400-molecule batch), and keeping it means every run emits BOTH oracles' signals.
+    """
+
+    name = "docking_6td3b_gpu"
+    higher_is_better = True  # CNN_VS is affinity-scaled: larger is a better predicted binder
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.name = "docking_6td3b_gpu"
+
+    def score(self, smiles: List[str]) -> List[float]:
+        """CNN_VS (CNNaffinity x CNNscore) of the selected Tier-2 pose (nan on failure)."""
+        return [d["cnn_vs"] for d in self.score_detailed(smiles)]

@@ -309,9 +309,41 @@ def main() -> None:
     # One snapshot, taken once, never overwritten: if fixed_reward.budget_faithful/ already exists a
     # previous Stage-2 run made it and it is the ORIGINAL -- re-copying would capture upsampled data
     # and destroy the very thing being preserved.
+    # A SNAPSHOT MUST NOT LIE ABOUT WHAT IT HOLDS. If this cell has already been upsampled by an
+    # earlier Stage-2 run made BEFORE the snapshot existed, its candidates.csv is no longer the
+    # authors'-budget pool -- s3gfn_seh/seed42 sits at 24,000 rows against a configured n_samples of
+    # 2,000. Copying that into a directory named `budget_faithful` would enshrine upsampled data
+    # under a name asserting the opposite, which is worse than having no snapshot: the next reader
+    # would trust it. Refuse, say so, and leave the naming honest.
+    _expected = 0
+    try:
+        from omegaconf import OmegaConf as _OC
+
+        _expected = int((_OC.load(a.cfg).get("fixed_reward", {}) or {}).get("n_samples", 0) or 0)
+    except Exception:  # noqa: BLE001 -- a missing key must not block the run
+        _expected = 0
     _fr = run_dir / "fixed_reward"
+    _cand_now = _fr / "candidates" / "candidates.csv"
+    _rows_now = (sum(1 for _ in open(_cand_now)) - 1) if _cand_now.exists() else 0
     _snap = run_dir / "fixed_reward.budget_faithful"
-    if _fr.is_dir() and not _snap.exists():
+    # The snapshot is only meaningful when candidates.csv IS the budget-faithful pool, i.e. its row
+    # count matches the configured n_samples. Guarding on "> expected" alone was not enough: after
+    # the leftover file was quarantined, _rows_now became 0, the guard stayed silent, and an EMPTY
+    # directory got preserved under a name asserting it held the authors'-budget pool. Too few rows
+    # misleads exactly as badly as too many -- a later reader would conclude the run produced
+    # nothing. Snapshot on equality, warn on anything else, and say which way it differs.
+    if _expected and _rows_now != _expected and not _snap.exists():
+        print(
+            f"[upsample] WARNING: candidates.csv holds {_rows_now} rows against a configured "
+            f"n_samples of {_expected} ("
+            + ("already upsampled" if _rows_now > _expected else "missing or quarantined")
+            + "), so it is NOT the budget-faithful pool. Not writing a snapshot: a directory named "
+            "'budget_faithful' holding anything else misleads every later reader. Derived pools and "
+            "their routes are unaffected — this only means the cell cannot be re-derived from its "
+            "own candidates file.",
+            flush=True,
+        )
+    elif _fr.is_dir() and not _snap.exists():
         import shutil
 
         shutil.copytree(_fr, _snap)
@@ -433,6 +465,17 @@ def main() -> None:
         modes_reached=len(modes),
         pool_limited=len(modes) < a.target_modes,
         distinct_scored=len(scored),
+        # PROVENANCE. Stage 2 unions the training trace with whatever candidates.csv holds, and on a
+        # RE-RUN that file may contain molecules a PREVIOUS Stage-2 pass sampled -- possibly under a
+        # different gate. That happened on 2026-08-28: a "clean" re-run at 5.68 silently absorbed
+        # 24,000 molecules left over from a gate-7.0 pass, so the pool was trace + old-run samples
+        # rather than a clean draw. Every molecule was validly scored, so nothing was WRONG, but a
+        # differently-constituted pool sitting in an identically-labelled column is the exact shape
+        # this project has already lost a result to. Recording the split makes it checkable instead
+        # of invisible.
+        candidates_rows_at_start=_rows_now,
+        candidates_expected_n_samples=_expected,
+        candidates_were_preexisting=bool(_rows_now),
         free_from_training=len(free),
         modes_from_training_alone=len(free_modes),
         newly_sampled=max(len(scored) - len(free), 0),

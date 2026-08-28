@@ -142,7 +142,12 @@ def main() -> None:
         default="500",
         help="comma-separated pool sizes; each is a PREFIX of the largest (nested)",
     )
-    ap.add_argument("--gate", type=float, default=0.0, help="the target's quality bar")
+    ap.add_argument(
+        "--gate",
+        type=float,
+        required=True,
+        help="per-target reward gate — see experiments/lsd_hubs/matrix16/targets.py (5%-FPR standard, 2026-08-21)",
+    )
     ap.add_argument(
         "--lower-is-better",
         action="store_true",

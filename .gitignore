@@ -254,3 +254,4 @@ data/validation-molecules/DRD2_actives_chembl_all.csv
 experiments/oracle_validation/docking_6td3/decoy_neighbours_weakest.png
 experiments/oracle_validation/docking_6td3/decoy_neighbours_strongest.png
 experiments/oracle_validation/drd2_proxy/drd2_activities_raw.jsonl
+experiments/lsd_hubs/campaign/results/acid_amine_families/acid_amine_families.png
