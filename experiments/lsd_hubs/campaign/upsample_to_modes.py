@@ -70,11 +70,36 @@ if str(_REPO_ROOT) not in sys.path:
 # competitor's allowance depend on a knob of OUR method -- and 2x free-frag on ClpP is ~894 GPU-hours
 # per cell at 5.1 s/molecule. These are absolute, generous, and affordable.
 DEFAULT_CAP = {"seh": 50_000, "drd2": 50_000, "clpp": 20_000}
-GATES = {
-    "seh": (7.0, "score", True),
-    "drd2": (0.5, "score", True),
-    "clpp": (-8.0, "raw_score", False),
-}
+
+
+def gate_for(target: str):
+    """(gate, score_column, higher_is_better), read from the ONE source of truth.
+
+    NEVER HARDCODE A GATE HERE. Every target's bar is the score at which 5% of that target's
+    property-matched decoys pass, settled 2026-08-21 and living in
+    ``experiments/lsd_hubs/matrix16/targets.py``. This file previously carried its own copy --
+    seh 7.0, drd2 0.5, clpp -8.0 -- which are the PRE-STANDARD values, so every mode count it
+    produced was on a bar nothing else in the campaign uses any more. The current bars are
+    5.68 / 0.345 / -9.1, and the ClpP move matters most: -8.0 admitted 23% of decoys against the 5%
+    the standard fixes, so a ClpP "mode" was about 6x more contaminated than a DRD2 one.
+    sparrow_select_frontier, mode_saturation and build_s3gfn_pools all made --gate required=True for
+    exactly this reason; importing is the equivalent guarantee for a script that resolves its own.
+
+    The bars are empirical grid points -- DO NOT ROUND them, that breaks the exact-FPR property.
+
+    score_column follows the direction, matching candidates.csv: docking gates are defined on raw
+    Vina (lower is better) and surrogates on the training value.
+    """
+    import sys as _sys
+
+    mtx = _REPO_ROOT / "experiments" / "lsd_hubs" / "matrix16"
+    if str(mtx) not in _sys.path:
+        _sys.path.insert(0, str(mtx))
+    from targets import get_target
+
+    t = get_target(target)
+    hib = bool(t.higher_is_better)
+    return float(t.mode_reward_threshold), ("score" if hib else "raw_score"), hib
 
 
 def load_scored(path: Path, score_column: str) -> Dict[str, float]:
@@ -214,7 +239,7 @@ def main() -> None:
         choices=["reinvent", "saturn", "s3gfn", "tango"],
         help="synformer is deliberately absent: a GA population cannot be upsampled",
     )
-    ap.add_argument("--target", required=True, choices=sorted(GATES))
+    ap.add_argument("--target", required=True, choices=sorted(DEFAULT_CAP))
     ap.add_argument("--seed", type=int, required=True)
     ap.add_argument(
         "--run-dir", required=True, help="the generator's run dir (holds the checkpoint)"
@@ -249,7 +274,7 @@ def main() -> None:
     ap.add_argument("--out", default="", help="where to write upsample_log.json (default: run-dir)")
     a = ap.parse_args()
 
-    gate, col, hib = GATES[a.target]
+    gate, col, hib = gate_for(a.target)
     cap = a.max_scored or DEFAULT_CAP[a.target]
     run_dir = Path(a.run_dir)
     cand = run_dir / "fixed_reward" / "candidates" / "candidates.csv"
@@ -262,6 +287,40 @@ def main() -> None:
         f"| tau {a.cutoff} | cap {cap} distinct | round {a.round_size}",
         flush=True,
     )
+
+    # --- SNAPSHOT THE BUDGET-FAITHFUL RUN BEFORE TOUCHING IT -------------------------------------
+    # Re-invoking the runner OVERWRITES the cell's outputs: candidates.csv, pairs.csv, timing.json,
+    # run_config.yaml. Those are the artifacts of the authors'-default-budget run -- the fairness
+    # anchor this whole benchmark rests on -- and post-training sampling is stochastic, so once
+    # overwritten the original 2,000-molecule pool cannot be re-derived by re-running.
+    #
+    # This is the SECOND time the same root cause bit: the trace fix (TraceWriter rotation) covered
+    # trace.csv only, because I looked at the file I happened to be reading rather than enumerating
+    # everything a runner writes. s3gfn_seh/seed42's candidates.csv went 2,000 -> 20,000 rows before
+    # this snapshot existed. Its derived pools (_N154 / _N89) and their routes survive, so published
+    # numbers are intact, but the cell can no longer be reproduced from its own candidates file.
+    #
+    # One snapshot, taken once, never overwritten: if fixed_reward.budget_faithful/ already exists a
+    # previous Stage-2 run made it and it is the ORIGINAL -- re-copying would capture upsampled data
+    # and destroy the very thing being preserved.
+    _fr = run_dir / "fixed_reward"
+    _snap = run_dir / "fixed_reward.budget_faithful"
+    if _fr.is_dir() and not _snap.exists():
+        import shutil
+
+        shutil.copytree(_fr, _snap)
+        _n = (
+            sum(1 for _ in open(_snap / "candidates" / "candidates.csv")) - 1
+            if (_snap / "candidates" / "candidates.csv").exists()
+            else 0
+        )
+        print(
+            f"[upsample] snapshot: budget-faithful run preserved at {_snap.name} "
+            f"({_n} candidates)",
+            flush=True,
+        )
+    elif _snap.exists():
+        print(f"[upsample] snapshot: {_snap.name} already present — left untouched", flush=True)
 
     # --- free pool first: everything the oracle already scored during training -------------------
     free = load_trace(run_dir / "trace.csv", hib)
@@ -284,9 +343,32 @@ def main() -> None:
         free = load_trace(run_dir / "trace.csv", hib)  # now includes this round's rotated history
         scored = dict(free)
         scored.update(load_scored(cand, col))
-        if rc != 0 and not scored:
+        if rc != 0:
+            # A FAILED ROUND IS NEVER A STALL. Previously this only tripped when the disk was ALSO
+            # empty, so a runner that crashed on startup left the stale candidates.csv in place, the
+            # round added 0 modes, and the next check declared `stalled` -- a claim about the
+            # GENERATOR -- when the truth was that our compute nodes cannot reach huggingface.co.
+            # Measured 2026-08-28 on s3gfn_seh/seed42: two rounds rc=1, candidates.csv untouched
+            # since Aug 21, and the log confidently reported "STOP=stalled modes=169/500".
+            # Stop reasons are read as findings, so one that can be produced by an environment
+            # failure is worse than no stop reason at all.
             reason = "sampling-failed"
-            print(f"[upsample] runner exited {rc} and no candidates on disk — stopping", flush=True)
+            print(
+                f"[upsample] round {len(rounds) + 1} FAILED (runner rc={rc}). Not a stall — "
+                "refusing to report a generator property from a failed round.",
+                flush=True,
+            )
+            rounds.append(
+                dict(
+                    asked=asked,
+                    distinct=len(scored),
+                    eligible=0,
+                    modes=prev_modes,
+                    modes_added=0,
+                    seconds=round(secs, 1),
+                    rc=rc,
+                )
+            )
             break
 
         n_distinct = len(scored)
@@ -360,6 +442,29 @@ def main() -> None:
     )
     (out / "upsample_log.json").write_text(json.dumps(summary, indent=2))
     (out / "modes.smi").write_text("\n".join(modes) + ("\n" if modes else ""))
+
+    # EMIT A CANDIDATES CSV, not just the mode list, so the existing pool builder consumes this
+    # unchanged. Handing build_s3gfn_pools.py the raw scored set lets IT do the mode selection with
+    # the same canonical helper -- one implementation, and this script's count becomes a cross-check
+    # rather than a second source of truth. Columns mirror candidates.csv exactly: `raw_score` is the
+    # oracle's own value (raw Vina for docking, LOWER is better) and `score` is the higher-is-better
+    # training value, because the builder defaults to raw_score under --lower-is-better and to score
+    # otherwise. Writing only one of them would silently gate a docking pool on the wrong axis --
+    # the bug that made all sixteen ClpP cells read as empty on 2026-08-26.
+    cand_out = out / "stage2_candidates.csv"
+    with open(cand_out, "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["smiles", "score", "raw_score"])
+        for smi, val in scored.items():
+            if hib:
+                w.writerow([smi, val, val])
+            else:
+                w.writerow([smi, max(-float(val), 0.0), val])
+    print(
+        f"[upsample] wrote {cand_out} ({len(scored)} molecules) — feed this to "
+        f"build_s3gfn_pools.py with TAG_SUFFIX=_stage2",
+        flush=True,
+    )
     print(
         f"[upsample] STOP={reason}  modes={len(modes)}/{a.target_modes}  "
         f"distinct_scored={len(scored)}  pool_limited={summary['pool_limited']}",
