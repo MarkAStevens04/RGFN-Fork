@@ -1,0 +1,91 @@
+{
+  "tag": "s3gfn_seh_seed43_big_greedy_fine",
+  "selection": "greedy",
+  "gate": 7.0,
+  "cutoff": 0.5,
+  "n_modes_available": 181,
+  "n_routed": 438,
+  "rows": [
+    {
+      "n_modes": 52,
+      "used_rxns": 95,
+      "n_selected": 52,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 1.8269,
+      "milp_status": "Optimal",
+      "n_targets_priced": 52
+    },
+    {
+      "n_modes": 53,
+      "used_rxns": 97,
+      "n_selected": 53,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 1.8302,
+      "milp_status": "Optimal",
+      "n_targets_priced": 53
+    },
+    {
+      "n_modes": 54,
+      "used_rxns": 98,
+      "n_selected": 54,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 1.8148,
+      "milp_status": "Optimal",
+      "n_targets_priced": 54
+    },
+    {
+      "n_modes": 55,
+      "used_rxns": 99,
+      "n_selected": 55,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 1.8,
+      "milp_status": "Optimal",
+      "n_targets_priced": 55
+    },
+    {
+      "n_modes": 56,
+      "used_rxns": 102,
+      "n_selected": 56,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 1.8214,
+      "milp_status": "Optimal",
+      "n_targets_priced": 56
+    },
+    {
+      "n_modes": 57,
+      "used_rxns": 103,
+      "n_selected": 57,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 1.807,
+      "milp_status": "Optimal",
+      "n_targets_priced": 57
+    },
+    {
+      "n_modes": 58,
+      "used_rxns": 105,
+      "n_selected": 58,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 1.8103,
+      "milp_status": "Optimal",
+      "n_targets_priced": 58
+    },
+    {
+      "n_modes": 59,
+      "used_rxns": 106,
+      "n_selected": 59,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 1.7966,
+      "milp_status": "Optimal",
+      "n_targets_priced": 59
+    },
+    {
+      "n_modes": 60,
+      "used_rxns": 107,
+      "n_selected": 60,
+      "mode_rate": 1.0,
+      "rxn_per_mode": 1.7833,
+      "milp_status": "Optimal",
+      "n_targets_priced": 60
+    }
+  ]
+}
