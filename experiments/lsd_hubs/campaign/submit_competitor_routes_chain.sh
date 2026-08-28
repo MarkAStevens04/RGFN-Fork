@@ -25,6 +25,10 @@
 #   CELLS="reinvent:seh:43 reinvent:seh:44 reinvent:drd2:42" \
 #       sbatch experiments/lsd_hubs/campaign/submit_competitor_routes_chain.sh
 #
+# To route the UPSAMPLED (Stage 2) pools instead of the budget-faithful ones, add USE_STAGE2=1:
+#   CELLS="fraggfn:seh:42 fraggfn:seh:43" USE_STAGE2=1 \
+#       sbatch experiments/lsd_hubs/campaign/submit_competitor_routes_chain.sh
+#
 # POOL selects the pool construction — naive (default) or pruned. See docs/RESEARCH_CONTEXT.md,
 # "The two pools and the two numbers". The two variants write to DIFFERENT tags, so their MultiAiZ
 # caches never collide and both can be chained independently.
@@ -40,6 +44,19 @@ cd "$HOME/projects/RGFN_Fork/RGFN-Fork"
 
 CELLS=${CELLS:?set CELLS to a list of GENERATOR:TARGET:SEED triples}
 FR_ROOT=${FR_ROOT:-$SCRATCH/rgfn_runs/experiments/fixed_reward}
+
+# USE_STAGE2=1 routes the UPSAMPLED pool (Stage 2) instead of the budget-faithful one the training
+# run emitted. The candidate file is per-cell, so it cannot be passed as one env var for a whole
+# chain -- it is derived here, the same way RUN_DIR is. TAG_SUFFIX defaults to _stage2 and MUST stay
+# non-empty in this mode: the MultiAiZ cache key is the POOL, so an upsampled pool sharing a tag with
+# the budget-faithful cell would silently reuse the wrong routes.
+USE_STAGE2=${USE_STAGE2:-0}
+STAGE2_ROOT=${STAGE2_ROOT:-$SCRATCH/rgfn_runs/stage2}
+if [ "$USE_STAGE2" = 1 ]; then
+    TAG_SUFFIX=${TAG_SUFFIX:-_stage2}
+    [ -n "$TAG_SUFFIX" ] || { echo "FATAL: USE_STAGE2=1 with an empty TAG_SUFFIX would collide with the budget-faithful pool's route cache" >&2; exit 1; }
+    echo "STAGE 2 POOLS: $STAGE2_ROOT/<gen>_<tgt>_seed<sd>/stage2_candidates.csv (TAG_SUFFIX=$TAG_SUFFIX)"
+fi
 
 echo "host=$(hostname)"; nvidia-smi -L
 echo "CELLS=$CELLS"
@@ -61,11 +78,23 @@ for CELL in $CELLS; do
     RUN_DIR="$FR_ROOT/${GEN}_${TGT}/seed${SD}"
     echo ""
     echo "############ CELL $CELL ############"
-    if [ ! -s "$RUN_DIR/fixed_reward/candidates/candidates.csv" ]; then
-        echo "FAILED $CELL — no candidates at $RUN_DIR" >&2; FAILED="$FAILED $CELL"; continue
+    # Check the file this cell will ACTUALLY read, not the one the default happens to point at:
+    # in USE_STAGE2 mode the run-dir candidates.csv is irrelevant and may legitimately differ.
+    if [ "$USE_STAGE2" = 1 ]; then
+        CELL_CANDS="$STAGE2_ROOT/${GEN}_${TGT}_seed${SD}/stage2_candidates.csv"
+    else
+        CELL_CANDS="$RUN_DIR/fixed_reward/candidates/candidates.csv"
     fi
-    GENERATOR="$GEN" TARGET="$TGT" SEED="$SD" RUN_DIR="$RUN_DIR" POOL="${POOL:-naive}" \
-        bash "$CELL_SCRIPT"
+    if [ ! -s "$CELL_CANDS" ]; then
+        echo "FAILED $CELL — no candidates at $CELL_CANDS" >&2; FAILED="$FAILED $CELL"; continue
+    fi
+    if [ "$USE_STAGE2" = 1 ]; then
+        GENERATOR="$GEN" TARGET="$TGT" SEED="$SD" RUN_DIR="$RUN_DIR" POOL="${POOL:-naive}" \
+            CANDS="$CELL_CANDS" TAG_SUFFIX="$TAG_SUFFIX" bash "$CELL_SCRIPT"
+    else
+        GENERATOR="$GEN" TARGET="$TGT" SEED="$SD" RUN_DIR="$RUN_DIR" POOL="${POOL:-naive}" \
+            bash "$CELL_SCRIPT"
+    fi
     rc=$?
     if [ "$rc" -eq 0 ]; then
         echo "CELL $CELL OK"
