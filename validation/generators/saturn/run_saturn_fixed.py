@@ -55,7 +55,11 @@ for _p in (str(_REPO_ROOT), str(_CLONE)):
 
 # Imported AFTER the sys.path bootstrap above: these adapters run as scripts, so
 # `validation` is not importable until the repo root is on the path.
-from validation.generators._trace import trace_from_saturn, write_timing
+from validation.generators._trace import (
+    trace_from_saturn,
+    unshape_docking,
+    write_timing,
+)
 from validation.generators.saturn._stubs import stub_unused_oracle_deps  # noqa: E402
 
 
@@ -320,14 +324,30 @@ def main() -> None:
     # driver holds is already absolute, and it has the side benefit of collecting Saturn's own
     # substructure-pool artifacts as run provenance instead of scattering them.
     _cwd = os.getcwd()
-    os.chdir(run_dir)
     run_t0 = time.time()
     t0 = time.time()
-    try:
-        agent_runner.run()
-    finally:
-        os.chdir(_cwd)
-    train_s = time.time() - t0
+    # RESUME. Training writes `checkpoints/final_<arch>_agent.ckpt` on completion, and the emit stage
+    # below loads exactly that file -- so if it already exists, the 9+ hours of RL are done and
+    # re-running them buys nothing. This matters because the steps AFTER training (sampling 2,000
+    # molecules and re-scoring them through the docking bridge) are their own failure surface: on
+    # 2026-08-22 the docking server's worker pool died with a BrokenPipeError during that re-score,
+    # losing a completed saturn_clpp seed-43 run that had cost 9.3 h. Without this check the only way
+    # to recover the last 40 minutes of a run is to repeat all of it.
+    _final_ckpt = run_dir / "checkpoints" / f"final_{arch}_agent.ckpt"
+    if _final_ckpt.exists():
+        print(
+            f"[SAT-FR] RESUME: {_final_ckpt.name} already present -- skipping training and going "
+            "straight to sampling. Delete it to force a retrain.",
+            flush=True,
+        )
+        train_s = 0.0
+    else:
+        os.chdir(run_dir)
+        try:
+            agent_runner.run()
+        finally:
+            os.chdir(_cwd)
+        train_s = time.time() - t0
     print(
         f"[SAT-FR] training done in {train_s:.1f}s "
         f"({oracle.calls} oracle calls of a {budget} budget)",
@@ -441,7 +461,17 @@ def main() -> None:
     # cannot perturb the run being measured. Non-fatal by design -- a bookkeeping artifact must never
     # sink a finished 10,000-call run.
     try:
-        n = trace_from_saturn(run_dir)
+        # DOCKING TRACES MUST CARRY RAW VINA, not the shaped value the GFN trains on. This
+        # converter reads the oracle component's own column, which for docking is
+        # clip(-vina/norm) -- so without unshaping, nine ClpP traces held positive 0..17 values and
+        # not one row cleared the -8.0 gate, making each cell's entire training history read as
+        # empty. Surrogate targets are already raw and must NOT be touched.
+        _unshape = (
+            unshape_docking(float(reward_c.get("norm", 1.0)))
+            if reward_c.get("type") == "docking"
+            else None
+        )
+        n = trace_from_saturn(run_dir, unshape=_unshape)
         write_timing(
             run_dir / "timing.json",
             {"train_s": train_s, "sample_s": sample_s},

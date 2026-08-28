@@ -128,6 +128,38 @@ class TraceWriter:
         self.close()
 
 
+def unshape_docking(norm: float = 1.0):
+    """Return a callable turning a docking VALUE back into raw Vina, for the post-hoc converters.
+
+    WHY THIS IS NEEDED. ``trace_from_saturn`` reads ``glue_surrogate_raw_values`` and
+    ``trace_from_reinvent`` reads ``<name> (raw)``. Both are "raw" from the ORACLE COMPONENT's point
+    of view -- which is right for the sEH/DRD2 surrogates, and wrong for docking, where the component
+    returns the shaped ``clip(-vina/norm, 0, inf)`` the GFN trains on. Consequence measured
+    2026-08-28: nine ClpP traces (REINVENT, Saturn and TANGO x3 seeds) carried positive 0..17 values
+    with a median near 10, and **not one row cleared the -8.0 gate** -- so the whole training history
+    of those cells looked empty when the ClpP gate was applied to it.
+
+    The transform is invertible where it is not clipped: ``raw = -value * norm`` for ``value > 0``.
+    ``value == 0`` is CENSORED (the clip floor), meaning raw was >= 0 or the dock failed; either way
+    it cannot clear a negative gate, so it is returned as NaN rather than a fabricated 0.0. Verified
+    against candidates.csv, which carries both columns: 1984/2000 rows satisfy raw == -score exactly,
+    and all 16 exceptions are score == 0.
+
+    S3-GFN and SynFormer are unaffected -- their adapters call ``provider.raw_scores()`` directly.
+    """
+
+    def _f(value):
+        try:
+            v = float(value)
+        except (TypeError, ValueError):
+            return float("nan")
+        if v <= 0.0:
+            return float("nan")
+        return -v * float(norm)
+
+    return _f
+
+
 def write_trace_rows(
     path: Path | str,
     rows: Iterable[tuple],
@@ -223,7 +255,11 @@ def _log_elapsed_by_step(log_path: Path, pattern: str, groups: int = 1):
     return out
 
 
-def trace_from_saturn(run_dir: Path | str, out_path: Optional[Path | str] = None) -> int:
+def trace_from_saturn(
+    run_dir: Path | str,
+    out_path: Optional[Path | str] = None,
+    unshape=None,
+) -> int:
     """Saturn -> trace.csv, from ``oracle_history.csv`` + timestamps in ``saturn.log``.
 
     ``oracle_history.csv`` carries ``oracle_calls`` (Saturn's own DISTINCT-molecule counter) and
@@ -244,13 +280,17 @@ def trace_from_saturn(run_dir: Path | str, out_path: Optional[Path | str] = None
                 continue
             raw = r.get("glue_surrogate_raw_values") or r.get("reward")
             calls = r.get("oracle_calls")
-            rows.append((smi, raw, None))
+            rows.append((smi, unshape(raw) if unshape else raw, None))
             # Saturn logs a line every batch; attribute each row the elapsed time of its batch.
             elapsed.append(el_by_calls.get(int(calls)) if calls and calls.isdigit() else None)
     return write_trace_rows(out_path, rows, elapsed)
 
 
-def trace_from_reinvent(run_dir: Path | str, out_path: Optional[Path | str] = None) -> int:
+def trace_from_reinvent(
+    run_dir: Path | str,
+    out_path: Optional[Path | str] = None,
+    unshape=None,
+) -> int:
     """REINVENT -> trace.csv, from ``staged_learning_1.csv`` + one stamped line per step in the log.
 
     Uses the ``<name> (raw)`` column, not the shaped score: REINVENT's ``Score`` is the aggregated,
@@ -293,6 +333,7 @@ def trace_from_reinvent(run_dir: Path | str, out_path: Optional[Path | str] = No
                 continue
             step = r.get("step")
             step_i = int(step) if step and step.strip().isdigit() else None
-            rows.append((smi, r.get(raw_col) if raw_col else r.get("Score"), step_i))
+            _v = r.get(raw_col) if raw_col else r.get("Score")
+            rows.append((smi, unshape(_v) if unshape else _v, step_i))
             elapsed.append(el_by_step.get(step_i) if step_i is not None else None)
     return write_trace_rows(out_path, rows, elapsed)

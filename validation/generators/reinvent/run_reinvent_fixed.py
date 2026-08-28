@@ -50,7 +50,11 @@ if str(_REPO_ROOT) not in sys.path:
 
 # Imported AFTER the sys.path bootstrap above: these adapters are executed as
 # scripts, so `validation` is not importable until the repo root is on the path.
-from validation.generators._trace import trace_from_reinvent, write_timing
+from validation.generators._trace import (
+    trace_from_reinvent,
+    unshape_docking,
+    write_timing,
+)
 
 _CLONE = _REPO_ROOT / "external" / "reinvent"
 _PLUGINS = _REPO_ROOT / "validation" / "generators" / "reinvent" / "plugins"
@@ -432,7 +436,17 @@ def main() -> None:
     # Trace + timing, derived POST-HOC from staged_learning_1.csv and the stamped log. See the
     # Saturn adapter for why this is a conversion rather than a loop hook. Non-fatal by design.
     try:
-        n = trace_from_reinvent(run_dir)
+        # DOCKING TRACES MUST CARRY RAW VINA, not the shaped value the GFN trains on. This
+        # converter reads the oracle component's own column, which for docking is
+        # clip(-vina/norm) -- so without unshaping, nine ClpP traces held positive 0..17 values and
+        # not one row cleared the -8.0 gate, making each cell's entire training history read as
+        # empty. Surrogate targets are already raw and must NOT be touched.
+        _unshape = (
+            unshape_docking(float(reward_c.get("norm", 1.0)))
+            if reward_c.get("type") == "docking"
+            else None
+        )
+        n = trace_from_reinvent(run_dir, unshape=_unshape)
         write_timing(
             run_dir / "timing.json",
             {"train_s": train_s, "sample_s": sample_s},
