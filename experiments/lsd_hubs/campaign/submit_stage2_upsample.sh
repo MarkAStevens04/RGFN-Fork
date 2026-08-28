@@ -25,6 +25,10 @@
 #
 # synformer is NOT a valid generator here: its candidates are a slice of an accumulated GA
 # population, so there is nothing to draw more of. Those cells stay pool-limited by construction.
+#
+# fraggfn IS valid (added 2026-08-28): it is a fragment-based GFlowNet with a real sampler, so
+# --n-samples on its trained checkpoint draws more molecules the same way reinvent/saturn/s3gfn do.
+# Its config path is special-cased below -- read the comment there before changing it.
 
 set -uo pipefail
 cd "$HOME/projects/RGFN_Fork/RGFN-Fork"
@@ -60,14 +64,33 @@ echo "  HF_HOME=$HF_HOME (offline)"
 FAILED=""
 for CELL in $CELLS; do
     GEN=${CELL%%:*}; REST=${CELL#*:}; TGT=${REST%%:*}; SD=${REST##*:}
+    CFG_OVERRIDE=""
     case "$GEN" in
       saturn|tango) ENVNAME=saturn; RUNNER=validation/generators/saturn/run_saturn_fixed.py ;;
       reinvent)     ENVNAME=reinvent; RUNNER=validation/generators/reinvent/run_reinvent_fixed.py ;;
       s3gfn)        ENVNAME=s3gfn; RUNNER=validation/generators/s3gfn/run_s3gfn_fixed.py ;;
+      fraggfn)
+        ENVNAME=fraggfn; RUNNER=validation/generators/fraggfn/run_fraggfn_fixed.py
+        # FragGFN is the ONE generator whose config does not follow ${GEN}_${TGT}_fixed.yaml, and
+        # the convention does not merely miss -- it resolves to a file that EXISTS and is WRONG.
+        # validation/configs/fraggfn_seh_fixed.yaml is the OLD 5,000-step build; the cells in
+        # fraggfn_<sys>/ were trained on the *_norm.yaml configs at 157 steps (a327c3a). The
+        # runner's resume guard compares the CONFIG's n_train_steps against the checkpoint's, so
+        # the stale config would read 157 < 5000, silently re-train 4,843 steps, and re-spend the
+        # training budget inside what is supposed to be a SAMPLING stage -- corrupting the
+        # oracle-call accounting in FragGFN's favour. The `[ -s "$CFG" ]` guard cannot catch this
+        # because the wrong file is present. Name the trained-on configs explicitly.
+        case "$TGT" in
+          seh)  CFG_OVERRIDE=validation/configs/fraggfn_seh_fixed_norm.yaml ;;
+          drd2) CFG_OVERRIDE=validation/configs/fraggfn_drd2_fixed_norm.yaml ;;
+          clpp) CFG_OVERRIDE=validation/configs/fraggfn_clpp_docking_fixed_norm.yaml ;;
+          *) echo "FAILED $CELL — no normalized-budget fraggfn config for target $TGT" >&2
+             FAILED="$FAILED $CELL"; continue ;;
+        esac ;;
       synformer)    echo "SKIP $CELL — a GA population cannot be upsampled; pool-limited by construction"; continue ;;
       *) echo "FAILED $CELL — unknown generator" >&2; FAILED="$FAILED $CELL"; continue ;;
     esac
-    CFG=validation/configs/${GEN}_${TGT}_fixed.yaml
+    CFG=${CFG_OVERRIDE:-validation/configs/${GEN}_${TGT}_fixed.yaml}
     RUN_DIR="$FR_ROOT/${GEN}_${TGT}/seed${SD}"
     OUT="$OUT_ROOT/${GEN}_${TGT}_seed${SD}"
     echo ""; echo "############ STAGE2 $CELL  ($(date '+%F %H:%M')) ############"
