@@ -37,9 +37,13 @@ case "$GEN" in
   fraggfn) ENVNAME=fraggfn; RUNNER=validation/generators/fraggfn/run_fraggfn_fixed.py
     case "$SYSTEM" in
       6td3) CFG=validation/configs/fraggfn_6td3_docking_fixed_5k.yaml ;;
-      clpp) CFG=validation/configs/fraggfn_clpp_docking_fixed_5k.yaml ;;
-      seh)  CFG=validation/configs/fraggfn_seh_fixed_5k.yaml ;;
-      drd2) CFG=validation/configs/fraggfn_drd2_fixed_5k.yaml ;;
+      # NORMALIZED to the competitor budget 2026-08-28: 157 steps x 64 = 10,048 reward evals,
+      # matching REINVENT and S3-GFN. The _5k configs ran 5,000 steps = 320,000, i.e. 32x, because
+      # FragGFN came from the 16-cell matrix, which is normalized on TRAINING STEPS rather than
+      # oracle calls. FragGFN is a non-reaction GFlowNet and belongs in this block beside S3-GFN.
+      clpp) CFG=validation/configs/fraggfn_clpp_docking_fixed_norm.yaml ;;
+      seh)  CFG=validation/configs/fraggfn_seh_fixed_norm.yaml ;;
+      drd2) CFG=validation/configs/fraggfn_drd2_fixed_norm.yaml ;;
     esac ;;
   rxnflow) ENVNAME=rxnflow; RUNNER=validation/generators/rxnflow/run_rxnflow_fixed.py
     case "$SYSTEM" in
@@ -100,8 +104,15 @@ mkdir -p "$WANDB_DIR" "$WANDB_CACHE_DIR" "$HF_HOME" "$TORCH_HOME" "$FR_ROOT_DIR"
 # The `_5k` suffix belongs to the original three, whose campaign was defined by its 5,000-step
 # budget. The external entrants run at their authors' budgets, so tagging them `_5k` would name
 # them after a number that is not theirs.
+#
+# fraggfn JOINED THE EXTERNAL LIST 2026-08-28. It is a fragment-based GFlowNet with no reaction
+# model, so it belongs beside s3gfn as a non-reaction GFlowNet rather than in the reaction-GFlowNet
+# matrix, and it now runs the normalized competitor budget (157 steps x 64 = 10,048, versus the
+# matrix's 5,000 steps = 320,000). By the very rule above, keeping it on `_5k` would name a
+# 157-step run after a 5,000-step campaign. Its cells therefore live at fraggfn_<system>/seed<N>,
+# which is also where the competitor grid tooling looks for them.
 case "$GEN" in
-  reinvent|saturn|tango|synformer|s3gfn) RUN_DIR="$FR_ROOT_DIR/fixed_reward/${GEN}_${SYSTEM}/seed${SEED}" ;;
+  reinvent|saturn|tango|synformer|s3gfn|fraggfn) RUN_DIR="$FR_ROOT_DIR/fixed_reward/${GEN}_${SYSTEM}/seed${SEED}" ;;
   *) RUN_DIR="$FR_ROOT_DIR/fixed_reward/${GEN}_${SYSTEM}_5k/seed${SEED}" ;;
 esac
 COMPLETE="$RUN_DIR/fixed_reward/candidates/candidates.csv"

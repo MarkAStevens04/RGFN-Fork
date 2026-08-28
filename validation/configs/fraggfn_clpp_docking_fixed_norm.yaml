@@ -1,0 +1,70 @@
+# FragGFN FIXED-REWARD on ClpP (GPU docking) — NORMALIZED COMPETITOR BUDGET (2026-08-28).
+#
+# FragGFN moved out of the 16-cell reaction-GFlowNet matrix and into the COMPETITOR block: it is a
+# fragment-based GFlowNet that assembles molecules from a fragment library with no reaction model, so
+# it belongs beside S3-GFN as a non-reaction GFlowNet, not beside RGFN/SCENT/RxnFlow.
+#
+# BUDGET: 157 steps x 64 policy samples = 10,048 reward evaluations, matching REINVENT (157x64) and
+# S3-GFN (157 steps) exactly. The previous config ran 5,000 steps = 320,000 -- THIRTY-TWO TIMES the
+# budget every other competitor is held to, the same class of error the 2026-08-20 audit caught in
+# REINVENT at 12.4x (where over-training collapsed it into a narrow high-reward band and inflated the
+# measured pruning benefit 2.5x). Only the STEP COUNT changes here.
+#
+# The batch was already right: `num_from_policy` defaults to 64 in gflownet/algo/config.py, which is
+# also what the authors set in seh_frag.py, and the runner never overrode it. It is now pinned
+# explicitly in this file so the budget cannot drift if that upstream default ever changes.
+# (`reward.batch_size` is the frozen MPNN's INFERENCE batch and has nothing to do with the budget.)
+#
+# WHAT THIS COSTS, STATED PLAINLY: upstream's `num_training_steps` default is 10,000, so a
+# 10,048-ORACLE-CALL budget buys FragGFN ~1.6% of the authors' training length. That is inherent to
+# holding a GFlowNet to a PMO-style call budget -- it spends one reward evaluation per molecule per
+# batch -- and S3-GFN sits at the same 157 steps. Both non-reaction GFlowNets are budget-starved
+# relative to their authors' regime, and the write-up should say so.
+#
+# max_nodes 6 IS A DISCLOSED DEVIATION, not a paper default. Upstream sets `cfg.algo.max_nodes = 9`
+# (seh_frag.py:145). Logs/046 measured that 9 produces oversized molecules and collapses DRD2 reward
+# to ~0.03, while 6 recovers the RGFN paper's published FragGFN result (mean 0.908). We take 6 and
+# disclose it: publishing a baseline at a setting we measured to be broken would read as sandbagging,
+# the same reasoning applied to TANGO's num_top_results. Seed 42 previously ran at 9 while seeds
+# 43/44 ran at 6, so the old three-seed band mixed two caps; this retrain makes all three uniform.
+#
+# n_samples 2000 matches every other competitor's post-training pool, replacing the old
+# 1000 (sEH/DRD2) and 200 (ClpP). Stage 2 upsamples from here to a fixed mode target anyway, so this
+# is the first round rather than a ceiling.
+#
+# Run (repo root, fraggfn env; candidate emission shells to the rgfn env):
+#   conda run -n fraggfn python validation/generators/fraggfn/run_fraggfn_fixed.py \
+#       --cfg validation/configs/fraggfn_clpp_docking_fixed_norm.yaml --root-dir $SCRATCH/rgfn_runs/experiments
+
+run:
+  name: fixed_reward/fraggfn_clpp
+  root_dir: experiments
+  seed: 42
+
+fixed_reward:
+  n_train_steps: 157
+  n_samples: 2000
+  sample_oversample: 6.0
+  top_k: 100
+  beta: 4
+  system: clpp
+  reward_name: clpp_docking
+  score_units: "clip(-vina) reward (higher is better; raw Vina kcal/mol in raw_score column)"
+
+reward:
+  type: docking
+  oracle: docking_clpp
+  norm: 1.0
+  clip: 10.0
+
+gflownet:
+  num_from_policy: 64       # the AUTHORS' value (seh_frag.py: cfg.algo.num_from_policy = 64,
+                            # and gflownet/algo/config.py default). PINNED here rather than
+                            # left to the default because steps x this IS the oracle budget:
+                            # 157 x 64 = 10,048, matching REINVENT and S3-GFN exactly.
+  max_nodes: 6              # DISCLOSED deviation; upstream is 9 (seh_frag.py:145) and 9 collapses DRD2 to ~0.03 (Logs/046)
+  num_emb: 128
+  num_layers: 4
+  sampling_tau: 0.9
+  learning_rate: 1.0e-4
+  print_every: 10

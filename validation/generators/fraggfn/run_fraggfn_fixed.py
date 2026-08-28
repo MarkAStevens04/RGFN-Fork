@@ -20,6 +20,7 @@ import argparse
 import csv
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import torch
@@ -31,6 +32,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+from validation.generators._trace import TraceWriter, write_timing
 from validation.generators.fraggfn.al_loop import FragGFNActiveLearningLoop, LabelStore
 from validation.generators.fraggfn.fixed_reward import (
     DockingBridgeReward,
@@ -95,6 +97,53 @@ def _sample_chunked(trainer, it, n_samples, oversample, chunk=128):
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
     return batch
+
+
+class _TracedReward:
+    """Wraps a frozen reward generator so every evaluation lands in trace.csv.
+
+    WHY WRAP RATHER THAN EDIT EACH PROVIDER. FragGFN has three (sEH proxy, DRD2, docking bridge) and
+    the task calls ``reward()`` while the candidate emitter calls ``predict()``. One wrapper catches
+    both for all three, and keeps ``fixed_reward.py`` free of trace plumbing -- the same separation
+    S3-GFN uses, and the reason its docking traces were correct while Saturn's and REINVENT's were
+    not.
+
+    RECORDS THE RAW ORACLE VALUE, never the shaped one. For docking, ``reward()`` is
+    ``exp(clip(-vina))`` and ``predict()`` is ``clip(-vina)``; the mode gates are defined on raw Vina
+    (ClpP -8.0, Logs/045), so the trace takes ``raw_scores()`` where the provider exposes it. Getting
+    this wrong is not hypothetical: nine ClpP traces recorded the shaped value and NOT ONE row cleared
+    the gate, so those cells' entire training histories read as empty (fixed 2026-08-28, commit
+    736c8e0). Cached per SMILES inside the bridge, so tracing costs no extra docks.
+
+    ``phase`` stays "train" here: unlike S3-GFN's ``evaluate()``, FragGFN's fixed-reward runner has no
+    separate evaluation pass, so every call IS training signal.
+    """
+
+    def __init__(self, inner, trace):
+        self._inner = inner
+        self._trace = trace
+
+    def _record(self, smiles):
+        if self._trace is None or not smiles:
+            return
+        try:
+            if hasattr(self._inner, "raw_scores"):
+                vals = list(self._inner.raw_scores(smiles))
+            else:
+                vals = list(self._inner.predict(smiles))
+            self._trace.add_many(list(smiles), vals)
+        except Exception as exc:  # noqa: BLE001 - a trace failure must never kill a run
+            print(f"[FGFN-FR] WARNING: trace write failed ({exc})", flush=True)
+
+    def reward(self, smiles):
+        self._record(smiles)
+        return self._inner.reward(smiles)
+
+    def predict(self, smiles):
+        return self._inner.predict(smiles)
+
+    def __getattr__(self, name):  # set_device, fit, raw_scores, ...
+        return getattr(self._inner, name)
 
 
 def main() -> None:
@@ -174,7 +223,14 @@ def main() -> None:
             clip=float(reward_c.get("clip", 10.0)),
             batch_size=int(reward_c.get("batch_size", 128)),
         )
-    print(f"[FGFN-FR] reward={reward_type} system={system}", flush=True)
+    # Opened BEFORE training so a walltime kill keeps the history; the writer flushes per batch.
+    run_t0 = time.time()
+    trace = TraceWriter(run_dir / "trace.csv")
+    reward = _TracedReward(reward, trace)
+    print(
+        f"[FGFN-FR] reward={reward_type} system={system} | trace -> {run_dir / 'trace.csv'}",
+        flush=True,
+    )
 
     # --- gflownet Config (mirrors run_fraggfn_al.py). -----------------------------
     gcfg = init_empty(Config())
@@ -184,6 +240,10 @@ def main() -> None:
     gcfg.overwrite_existing_exp = True
     gcfg.print_every = int(gfn_c.get("print_every", 100))
     gcfg.num_training_steps = n_train_steps
+    # STEPS x num_from_policy IS THE ORACLE BUDGET, so pin it from the config rather than inheriting
+    # a library default that could change under us. 64 is both the gflownet default and what the
+    # authors set in seh_frag.py; 157 x 64 = 10,048 matches REINVENT and S3-GFN exactly.
+    gcfg.algo.num_from_policy = int(gfn_c.get("num_from_policy", 64))
     gcfg.algo.max_nodes = int(gfn_c.get("max_nodes", 9))
     gcfg.algo.sampling_tau = float(gfn_c.get("sampling_tau", 0.9))
     gcfg.model.num_emb = int(gfn_c.get("num_emb", 128))
@@ -243,8 +303,11 @@ def main() -> None:
             f"against frozen {reward_type} reward (beta={beta})",
             flush=True,
         )
+        _t0 = time.time()
         loop._train_steps(remaining)
+        train_s = time.time() - _t0
     else:
+        train_s = 0.0
         print(
             f"[FGFN-FR] already trained {loop._it} >= {n_train_steps} steps; skipping to sampling.",
             flush=True,
@@ -266,7 +329,9 @@ def main() -> None:
 
     # 2. sample a batch of unique valid molecules (chunked to bound GPU memory; a single
     #    n_samples*oversample sampling call OOMs at this scale — job 69564).
+    _t0 = time.time()
     batch = _sample_chunked(trainer, loop._it, n_samples, float(fr_c.get("sample_oversample", 4.0)))
+    sample_s = time.time() - _t0
     print(f"[FGFN-FR] sampled {len(batch)} unique valid candidates", flush=True)
 
     # 3. score them with the reward generator itself (its VALUE = the score column,
@@ -313,6 +378,20 @@ def main() -> None:
     subprocess.run(ingest_cmd, check=True)
 
     trainer.terminate()
+    # Close the trace and record where the wall-clock went, so FragGFN can appear in the end-to-end
+    # compute comparison (training + pool + retrosynthesis + selection) alongside the other five.
+    trace.close()
+    n_scored, n_distinct = trace.n_scored, trace.n_distinct
+    write_timing(
+        run_dir / "timing.json",
+        {"train": round(train_s, 1), "sample": round(sample_s, 1)},
+        total_s=round(time.time() - run_t0, 1),
+    )
+    print(
+        f"[FGFN-FR] trace closed: {n_scored} scored / {n_distinct} distinct "
+        f"-> {run_dir / 'trace.csv'}; timing -> timing.json",
+        flush=True,
+    )
     print(f"[FGFN-FR] done. candidates at {out_dir / 'candidates'}", flush=True)
 
 
