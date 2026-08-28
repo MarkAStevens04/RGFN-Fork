@@ -195,11 +195,24 @@ def main() -> None:
     ap.add_argument("--out", default="", help="also write the table as CSV here")
     a = ap.parse_args()
 
-    cells = []
-    for target in ("seh", "drd2", "clpp"):
-        for seed in (42, 43, 44):
-            for variant in ("", "_pruned"):
-                cells.append(f"{a.generator}_{target}_seed{seed}{variant}")
+    # DISCOVER the cells from disk rather than enumerating a fixed list. The fixed list silently
+    # omitted every *_big cell -- the enlarged-pool runs that exist precisely because the
+    # budget-faithful sEH pools were too small to compare -- while still printing their stale
+    # small-pool namesakes. A reader would have seen "seh_seed43: 25 modes" and had no way to know
+    # the 100-mode enlarged result was sitting on disk unlisted.
+    seen = set()
+    for d in sorted(RESULTS.glob(f"{a.generator}_*_select_N*")):
+        seen.add(d.name.rsplit("_select_N", 1)[0])
+    for d in sorted(RESULTS.glob(f"{a.generator}_*_greedy_N*")):
+        seen.add(d.name.rsplit("_greedy_N", 1)[0])
+    cells = sorted(seen)
+    if not cells:  # nothing on disk yet: fall back to the canonical grid so the header still prints
+        cells = [
+            f"{a.generator}_{t}_seed{s}{v}"
+            for t in ("seh", "drd2", "clpp")
+            for s in (42, 43, 44)
+            for v in ("", "_pruned")
+        ]
 
     hdr = ("cell", "pool", "makeable", "G_modes", "G_rxns", "S_modes", "S_used", "S_cost", "S_stop")
     print(

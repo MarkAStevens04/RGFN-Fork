@@ -35,6 +35,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 import sys
 import time
 from argparse import Namespace
@@ -75,7 +76,18 @@ def main() -> None:
     fr_c = OmegaConf.to_container(cfg.get("fixed_reward", {}), resolve=True) or {}
     reward_c = OmegaConf.to_container(cfg.get("reward", {}), resolve=True) or {}
     run_c = OmegaConf.to_container(cfg.get("run", {}), resolve=True) or {}
-    seed = int(run_c.get("seed", 42))
+    # SEED COMES FROM THE RUN DIR NAME, NOT run_config.yaml. Every cell's saved config says
+    # `seed: 42`, because the original runs were launched with `--seed N` on the command line and the
+    # override was never written back. Trusting the config therefore labels seeds 43 and 44 as 42 --
+    # job 75100 ingested seed44's pool with `--seed 42`, which would have put two different cells
+    # under one provenance in any table built from candidates.csv.
+    _m = re.search(r"seed(\d+)", run_dir.name)
+    if _m:
+        seed = int(_m.group(1))
+    else:
+        seed = int(run_c.get("seed", 42))
+        print(f"[BIG] WARNING: no seedNN in {run_dir.name}; falling back to config seed={seed}")
+    print(f"[BIG] seed={seed} (from run dir name)", flush=True)
 
     import torch
 
@@ -207,9 +219,18 @@ def main() -> None:
     ]  # fmt: skip
     if hib:
         ingest.append("--score-higher-is-better")
+    # RUN INGEST THROUGH THE SMOKE-ENV HELPER. scripts/ingest_candidates.py imports rgfn -> dgl, and
+    # dgl needs the torch-bundled CUDA libs on LD_LIBRARY_PATH or it dies with
+    # `ImportError: Cannot load Graphbolt C++ library`. `conda run -n rgfn` alone does NOT set that,
+    # which is what killed jobs 75099 and 75100 AFTER their sampling had already succeeded. The
+    # helper is the project's single source of truth for this path -- never hand-roll it.
+    import shlex
     import subprocess
 
-    rc = subprocess.run(ingest, cwd=str(_REPO_ROOT)).returncode
+    helper = Path.home() / "bin" / "rgfn-smoke-env.sh"
+    inner = " ".join(shlex.quote(str(c)) for c in ingest[ingest.index("python") :])
+    shell_cmd = f"source {shlex.quote(str(helper))} >/dev/null 2>&1 && exec {inner}"
+    rc = subprocess.run(["bash", "-lc", shell_cmd], cwd=str(_REPO_ROOT)).returncode
     if rc != 0:
         raise SystemExit(f"[BIG] ingest failed rc={rc}")
     print(f"[BIG] candidates -> {cand_dir}", flush=True)
