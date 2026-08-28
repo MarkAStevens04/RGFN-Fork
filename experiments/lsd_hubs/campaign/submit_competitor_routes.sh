@@ -44,7 +44,7 @@
 set -uo pipefail
 cd "$HOME/projects/RGFN_Fork/RGFN-Fork"
 
-GENERATOR=${GENERATOR:?set GENERATOR (reinvent | saturn | s3gfn)}
+GENERATOR=${GENERATOR:?set GENERATOR (reinvent | saturn | s3gfn | fraggfn)}   # tag only; this script is route-less-generator agnostic
 TARGET=${TARGET:?set TARGET (seh | drd2 | clpp)}
 SEED=${SEED:-42}
 RUN_DIR=${RUN_DIR:?set RUN_DIR to the generator run dir (contains fixed_reward/candidates)}
