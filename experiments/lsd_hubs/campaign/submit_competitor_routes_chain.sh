@@ -40,7 +40,16 @@
 # an SB row as a converged optimum — a capped row is a LOWER bound on the competitor.
 
 set -uo pipefail
-cd "$HOME/projects/RGFN_Fork/RGFN-Fork"
+# REPO_DIR is the tree whose submit_competitor_routes.sh gets snapshotted and run. It is a knob and
+# not a constant because SLURM snapshots THIS file at submit time but resolves nothing inside it: a
+# chain sbatch'd from a git worktree used to `cd` here and silently run the SHARED checkout's cell
+# script instead of the worktree's. That is not a cosmetic mismatch -- it cost jobs 75166/75167/75168,
+# which were passed CANDS pointing at Stage-2 pools, ran a cell script that hard-coded CANDS, and
+# built pools TAGGED _stage2 out of Stage-1 candidates. Two of the three were even written
+# `pool_limited: true` at N=358/293 where Stage 2 supplies a full 500 -- a false pool-size finding,
+# which is the one failure this pipeline is most careful never to publish.
+REPO_DIR=${REPO_DIR:-$HOME/projects/RGFN_Fork/RGFN-Fork}
+cd "$REPO_DIR"
 
 CELLS=${CELLS:?set CELLS to a list of GENERATOR:TARGET:SEED triples}
 FR_ROOT=${FR_ROOT:-$SCRATCH/rgfn_runs/experiments/fixed_reward}
@@ -70,7 +79,16 @@ echo "CELLS=$CELLS"
 CELL_SCRIPT=$(mktemp /tmp/competitor_routes.XXXXXX.sh)
 cp experiments/lsd_hubs/campaign/submit_competitor_routes.sh "$CELL_SCRIPT"
 trap 'rm -f "$CELL_SCRIPT"' EXIT
-echo "cell script snapshot: $CELL_SCRIPT"
+echo "cell script snapshot: $CELL_SCRIPT  (from $REPO_DIR)"
+# The override is only real if the snapshotted cell script actually defaults CANDS instead of
+# assigning it. Passing CANDS to a script that hard-codes it fails SILENTLY -- the tag still says
+# _stage2, the run still succeeds, and only the row count in the saturation log betrays it. Assert.
+if [ "$USE_STAGE2" = 1 ] && ! grep -q '^CANDS=${CANDS:-' "$CELL_SCRIPT"; then
+    echo "FATAL: USE_STAGE2=1 but $REPO_DIR's submit_competitor_routes.sh hard-codes CANDS." >&2
+    echo "  It would ignore the Stage-2 pool and build a _stage2-TAGGED pool from Stage-1 data." >&2
+    echo "  Point REPO_DIR at a tree whose cell script has the 'CANDS=\${CANDS:-...}' default." >&2
+    exit 1
+fi
 
 FAILED=""
 for CELL in $CELLS; do
