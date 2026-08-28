@@ -61,6 +61,23 @@ print('  rgfn env + dgl/graphbolt: OK')" || {
     echo "FATAL: rgfn env cannot import dgl -- is cuda/11.8.0 loaded?" >&2; exit 2; }
 echo "  HF_HOME=$HF_HOME (offline)"
 
+# Docking cells need the GPU docker AND a healthy OpenCL stack. Check ONCE, before anything
+# expensive, and only when a docking cell is actually in the list -- a wedged node returns
+# clCreateContext err=-5 and every dock comes back no_pose, which reads exactly like a degraded GPU
+# (see the CLAUDE.md note on job 73370). Exit 42 so a chain link retries on another node.
+DOCK_CELLS=0
+for _c in $CELLS; do case "$_c" in *:clpp:*|*:6td3:*) DOCK_CELLS=1 ;; esac; done
+if [ "$DOCK_CELLS" = 1 ]; then
+  export LD_LIBRARY_PATH=$SCRATCH/vina_gpu/boost/lib:${LD_LIBRARY_PATH:-}
+  export GNINA=/scratch/markymoo/gnina/run_gnina.sh
+  HC_OUT=$(CUDA_VISIBLE_DEVICES=0 "$SCRATCH/vina_gpu/opencl_healthcheck" 2>&1)
+  if ! grep -q "clCreateContext err=0" <<<"$HC_OUT"; then
+    echo "FATAL: OpenCL dead on $(hostname); exit 42 so the next attempt lands elsewhere." >&2
+    echo "$HC_OUT" >&2; exit 42
+  fi
+  echo "  OpenCL health: OK"
+fi
+
 FAILED=""
 for CELL in $CELLS; do
     GEN=${CELL%%:*}; REST=${CELL#*:}; TGT=${REST%%:*}; SD=${REST##*:}
@@ -97,6 +114,30 @@ for CELL in $CELLS; do
     [ -s "$CFG" ] || { echo "FAILED $CELL — no config at $CFG" >&2; FAILED="$FAILED $CELL"; continue; }
     [ -d "$RUN_DIR" ] || { echo "FAILED $CELL — no run dir at $RUN_DIR" >&2; FAILED="$FAILED $CELL"; continue; }
 
+    # A docking target needs the persistent server: upsample_to_modes.py invokes the generator's
+    # runner, whose reward bridge reads RGFN_DOCK_SOCKET. WITHOUT it the bridge silently falls back
+    # to a per-step score_batch.py subprocess -- correct, but a spawn per step instead of ~0.65 s/mol
+    # over a warm socket. Started per cell (not per job) because CELLS may mix systems and the socket
+    # is a single env var. Cheap for a free-harvest cell: the server is backgrounded, the client is
+    # never contacted, and it is killed on the next line.
+    SERVER_PID=""; ORACLE=""
+    case "$TGT" in
+      clpp) ORACLE=docking_clpp ;;
+      6td3) ORACLE=docking_6td3_gpu ;;
+    esac
+    if [ -n "$ORACLE" ]; then
+      mkdir -p "$OUT"
+      export RGFN_DOCK_SOCKET=/tmp/rgfn_dock_s2_${SLURM_JOB_ID:-$$}_${TGT}_${SD}.sock
+      echo "[server] docking server (oracle=$ORACLE) on $RGFN_DOCK_SOCKET"
+      ( source "$HOME/bin/rgfn-smoke-env.sh" >/dev/null 2>&1
+        exec python -m glue.oracles.docking_server \
+            --oracle "$ORACLE" --socket "$RGFN_DOCK_SOCKET" \
+            --stats "$OUT/dock_server_stats_stage2.json" ) &
+      SERVER_PID=$!
+    else
+      unset RGFN_DOCK_SOCKET || true
+    fi
+
     EXTRA=(); [ "$MAX_SCORED" != "0" ] && EXTRA+=(--max-scored "$MAX_SCORED")
     conda run --no-capture-output -n rgfn python \
         experiments/lsd_hubs/campaign/upsample_to_modes.py \
@@ -105,6 +146,9 @@ for CELL in $CELLS; do
         --round-size "$ROUND" --stall-modes "$STALL" "${EXTRA[@]}" \
         --run-dir "$RUN_DIR" --cfg "$CFG" --env "$ENVNAME" --runner "$RUNNER" --out "$OUT"
     rc=$?
+    # stats flush per request, so a hard kill still leaves the latest utilization on disk.
+    if [ -n "$SERVER_PID" ]; then kill "$SERVER_PID" 2>/dev/null; wait "$SERVER_PID" 2>/dev/null; fi
+    rm -f "${RGFN_DOCK_SOCKET:-}" 2>/dev/null; unset RGFN_DOCK_SOCKET || true
     if [ "$rc" -eq 0 ]; then echo "STAGE2 $CELL OK -> $OUT"; else echo "STAGE2 $CELL FAILED rc=$rc" >&2; FAILED="$FAILED $CELL"; fi
 done
 
