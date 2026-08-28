@@ -103,7 +103,12 @@ MIN_MODES=${MIN_MODES:-10}                 # gate floor: below this there is not
 BUDGETS=${BUDGETS:-50,100,150,200,300,400,500,600,800,1000}   # seed 42's SB ladder (Logs/061)
 MODE_POINTS=${MODE_POINTS:-25,50,75,100,125,150}              # seed 42's greedy ladder
 
-CANDS="$RUN_DIR/fixed_reward/candidates/candidates.csv"
+# Stage 2 (upsample_to_modes.py) writes its enlarged pool OUTSIDE the run dir, as
+# stage2_candidates.csv with exactly {smiles, score, raw_score} -- the three columns load_ranked()
+# reads in both mode_saturation.py and build_s3gfn_pools.py, so it drops in unchanged. Override CANDS
+# to consume it, and ALWAYS pair that with TAG_SUFFIX=_stage2: the MultiAiZ cache key is the POOL, so
+# an upsampled pool sharing a tag with the budget-faithful cell would silently reuse the wrong routes.
+CANDS=${CANDS:-"$RUN_DIR/fixed_reward/candidates/candidates.csv"}
 POOL_ROOT=$SCRATCH/rgfn_runs/lsdflow_sparrow/multiaiz_pools
 # POOL selects which of the two pool constructions to build — see docs/RESEARCH_CONTEXT.md,
 # "The two pools and the two numbers". Both go through the IDENTICAL downstream (MultiAiZ -> SB) and
