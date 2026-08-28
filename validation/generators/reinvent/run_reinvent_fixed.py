@@ -315,15 +315,27 @@ def main() -> None:
     )
     run_t0 = time.time()
     t0 = time.time()
-    _run_reinvent(
-        train_toml,
-        run_dir / "staged_learning.log",
-        run_dir,
-        seed,
-        ckpt_every=int(rl_c.get("checkpoint_every_steps", 0) or 0),
-    )
-    train_s = time.time() - t0
-    print(f"[RNV-FR] training done in {train_s:.1f}s", flush=True)
+    # RESUME, mirroring the Saturn and S3-GFN runners. Stage 2 ("upsample until the pool holds N
+    # diverse modes") re-invokes this script with a larger --n-samples, and without this check each
+    # round would repeat the whole RL run to arrive at the agent already sitting on disk. Sampling
+    # below loads `agent.chkpt` by path, so its presence is a complete resume for that purpose.
+    if chkpt.exists():
+        print(
+            f"[RNV-FR] RESUME: {chkpt.name} already present -- skipping training and going straight "
+            "to sampling. Delete it to force a retrain.",
+            flush=True,
+        )
+        train_s = 0.0
+    else:
+        _run_reinvent(
+            train_toml,
+            run_dir / "staged_learning.log",
+            run_dir,
+            seed,
+            ckpt_every=int(rl_c.get("checkpoint_every_steps", 0) or 0),
+        )
+        train_s = time.time() - t0
+        print(f"[RNV-FR] training done in {train_s:.1f}s", flush=True)
     if not chkpt.exists():
         raise SystemExit(f"[RNV-FR] no agent checkpoint at {chkpt} — training did not complete.")
 

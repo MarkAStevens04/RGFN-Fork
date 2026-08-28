@@ -76,6 +76,22 @@ class TraceWriter:
         self.t0 = time.time() if t0 is None else t0
         self._seen: set[str] = set()
         self.n_scored = 0
+        # NEVER CLOBBER AN EXISTING TRACE. Opening "w" truncates, and a runner is now re-invoked
+        # routinely -- Stage 2 upsampling calls it with a larger --n-samples, and a resumed run calls
+        # it again after a failure. On 2026-08-28 that destroyed s3gfn_seh/seed43's entire training
+        # history (10,162 rows, 50 modes of free pool) the moment a Stage-2 job started: the harvest
+        # reads the trace, then the runner it invokes truncates the very file being harvested. The
+        # data was unrecoverable -- S3-GFN keeps only a 1,000-row final eval sample beside it.
+        #
+        # Rotating instead of truncating makes re-invocation safe and costs a rename. Readers that
+        # want the FULL history across rounds should concatenate trace.csv with its .N siblings;
+        # readers that want only this round get trace.csv unchanged.
+        if self.path.exists() and self.path.stat().st_size > 0:
+            n = 1
+            while (rotated := self.path.with_suffix(f".csv.{n}")).exists():
+                n += 1
+            self.path.replace(rotated)
+            print(f"[trace] preserved previous history as {rotated.name}", flush=True)
         self._fh = open(self.path, "w", newline="")
         self._w = csv.writer(self._fh)
         self._w.writerow(FIELDS)

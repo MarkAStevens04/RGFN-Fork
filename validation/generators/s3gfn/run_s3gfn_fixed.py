@@ -330,8 +330,27 @@ def main() -> None:
     trainer = s3train.SynthSmilesTrainer(logger=None, configs=configs)
     run_t0 = time.time()
     t0 = time.time()
-    trainer.train()
-    train_s = time.time() - t0
+    # RESUME, mirroring the Saturn runner. Stage 2 ("upsample until the pool holds N diverse modes")
+    # re-invokes this script with a larger --n-samples, and without this check every one of those
+    # rounds would RETRAIN from scratch -- hours of GPU to reach a model we already have on disk.
+    # The trainer writes `<run_name>-seed<N>_model.pt` via its own `_checkpoint_path()`, and sampling
+    # below only needs `trainer.model`, so loading the state dict is a complete resume for our
+    # purposes (the optimizer/scheduler state matters only for further TRAINING, which we skip).
+    _final_ckpt = Path(trainer._checkpoint_path())
+    if _final_ckpt.exists():
+        import torch as _torch
+
+        _ck = _torch.load(_final_ckpt, map_location=trainer.device)
+        trainer.model.load_state_dict(_ck["model_state_dict"])
+        print(
+            f"[S3-FR] RESUME: {_final_ckpt.name} already present -- skipping training and going "
+            "straight to sampling. Delete it to force a retrain.",
+            flush=True,
+        )
+        train_s = 0.0
+    else:
+        trainer.train()
+        train_s = time.time() - t0
     print(
         f"[S3-FR] training done in {train_s:.1f}s "
         f"({trace.n_scored} scored, {trace.n_distinct} distinct)",

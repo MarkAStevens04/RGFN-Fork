@@ -101,6 +101,53 @@ def load_scored(path: Path, score_column: str) -> Dict[str, float]:
     return best
 
 
+def load_trace(path: Path, hib: bool) -> Dict[str, float]:
+    """{smiles: best raw oracle value} from trace.csv -- the FREE starting pool.
+
+    HARVEST THIS BEFORE SAMPLING ANYTHING. trace.csv records every molecule the oracle ever scored
+    during training, with its value, so those molecules are already paid for. The previous pipeline
+    threw them away and took a fresh 2,000-molecule sample, which was an arbitrary choice rather than
+    a principled one -- a chemist would obviously use a molecule the model produced and the assay
+    already measured. Measured 2026-08-28 at tau=0.5, modes from the pool vs from the trace:
+
+        reinvent/seh/s42    494  ->   560       saturn/seh/s42     338  ->  1251
+        s3gfn/seh/s42        89  ->   133       s3gfn/seh/s43       28  ->    50
+        reinvent_clpp/s42   642  ->  2589       saturn_clpp/s42    386  ->  3177
+
+    So several cells clear a 500-mode target from the training history alone, at zero additional
+    oracle calls. On ClpP that is ~28 GPU-hours per cell saved.
+
+    ONE THING TO REPORT, NOT HIDE: these molecules come from earlier, weaker policies, so the reward
+    profile of the selected modes shifts relative to a final-policy-only pool. Modes are chosen
+    best-reward-first, so weak early molecules are simply not picked and the risk is bounded -- but
+    the shift is real and belongs in the violin plot, and the final-policy-only count should stay
+    available for anyone who wants it.
+
+    NaN is skipped: for docking that is a clip-censored or failed dock, not a measurement.
+    """
+    best: Dict[str, float] = {}
+    # READ trace.csv AND EVERY ROTATED SIBLING. A runner re-invoked by this very script rotates the
+    # live trace to trace.csv.N (see TraceWriter), so the full history across rounds is the union.
+    # Reading only trace.csv would silently shrink the free pool with each round -- which is exactly
+    # how s3gfn_seh/seed43's history was lost before the rotation existed.
+    paths = [path] + sorted(path.parent.glob(path.name + ".*"))
+    for pth in paths:
+        if not pth.exists():
+            continue
+        with open(pth, newline="") as fh:
+            for row in csv.DictReader(fh):
+                smi = (row.get("smiles") or "").strip()
+                try:
+                    val = float(row.get("raw_score"))
+                except (TypeError, ValueError):
+                    continue
+                if not smi or val != val:
+                    continue
+                if smi not in best or ((val > best[smi]) if hib else (val < best[smi])):
+                    best[smi] = val
+    return best
+
+
 def count_modes(
     scored: Dict[str, float], gate: float, hib: bool, cutoff: float, cap: Optional[int] = None
 ) -> List[str]:
@@ -216,14 +263,27 @@ def main() -> None:
         flush=True,
     )
 
+    # --- free pool first: everything the oracle already scored during training -------------------
+    free = load_trace(run_dir / "trace.csv", hib)
+    free_modes = count_modes(free, gate, hib, a.cutoff, cap=a.target_modes) if free else []
+    print(
+        f"[upsample] training history: {len(free)} scored molecules -> {len(free_modes)} modes "
+        f"(FREE — already paid for)",
+        flush=True,
+    )
+
     rounds: List[dict] = []
     asked = a.round_size
-    reason = "cap"
-    prev_modes = 0
-    while True:
+    reason = "target-reached" if len(free_modes) >= a.target_modes else "cap"
+    prev_modes = len(free_modes)
+    # Sampling is skipped entirely when the training history already meets the target -- the whole
+    # point of harvesting it. On ClpP that is the difference between 0 and 28 GPU-hours per cell.
+    while len(free_modes) < a.target_modes:
         scored_before = load_scored(cand, col)
         rc, secs = sample_round(a.runner, a.env, a.cfg, a.seed, run_dir, asked, _REPO_ROOT)
-        scored = load_scored(cand, col)
+        free = load_trace(run_dir / "trace.csv", hib)  # now includes this round's rotated history
+        scored = dict(free)
+        scored.update(load_scored(cand, col))
         if rc != 0 and not scored:
             reason = "sampling-failed"
             print(f"[upsample] runner exited {rc} and no candidates on disk — stopping", flush=True)
@@ -264,7 +324,9 @@ def main() -> None:
         prev_modes = len(modes)
         asked = min(asked + a.round_size, cap)
 
-    scored = load_scored(cand, col)
+    free = load_trace(run_dir / "trace.csv", hib)
+    scored = dict(free)
+    scored.update(load_scored(cand, col))
     modes = count_modes(scored, gate, hib, a.cutoff, cap=a.target_modes)
     rews = sorted((scored[m] for m in modes), reverse=hib)
     summary = dict(
@@ -283,6 +345,9 @@ def main() -> None:
         modes_reached=len(modes),
         pool_limited=len(modes) < a.target_modes,
         distinct_scored=len(scored),
+        free_from_training=len(free),
+        modes_from_training_alone=len(free_modes),
+        newly_sampled=max(len(scored) - len(free), 0),
         eligible=sum(1 for v in scored.values() if ((v > gate) if hib else (v < gate))),
         # The reward profile of the SELECTED modes. Needed because reaching 500 modes by digging far
         # down the ranking is not the same result as reaching it from the top: the 500th mode's
