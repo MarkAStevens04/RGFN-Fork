@@ -31,7 +31,12 @@
 # Its config path is special-cased below -- read the comment there before changing it.
 
 set -uo pipefail
-cd "$HOME/projects/RGFN_Fork/RGFN-Fork"
+# REPO_DIR selects the tree whose upsample_to_modes.py runs. A knob, not a constant: SLURM snapshots
+# THIS file at submit time but resolves nothing inside it, so a job sbatch'd from a worktree used to
+# cd here and silently execute the SHARED checkout's Python. That is how a fixed script fails to take
+# effect while every log looks normal.
+REPO_DIR=${REPO_DIR:-$HOME/projects/RGFN_Fork/RGFN-Fork}
+cd "$REPO_DIR"
 
 CELLS=${CELLS:?set CELLS to a list of GENERATOR:TARGET:SEED triples}
 TARGET_MODES=${TARGET_MODES:-500}
@@ -60,6 +65,19 @@ import dgl  # noqa: F401  -- the Graphbolt load that killed a run after it had a
 print('  rgfn env + dgl/graphbolt: OK')" || {
     echo "FATAL: rgfn env cannot import dgl -- is cuda/11.8.0 loaded?" >&2; exit 2; }
 echo "  HF_HOME=$HF_HOME (offline)"
+
+# A round that returns the SAME distinct count as the previous one means the runner hit its own
+# batch cap (s3gfn: max_sample_batches=4000), not that the generator ran out of chemistry. Without
+# the fix, upsample_to_modes.py records that as `stalled` -- a claim about the GENERATOR that is
+# false, and one that reads as a finding downstream (measured on s3gfn_drd2/seed43). Refuse to run
+# a tree that would mislabel it.
+if ! grep -q "sampler-capped" experiments/lsd_hubs/campaign/upsample_to_modes.py; then
+    echo "FATAL: $REPO_DIR's upsample_to_modes.py predates the sampler-cap fix; a capped round" >&2
+    echo "  would be reported as 'stalled' (a false claim about the generator). Point REPO_DIR at" >&2
+    echo "  a tree that has it." >&2
+    exit 1
+fi
+echo "  sampler-cap detection: present"
 
 # Docking cells need the GPU docker AND a healthy OpenCL stack. Check ONCE, before anything
 # expensive, and only when a docking cell is actually in the list -- a wedged node returns
