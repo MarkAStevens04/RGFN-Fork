@@ -126,6 +126,14 @@ for CELL in $CELLS; do
       *) echo "FAILED $CELL — unknown generator" >&2; FAILED="$FAILED $CELL"; continue ;;
     esac
     CFG=${CFG_OVERRIDE:-validation/configs/${GEN}_${TGT}_fixed.yaml}
+    # CFG_FORCE runs a cell against a DIFFERENT config than its generator/target mapping, for a
+    # deliberate one-off divergence (e.g. raising max_sample_batches to test whether a
+    # `sampler-capped` cell is genuinely saturated). It is loud on purpose: a silent config swap is
+    # how a cell stops being comparable to its own seed band without anyone noticing.
+    if [ -n "${CFG_FORCE:-}" ]; then
+        CFG="$CFG_FORCE"
+        echo "  !! CFG_FORCE: this cell runs $CFG, NOT its mapped config. Divergence -- record it."
+    fi
     RUN_DIR="$FR_ROOT/${GEN}_${TGT}/seed${SD}"
     OUT="$OUT_ROOT/${GEN}_${TGT}_seed${SD}"
     echo ""; echo "############ STAGE2 $CELL  ($(date '+%F %H:%M')) ############"

@@ -1,0 +1,67 @@
+# S3-GFN on DRD2 — the non-reaction (SMILES-GFN) entrant on the second surrogate.
+#
+# Identical to `s3gfn_seh_fixed.yaml` apart from the reward, so any sEH-vs-DRD2 difference is the
+# objective and not the setup. Budget is the authors' PMO default (157 x 64 = 10,048 scored, their
+# `max_oracle_calls` 10,000) and `aux_coefficient` is their 0.001 -- both corrected 2026-08-20.
+#
+# ⚠ THE DRD2 GATE IS NON-BINDING (entry 066): 97.5% of generated molecules clear 0.5, and 0 of 3,408
+# true-negative drug-like molecules do. DRD2 cells are therefore a DIVERSITY-ONLY comparison and must
+# not be pooled with sEH, where the bar removes a real fraction.
+
+run:
+  name: fixed_reward/s3gfn_drd2          # run dir: <root>/fixed_reward/s3gfn_drd2/<timestamp>
+  root_dir: experiments                 # overridden by --root-dir on Balam ($SCRATCH)
+  seed: 42
+
+fixed_reward:
+  system: drd2                          # target system (provenance + mode gate)
+  reward_name: drd2                     # fixed reward generator name (manifest 'oracle' field)
+  n_train_steps: 157                    # 157 x 64 = 10,048 scored -- their PMO max_oracle_calls.
+                                        # WAS 5000 (=320,000), matched to OUR generators rather than
+                                        # to their paper; a ~32x advantage (audit 2026-08-20).
+  n_samples: 2000                       # unique valid molecules to emit as candidates
+  sample_oversample: 6.0                # oversample factor for the final pool sampling
+  max_sample_batches: 20000             # DIAGNOSTIC 5x: is s3gfn_drd2 seed 43/44 genuinely saturated, or did the guard bind early? See Logs comment.
+  score_units: "DRD2 SVM activity probability in [0,1] (higher is better)"
+
+# Frozen reward provider. type: seh_proxy | drd2 | docking (only seh_proxy implemented; the others
+# are the modular seam — same interface, injected identically). See fixed_reward.py.
+reward:
+  type: drd2
+  model_path: oracle/drd2_current.pkl   # the TDC/Olivecrona SVM, pre-staged (compute
+                                        # nodes have no internet; see the TDC note in memory)
+  clip: 10.0
+  batch_size: 128
+
+# S3-GFN generator hyperparams (defaults mirror src/s3gfn/train.py argparse; the paper's sEH run).
+s3gfn:
+  device: null                          # auto: cuda:0 if available
+  batch_size: 64                        # on-policy samples per step
+  replay_batch_size: 64
+  buffer_size: 6400
+  num_warmup_steps: 100
+  learning_rate: 1.0e-4
+  log_z_learning_rate: 1.0e-3
+  beta: 50.0                            # RTB reward coefficient (train.py default)
+  sampling_temperature: 1.0
+  eval_sampling_temperature: 1.0
+  training_mode: s3gfn                  # s3gfn | reward_shaping | rtb
+  use_retrosynthesis: true             # the SOFT-synthesizability signal (retro-solvability)
+  # retro_env: the training-time synthesizability library (data/envs/<env>/{building_block.smi,
+  # template.txt}). WE USE zincfrag_hb105 = ZINCFrag blocks (~178k, public) + hb.txt (105 templates).
+  # WHY NOT the paper's stock_hb (Enamine stock + 71-template hb_edited)? Enamine is vendor-gated
+  # (not in repo); ZINCFrag is S3-GFN's public alternative AND is in AiZynth's ZINC stock (aligns
+  # with our post-hoc referee). ZINCFrag fragments are small, so the paper's 71 templates give only
+  # 0.8% starting synth_ratio (won't bootstrap); the fuller 105-template set gives 4.7% -> climbs to
+  # 90%+. Full rationale + build: experiments/lsd_hubs/campaign/build_s3gfn_retro_env.sh + Logs/.
+  retro_env: zincfrag_hb105
+  retro_steps: 3
+  sa_threshold: 4.0
+  aux_coefficient: 0.001                # AUTHORS' value (experiments/pmo/main/s3gfn/hparams_default.yaml).
+                                        # WAS 0.0001 with no rationale recorded anywhere -- a 10x slip.
+  eval_samples: 1000                    # built-in final eval sample count
+  eval_every: 100000                    # >n_train_steps => no periodic eval (we sample our own pool)
+  save_periodic_every: 16               # ~every 1,024 scored molecules at batch 64. Unit is STEPS
+                                        # (train.py:617). NOTE each checkpoint is ~561 MB.
+  catalog: ""                           # optional chemical-filter catalog (off)
+  property_rule: none
