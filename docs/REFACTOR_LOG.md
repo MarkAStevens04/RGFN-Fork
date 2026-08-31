@@ -2104,3 +2104,44 @@ at m=25, well below 46, so it was the unsynthesizable-target bug (`c802026`), no
 `m25/` artifacts on disk were a recorded failure, not a success. Both mechanisms are real and can
 appear in one cell; they separate on whether the failing mode point is above or below
 `modes available` — SKIPs are pool size, Errors are stock coverage.
+
+---
+
+## 2026-08-28 → 08-31 — FragGFN into Stage 2, and Stage 3 for the upsampled pools
+
+Branch `worktree-fraggfn-stage2` (11 commits, **not merged into Hub-Analysis**). Science in
+[Logs/077] (Stage 2) and [Logs/078] (Stage 3).
+
+### Structural changes
+
+| change | file | why it is not cosmetic |
+|---|---|---|
+| `fraggfn` case + explicit per-target config map | `submit_stage2_upsample.sh` | the `${GEN}_${TGT}_fixed.yaml` convention resolves for fraggfn to a file that EXISTS and is WRONG (the old 5,000-step build); the resume guard `remaining = n_train_steps - loop._it` would have silently re-trained 4,843 steps inside a sampling stage |
+| docking server, per cell | `submit_stage2_upsample.sh` | without `RGFN_DOCK_SOCKET` the reward bridge falls back to a `score_batch.py` subprocess PER STEP and writes no `dock_server_stats.json`, so the compute accounting loses its docking component silently |
+| `sampler-capped` stop reason | `upsample_to_modes.py` | a round returning the SAME distinct count means the runner hit `max_sample_batches`, not that the generator ran out of chemistry; it was being recorded as `stalled`, a claim about the GENERATOR |
+| `CANDS` override | `submit_competitor_routes.sh` | Stage 3 was hard-wired to the budget-faithful pool and could not consume what Stage 2 produces |
+| `USE_STAGE2`, `REPO_DIR`, + a snapshot assertion | `submit_competitor_routes_chain.sh` | the chain `cd`s to a fixed root and snapshots THAT tree's cell script, so a worktree's fix silently did not load |
+| `CFG_FORCE` | `submit_stage2_upsample.sh` | run one cell against a divergent config, loudly |
+| `submit_native_routes.sh` (NEW) | — | Stage 3 for a generator carrying its own routes; `--route-source external` existed but no launcher used it |
+
+### NOT verified / left open
+
+* **The competitor comparison has not started.** REINVENT, Saturn, TANGO are **0 of 58** route runs.
+  21 jobs sit at `PD (Priority)`: five of nine nodes went to a reservation and our fairshare read
+  `EffectvUsage 0.279` against `NormShares 0.023`. Left to drain by decision, not oversight.
+* **Seven cells need a follow-up Stage 3** once their Stage 2 lands (jobs 75192/75193/75194):
+  `reinvent:clpp:44`, `s3gfn:clpp:42/43/44`, `s3gfn:drd2:43/44`, `s3gfn:seh:43`. They were
+  deliberately excluded from the submitted chains rather than queued against incomplete inputs.
+* **`s3gfn_drd2` seeds 43/44 carry a FALSE `stalled` label** written before the fix. Job 75287 is the
+  one-cell diagnostic (5x `max_sample_batches`) that decides whether a real re-run is worth it; do not
+  quote 422 / 168 modes until it returns.
+* **Quote `n_targets_priced`, never `n_modes`.** They are equal on every multiaiz cell and diverge
+  ~11-13% on native routes. Whether the greedy arm SHOULD force all N targets is an open methodology
+  decision that changes the headline for every route-carrying entrant.
+* **The route-less frontier ladder still starts at 25**, so a cell delivering fewer modes writes no
+  row at all (`fraggfn_drd2_seed43`, 12 modes). `submit_native_routes.sh` starts at 5. Re-running the
+  frontier is minutes — discovery is cached — so this is a cheap sweep, not a re-run.
+* **`fraggfn:drd2:44 pruned` was deliberately not resubmitted**: naive and pruned share 499/500
+  molecules on that generator+target, so it is a provable duplicate. The overlap itself is the result.
+* Chain walltimes were sized on a 3.67 h/cell reference; measured cost is **6-12 h/cell**. Five chains
+  timed out at 20 h having done one cell each. The resubmitted chains are sized on the measurement.
