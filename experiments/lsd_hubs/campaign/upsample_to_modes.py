@@ -410,7 +410,13 @@ def main() -> None:
             break
 
         n_distinct = len(scored)
-        eligible = sum(1 for v in scored.values() if ((v > gate) if hib else (v < gate)))
+        # INCLUSIVE at the bar, matching metrics/diversity.py::_passes_gate (`>=` / `<=`), which is
+        # what count_modes actually applies. This line used a STRICT comparison, so a molecule
+        # sitting exactly on the gate counted as a mode but not as eligible -- and docking scores are
+        # quantised to 0.1, so on ClpP (gate -9.1) that is a large population: s3gfn_clpp/seed42
+        # logged "123 eligible, 141 modes", i.e. more modes than the molecules they were drawn from,
+        # which is impossible and made the diagnostic unreadable exactly when it mattered.
+        eligible = sum(1 for v in scored.values() if ((v >= gate) if hib else (v <= gate)))
         modes = count_modes(scored, gate, hib, a.cutoff, cap=a.target_modes)
         added = len(modes) - prev_modes
         rounds.append(
