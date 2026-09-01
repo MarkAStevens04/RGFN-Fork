@@ -102,7 +102,13 @@ for CELL in $CELLS; do
     CFG_OVERRIDE=""
     case "$GEN" in
       saturn|tango) ENVNAME=saturn; RUNNER=validation/generators/saturn/run_saturn_fixed.py ;;
-      reinvent)     ENVNAME=reinvent; RUNNER=validation/generators/reinvent/run_reinvent_fixed.py ;;
+      # reinvent4, NOT reinvent -- the env lives at /scratch/markymoo/conda_envs/reinvent4 and
+      # submit_baseline.sh (which trains these cells) has always said reinvent4. The wrong name
+      # here went unnoticed for the whole campaign because every REINVENT cell reached its mode
+      # target from the FREE trace harvest and never invoked the runner; the first one that
+      # needed to sample (reinvent:clpp:44, job 75192) died in 21 s with
+      # "EnvironmentLocationNotFound: Not a conda environment".
+      reinvent)     ENVNAME=reinvent4; RUNNER=validation/generators/reinvent/run_reinvent_fixed.py ;;
       s3gfn)        ENVNAME=s3gfn; RUNNER=validation/generators/s3gfn/run_s3gfn_fixed.py ;;
       fraggfn)
         ENVNAME=fraggfn; RUNNER=validation/generators/fraggfn/run_fraggfn_fixed.py
