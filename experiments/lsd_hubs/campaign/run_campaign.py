@@ -549,6 +549,20 @@ def main() -> None:
         "compute_time": ct_section,  # None if no measured enum_timings.json found
     }
     (out / "summary.json").write_text(json.dumps(summary, indent=2))
+    # The accepted SMILES, in acceptance order. The curve CSV records only counts, so
+    # any downstream analysis of WHICH molecules were chosen (similarity distributions,
+    # scaffold audits, chemistry galleries) previously had to re-derive them -- and the
+    # last such dump was written to a temp directory and lost with it.
+    for name, res in (("best_candidate", bc), ("hub_batching", hb)):
+        (out / f"selection_{name}.json").write_text(json.dumps(
+            {"tag": a.tag, "strategy": name,
+             "reward_threshold": a.reward_threshold, "similarity": a.similarity,
+             "child_policy": a.child_policy, "prebuild_k": a.prebuild_k,
+             "budget_reactions": a.budget_reactions,
+             "n_accepted": len(res.accepted),
+             "accepted_smiles": [p.smiles for p in res.accepted],
+             "accepted_rewards": [p.reward for p in res.accepted]},
+            indent=2))
     _plot(out / "curve.png", [bc, hb], a.tag)
     if ct_section is not None:
         write_compute_time_csv(out / "compute_time.csv", ct_section)
