@@ -2145,3 +2145,21 @@ Branch `worktree-fraggfn-stage2` (11 commits, **not merged into Hub-Analysis**).
   molecules on that generator+target, so it is a provable duplicate. The overlap itself is the result.
 * Chain walltimes were sized on a 3.67 h/cell reference; measured cost is **6-12 h/cell**. Five chains
   timed out at 20 h having done one cell each. The resubmitted chains are sized on the measurement.
+
+### A results directory can be named for a pool size that never existed
+
+`submit_competitor_routes.sh` builds its output paths from `$N` -- the **requested** pool size -- while
+`POOL_DIR` is re-resolved a few lines earlier to the size the generator could actually supply. For a
+pool-limited cell those disagree, so `s3gfn_clpp_seed42_stage2_pruned` writes its frontier into
+`..._greedy_N500/` next to a pool directory called `..._N138`.
+
+Nothing is lost and no run is wrong -- but **any tally that looks up results by the pool's size finds
+nothing and reports the cell as empty**, and pool-limited cells are precisely the ones carrying the
+mode-collapse and generator-ceiling findings. Three S3-GFN ClpP cells read as "no frontier" this way
+while holding perfectly good ladders (25@57 / 50@110 / 75@147 and siblings).
+
+DELIBERATELY NOT FIXED IN THE LAUNCHER. Renaming the output directory now would orphan every result
+already written under the current convention, across the whole campaign, which is a worse failure
+than an odd directory name. Analysis code must GLOB `<tag>_greedy_N*` rather than key on the pool
+size. Fixed that way in the campaign's summary tooling; anything new that reads these results needs
+the same treatment.
