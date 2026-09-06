@@ -38,7 +38,13 @@
 #   TARGET=seh SEED=42 BUDGET=200 N_SAMPLES=50 sbatch -p debug -t 00:30:00 .../submit_synformer.sh
 
 set -uo pipefail
-cd "$HOME/projects/RGFN_Fork/RGFN-Fork"
+# REPO_DIR selects the tree this runs from. A knob, not a constant: SLURM snapshots THIS file at
+# submit time but resolves nothing inside it, so a hard-coded cd silently runs the SHARED
+# checkout's configs and code even when the script itself came from a worktree. That has now
+# bitten three launchers in this campaign -- the routes chain built _stage2-tagged pools out of
+# Stage-1 data, and job 75747 "tested" a sEH fix that was not in the tree it read.
+REPO_DIR=${REPO_DIR:-$HOME/projects/RGFN_Fork/RGFN-Fork}
+cd "$REPO_DIR"
 
 CELLS=${CELLS:-}
 if [ -z "$CELLS" ]; then

@@ -37,6 +37,13 @@ fixed_reward:
 reward:
   type: seh_proxy
   model_path: ""
+  subprocess: true                       # THE reason these three cells could not run before.
+  # Loading the sEH MPNN in the coordinating process breaks every later worker spawn with
+  # "No CUDA GPUs are available" (job 75080, entry [074]) -- and the parent measured CLEAN on
+  # both descriptor and thread counts, so hygiene is necessary but not sufficient; the model
+  # must not live in the parent at all. This routes scoring to a child process via
+  # score_seh_subprocess.py. Same env (synformer imports bengio2021flow, rgfn does not), so
+  # only the PROCESS differs -- which is the thing the fork hazard cares about.
   device: cpu                            # also keeps the parent CUDA-free before the sampler forks
   # NO reward shaping here, unlike the REINVENT/Saturn configs. GraphGA-SF consumes the raw score
   # directly as a mating-pool weight (`p / sum_scores`); it never needs a [0,1] mapping, so adding
