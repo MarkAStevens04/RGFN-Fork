@@ -2093,9 +2093,26 @@ messages):
 
 **NOT verified, and stated as such:** the smokes run 120-400 molecule budgets where production cells
 use 10,000, and the original nine-cell failure only surfaced at hour 10. These results support "safe
-to launch", not "will finish". sEH remains blocked entirely — job 75080 showed any in-parent proxy
+to launch", not "will finish". sEH remained blocked entirely — job 75080 showed any in-parent proxy
 load breaks fork regardless of fd/thread hygiene, so it needs subprocess scoring and
 `scripts/score_batch.py` registers only docking oracles.
+
+> **sEH UNBLOCKED 2026-09-06** (`9efe9bc`). The missing entry point now exists as
+> `validation/generators/synformer/score_seh_subprocess.py`, with `SEHBridgeReward` as its
+> client, opt-in via `reward.subprocess`. It does NOT cross an env boundary — the synformer env
+> imports `bengio2021flow` and the rgfn env does not, so only the PROCESS differs, which is what
+> the fork hazard cares about. Verified against an accidental in-process control:
+>
+> | job | after pool fork | after build_provider |
+> |---|---|---|
+> | 75747 in-process | fds=0 threads=1 | **fds=6 threads=5 POISONED** |
+> | 75750 bridge | fds=0 threads=1 | fds=0 threads=1 |
+>
+> Smoke 75750 ran to completion: three generations, three worker forks AFTER scoring, parent at
+> fds=0 throughout, reward mean rising 4.862 → 5.029 across generations (so the bridge preserves
+> the signal, not just the values), 300/300 scored, 363 routed, candidates written with
+> has_routes=True. Production seeds queued as 75753/54/55.
+> STILL a 300-molecule smoke against a 10,000 budget — [074]'s own caveat applies unchanged.
 
 **A retraction.** An earlier entry attributed `s3gfn_drd2_seed43`'s greedy failure to the mode target
 exceeding the pool (46 modes available, 50 requested). The saved solve says otherwise:
