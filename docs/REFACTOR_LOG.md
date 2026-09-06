@@ -2132,9 +2132,19 @@ Branch `worktree-fraggfn-stage2` (11 commits, **not merged into Hub-Analysis**).
 * **Seven cells need a follow-up Stage 3** once their Stage 2 lands (jobs 75192/75193/75194):
   `reinvent:clpp:44`, `s3gfn:clpp:42/43/44`, `s3gfn:drd2:43/44`, `s3gfn:seh:43`. They were
   deliberately excluded from the submitted chains rather than queued against incomplete inputs.
-* **`s3gfn_drd2` seeds 43/44 carry a FALSE `stalled` label** written before the fix. Job 75287 is the
-  one-cell diagnostic (5x `max_sample_batches`) that decides whether a real re-run is worth it; do not
-  quote 422 / 168 modes until it returns.
+* **`s3gfn_drd2` seeds 43/44 carried a FALSE `stalled` label — RESOLVED, and the re-run IS worth it.**
+  The diagnostic (75287 died on a missing oracle symlink, see below; re-run as 75674) settled it on
+  seed 44: at `max_sample_batches=4000` that cell records **168 modes / `stalled`**; at 20000 it
+  reaches **394**. The original round 2 returned the IDENTICAL 8,192 distinct — a cap, adding nothing.
+  The diagnostic's round 5 added 438 genuinely NEW molecules for only 6 new modes — a REAL plateau,
+  which is why 20000 is the right cap and not higher.
+  Both runs print `stalled`; only one of them means it. That is precisely what the `sampler-capped`
+  stop reason now distinguishes.
+  * seed 44 is CORRECTED already — `stage2_bigbatch/s3gfn_drd2_seed44` is a complete run, adopt it.
+  * seed 43 re-runs as job 75692 at the same cap; its recorded 422 is not quotable.
+  * seed 42 keeps the default config: it reached 500 `target-reached`, so the cap never bound.
+  * COST, and it belongs in the Stage-2 surcharge table: 10.8 h of sampling against 1.3 h. Two of the
+    three seeds in that band paid it and the third did not — our artifact, not the generator's.
 * **Quote `n_targets_priced`, never `n_modes`.** They are equal on every multiaiz cell and diverge
   ~11-13% on native routes. Whether the greedy arm SHOULD force all N targets is an open methodology
   decision that changes the headline for every route-carrying entrant.
@@ -2163,3 +2173,17 @@ already written under the current convention, across the whole campaign, which i
 than an odd directory name. Analysis code must GLOB `<tag>_greedy_N*` rather than key on the pool
 size. Fixed that way in the campaign's summary tooling; anything new that reads these results needs
 the same treatment.
+
+### A worktree does not carry untracked files, and one oracle is resolved by RELATIVE path
+
+Job 75287 died in 53 s with `FileNotFoundError: 'oracle/drd2_current.pkl'`. That path is RELATIVE, so
+it resolves against the working directory — and `REPO_DIR` (added so a launcher stops silently running
+the shared checkout's code) changes exactly that. The file is a 35 MB UNTRACKED pickle living only in
+the shared checkout, so a fresh git worktree does not have it.
+
+Only s3gfn+DRD2 hits this: sEH resolves proxy weights and ClpP a docking socket, which is why every
+other REPO_DIR job ran fine. Fixed with a symlink `oracle -> <shared checkout>/oracle`.
+
+**That symlink must never be committed.** A symlink into the shared checkout was committed on this
+project once before and a later merge DELETED the real directories behind it. It shows as `?? oracle`;
+stage files explicitly, never `git add -A`, in any worktree of this repo.
