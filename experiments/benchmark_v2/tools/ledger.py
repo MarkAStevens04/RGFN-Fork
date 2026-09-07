@@ -23,9 +23,32 @@ changes if anything in the copied artifact changes. ``--quick`` substitutes mtim
 is ~100x faster and enough for a smoke, but the default is a real content digest because proving a
 copy is faithful is the entire reason the column exists.
 
-``verify`` re-computes those digests against the destinations and reports drift. That is what turns
-the ledger from a note-to-self into evidence: a copied cell that has since been overwritten shows up
-here rather than in a confusing result three weeks later.
+``verify`` re-computes those digests against the **SOURCE** each row names, and answers exactly one
+question: *is the v1 run we copied from still the run we recorded?*
+
+THE DOCSTRING USED TO SAY "destinations" AND THE CODE ALWAYS HASHED THE SOURCE. The code was right
+and the prose was wrong (caught by agent D, 2026-09-07); they are different guarantees and conflating
+them would have made this command mean nothing:
+
+  * hashing the SOURCE  -> "the v1 cell we copied from has since been overwritten". Real: that is the
+                           s3gfn_seh/43 failure mode, where a re-invoked runner destroyed a history
+                           we can no longer re-derive.
+  * hashing the DEST    -> "our v2 copy has drifted". Covered better elsewhere: `freeze_cell.sh`
+                           makes a verified cell read-only, and the copy step writes a
+                           `.copy_manifest.json` and re-hashes every file as it lands, so a truncated
+                           copy fails at copy time rather than in Stage 2.
+
+SEVERITY IS GRADED, BECAUSE A NOISY GUARD GETS SWITCHED OFF. v1 is a LIVE tree -- Stage 2 legitimately
+re-runs against it -- so a changed source is expected and does NOT mean our copy is bad. Calling that
+"DRIFT" and exiting non-zero would train everyone to ignore this command within a week. So:
+
+    ok      the source is byte-identical to what we recorded
+    moved   the source has changed since we copied. Informational: our artifact is unaffected, and
+            the digest still records what we actually took.
+    GONE    the source no longer exists, so the provenance claim can never be re-checked.
+
+Exit is non-zero only for GONE. ``--strict`` also fails on ``moved``, for the rarer case where source
+stability is itself the thing being asserted.
 
 CLI
     python ledger.py record --stage train --cell scent/seh/42 --arm a --origin generated
@@ -189,8 +212,11 @@ def main() -> int:
     s.add_argument("--cell", type=_parse_cell, default=None)
     s.add_argument("--stage", default=None, choices=STAGES)
 
-    v = sub.add_parser("verify", help="re-hash copied rows and report drift")
+    v = sub.add_parser("verify", help="re-hash each copied row's SOURCE; exit 1 if any is GONE")
     v.add_argument("--quick", action="store_true")
+    v.add_argument("--strict", action="store_true",
+                   help="also fail when a source has merely CHANGED since the copy "
+                        "(off by default: v1 is live, so that is expected and not a defect here)")
 
     a = ap.parse_args()
 
@@ -230,22 +256,31 @@ def main() -> int:
         if not rows:
             print("no copied rows carrying a digest -- nothing to verify")
             return 0
-        bad = 0
+        gone = moved = same = 0
         for r in rows:
             src = Path(r["source_path"])
             cell = f"{r['generator']}_{r['target']}_s{r['seed']}"
             if not src.exists():
                 print(f"  GONE     {r['stage']:<11}{cell:<26} {src}")
-                bad += 1
+                gone += 1
                 continue
             d, _, _ = tree_digest(src, quick=a.quick)
             if d != r["source_md5"]:
-                print(f"  DRIFT    {r['stage']:<11}{cell:<26} {r['source_md5'][:8]} -> {d[:8]}")
-                bad += 1
+                # NOT a failure. v1 is a live tree and Stage 2 legitimately re-runs against it; our
+                # copy is unaffected and the recorded digest still says what we actually took.
+                print(f"  moved    {r['stage']:<11}{cell:<26} {r['source_md5'][:8]} -> {d[:8]}")
+                moved += 1
             else:
                 print(f"  ok       {r['stage']:<11}{cell:<26} {d[:8]}")
-        print(f"\n{len(rows) - bad}/{len(rows)} copied rows still match their recorded source")
-        return 1 if bad else 0
+                same += 1
+        print(f"\n{same} unchanged, {moved} moved since copy, {gone} GONE  "
+              f"(of {len(rows)} copied rows)")
+        if moved and not a.strict:
+            print("  `moved` is informational: the source changed after we copied it, which is "
+                  "expected while v1 is live. Our artifact is unaffected.")
+        if gone:
+            print("  `GONE` means the provenance claim can no longer be re-checked at all.")
+        return 1 if (gone or (moved and a.strict)) else 0
 
     return 0
 

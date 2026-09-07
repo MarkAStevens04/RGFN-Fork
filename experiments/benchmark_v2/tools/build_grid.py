@@ -70,11 +70,12 @@ GENERATORS = [
      "with no effect on the training budget. Two knobs, one name"),
     ("scent",     "reaction_gfn",        "hub_batching", "generate",
      "batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"),
-    ("fraggfn",   "nonreaction_gfn",     "competitor",   "generate",
-     "reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)"),
+    ("fraggfn",   "nonreaction_gfn",     "competitor",   "copy",
+     "reclassified 2026-08-28 and RETRAINED at the normalised budget, so the ~30x-over-budget runs "
+     "in fraggfn_*_5k are superseded rather than reused. Stage-2 capable (it has a sampler)"),
     ("s3gfn",     "nonreaction_gfn",     "competitor",   "copy",
      "corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001"),
-    ("synformer", "reaction_nongfn",     "competitor",   "generate",
+    ("synformer", "reaction_nongfn",     "competitor",   "copy",
      "EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules "
      "means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"),
     ("reinvent",  "nonreaction_nongfn",  "competitor",   "copy",
@@ -89,6 +90,39 @@ GENERATORS = [
 # generator. Both phases use the same seeds and the same standards.
 PHASE = {"seh": 1, "drd2": 1, "clpp": 1, "6td3b": 2}
 SEEDS = (42, 43, 44)
+
+# PER-CELL OVERRIDES. Three cells differ from their generator's plan, and each difference is a fact
+# about that one run rather than about the generator, so it cannot live in the table above.
+# Reconciled against disk 2026-09-07 (agent D measured, verified independently here).
+#
+# `resample` is a FOURTH verdict, deliberately not folded into `generate`: drawing a fresh pool from
+# a surviving frozen policy costs minutes, where re-training costs GPU-days. Collapsing them would
+# make a cheap cell look expensive and invite someone to skip it.
+#
+# WHY s3gfn LOOKED LIKE THE PROBLEM CHILD AND IS NOT. Reading `trace.csv` without checking its
+# rotations made nine cells across three generators appear historyless. A re-invoked runner truncates
+# trace.csv to its 59-byte header while the full history survives as `trace.csv.1` -- the defect
+# 3281bce fixed by rotating. Verified here: all three fraggfn_drd2 seeds show trace.csv at 0 rows and
+# trace.csv.1 at 10,048. The copy step resolves the real trace, so those cells copy normally.
+CELL_OVERRIDES = {
+    # (generator, target, seed): (train_plan, note)
+    ("s3gfn", "seh", 42): (
+        "resample",
+        "candidates.csv was overwritten by a re-invoked runner, but 10 checkpoints and a "
+        "12,048-row trace survive -> re-draw the pool from the frozen policy (minutes), NOT a "
+        "re-train",
+    ),
+    ("s3gfn", "seh", 43): (
+        "copy",
+        "trace unrecoverable -- all rotations are header-only stubs. Copyable, but Stage 2 loses "
+        "its free-pool harvest for this cell and must sample from the checkpoint instead",
+    ),
+    ("synformer", "drd2", 43): (
+        "copy",
+        "trace holds 6,950 of 10,000 calls (~70%) -- short of the arm-A budget, so verify_cell will "
+        "flag it. Decide whether to accept the shortfall or re-run before it enters a headline",
+    ),
+}
 
 # Both arms are defined on the ORACLE-CALL axis, never the step axis: the three reaction-GFNs have
 # three different per-step call counts and replay buffers make the arithmetic unsettleable, so the
@@ -111,6 +145,10 @@ def build_rows():
             for seed in SEEDS:
                 # A phase-2 cell has never been run for ANY generator, so it always generates.
                 plan = plan1 if phase == 1 else "generate"
+                cell_note = note if (phase == 1 or plan1 == "generate") else "never run on this target"
+                override = CELL_OVERRIDES.get((gen, target, seed))
+                if override and phase == 1:
+                    plan, cell_note = override
                 rows.append({
                     "generator": gen,
                     "gen_class": klass,
@@ -125,7 +163,7 @@ def build_rows():
                     # exists to correct.
                     "arm_b_calls": ARM_B_CALLS if role == "hub_batching" else "",
                     "train_plan": plan,
-                    "note": note if (phase == 1 or plan1 == "generate") else "never run on this target",
+                    "note": cell_note,
                 })
     return rows
 

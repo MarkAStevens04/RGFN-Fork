@@ -35,42 +35,42 @@ scent,reaction_gfn,hub_batching,ours,seh,44,1,10000,320000,generate,"batch 64 = 
 scent,reaction_gfn,hub_batching,ours,6td3b,42,2,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
 scent,reaction_gfn,hub_batching,ours,6td3b,43,2,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
 scent,reaction_gfn,hub_batching,ours,6td3b,44,2,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
-fraggfn,nonreaction_gfn,competitor,competitor,clpp,42,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,clpp,43,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,clpp,44,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,drd2,42,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,drd2,43,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,drd2,44,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,seh,42,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,seh,43,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,seh,44,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,6td3b,42,2,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,6td3b,43,2,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
-fraggfn,nonreaction_gfn,competitor,competitor,6td3b,44,2,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,clpp,42,1,10000,,copy,"reclassified 2026-08-28 and RETRAINED at the normalised budget, so the ~30x-over-budget runs in fraggfn_*_5k are superseded rather than reused. Stage-2 capable (it has a sampler)"
+fraggfn,nonreaction_gfn,competitor,competitor,clpp,43,1,10000,,copy,"reclassified 2026-08-28 and RETRAINED at the normalised budget, so the ~30x-over-budget runs in fraggfn_*_5k are superseded rather than reused. Stage-2 capable (it has a sampler)"
+fraggfn,nonreaction_gfn,competitor,competitor,clpp,44,1,10000,,copy,"reclassified 2026-08-28 and RETRAINED at the normalised budget, so the ~30x-over-budget runs in fraggfn_*_5k are superseded rather than reused. Stage-2 capable (it has a sampler)"
+fraggfn,nonreaction_gfn,competitor,competitor,drd2,42,1,10000,,copy,"reclassified 2026-08-28 and RETRAINED at the normalised budget, so the ~30x-over-budget runs in fraggfn_*_5k are superseded rather than reused. Stage-2 capable (it has a sampler)"
+fraggfn,nonreaction_gfn,competitor,competitor,drd2,43,1,10000,,copy,"reclassified 2026-08-28 and RETRAINED at the normalised budget, so the ~30x-over-budget runs in fraggfn_*_5k are superseded rather than reused. Stage-2 capable (it has a sampler)"
+fraggfn,nonreaction_gfn,competitor,competitor,drd2,44,1,10000,,copy,"reclassified 2026-08-28 and RETRAINED at the normalised budget, so the ~30x-over-budget runs in fraggfn_*_5k are superseded rather than reused. Stage-2 capable (it has a sampler)"
+fraggfn,nonreaction_gfn,competitor,competitor,seh,42,1,10000,,copy,"reclassified 2026-08-28 and RETRAINED at the normalised budget, so the ~30x-over-budget runs in fraggfn_*_5k are superseded rather than reused. Stage-2 capable (it has a sampler)"
+fraggfn,nonreaction_gfn,competitor,competitor,seh,43,1,10000,,copy,"reclassified 2026-08-28 and RETRAINED at the normalised budget, so the ~30x-over-budget runs in fraggfn_*_5k are superseded rather than reused. Stage-2 capable (it has a sampler)"
+fraggfn,nonreaction_gfn,competitor,competitor,seh,44,1,10000,,copy,"reclassified 2026-08-28 and RETRAINED at the normalised budget, so the ~30x-over-budget runs in fraggfn_*_5k are superseded rather than reused. Stage-2 capable (it has a sampler)"
+fraggfn,nonreaction_gfn,competitor,competitor,6td3b,42,2,10000,,generate,never run on this target
+fraggfn,nonreaction_gfn,competitor,competitor,6td3b,43,2,10000,,generate,never run on this target
+fraggfn,nonreaction_gfn,competitor,competitor,6td3b,44,2,10000,,generate,never run on this target
 s3gfn,nonreaction_gfn,competitor,competitor,clpp,42,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
 s3gfn,nonreaction_gfn,competitor,competitor,clpp,43,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
 s3gfn,nonreaction_gfn,competitor,competitor,clpp,44,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
 s3gfn,nonreaction_gfn,competitor,competitor,drd2,42,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
 s3gfn,nonreaction_gfn,competitor,competitor,drd2,43,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
 s3gfn,nonreaction_gfn,competitor,competitor,drd2,44,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
-s3gfn,nonreaction_gfn,competitor,competitor,seh,42,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
-s3gfn,nonreaction_gfn,competitor,competitor,seh,43,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
+s3gfn,nonreaction_gfn,competitor,competitor,seh,42,1,10000,,resample,"candidates.csv was overwritten by a re-invoked runner, but 10 checkpoints and a 12,048-row trace survive -> re-draw the pool from the frozen policy (minutes), NOT a re-train"
+s3gfn,nonreaction_gfn,competitor,competitor,seh,43,1,10000,,copy,"trace unrecoverable -- all rotations are header-only stubs. Copyable, but Stage 2 loses its free-pool harvest for this cell and must sample from the checkpoint instead"
 s3gfn,nonreaction_gfn,competitor,competitor,seh,44,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
 s3gfn,nonreaction_gfn,competitor,competitor,6td3b,42,2,10000,,generate,never run on this target
 s3gfn,nonreaction_gfn,competitor,competitor,6td3b,43,2,10000,,generate,never run on this target
 s3gfn,nonreaction_gfn,competitor,competitor,6td3b,44,2,10000,,generate,never run on this target
-synformer,reaction_nongfn,competitor,competitor,clpp,42,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,clpp,43,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,clpp,44,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,drd2,42,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,drd2,43,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,drd2,44,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,seh,42,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,seh,43,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,seh,44,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,6td3b,42,2,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,6td3b,43,2,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,6td3b,44,2,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,clpp,42,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,clpp,43,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,clpp,44,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,drd2,42,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,drd2,43,1,10000,,copy,"trace holds 6,950 of 10,000 calls (~70%) -- short of the arm-A budget, so verify_cell will flag it. Decide whether to accept the shortfall or re-run before it enters a headline"
+synformer,reaction_nongfn,competitor,competitor,drd2,44,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,seh,42,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,seh,43,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,seh,44,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,6td3b,42,2,10000,,generate,never run on this target
+synformer,reaction_nongfn,competitor,competitor,6td3b,43,2,10000,,generate,never run on this target
+synformer,reaction_nongfn,competitor,competitor,6td3b,44,2,10000,,generate,never run on this target
 reinvent,nonreaction_nongfn,competitor,competitor,clpp,42,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
 reinvent,nonreaction_nongfn,competitor,competitor,clpp,43,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
 reinvent,nonreaction_nongfn,competitor,competitor,clpp,44,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
