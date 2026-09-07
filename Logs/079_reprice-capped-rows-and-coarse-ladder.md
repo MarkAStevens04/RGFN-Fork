@@ -47,13 +47,15 @@ was asking the solver for a 1%-optimal answer instead of a seven-decimal-place o
 report in whole molecules.
 
 That leaves the disagreement between the two pools standing as a real result rather than a solver
-artefact, and it has a measurable cause. The two pools are built differently — one takes the 500
-highest-scoring molecules, the other takes 500 that are deliberately unlike each other — and the
-generators differ in how much those two selections agree. Only about 40-58% of S3-GFN's
-highest-scoring 500 survive the diversity filter, against 66-87% of REINVENT's. So S3-GFN spends much
-of a reward-ranked batch on near-duplicates and loses there, and wins decisively once diversity is
-imposed, because the distinct chemistry underneath is cheaper to make. Across all six cells the
-benefit a generator gets from diversity-forcing tracks how redundant its reward ranking was.
+artefact, and it has a mundane cause worth stating plainly. The two pools are built differently — one
+takes the 500 highest-scoring molecules, the other takes 500 that are deliberately unlike each other
+— and generators differ enormously in how many of their own top 500 are already unlike each other:
+about 40-58% for S3-GFN against 66-87% for REINVENT, and as low as 2-4% for Saturn and TANGO. The
+pool that holds more distinct molecules then yields proportionally more distinct products, and
+checking that arithmetic against the measured gains accounts for most of the effect. So the pool
+comparison is not revealing a subtle interaction; it is revealing how much of each generator's
+best-scoring output is the same molecule over again. That is still the thing worth reporting, because
+it decides which generator looks better, and it is invisible if only one pool is shown.
 
 The ladder defect was pure understatement and cost us real numbers: the first cell re-priced went
 from 25 molecules to 30 at the same 100-reaction budget, purely because the old rungs forced it to
@@ -204,7 +206,10 @@ truncated rows with unchanged values.
 
 **Why the pools disagree: redundancy in the reward-ranked prefix.** The naive pool is top-500 by
 reward; the pruned pool is top-500 mutually distinct. The fraction of the naive pool that also
-appears in the pruned pool measures how far the reward ranking and the diversity filter disagree:
+appears in the pruned pool turns out to equal `modes_in_largest_prefix / 500` **exactly** in every
+cell checked — i.e. it is simply how many of the reward-ranked top-500 are mutually dissimilar, a
+quantity `mode_saturation.py` already records. It is not a new measurement, and it is not a Tanimoto
+redundancy score:
 
 | cell | naive ∩ pruned | SB modes naive → pruned | gain |
 |---|---|---|---|
@@ -217,10 +222,45 @@ appears in the pruned pool measures how far the reward ranking and the diversity
 
 The gain from pruning tracks the overlap almost monotonically across all six cells: the lowest
 overlap (S3-GFN 43, 40%) gives the largest gain (2.63×) and the highest (REINVENT 44, 87%) the
-smallest (1.11×). S3-GFN's reward-ranked top-500 is substantially more redundant, so on the naive
-pool it spends slots on molecules the diversity filter rejects; once diversity is imposed, its
-underlying chemistry is cheaper per mode. This is exact-SMILES overlap between two 500-molecule
-pools, so it measures reward-vs-diversity disagreement rather than a Tanimoto redundancy score.
+smallest (1.11×).
+
+**But the mechanism is largely ARITHMETIC, and must be reported as such.** The naive pool's mode
+ceiling is `modes_in_largest_prefix`; the pruned pool's is `min(500, modes_available_whole_set)`.
+Comparing SPARROW's pruning gain against that ratio over 15 uncapped cells with ≥20 modes gives a
+**median deviation of 5%**, nine of them within ±0.05:
+
+| cell | modes in top-500 | SB gain | mode-count ratio | difference |
+|---|---|---|---|---|
+| REINVENT sEH 42 | 385 | 1.31× | 1.30× | +0.01 |
+| REINVENT sEH 43 | 331 | 1.49× | 1.51× | −0.02 |
+| S3-GFN sEH 42 | 292 | 1.75× | 1.71× | +0.04 |
+| S3-GFN sEH 43 | 199 | 2.63× | 2.51× | +0.12 |
+| S3-GFN sEH 44 | 195 | 2.04× | 2.56× | **−0.52** |
+| S3-GFN ClpP 42/43/44 | 111 / 89 / 116 | 1.42 / 1.33 / 1.48× | 1.00× each | **+0.33…+0.48** |
+
+So the pruned pool wins mostly because it *contains more distinct molecules*, and SPARROW returns
+proportionally more modes. That is close to a definition, not a discovery, and the entry should not
+be read as evidence that pruning interacts cleverly with route sharing. The two exceptions are the
+informative ones: S3-GFN sEH 44 under-delivers against its own headroom, and the three S3-GFN ClpP
+cells gain 33-48% where the ratio predicts nothing — those pools hold only 89-116 distinct molecules
+in total, so there the gain comes from *composition* rather than count.
+
+**The non-tautological part is the per-generator redundancy itself**, which varies enormously and
+consistently — the share of a reward-ranked top-500 that is mutually dissimilar:
+
+| generator | modes inside its own top-500 |
+|---|---|
+| Saturn / TANGO (sEH) | 10-19 of 500 (2-4%) |
+| S3-GFN | 195-292 (39-58%) |
+| REINVENT | 296-436 (59-87%) |
+| FragGFN | 434-499 (87-100%) |
+
+That ordering is a real property of the generators and it is what decides which pool favours whom.
+FragGFN's near-total overlap is **not** a headroom artefact: it has 731-2,372 modes available in its
+whole above-gate set, so a different 500 was freely available and the diversity filter simply did not
+want one. 35 of 42 cells had >600 modes available and are informative on this point; the 7 that did
+not (REINVENT ClpP ×3, S3-GFN ClpP ×3, S3-GFN sEH 43) are near-exhaustive and must not be read as
+diversity claims.
 
 This also refines a note carried in `sparrow_select_frontier.py --gap-rel`'s own help text, which
 recorded that gap relaxation "did NOT achieve convergence alone". On this instance it did, and the
