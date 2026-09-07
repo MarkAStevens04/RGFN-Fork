@@ -475,3 +475,38 @@ wins. That has to be stated plainly in the paper rather than resolved by choosin
 gained, uniformly +5 or +10 modes, closing 18-28 reactions of unspent budget down to 5-16. Examples:
 `s3gfn_seh_seed44_pruned` 60→70, `s3gfn_clpp_seed44_pruned` 40→45, `reinvent_clpp_seed44_pruned`
 25→30. No cell lost modes, consistent with a strictly finer superset of the previous rungs.
+
+**Certifying the remaining capped rows (jobs 75810 naive / 75811 pruned): 11 of 12 succeeded, and
+THREE CHANGED VALUE — which qualifies the "the cap was hiding a correct number" reading above.**
+
+| cell | capped | certified @ gap 1e-2 | solve |
+|---|---|---|---|
+| reinvent clpp 42 naive | 81 | **81** | 1801 s → 3.2 s |
+| reinvent clpp 44 naive | 71 | **71** | 1801 s → 2.3 s |
+| reinvent clpp 43 pruned | 74 | **74** | 1801 s → 3.0 s |
+| reinvent clpp 44 pruned | 72 | **72** | 1801 s → 2.6 s |
+| saturn drd2 43 pruned | 9 | **9** | 1801 s → 2.4 s |
+| saturn drd2 44 pruned | 1 | **1** | 1802 s → 1.9 s |
+| tango drd2 42 pruned | 1 | **1** | 1802 s → 4.7 s |
+| tango seh 43 pruned | 5 | **5** | 1802 s → 1404 s |
+| saturn seh 42 pruned | 4 | **3** ↓ | 1802 s → 22.8 s |
+| tango clpp 43 pruned | 14 | **13** ↓ | 1803 s → 8.2 s |
+| tango clpp 44 pruned | 8 | **9** ↑ | 1802 s → 140 s |
+| saturn seh 44 naive | 4 | 5, **STILL TimeLimit** | 1802 s → 1802 s |
+
+**A certified value BELOW a capped one is not a contradiction, it is the price of the relaxed gap.**
+`Optimal` at `--gap-rel 1e-2` means within 1% of the bound, and on a cell holding 3-14 modes one
+percent IS about one mode — so on collapsed pools the relaxation costs ~1 mode, a ~25% RELATIVE
+error where on REINVENT's 70-92-mode rows the same 1% is ±1 and immaterial. The capped incumbent and
+the 1%-certified answer are both valid lower bounds; the larger of the two is the best available.
+Those three cells are being re-solved at `--gap-rel 1e-6` (job 75814), which they can afford — they
+converged in 2-140 s at 1e-2.
+
+Two rows stay flagged rather than fixed. `saturn_seh_seed44` (naive) hit the wall even at 1e-2, so it
+remains **solver-truncated** and its 5 modes is a lower bound. `tango_seh_seed43_pruned` needed
+1,404 s of its 1,800 s at 1e-2, so it is certified but only barely, and a tighter gap may not close.
+
+**The generalisation to carry forward:** gap relaxation is a safe lever for the LARGE cells, which is
+where the caps actually hurt (REINVENT's ClpP and sEH rows all certified unchanged in ~3 s). It is
+NOT safe as a blanket setting for small-count cells, where the tolerance is comparable to the
+quantity being measured. Pick the gap against the mode count, not once for the campaign.
