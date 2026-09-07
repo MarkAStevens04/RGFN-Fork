@@ -240,10 +240,14 @@ def verify_train(cell: Cell, arm: str) -> Result:
     # that is genuinely SHORT on training pass because evaluation padded it over the line, which is
     # the exact failure this gate exists to prevent. (Both figures are reported: for the five
     # entrants with no eval phase they agree, and where they disagree the gap is the contamination.)
+    # Only shown when the counter genuinely ran AHEAD of the training rows. On a corrupted
+    # (non-monotone) trace the difference can go negative, and "-5,997 non-train rows" reads as
+    # nonsense on top of the monotonicity failure that already explains it.
     eval_pad = last_scored - n_train_rows
     r.add("budget reached (train rows)", n_train_rows >= budget * BUDGET_TOLERANCE,
           f"{n_train_rows:,} / {budget:,} ({100*n_train_rows/max(budget,1):.0f}%)"
-          + (f"   [final counter {last_scored:,}, {eval_pad:,} non-train rows]" if eval_pad else ""))
+          + (f"   [counter reads {last_scored:,}; {eval_pad:,} of those are non-train]"
+             if eval_pad > 0 else ""))
     if max_distinct:
         # The gap between the two counters is itself a mode-collapse signal, so it is reported
         # rather than merely bounded.
