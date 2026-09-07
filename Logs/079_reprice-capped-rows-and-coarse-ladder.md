@@ -589,3 +589,44 @@ What the band shows is large within-generator variance, driven by ROUTABILITY ra
 pipeline: seed 42's route artifact is 286 KB against seed 43's 2.3 MB (~10% vs ~83% routed). [075]
 traced DRD2's routing failures to an amine absent from our ZINC stock, so seed 42 plausibly made more
 of that chemistry. **Quote the DRD2 band with its spread, never a mean.**
+
+**COVERAGE AUDIT: 98 of 108 cells complete** (6 generators x 3 targets x 3 seeds x 2 pools, where
+complete = pool + routes + greedy row at R=100 + SB row at R=100). Written as
+`audit_matrix_coverage.py` so it can be re-run rather than reconstructed.
+
+The ten incomplete cells are not ten gaps:
+
+| what | cells | status |
+|---|---|---|
+| SynFormer sEH | 6 | blocked on Stage-1 training (jobs 75753-55, ~13.5 h left) |
+| `fraggfn:drd2:44` pruned | 1 | in progress, job 75770 |
+| `tango:seh:44` naive | 1 | was GATED at `MIN_MODES=10` with 8 modes in its top-500; queued with `MIN_MODES=1` (job 75823) so it becomes a flagged datapoint instead of an exclusion |
+| `s3gfn:drd2:42` naive, `saturn:seh:42` naive | 2 | **not gaps — results.** See below |
+
+One trap the audit itself hit: its first version hard-coded `_select_N500` and reported
+`synformer_drd2_seed44_pruned` as missing its SB arm. That cell is pool-limited and writes `_N495`,
+where it holds 97 modes at R=100, `Optimal`. Glob the size, never assume it — the same lesson the
+campaign already learned on the greedy directories.
+
+**A REWARD-RANKED POOL CAN BE 100% UNSYNTHESIZABLE.** Those last two cells have 2-byte
+`multiaiz_routes.json` files and empty result directories, which looks exactly like a crashed
+discovery. It was not — `discovery_timing.json` says the work happened:
+
+| cell (naive pool) | targets | discovery | s/target | rc | routes |
+|---|---|---|---|---|---|
+| s3gfn drd2 42 | 500 | 17,650 s (4.9 h) | 35.3 | 0 | **0 routed** |
+| saturn seh 42 | 500 | 36,978 s (10.3 h) | 74.0 | 0 | **0 routed** |
+| s3gfn drd2 42 **pruned** | 500 | 18,672 s | 37.3 | 0 | 292 KB -> 47 modes at R=100 |
+
+Both ran to completion at per-target rates inside the normal 16-89 s band ([078]), so this is a
+measured zero and not a missing measurement — the check that separates the two is
+`discovery_timing.json`, not the file size. The same cell's DIVERSE 500 routes fine. So on these
+cells the top-500-by-reward is entirely unmakeable while a diversity-forced 500 drawn from the same
+above-gate set prices 47 modes.
+
+That is the strongest available form of the naive-pool pathology and it points the same way as
+[078]'s mechanism (routable molecules are flatter and greasier; the sp3-rich drug-like majority
+fails retrosynthesis): reward here correlates with the unroutable direction strongly enough to zero
+out the entire reward-ranked prefix. It is also the cleanest argument for reporting the pruned pool
+rather than the naive one — not because it flatters anyone, but because the naive pool can contain
+nothing a chemist could make.
