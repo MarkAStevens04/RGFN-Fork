@@ -261,6 +261,50 @@ def _write_curve(path: Path, result) -> None:
             )
 
 
+def _delivered_depth_mix(result, hub_depth: dict, budget_reactions: int) -> dict:
+    """Depth mix of the modes actually DELIVERED inside the reaction budget.
+
+    WHY THE DELIVERED SHARE AND NOT THE HUB COUNT. They differ by more than an order of magnitude
+    and only one of them is the claim. Measured on v1: 2 depth-0 hubs of 200 (1% of the hub set)
+    delivered 35 of 96 modes at R=100 -- **36.5% of the library**. Counting hubs understates the
+    reliance ~36x. Under `--pool all` the walked set holds 11 depth-0 hubs where the v1
+    reward-pre-filtered set held 2, so that 36.5% is a LOWER bound here, not an estimate.
+
+    WHY IT MATTERS AT ALL. A depth-0 hub is a bought building block. That is legitimate and priced
+    correctly -- a chemist buys it, and `shallow_couplings(depth=0, promoted=()) == 0` -- but
+    depth-0 catalogue picking is this metric's own named degenerate optimum. A library whose modes
+    mostly hang off bought scaffolds is doing something different from one that amortises built
+    intermediates, and the two must not be reported as the same result.
+
+    ``unmapped`` counts accepted picks whose source hub is not in the enumerated set -- for
+    best-candidate that is every pick (it walks no hubs), which is correct and expected.
+    """
+    hist: dict = {}
+    unmapped = 0
+    kept = 0
+    for p in result.accepted:
+        if p.cum_reactions > budget_reactions:
+            break  # accepted list is in acceptance order, so the budget is a prefix
+        kept += 1
+        hub = p.source_hub or ""
+        if hub in hub_depth:
+            d = hub_depth[hub]
+            hist[d] = hist.get(d, 0) + 1
+        else:
+            unmapped += 1
+    mapped = kept - unmapped
+    return {
+        "budget_reactions": budget_reactions,
+        "n_modes_at_budget": kept,
+        "n_from_hubs": mapped,
+        "n_unmapped": unmapped,
+        "modes_by_hub_depth": dict(sorted(hist.items())),
+        # The headline number. Denominator is modes that CAME from a hub, so best-candidate (which
+        # walks none) reports null rather than a misleading 0.0.
+        "depth0_mode_frac": round(hist.get(0, 0) / mapped, 4) if mapped else None,
+    }
+
+
 def _plot(path: Path, results, tag: str) -> None:
     try:
         import matplotlib
@@ -707,6 +751,20 @@ def main() -> None:
             f"({a.budget_reactions}); raise --budget-modes for a valid Case-1 readout."
         )
 
+    # -- depth provenance -----------------------------------------------------------------------
+    # hub_key -> depth, from the enumerated hubs themselves (authoritative: it is what the walk
+    # actually charged against), plus whatever pick_hubs recorded about the band it applied. Both
+    # are best-effort: an older enum dir has no timing sidecar, and the summary should still be
+    # written rather than the run dying at the last step.
+    _hub_depth = {h.hub_key: h.depth for h in enum_hubs}
+    _hub_pick_meta: dict = {}
+    for _cand in (Path(a.enum_children).parent / "pick_hubs_timing.json",):
+        if _cand.is_file():
+            try:
+                _hub_pick_meta = json.loads(_cand.read_text())
+            except Exception:
+                pass
+
     out = Path(a.out_dir) if a.out_dir else HERE / "results" / a.tag  # dir carries the tag
     out.mkdir(parents=True, exist_ok=True)
     _write_curve(out / "curve_best_candidate.csv", bc)
@@ -720,8 +778,26 @@ def main() -> None:
         "child_policy": a.child_policy,
         "prebuild_k": a.prebuild_k,
         "rank_by": a.rank_by if a.prebuild_k > 0 else None,
+        # -- identity of the run, so an arm is distinguishable from its CONTENTS and not just its
+        # directory name. A depth-filtered sensitivity arm and the default arm were otherwise
+        # indistinguishable once their paths were lost.
+        "min_synth_depth": a.min_synth_depth,
+        "hub_pool": _hub_pick_meta.get("pool"),
+        "min_hub_depth": _hub_pick_meta.get("min_hub_depth"),
+        "max_hub_depth": _hub_pick_meta.get("max_hub_depth"),
+        "walked_depth_hist": _hub_pick_meta.get("walked_depth_hist"),
+        # SCENT's promoted-library size is a fact about the run, not a constant: it is 0 at arm A
+        # (the first promotion needs 64,000 oracle calls against arm A's 10,000), and in v1 it also
+        # varied with REQUEUE TIMING, because the DynamicLibrary is not in the checkpoint and every
+        # requeue restarts it empty. Reporting it per cell is what makes both visible instead of
+        # silently averaged.
+        "n_promoted_fragments": len(cost_table.promoted_set) if cost_table else 0,
         "best_candidate": _readouts(bc, a.budget_reactions, a.budget_modes),
         "hub_batching": _readouts(hb, a.budget_reactions, a.budget_modes),
+        "depth_mix": {
+            "best_candidate": _delivered_depth_mix(bc, _hub_depth, a.budget_reactions),
+            "hub_batching": _delivered_depth_mix(hb, _hub_depth, a.budget_reactions),
+        },
         "compute_time": ct_section,  # None if no measured enum_timings.json found
     }
     (out / "summary.json").write_text(json.dumps(summary, indent=2))
