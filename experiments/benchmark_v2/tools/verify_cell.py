@@ -115,6 +115,28 @@ class Result:
         )
 
 
+def _declared_promoted_count(cell: Cell, arm: str) -> Optional[int]:
+    """How many dynamic-library fragments this run promoted, as the RUN ITSELF declares it.
+
+    Read from the worker's own ``meta.json`` (``n_promoted_fragments``), never inferred from whether
+    a snapshot file happens to exist -- because "no snapshot" is ambiguous between "promoted
+    nothing" (fine) and "recipes were never logged" (unrecoverable, and the reason six v1 cells are
+    dead). ``None`` means the run did not declare it, which is itself a failure: it makes the two
+    indistinguishable.
+    """
+    for sub in ("enum", "sample"):
+        p = cell.scratch_campaign_dir(arm) / sub / "meta.json"
+        if not p.is_file():
+            continue
+        try:
+            d = json.loads(p.read_text())
+        except Exception:
+            continue
+        if "n_promoted_fragments" in d:
+            return int(d["n_promoted_fragments"])
+    return None
+
+
 # ---------------------------------------------------------------------------- train stage
 def verify_train(cell: Cell, arm: str) -> Result:
     r = Result()
@@ -184,7 +206,19 @@ def verify_train(cell: Cell, arm: str) -> Result:
         r.add("trace.csv", False, f"unreadable: {e}")
         return r
 
-    r.add("trace rows", n_rows > 0, f"{n_rows:,} rows, final n_scored={last_scored:,}")
+    # A HEADER-ONLY TRACE IS THE CHARACTERISTIC STUB, NOT MERELY AN EMPTY FILE. Re-invoking a
+    # runner truncates trace.csv to its 59-byte header while the real history survives as
+    # `trace.csv.1` (what the TraceWriter rotation in 3281bce buys). Nine of ten cells first read as
+    # historyless turned out to have complete 10k-12k-row traces in their rotations. So a copy that
+    # grabs `trace.csv` blindly carries the stub -- and if that stub were allowed to pass here, Stage 2
+    # would pay to re-sample a pool we already hold. Fail it loudly and name the rotations.
+    if n_rows == 0:
+        rotations = sorted(tp.parent.glob(tp.name + ".*"))
+        hint = (f" -- but {len(rotations)} rotation(s) exist ({', '.join(p.name for p in rotations)}); "
+                f"the real history is probably in one of them") if rotations else ""
+        r.add("trace rows", False, f"HEADER-ONLY stub ({tp.stat().st_size} bytes){hint}")
+        return r
+    r.add("trace rows", True, f"{n_rows:,} rows, final n_scored={last_scored:,}")
     r.add("trace monotone", monotone,
           "n_scored never decreases" if monotone else "n_scored DECREASES -- rows are interleaved "
           "or the file was appended to by two writers")
@@ -255,18 +289,44 @@ def verify_campaign(cell: Cell, arm: str) -> Result:
               f"{n_rxn:,}/{n_child:,} = {frac:.4f} over {n_hubs:,} hubs"
               + ("" if frac >= 1.0 else "  <- a partial artifact prices SOME children at their hub"))
 
-    # §6.3 recipes exist AND belong to this run. Only SCENT has a dynamic library; for the others
-    # there is nothing to expand and None is the correct answer.
+    # §6.3 recipes exist AND belong to this run.
+    #
+    # THREE STATES, NOT TWO -- and the third is the one that matters. "This run promoted nothing, so
+    # there is nothing to expand" is a legitimate answer, but it must be DECLARED with a reason and
+    # read off the run's own artifact, never inferred from a missing file. That distinction is one
+    # the project has already paid for once: FragGFN's empty routes.json is CORRECT (its move is an
+    # attachment, not a reaction) and for months looked identical on disk to "nobody implemented
+    # it". Same shape here.
+    #
+    # WHY IT BITES NOW, AND HARD. SCENT's DynamicLibrary promotes on
+    # `every_n_iterations = 1000` (verified in the clone: n_iterations_schedule starts at 1000), and
+    # SCENT's batch is 64 -- so the FIRST promotion needs 64,000 oracle calls. Arm A's whole budget
+    # is 10,000, about 156 iterations. **Every SCENT arm-A cell therefore promotes zero fragments**,
+    # has no `additional_fragments/fragments_<N>.json` at all, and every route bottoms out directly
+    # at base stock. Treating that as 0% coverage would fail every one of them. (v1 at 5,000
+    # iterations recorded n_promoted_fragments=1600 = 4 of 10 promotions x 400, so the arithmetic
+    # is consistent in both directions.)
+    n_promoted = _declared_promoted_count(cell, arm)
     rh = _recipe_health(cell.scratch_campaign_dir(arm))
     if cell.generator != "scent":
         r.add("recipes (§6.3)", True, "n/a -- no dynamic library, routes bottom out at stock")
+    elif n_promoted is None:
+        r.add("recipes (§6.3)", False,
+              "cannot tell: the run declares no n_promoted_fragments in its meta.json, so "
+              "'nothing to expand' and 'recipes lost' are indistinguishable")
+    elif n_promoted == 0:
+        r.add("recipes (§6.3)", True,
+              "n/a -- this run promoted 0 fragments (declared), so every route bottoms out at "
+              "base stock and there is nothing to expand")
     elif rh is None:
         r.add("recipes (§6.3)", False,
-              "could not resolve the run's own fragment snapshot from its meta.json")
+              f"run declares {n_promoted:,} promoted fragments but its snapshot could not be "
+              f"resolved from meta.json -- the recipes may be the unrecoverable kind")
     else:
         covr, snap = rh
         r.add("recipes (§6.3)", covr >= 1.0,
-              f"coverage {covr:.1%} of this run's chosen fragments  ({Path(snap).name})"
+              f"coverage {covr:.1%} of this run's {n_promoted:,} promoted fragments "
+              f"({Path(snap).name})"
               + ("" if covr >= 1.0 else "  <- the rest are BOUGHT, not built"))
     return r
 
