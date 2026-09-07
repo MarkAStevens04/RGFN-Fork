@@ -39,6 +39,18 @@ that child had a better estimate for some other parent.
 Writes ``hubs.csv`` (the enumerator contract: ``smiles,depth`` only), plus two sidecars —
 ``hub_scores.csv`` (rank, score, #estimates, provenance) and ``pick_hubs_timing.json`` (Logs/039).
 
+**Sidecar names follow the ``--out`` basename, and a mismatched overwrite is refused.** Both
+sidecars used to be written to FIXED names in ``--out``'s parent, so two invocations differing only
+in basename shared one of each and the second silently replaced the first — measured, running
+``--pool all`` then ``--pool topk_candidates`` into one directory left two ``hubs_*.csv`` but a
+single ranking, of which only **8 of 20** hubs belonged to the run you were about to read. That is
+the standing "``hub_scores.csv`` is often stale — never join against it" warning, and it is not
+staleness: the next run overwrites it. The canonical ``hubs.csv`` keeps the canonical sidecar names
+so every existing reader and v1 artifact is unaffected; any other basename gets prefixed ones. On
+top of that, writing over a sidecar whose recorded pool/order/depth-band/``n_hubs`` differs from the
+current run aborts with the diff (``--force`` to override); an identical re-run is idempotent and
+never trips it.
+
 Pure stdlib (CSV only), so it runs anywhere before the GPU enumeration step.
 """
 import argparse
@@ -148,6 +160,12 @@ def main() -> None:
         help="walk order (Logs/053): flow_desc (default) | flow_asc | random | candidate_reward",
     )
     ap.add_argument("--seed", type=int, default=0, help="RNG seed for --order random")
+    ap.add_argument(
+        "--force", action="store_true",
+        help="overwrite a sidecar that records a DIFFERENT run. Without this, pick_hubs refuses "
+        "rather than replacing another run's ranking in place -- the failure that made "
+        "'hub_scores.csv is often stale' a standing warning",
+    )
     # ---- depth band (added 2026-09-07) --------------------------------------------------------
     # DEFAULT UNFILTERED, DELIBERATELY. This exists so the sensitivity arm is expressible, not to
     # change what hub-batching does; flipping the default would silently redefine every published
@@ -273,7 +291,53 @@ def main() -> None:
         w.writerow(["smiles", "depth"])
         for hub_stereo, hub_depth in ranked:
             w.writerow([hub_stereo, hub_depth])
-    scores_path = Path(a.out).parent / "hub_scores.csv"
+    # ---- 4a. sidecar naming + collision guard --------------------------------------------------
+    # BOTH SIDECARS USED FIXED NAMES IN THE PARENT OF --out, so two invocations differing only in
+    # the --out basename shared one hub_scores.csv and one pick_hubs_timing.json, and the second
+    # silently clobbered the first. Measured: running `--pool all` then `--pool topk_candidates`
+    # into one directory leaves two hubs_*.csv but ONE ranking, and only 8 of its 20 hubs belong to
+    # the run whose file you are about to read.
+    #
+    # THIS IS THE STANDING "hub_scores.csv IS OFTEN STALE" WART, AND IT IS NOT STALENESS. The
+    # project warning -- "seed 44's rank-#1 hub is not even in the enum; never join against it" --
+    # describes this overwrite. The file does not drift over time; the next pick_hubs run replaces
+    # it. So the caveat can become a fix.
+    #
+    # The canonical basename keeps the canonical sidecar names, so every existing reader and every
+    # v1 artifact is untouched. Only a caller who chose a DIFFERENT basename -- which is exactly
+    # when a collision is possible -- gets disambiguated names.
+    stem = Path(a.out).stem
+    _sfx = "" if stem == "hubs" else f"{stem}."
+    scores_path = Path(a.out).parent / f"{_sfx}hub_scores.csv"
+    timing_path = Path(a.out).parent / f"{_sfx}pick_hubs_timing.json"
+
+    # Identity of THIS run. Two runs sharing a sidecar path must agree on all of it, or one of them
+    # is about to read a ranking it did not produce.
+    identity = {
+        "pool": a.pool,
+        "order": a.order,
+        "n_hubs": a.n_hubs,
+        "top_k_candidates": a.top_k_candidates if a.pool == "topk_candidates" else None,
+        "min_hub_depth": a.min_hub_depth,
+        "max_hub_depth": a.max_hub_depth,
+        "seed": a.seed if a.order == "random" else None,
+        "restrict_to": a.restrict_to or None,
+    }
+    if timing_path.exists() and not a.force:
+        try:
+            prev = json.load(open(timing_path))
+        except Exception:
+            prev = {}
+        differing = {k: (prev.get(k), v) for k, v in identity.items() if prev.get(k) != v}
+        if differing:
+            raise SystemExit(
+                f"[pick_hubs] REFUSING to overwrite {timing_path.name}: it records a DIFFERENT run.\n"
+                + "".join(f"    {k}: {was!r} -> {now!r}\n" for k, (was, now) in differing.items())
+                + f"  Its sibling {scores_path.name} is that run's ranking, and overwriting it is how\n"
+                  f"  a hub set gets analysed as though it came from another pool -- which has already\n"
+                  f"  happened. Write to a different --out basename, or pass --force if you really\n"
+                  f"  mean to replace it."
+            )
     with open(scores_path, "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(
@@ -286,24 +350,20 @@ def main() -> None:
     elapsed = time.perf_counter() - _t0
     # Stage-2 timing sidecar (Logs/039): the drivers add this to hub-batching's compute-time (it is
     # work best-candidate never does). Written next to hubs.csv so the enum dir carries it.
-    timing_path = Path(a.out).parent / "pick_hubs_timing.json"
     json.dump(
         {
+            **identity,  # the fields the collision guard compares, first so they are easy to read
             "hub_pick_s": round(elapsed, 3),
-            "n_hubs": len(ranked),
+            "n_hubs_written": len(ranked),
             "n_candidates": len(best_reward),
-            "top_k_candidates": a.top_k_candidates,
-            "pool": a.pool,
             "pool_size": pool_size,
-            "order": a.order,
-            "seed": a.seed if a.order == "random" else None,
-            "restrict_to": a.restrict_to or None,
+            "hubs_csv": Path(a.out).name,  # which hubs.csv this sidecar describes
             # The depth band and its effect. `walked_depth_hist` is the headline: it is the depth
             # mix of the hubs this file actually hands the enumerator, and the depth-0 share of it
             # is what says whether a library was diversified off built intermediates or off bought
             # catalogue blocks.
-            "min_hub_depth": a.min_hub_depth,
-            "max_hub_depth": a.max_hub_depth,
+            # (min_hub_depth / max_hub_depth are already in `identity` above -- the guard compares
+            # them, so they must live there.)
             "n_dropped_by_depth": n_dropped_depth,
             "pool_depth_hist": pool_depths_before,
             "walked_depth_hist": _depth_hist(ranked),
