@@ -420,3 +420,22 @@ failed in 8 s):
 Both are silent-failure shaped: a launcher that rediscovered on a cache miss would have spent hours
 and produced a plausible frontier for the wrong pool. Refusing on a missing cache is what turned
 them into an 8-second error naming both bad paths.
+
+**A HAZARD THIS ENTRY CREATED, and how it will be closed.** Writing re-solved rows to a separate
+`<tag>_select_N500_longsolve/` directory protected the original ten-budget CSV, but it leaves TWO
+sources of truth for the primary readout: `<tag>_select_N500/select_frontier.csv` still carries the
+stale `TimeLimit` row at R=100, and only the `_longsolve` sibling has the certified one. This is not
+hypothetical — the audit script written for this very entry globbed `*_select_N*`, matched both
+directories, and re-reported the three already-certified sEH rows as still capped. Any reader that
+does not know to prefer `_longsolve` will quote the lower bound.
+
+The fix is to MERGE the certified R=100 rows back into the main CSV once the remaining certification
+jobs land (75810/75811), so there is one file per cell, with the originals backed up first. Two
+details matter when doing it:
+  * `solve_s` dropping from ~1800 to <10 alongside `milp_status=Optimal` is the only in-file trace
+    that a row was re-solved; the RELAXED GAP is not recorded anywhere in the schema. A `gap_rel`
+    column appended at the END is safe for both `DictReader` and the positional `awk` readers used
+    throughout this campaign, and is the honest way to carry "certified to 1% here, 1e-7 there".
+  * A later SB re-run through the chain will overwrite a merged row with a fresh 1e-7 solve, which
+    may cap again. That is correct behaviour, not a regression, but it means the merge is not
+    permanent and the `gap_rel` column is what makes the difference visible.
