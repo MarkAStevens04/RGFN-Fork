@@ -40,11 +40,20 @@ but one of them had put a headline comparison on ground we could not have defend
 
 On sEH, every truncated row belonged to REINVENT and every S3-GFN row was certified, so the
 comparison read as an S3-GFN win on one pool while the *fully certified* other pool showed the
-opposite. Re-solving the first of those cells returned **the identical answer, now certified**: 92
-molecules either way, but `TimeLimit` after 1801 seconds became `Optimal` after 5.65. The cap had
-been hiding a correct number, not a wrong one. The fix was not more compute — it was asking the
-solver for a 1%-optimal answer instead of a seven-decimal-place one, on a quantity we report in whole
-molecules.
+opposite. Re-solving all three of those cells returned **the identical answers, now certified** —
+80, 70 and 92 molecules, unchanged, with `TimeLimit` after ~1800 seconds becoming `Optimal` after
+under ten. The cap had been hiding correct numbers, not wrong ones. The fix was not more compute: it
+was asking the solver for a 1%-optimal answer instead of a seven-decimal-place one, on a quantity we
+report in whole molecules.
+
+That leaves the disagreement between the two pools standing as a real result rather than a solver
+artefact, and it has a measurable cause. The two pools are built differently — one takes the 500
+highest-scoring molecules, the other takes 500 that are deliberately unlike each other — and the
+generators differ in how much those two selections agree. Only about 40-58% of S3-GFN's
+highest-scoring 500 survive the diversity filter, against 66-87% of REINVENT's. So S3-GFN spends much
+of a reward-ranked batch on near-duplicates and loses there, and wins decisively once diversity is
+imposed, because the distinct chemistry underneath is cheaper to make. Across all six cells the
+benefit a generator gets from diversity-forcing tracks how redundant its reward ranking was.
 
 The ladder defect was pure understatement and cost us real numbers: the first cell re-priced went
 from 25 molecules to 30 at the same 100-reaction budget, purely because the old rungs forced it to
@@ -65,11 +74,14 @@ favourable one, and it makes the reaction-axis readout mean what the paper says 
 ## Next Experiments
 
 **Refining for publication**
-- Finish certifying the remaining capped rows and re-state every affected comparison from certified
-  numbers only, noting that certification is now at a 1% gap rather than SPARROW's default.
-- Reconcile the naive-vs-pruned direction flip on sEH once all four sEH rows are certified. If it
-  survives certification it is a finding about pool construction and belongs in the paper; if it
-  does not, it was a solver artefact and must not be quoted.
+- Certify the eleven capped rows outside sEH the same way, and re-state every affected comparison
+  from certified numbers only, noting that certification is now at a 1% gap rather than SPARROW's
+  default.
+- Write up the two pools as two questions rather than one question and a robustness check. The sEH
+  result now says the leader depends on whether the generator's own ranking picks the batch or
+  diversity is imposed on it, and the redundancy measurement explains why. Reporting only one pool
+  would let us choose our own winner.
+- Check whether the redundancy ordering holds on DRD2 and ClpP, or whether it is an sEH property.
 - Re-check that no table mixes a dense-ladder cell with a coarse one — mixing resolutions inside a
   seed band reads as a seed effect, which has cost this project a result before.
 
@@ -118,8 +130,9 @@ e8d35a7 Stage 2 named the REINVENT env `reinvent`; it is `reinvent4`, and nothin
 6a043c2 REFACTOR_LOG: what changed in the Stage-2/3 work, and the seven things left open
 ```
 
-`submit_reprice_cached.sh` and `_resolve_gate.py` are staged but not yet committed at the time of
-writing — [TODO — add commit hash once committed].
+`submit_reprice_cached.sh` and `_resolve_gate.py` were added in `187fd5a` ("Every truncated solve
+at the headline readout was the competitor's, and the ladder was understating everyone"), pushed to
+`origin/worktree-fraggfn-stage2`.
 
 A version check was run specifically for this experiment: `sparrow_select_frontier.py` last changed
 in `c802026` (2026-08-27 11:52, a greedy-arm fix), and **all 96 campaign greedy results postdate it**
@@ -165,18 +178,49 @@ where the competitor's solver was truncated. S3-GFN's pruned rows sit at the ari
 100 reactions for 100 modes is 1.0 reaction/mode and cannot be beaten — so the whole question was
 whether REINVENT reaches that ceiling too when allowed to finish.
 
-**Re-solve, REINVENT sEH seed 44, pruned (job 75790):**
+**Re-solve, REINVENT sEH pruned, all three seeds (jobs 75788/75789/75790):**
 
-| | modes kept | cost (kept) | status | solve |
+| seed | modes before | status before | solve before | modes after | status after | solve after |
+|---|---|---|---|---|---|---|
+| 42 | 80 | TimeLimit | 1802.36 s | **80** | Optimal | **9.74 s** |
+| 43 | 70 | TimeLimit | 1802.12 s | **70** | Optimal | **8.29 s** |
+| 44 | 92 | TimeLimit | 1801.71 s | **92** | Optimal | **5.65 s** |
+
+**Every value is unchanged.** All three answers were already correct; only their certification was
+missing. Total solve time after the gap change was 23.7 s, replacing 5,406 s of timed-out solving.
+Note the new status is optimal *to a 1% relative gap*, against SPARROW's default 1e-7 for the
+previously-certified rows — ±1 mode at these counts, which does not disturb any comparison here, but
+the asymmetry should be stated wherever these rows are quoted.
+
+**The sEH comparison, now fully certified on both sides:**
+
+| pool | S3-GFN 42/43/44 | REINVENT 42/43/44 | leader | bands |
 |---|---|---|---|---|
-| before | 92 | 100 | TimeLimit | 1801.71 s |
-| after | **92** | 99 | **Optimal** | **5.65 s** |
+| naive | 56 / 38 / 49 | 61 / 47 / 83 | REINVENT, all three seeds | overlapping (56 > 47) |
+| pruned | 98 / 100 / 100 | 80 / 70 / 92 | S3-GFN, all three seeds | **disjoint** (98 > 92) |
 
-The answer was already correct; only its certification was missing. Note the new status is optimal
-*to a 1% relative gap*, against SPARROW's default 1e-7 for the previously-certified rows — a 1% gap
-on 92 modes is ±1 mode and does not disturb the 100-vs-92 comparison, but the asymmetry should be
-stated wherever these rows are quoted. Seeds 42 and 43 were still queued at the time of writing
-[TODO — add their re-solved rows].
+The direction flip is REAL, not a solver artefact — it survived certification of all three
+truncated rows with unchanged values.
+
+**Why the pools disagree: redundancy in the reward-ranked prefix.** The naive pool is top-500 by
+reward; the pruned pool is top-500 mutually distinct. The fraction of the naive pool that also
+appears in the pruned pool measures how far the reward ranking and the diversity filter disagree:
+
+| cell | naive ∩ pruned | SB modes naive → pruned | gain |
+|---|---|---|---|
+| S3-GFN 42 | 58% | 56 → 98 | 1.75× |
+| S3-GFN 43 | 40% | 38 → 100 | 2.63× |
+| S3-GFN 44 | 39% | 49 → 100 | 2.04× |
+| REINVENT 42 | 77% | 61 → 80 | 1.31× |
+| REINVENT 43 | 66% | 47 → 70 | 1.49× |
+| REINVENT 44 | 87% | 83 → 92 | 1.11× |
+
+The gain from pruning tracks the overlap almost monotonically across all six cells: the lowest
+overlap (S3-GFN 43, 40%) gives the largest gain (2.63×) and the highest (REINVENT 44, 87%) the
+smallest (1.11×). S3-GFN's reward-ranked top-500 is substantially more redundant, so on the naive
+pool it spends slots on molecules the diversity filter rejects; once diversity is imposed, its
+underlying chemistry is cheaper per mode. This is exact-SMILES overlap between two 500-molecule
+pools, so it measures reward-vs-diversity disagreement rather than a Tanimoto redundancy score.
 
 This also refines a note carried in `sparrow_select_frontier.py --gap-rel`'s own help text, which
 recorded that gap relaxation "did NOT achieve convergence alone". On this instance it did, and the
