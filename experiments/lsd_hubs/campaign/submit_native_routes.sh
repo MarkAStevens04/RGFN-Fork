@@ -48,9 +48,12 @@ TARGET_MODES=${TARGET_MODES:-100}
 RXN_BUDGET=${RXN_BUDGET:-100}
 MIN_MODES=${MIN_MODES:-10}
 BUDGETS=${BUDGETS:-50,100,150,200,300,400,500,600,800,1000}
-MODE_POINTS=${MODE_POINTS:-5,10,15,20,25,50,75,100,125,150}   # finer than the route-less default:
-# a pool-limited cell delivering <25 modes produces NO row on the 25,50,... ladder and vanishes from
+# A pool-limited cell delivering <25 modes produces NO row on a 25,50,... ladder and vanishes from
 # the table entirely. These cells are pool-limited by construction, so the low rungs are the point.
+# WIDENED 2026-09-07 to match submit_competitor_routes.sh: the old ladder jumped 25->50, and
+# `synformer_clpp_seed42` was therefore quoted at 25 modes @ 52 rxn — 48 of its 100 reactions
+# unspent — where the fine ladder finds 45 @ 93. Every SynFormer cell was understated, up to 1.8x.
+MODE_POINTS=${MODE_POINTS:-2,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,100,125,150}
 POOL=${POOL:-naive}
 FR_ROOT=${FR_ROOT:-$SCRATCH/rgfn_runs/experiments/fixed_reward}
 POOL_ROOT=$SCRATCH/rgfn_runs/lsdflow_sparrow/multiaiz_pools

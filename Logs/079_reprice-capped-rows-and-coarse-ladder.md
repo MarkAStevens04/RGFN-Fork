@@ -647,3 +647,32 @@ because there is nothing to compare. The committed `audit_matrix_coverage.py` ca
 it requires a READABLE R=100 row rather than the file's existence — which is the right predicate for
 any completeness check over this tree. An "exists and is non-empty" check would have passed a
 header-only file.
+
+**CLOSED OUT: 100 of 108 cells complete, 0 on a coarse ladder, 101 resolving at R=100.** The eight
+incomplete are the six SynFormer sEH cells (Stage-1 training) and the two zero-route results above,
+which are findings rather than gaps. Four cells carry an uncertifiable SB row, recorded with their
+best bounds in `results/UNCERTIFIED_R100_BOUNDS.json`.
+
+**`tango:seh:44` naive, the cell that was gated, is now a datapoint — and it refutes a prediction I
+made when queueing it.** I expected an 8-mode pool to route ~0, as `saturn:seh:42` naive had. It
+routed **305 of 500 (61.0%)**. Routability and mode-diversity are independent: those 305 molecules
+collapse to just **5 distinct modes**, so the cell reads **5 modes @ 37 rxn** with 63 reactions
+unspent — `pool-exhausted`, where CLAUDE.md says to quote `cost_kept_rxns` (37) and never read the
+unspent budget as a choice. Its SB arm gives 3 modes. Worth the 7.5 h precisely because the guess was
+wrong.
+
+**Both launcher ladder defaults are now the fine ladder** (`submit_competitor_routes.sh` was
+25,50,75,…; `submit_native_routes.sh` was 5,10,…,25,50,…). Leaving them coarse would have
+re-introduced every problem in this entry on the next cell submitted, and the second header-only CSV
+of the night was caused by exactly that — I un-gated `tango:seh:44` with `MIN_MODES=1` but did not
+pass `MODE_POINTS`, and a cell gated FOR HAVING FEW MODES is by definition one the coarse ladder
+cannot price. The two knobs belong together, which is why the default now removes the choice.
+
+**Three distinct ways the tooling produced a confident wrong answer tonight**, all found by auditing
+artifacts across the whole tree and none visible in a job log, every one of which reported success:
+
+| failure | what it looked like | the detector |
+|---|---|---|
+| stale primary from the `_longsolve` split | a certified row existed, but the main CSV still held the capped one | prefer `_longsolve`, then MERGE so there is one file |
+| silent revert by a two-arm launcher | two successful jobs, the later one undoing the earlier | the first ladder rung in the CSV |
+| header-only CSV | file exists, non-empty, no data rows | require a READABLE R=100 row, not existence |

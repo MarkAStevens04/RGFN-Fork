@@ -101,7 +101,20 @@ TARGET_MODES=${TARGET_MODES:-100}          # SECONDARY readout's mode target
 RXN_BUDGET=${RXN_BUDGET:-100}              # PRIMARY readout's reaction budget
 MIN_MODES=${MIN_MODES:-10}                 # gate floor: below this there is nothing to measure
 BUDGETS=${BUDGETS:-50,100,150,200,300,400,500,600,800,1000}   # seed 42's SB ladder (Logs/061)
-MODE_POINTS=${MODE_POINTS:-25,50,75,100,125,150}              # seed 42's greedy ladder
+# THE FINE LADDER IS THE DEFAULT (was 25,50,75,100,125,150 — "seed 42's greedy ladder").
+# The greedy arm is priced on the MODE axis and read on the REACTION axis, so its resolution IS the
+# rung spacing, and the old ladder cost real numbers three ways (measured 2026-09-07, Logs/079):
+#   * understatement — 59 of 96 cells were quoted from a rung leaving a MEDIAN 33 of 100 reactions
+#     unspent, and unevenly, so it distorted cross-generator comparison as well as absolute values.
+#     On ClpP it hid a clean 3-seed result: S3-GFN 40/40/40 vs REINVENT 30/30/30 both read 25/25/25.
+#   * a HEADER-ONLY CSV — a pool that cannot reach the first rung has every rung skipped, so the
+#     file is written with no data rows at all. `fraggfn_drd2_seed44_pruned` (20 of 500 routed) and
+#     `tango_seh_seed44` (8 modes in its top-500) each produced one, and an "exists and non-empty"
+#     completeness check passes them.
+#   * SILENT REVERSION — this arm re-runs on every invocation, so an SB-only backfill re-priced
+#     finished cells back down to the coarse ladder. See RUN_GREEDY below.
+# The fine ladder is a strict SUPERSET, so it can only add rows; the extra rungs are seconds each.
+MODE_POINTS=${MODE_POINTS:-2,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,100,125,150}
 
 # Stage 2 (upsample_to_modes.py) writes its enlarged pool OUTSIDE the run dir, as
 # stage2_candidates.csv with exactly {smiles, score, raw_score} -- the three columns load_ranked()
