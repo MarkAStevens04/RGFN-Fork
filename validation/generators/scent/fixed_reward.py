@@ -297,7 +297,11 @@ class ScentFixedRewardRun:
 
         self.arm_a = BudgetCheckpointer(self.trace, ARM_A_ORACLE_CALLS, _save_arm_a, tag="SCENT-FR")
         self._trace_handle = attach_proxy_trace(
-            self.reward_generator, self.trace, tag="SCENT-FR", budget_checkpointer=self.arm_a
+            self.reward_generator,
+            self.trace,
+            tag="SCENT-FR",
+            budget_checkpointer=self.arm_a,
+            trainer=self.trainer,
         )
         print(
             f"[SCENT-FR] trace -> {self.run_dir / 'trace.csv'} "

@@ -259,7 +259,11 @@ class FixedRewardPipeline:
 
         self.arm_a = BudgetCheckpointer(self.trace, ARM_A_ORACLE_CALLS, _save_arm_a, tag="FR")
         self._trace_handle = attach_proxy_trace(
-            self.reward_generator, self.trace, tag="FR", budget_checkpointer=self.arm_a
+            self.reward_generator,
+            self.trace,
+            tag="FR",
+            budget_checkpointer=self.arm_a,
+            trainer=self.trainer,
         )
         print(
             f"[FR] trace -> {self.run_dir / 'trace.csv'} (arm A at {ARM_A_ORACLE_CALLS} calls)",

@@ -76,6 +76,12 @@ class TraceWriter:
         self.t0 = time.time() if t0 is None else t0
         self._seen: set[str] = set()
         self.n_scored = 0
+        # Training-phase rows only. The cumulative n_scored counts EVERY scoring event, so any
+        # budget read through it absorbs evaluation calls -- measured on s3gfn_drd2/42, where the
+        # same file reads 12,048 / 11,048 / 10,048 depending on whether you take the last counter,
+        # its max over train rows, or an actual COUNT of train rows. Only the count is immune, so
+        # the count is what the arm-A budget gates on.
+        self.n_train_scored = 0
         # NEVER CLOBBER AN EXISTING TRACE. Opening "w" truncates, and a runner is now re-invoked
         # routinely -- Stage 2 upsampling calls it with a larger --n-samples, and a resumed run calls
         # it again after a failure. On 2026-08-28 that destroyed s3gfn_seh/seed43's entire training
@@ -101,6 +107,8 @@ class TraceWriter:
         self, smiles: str, raw_score: float, step: Optional[int] = None, phase: str = "train"
     ) -> None:
         self.n_scored += 1
+        if phase == "train":
+            self.n_train_scored += 1
         self._seen.add(smiles)
         self._w.writerow(
             [
@@ -421,22 +429,31 @@ class BudgetCheckpointer:
         self._save = save
         self.tag = tag
         self.fired = False
+        self.crossed_at_n_train_scored: Optional[int] = None
         self.crossed_at_n_scored: Optional[int] = None
         self.saved_at_iteration: Optional[int] = None
 
     def note_iteration(self, iteration_idx: int) -> None:
-        """Call at every training-iteration boundary. Saves when the budget has been reached."""
-        if self.fired or self.trace.n_scored < self.budget:
+        """Call at every training-iteration boundary. Saves when the budget has been reached.
+
+        GATES ON TRAINING-PHASE CALLS, not on the cumulative counter. Evaluation scored through the
+        same reward would otherwise count toward the budget and fire this EARLY -- an under-trained
+        arm-A checkpoint whose manifest reads a perfectly plausible number. Not hypothetical:
+        SCENT's periodic validation samples 1,000 trajectories through the same proxy, measured as
+        1,088 rows in one iteration against ~95 in its neighbours.
+        """
+        if self.fired or self.trace.n_train_scored < self.budget:
             return
         self.fired = True
+        self.crossed_at_n_train_scored = self.trace.n_train_scored
         self.crossed_at_n_scored = self.trace.n_scored
         self.saved_at_iteration = int(iteration_idx)
         try:
             self._save(int(iteration_idx))
             print(
                 f"[{self.tag}] ARM A: checkpointed at iteration {iteration_idx} "
-                f"(n_scored={self.trace.n_scored} >= {self.budget}, "
-                f"n_distinct={self.trace.n_distinct})",
+                f"(train calls={self.trace.n_train_scored} >= {self.budget}; "
+                f"total scored={self.trace.n_scored}, n_distinct={self.trace.n_distinct})",
                 flush=True,
             )
         except Exception as exc:  # noqa: BLE001 - never kill a training run over a checkpoint
@@ -447,6 +464,10 @@ class BudgetCheckpointer:
         return {
             "budget_oracle_calls": self.budget,
             "fired": self.fired,
+            # The gate. Counts phase=="train" rows only.
+            "crossed_at_n_train_scored": self.crossed_at_n_train_scored,
+            # Kept purely as a diagnostic: the gap between the two IS the evaluation contamination,
+            # so a reader can see at a glance whether this cell scored outside its training loop.
             "crossed_at_n_scored": self.crossed_at_n_scored,
             "saved_at_iteration": self.saved_at_iteration,
         }
@@ -512,6 +533,7 @@ def attach_proxy_trace(
     *,
     tag: str = "trace",
     budget_checkpointer: Optional["BudgetCheckpointer"] = None,
+    trainer=None,
 ):
     """Instrument a ``ProxyBase``-shaped reward IN PLACE, by patching the instance's bound methods.
 
@@ -581,6 +603,29 @@ def attach_proxy_trace(
         return _inner(iteration_idx, recursive=recursive)
 
     proxy.on_start_sampling = _traced_on_start_sampling
+
+    # WRAP validate SO ITS SCORING IS NOT LABELLED "train". There is no validation hook on
+    # TrainingHooksMixin (only sampling/objective), so the phase cannot be flipped from the proxy
+    # side -- but the trainer's own valid_step IS a bound method we can patch, same as everything
+    # else here. Without this, SCENT's periodic validation (valid_sampler=RandomSampler,
+    # valid_n_trajectories=1000, every 250 iterations) scores 1,000 molecules through this proxy
+    # and every one of them lands as a training call: measured 1,088 rows in the validating
+    # iteration against ~95 in its neighbours, i.e. 63% of that smoke's "train" rows were
+    # validation. RGFN passes valid_sampler=None so its valid_step returns immediately and this is
+    # a no-op there -- wrapped anyway, so a config that later turns validation on cannot silently
+    # start contaminating the budget.
+    if trainer is not None and hasattr(trainer, "valid_step"):
+        inner_valid = trainer.valid_step
+
+        def _traced_valid_step(*a, _inner=inner_valid, **k):
+            prev = current_phase[0]
+            current_phase[0] = "valid"
+            try:
+                return _inner(*a, **k)
+            finally:
+                current_phase[0] = prev
+
+        trainer.valid_step = _traced_valid_step
 
     if budget_checkpointer is not None:
         inner_hook = proxy.on_end_sampling
