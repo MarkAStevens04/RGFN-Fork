@@ -630,3 +630,20 @@ fails retrosynthesis): reward here correlates with the unroutable direction stro
 out the entire reward-ranked prefix. It is also the cleanest argument for reporting the pruned pool
 rather than the naive one — not because it flatters anyone, but because the naive pool can contain
 nothing a chemist could make.
+
+**A COARSE LADDER CAN PRODUCE AN EMPTY FILE, NOT JUST A LOW NUMBER — a distinct failure mode.**
+When job 75770 created `fraggfn_drd2_seed44_stage2_pruned`'s greedy arm it used the launcher's
+default ladder, whose first rung is 25. That pool routes **20 of 500 molecules (4.0%, 175 route
+entries)**, so every rung was skipped and `greedy_frontier.csv` was written containing **only its
+header**. The cell had a perfectly good SB row the whole time (20 modes, `Optimal`) and no greedy row
+at all. On the fine ladder it reads **20 modes @ 88 rxn** (job 75827, 20 s).
+
+Greedy and SB both deliver exactly 20 here because 20 is everything that routed — a `pool-exhausted`
+cell in the CLAUDE.md taxonomy, where `cost_kept_rxns` and not `used_rxns` is the honest cost.
+
+**The detector for this is different from the coarse-ladder detector, and mine was blind to it.** The
+clobber audit flags a cell whose first rung is >5; a CSV with NO rungs passes that test silently
+because there is nothing to compare. The committed `audit_matrix_coverage.py` catches it only because
+it requires a READABLE R=100 row rather than the file's existence — which is the right predicate for
+any completeness check over this tree. An "exists and is non-empty" check would have passed a
+header-only file.
