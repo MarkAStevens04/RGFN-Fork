@@ -237,14 +237,6 @@ experiments/**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*/
 # committed seed + result CSVs sit directly in a run dir (override the global *.csv ignore)
 !experiments/**/seed_*.csv
 !experiments/**/*_results.csv
-# benchmark_v2's two defining files. The blanket `*.csv` above silently untracked BOTH -- the
-# authoritative cell list and the append-only provenance ledger -- so a clean checkout would have
-# had neither, no diff would ever show a plan change, and the ledger recording what was copied vs
-# generated would exist on exactly one filesystem. Narrow by design: everything under results/ is
-# still ignored, because that is where the bulk CSVs land.
-!experiments/benchmark_v2/grid.csv
-!experiments/benchmark_v2/PROVENANCE.csv
-
 
 oracle/drd2_current.pkl
 
