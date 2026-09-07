@@ -180,6 +180,7 @@ def verify_train(cell: Cell, arm: str) -> Result:
     monotone = True
     phases = set()
     max_distinct = 0
+    n_train_rows = 0
     try:
         with open(tp) as fh:
             rd = csv.DictReader(fh)
@@ -197,7 +198,10 @@ def verify_train(cell: Cell, arm: str) -> Result:
                 if ns < prev:
                     monotone = False
                 prev = last_scored = ns
-                phases.add((row.get("phase") or "").strip())
+                ph = (row.get("phase") or "").strip()
+                phases.add(ph)
+                if ph == "train":
+                    n_train_rows += 1
                 try:
                     max_distinct = max(max_distinct, int(row.get("n_distinct") or 0))
                 except ValueError:
@@ -227,8 +231,19 @@ def verify_train(cell: Cell, arm: str) -> Result:
     # the learning curve the policy never learned from.
     r.add("trace phase column", "train" in phases,
           f"phases present: {sorted(p for p in phases if p)}")
-    r.add("budget reached", last_scored >= budget * BUDGET_TOLERANCE,
-          f"{last_scored:,} / {budget:,} ({100*last_scored/max(budget,1):.0f}%)")
+
+    # THE BUDGET IS THE COUNT OF TRAINING ROWS, NOT THE FINAL COUNTER. `n_scored` is a single
+    # cumulative counter SHARED across phases, and at least one entrant interleaves evaluation with
+    # training rather than appending it: S3-GFN scores a 2,000-molecule eval sample mid-run, so on
+    # s3gfn_drd2/42 the counter ends at 12,048 while the actual training budget is 10,048 -- three
+    # phase switches, eval rows spanning n_scored 65..12,048. Reading the counter would let a cell
+    # that is genuinely SHORT on training pass because evaluation padded it over the line, which is
+    # the exact failure this gate exists to prevent. (Both figures are reported: for the five
+    # entrants with no eval phase they agree, and where they disagree the gap is the contamination.)
+    eval_pad = last_scored - n_train_rows
+    r.add("budget reached (train rows)", n_train_rows >= budget * BUDGET_TOLERANCE,
+          f"{n_train_rows:,} / {budget:,} ({100*n_train_rows/max(budget,1):.0f}%)"
+          + (f"   [final counter {last_scored:,}, {eval_pad:,} non-train rows]" if eval_pad else ""))
     if max_distinct:
         # The gap between the two counters is itself a mode-collapse signal, so it is reported
         # rather than merely bounded.

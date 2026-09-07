@@ -108,21 +108,28 @@ CELL_OVERRIDES = {
     # (generator, target, seed): (train_plan, note)
     ("s3gfn", "seh", 42): (
         "resample",
-        "candidates.csv was overwritten by a re-invoked runner, but 10 checkpoints and a "
-        "12,048-row trace survive -> re-draw the pool from the frozen policy (minutes), NOT a "
-        "re-train",
+        "candidates.csv lost to a re-invoked runner, but 10 checkpoints and a 10,048-call trace "
+        "survive -> re-draw the pool from the frozen policy (minutes), NOT a re-train",
     ),
     ("s3gfn", "seh", 43): (
         "copy",
-        "trace unrecoverable -- all rotations are header-only stubs. Copyable, but Stage 2 loses "
-        "its free-pool harvest for this cell and must sample from the checkpoint instead",
+        "trace unrecoverable -- trace.csv and every rotation are header-only stubs. Copyable, but "
+        "Stage 2 loses its free-pool harvest here and must sample the checkpoint instead",
     ),
     ("synformer", "drd2", 43): (
         "copy",
-        "trace holds 6,950 of 10,000 calls (~70%) -- short of the arm-A budget, so verify_cell will "
-        "flag it. Decide whether to accept the shortfall or re-run before it enters a headline",
+        "trace short at 6,950 of 10,000 training calls -- usable but under budget; do not quote "
+        "this cell in a budget-matched comparison without saying so",
     ),
 }
+
+# S3-GFN's trace needs care and the reason is not obvious. `n_scored` is a SINGLE cumulative counter
+# shared across phases, and S3-GFN INTERLEAVES its 2,000-molecule evaluation sample with training
+# rather than appending it (measured on s3gfn_drd2/42: three phase switches, eval rows spanning
+# n_scored 65..12,048). So the final counter reads 12,048 while the training budget is 10,048 -- the
+# real figure is the COUNT of `phase == "train"` rows, which is what verify_cell gates on. For the
+# five entrants with no eval phase the two agree; for S3-GFN's nine cells, reading the counter makes
+# an on-budget cell look 20% over, and would let a genuinely short cell pass.
 
 # Both arms are defined on the ORACLE-CALL axis, never the step axis: the three reaction-GFNs have
 # three different per-step call counts and replay buffers make the arithmetic unsettleable, so the

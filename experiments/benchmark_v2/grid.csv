@@ -53,8 +53,8 @@ s3gfn,nonreaction_gfn,competitor,competitor,clpp,44,1,10000,,copy,corrected to ~
 s3gfn,nonreaction_gfn,competitor,competitor,drd2,42,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
 s3gfn,nonreaction_gfn,competitor,competitor,drd2,43,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
 s3gfn,nonreaction_gfn,competitor,competitor,drd2,44,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
-s3gfn,nonreaction_gfn,competitor,competitor,seh,42,1,10000,,resample,"candidates.csv was overwritten by a re-invoked runner, but 10 checkpoints and a 12,048-row trace survive -> re-draw the pool from the frozen policy (minutes), NOT a re-train"
-s3gfn,nonreaction_gfn,competitor,competitor,seh,43,1,10000,,copy,"trace unrecoverable -- all rotations are header-only stubs. Copyable, but Stage 2 loses its free-pool harvest for this cell and must sample from the checkpoint instead"
+s3gfn,nonreaction_gfn,competitor,competitor,seh,42,1,10000,,resample,"candidates.csv lost to a re-invoked runner, but 10 checkpoints and a 10,048-call trace survive -> re-draw the pool from the frozen policy (minutes), NOT a re-train"
+s3gfn,nonreaction_gfn,competitor,competitor,seh,43,1,10000,,copy,"trace unrecoverable -- trace.csv and every rotation are header-only stubs. Copyable, but Stage 2 loses its free-pool harvest here and must sample the checkpoint instead"
 s3gfn,nonreaction_gfn,competitor,competitor,seh,44,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
 s3gfn,nonreaction_gfn,competitor,competitor,6td3b,42,2,10000,,generate,never run on this target
 s3gfn,nonreaction_gfn,competitor,competitor,6td3b,43,2,10000,,generate,never run on this target
@@ -63,7 +63,7 @@ synformer,reaction_nongfn,competitor,competitor,clpp,42,1,10000,,copy,"EXEMPT fr
 synformer,reaction_nongfn,competitor,competitor,clpp,43,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
 synformer,reaction_nongfn,competitor,competitor,clpp,44,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
 synformer,reaction_nongfn,competitor,competitor,drd2,42,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
-synformer,reaction_nongfn,competitor,competitor,drd2,43,1,10000,,copy,"trace holds 6,950 of 10,000 calls (~70%) -- short of the arm-A budget, so verify_cell will flag it. Decide whether to accept the shortfall or re-run before it enters a headline"
+synformer,reaction_nongfn,competitor,competitor,drd2,43,1,10000,,copy,"trace short at 6,950 of 10,000 training calls -- usable but under budget; do not quote this cell in a budget-matched comparison without saying so"
 synformer,reaction_nongfn,competitor,competitor,drd2,44,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
 synformer,reaction_nongfn,competitor,competitor,seh,42,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
 synformer,reaction_nongfn,competitor,competitor,seh,43,1,10000,,copy,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
