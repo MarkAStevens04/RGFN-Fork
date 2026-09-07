@@ -91,6 +91,18 @@ def load_ranked(
                 continue
             if not smi:
                 continue
+            # NaN IS NOT A PASSING SCORE, and this gate cannot see that on its own. It is phrased as
+            # "skip if it FAILS", and every comparison against NaN is False -- so `nan < gate` does
+            # not fire the skip and an UNSCORED molecule falls straight through as if it had passed.
+            # `float("nan")` also parses cleanly, so the except above never catches it.
+            # Docking targets are hit hardest because a failed dock writes score=nan while a
+            # surrogate almost always returns a number: measured 2026-09-06, s3gfn_clpp_seed43's
+            # _stage2 pool held 422 unscored molecules of 500 (84%), against 1 for the sEH pools.
+            # Every OTHER gate in the pipeline phrases the test positively (mode_saturation:104,
+            # sparrow_select_frontier.passes_gate) or guards NaN explicitly
+            # (metrics/diversity._passes_gate), so they all reject it correctly; this was the one hole.
+            if val != val:
+                continue
             if (val < gate) if higher_is_better else (val > gate):
                 continue
             n_rows += 1
