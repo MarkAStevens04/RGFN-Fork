@@ -715,3 +715,29 @@ seh 42), because SPARROW optimises over the whole pool rather than a reward-orde
 **284/290 mutually dissimilar molecules** in the whole set (90 and 88 inside the top-500). Its pruned
 pools are therefore pool-limited by construction — `_N284`, `_N290` — and its routed fraction is
 100% by definition, since it carries its own routes. High reward, narrow chemistry.
+
+**MATRIX COMPLETE: 106 of 108 cells.** Zero missing pools, zero missing routes, zero cells on a
+coarse ladder, 107 resolving at R=100. The two incomplete cells are `s3gfn:drd2:42/naive` and
+`saturn:seh:42/naive` — the zero-route findings, which are results and not gaps.
+
+**SynFormer sEH, the last six cells** (jobs 75921/75922, ~34 min each — no MultiAiZ, since SynFormer
+carries its own routes). Quoted as DELIVERED targets, with the request in brackets:
+
+| seed | above gate | modes available | in top-500 | greedy @ R=100 | SB naive | SB pruned |
+|---|---|---|---|---|---|---|
+| 42 | 2000 (100%) | 284 | 90 | **41** @ 97 (asked 55) | 21 (cost 39) | **57** (cost 95) |
+| 43 | 2000 (100%) | 290 | 88 | **40** @ 96 (asked 50) | 16 (cost 28) | **55** (cost 98) |
+| 44 | 2000 (100%) | 318 | 77 | **41** @ 98 (asked 50) | 19 (cost 35) | **60** (cost 98) |
+
+The training was verified before anything downstream ran, because the earlier SynFormer sEH attempt
+reported success while producing unscored molecules: 2,000 rows per seed, **0 NaN**, ~1,990 distinct
+score values (so the reward varied and the fork was not poisoned), all above the 5.68 gate, and a
+2,000-line `routes.jsonl`. Checking the exit code would not have distinguished this from that
+failure.
+
+Two things about these cells to carry into the write-up. Their **naive SB rows are far below their
+pruned ones** (21/16/19 against 57/55/60) — the largest pool effect of any entrant, and the same
+direction as the redundancy story: a reward-ranked 500 drawn from only 284-318 distinct molecules is
+mostly duplicates, and SPARROW cannot turn duplicates into modes. And SynFormer's **greedy exceeds
+its naive SB** (41 vs 21), the sub-1.0 uplift pattern also seen on Saturn and TANGO: on a pool this
+redundant, SPARROW's shared-intermediate objective does not chase mode count.
