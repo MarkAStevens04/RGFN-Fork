@@ -265,11 +265,46 @@ def verify_train(cell: Cell, arm: str) -> Result:
         r.add("checkpoint placement", False,
               "arm_meta.json does not record n_scored_at_checkpoint")
 
-    # -- determinism. Without PYTHONHASHSEED a sample is a one-of-a-kind artifact recoverable only
-    # from backup: --seed alone gave 377 vs 387 routes; with it, 730/730 byte-identical.
+    # -- determinism. THREE STATES, and the third must be DECLARED rather than inferred.
+    #
+    # WHERE THIS CHECK'S EVIDENCE ACTUALLY COMES FROM, because it bounds what the check can claim:
+    # "--seed alone gave 377 vs 387 routes; with PYTHONHASHSEED=0, 730/730 byte-identical" is a
+    # SAMPLE-stage result on our reaction-GFNs, where per-process hash order feeds action-space
+    # construction. The load-bearing guarantee therefore lives at sample time -- which the v2 driver
+    # enforces by exporting it -- not here. At TRAIN time this field is provenance: it says what the
+    # run happened to execute under.
+    #
+    # SO A COPIED CELL GETS A DIFFERENT VERDICT, AND NOT AS A FAVOUR. The v1 competitor training
+    # scripts never exported PYTHONHASHSEED, so for those runs the value was never recordable -- it
+    # is not that we failed to write it down. Demanding it would make 54 cells permanently
+    # unverifiable and therefore unfreezable, which would quietly turn freeze_cell.sh into a no-op
+    # over the whole competitor block. And the only way to turn the gate green would be to write
+    # "0", asserting a reproducibility that does not hold: REINVENT is nondeterministic even with
+    # the seed pinned (same seed, same code, 89% of molecules differ; only SAMPLING is
+    # deterministic there). A gate satisfiable by fabricating the value it checks is worse than one
+    # that fails honestly.
+    #
+    # THE EXEMPTION REQUIRES AN EXPLICIT DECLARATION -- `pythonhashseed: null` PLUS a note PLUS
+    # `origin: "copied"`. A merely ABSENT field still fails, because "never recordable" and "we
+    # forgot to record it" are different facts and must not look identical on disk. That is the same
+    # rule the project already applies to FragGFN's empty routes.json and to SCENT's zero promoted
+    # fragments: empty is a legitimate answer, but only when it is stated with its reason.
     if meta is not None:
-        hs = str(meta.get("pythonhashseed", ""))
-        r.add("PYTHONHASHSEED", hs == "0", f"recorded as {hs!r}" if hs else "not recorded")
+        hs = meta.get("pythonhashseed", "__absent__")
+        origin = str(meta.get("origin", ""))
+        note = str(meta.get("pythonhashseed_note", "") or "")
+        if str(hs) == "0":
+            r.add("PYTHONHASHSEED", True, "recorded as '0'")
+        elif hs is None and origin == "copied" and note:
+            r.add("PYTHONHASHSEED", True,
+                  f"n/a -- declared unrecoverable for a copied v1 run ({note[:80]})")
+        elif hs is None and origin == "copied":
+            r.add("PYTHONHASHSEED", False,
+                  "declared null for a copied cell but with NO pythonhashseed_note -- "
+                  "'never recordable' and 'we forgot' must not look the same on disk")
+        else:
+            r.add("PYTHONHASHSEED", False,
+                  f"recorded as {hs!r}" if hs != "__absent__" else "not recorded")
     return r
 
 
