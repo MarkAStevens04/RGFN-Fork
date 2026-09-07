@@ -676,3 +676,42 @@ artifacts across the whole tree and none visible in a job log, every one of whic
 | stale primary from the `_longsolve` split | a certified row existed, but the main CSV still held the capped one | prefer `_longsolve`, then MERGE so there is one file |
 | silent revert by a two-arm launcher | two successful jobs, the later one undoing the earlier | the first ladder rung in the CSV |
 | header-only CSV | file exists, non-empty, no data rows | require a READABLE R=100 row, not existence |
+
+**CORRECTION: every SynFormer greedy figure in this entry above is the REQUEST, not the DELIVERY.**
+`greedy_frontier.csv` records `n_modes` (asked) and `n_targets_priced` (delivered), and [078]
+established that they are equal on multiaiz cells and diverge on SynFormer's native routes. Re-checked
+after tonight's re-pricing, because the re-price changed which rung each cell lands on and the rule
+could have stopped holding: **88 cells still have request == delivery, and all 17 divergent cells are
+SynFormer's.** So the rule stands and the correction is scoped to one entrant.
+
+Restated at the R=100 readout, delivery first:
+
+| cell | delivered @ rxn | asked | delivery |
+|---|---|---|---|
+| seh 42 (both pools) | **41** @ 97 | 55 | 75% |
+| seh 43 (both pools) | **40** @ 96 | 50 | 80% |
+| drd2 42 | **66** @ 93 | 90 | 73% |
+| drd2 43 | **69** @ 98 | 80 | 86% |
+| drd2 44 | **66** @ 97 | 75 | 88% |
+| clpp 42 | **39** @ 93 | 45 | 87% |
+| clpp 43 | **42** @ 99 | 45 | 93% |
+| clpp 44 | **41** @ 96 | 50 | 82% |
+
+The ladder improvements reported earlier are still real — `synformer_clpp_seed42` genuinely moved
+from a rung at 52 reactions to one at 93 — but the headline number for that cell is **39 delivered**,
+not the 45 requested. The mechanism is [078]'s: MultiAiZ offers many routes per molecule while native
+routes offer one, so under the `count` objective the solver declines targets it cannot make cheaper.
+
+**A SECOND SYNFORMER PROPERTY, and it is not a bug.** Its naive and pruned greedy frontiers are
+**identical at every shared rung** — for `synformer_seh_seed42` the two CSVs agree exactly from 2
+through 90 modes, and the pruned file simply continues to 150 where the naive pool runs out. So the
+naive pool's 90 modes ARE the pruned pool's first 90, in the same order: reward ranking and diversity
+selection agree perfectly at the top for this generator. That is the extreme end of the redundancy
+spectrum measured earlier (Saturn/TANGO 2-4% of a top-500 mutually dissimilar, FragGFN 87-100%,
+SynFormer effectively 100% agreement in ordering). Their SB rows still differ sharply (21 vs 57 on
+seh 42), because SPARROW optimises over the whole pool rather than a reward-ordered prefix.
+
+**SynFormer's sEH output is mode-limited:** 2,000 candidates, 100% above the 5.68 gate, but only
+**284/290 mutually dissimilar molecules** in the whole set (90 and 88 inside the top-500). Its pruned
+pools are therefore pool-limited by construction — `_N284`, `_N290` — and its routed fraction is
+100% by definition, since it carries its own routes. High reward, narrow chemistry.
