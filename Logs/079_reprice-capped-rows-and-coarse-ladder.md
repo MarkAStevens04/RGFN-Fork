@@ -510,3 +510,42 @@ remains **solver-truncated** and its 5 modes is a lower bound. `tango_seh_seed43
 where the caps actually hurt (REINVENT's ClpP and sEH rows all certified unchanged in ~3 s). It is
 NOT safe as a blanket setting for small-count cells, where the tolerance is comparable to the
 quantity being measured. Pick the gap against the mode count, not once for the campaign.
+
+**A TIGHTER GAP DOES NOT RESCUE THOSE THREE CELLS, so they are not certifiable at any affordable
+tolerance (job 75814, `--gap-rel 1e-6 --max-seconds 3600`):**
+
+| cell | original (1e-7, capped) | 1e-2 | 1e-6 | best lower bound |
+|---|---|---|---|---|
+| saturn seh 42 pruned | 4 | 3 `Optimal` | 3, **TimeLimit** 3603 s | **4** |
+| tango clpp 43 pruned | 14 | 13 `Optimal` | 13, **TimeLimit** 3602 s | **14** |
+| tango clpp 44 pruned | 8 | 9 `Optimal` | **10**, TimeLimit 3602 s | **10** |
+
+All three ran the full hour and capped. The `Optimal` they returned at 1e-2 in 8-140 s was the
+tolerance letting CBC stop early, not the problem being easy. So these cells — plus
+`saturn_seh_seed44` naive — must be reported as **solver-truncated lower bounds**, taking the largest
+incumbent across solves. That makes the tally **11 certified of the original 15 capped rows, 4 still
+truncated**, not 12 of 15.
+
+**A MECHANISM I PROPOSED AND THEN REFUTED.** The obvious explanation is that these cells have big
+route networks despite small mode counts. They do not:
+
+| | modes | solve | reaction nodes | targets |
+|---|---|---|---|---|
+| HARD tango clpp 43 pruned | 13 | 3602 s | 9,457 | 446 |
+| HARD saturn seh 42 pruned | 3 | 3603 s | **4,404** | 200 |
+| easy reinvent clpp 43 pruned | 74 | **3 s** | **4,710** | 269 |
+| easy reinvent seh 44 pruned | 92 | **6 s** | 7,262 | 376 |
+| easy saturn drd2 43 pruned | 9 | **2 s** | 3,494 | 228 |
+
+`saturn_seh_42_pruned` resists certification with a SMALLER network than `reinvent_clpp_43_pruned`,
+which certifies in three seconds; and `saturn_drd2_43_pruned` holds only 9 modes on a 3,494-node
+network and solves in two. Neither mode count nor network size predicts which cells resist. The
+mode-to-target ratio is suggestive (1.3-3.1% for the hard ones against 24-37% for the easy) but
+`saturn_drd2_43_pruned` sits at 3.9% and is easy, so that does not hold either.
+
+**This is left as an open observation, not a mechanism.** What is actionable does not depend on
+explaining it: check `time_capped` on every row before quoting it, take the largest incumbent across
+solves as the lower bound, and do not assume a small pool implies a cheap solve. An earlier version
+of this entry advised "pick the gap against the mode count" — that is too neat. The gap governs how
+early CBC may stop; whether a cell certifies at all is a property of the instance that we cannot
+currently predict from anything we record.
