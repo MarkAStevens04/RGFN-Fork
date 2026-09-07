@@ -210,7 +210,7 @@ def plan_cell(gen: str, target: str, seed: int) -> dict | None:
             "n_bytes": sum(s.stat().st_size for s, _ in pairs)}
 
 
-def do_copy(plan: dict, dest: Path, execute: bool) -> dict:
+def do_copy(plan: dict, dest: Path, execute: bool, write_arm_meta: bool = True) -> dict:
     """Copy, then re-hash every landed file. Returns the destination manifest."""
     prior = {}
     mp = dest / ".copy_manifest.json"
@@ -256,7 +256,11 @@ def do_copy(plan: dict, dest: Path, execute: bool) -> dict:
     }
     if execute:
         (dest / ".copy_manifest.json").write_text(json.dumps(manifest, indent=2))
-        _write_arm_meta(plan, dest, files)
+        # arm_meta.json describes a TRAINING artifact -- which call count its checkpoint sits at.
+        # The routes stage reuses this function for the copying, not for that claim, and an
+        # arm_meta.json under routes/ would invite verify_cell to read a route dump as a checkpoint.
+        if write_arm_meta:
+            _write_arm_meta(plan, dest, files)
     return manifest
 
 
@@ -290,6 +294,19 @@ def _write_arm_meta(plan: dict, dest: Path, files: dict) -> None:
         "source_run_dir": str(plan["src"]),
         "trace_source": t.get("source"),
         "verdict": plan["verdict"],
+        # NOT RECORDED, AND NOT FAKEABLE. The v1 competitor training scripts
+        # (experiments/fixed_reward/scale5k/submit_baseline{,_chain}.sh) never exported
+        # PYTHONHASHSEED, so for a COPIED cell its value was whatever the interpreter chose per
+        # process and nobody wrote it down. Writing "0" here would turn verify_cell's determinism
+        # check green while asserting something false -- that this run is reproducible. It is not,
+        # and for REINVENT it would not be even with the seed pinned (same seed, same code, 89% of
+        # molecules differ; only SAMPLING is deterministic). So it stays null and says why.
+        "pythonhashseed": None,
+        "pythonhashseed_note": (
+            "unknown and unrecoverable: v1 competitor training never exported PYTHONHASHSEED. "
+            "A stated limitation of copied cells, not a defect this copy can repair -- only a "
+            "re-train under the v2 scripts would make it knowable."
+        ),
     }
     (dest / "arm_meta.json").write_text(json.dumps(meta, indent=2))
 
@@ -448,7 +465,7 @@ def main():
         if (dest / ".copy_manifest.json").is_file():
             print(f"  {cell.tag} already present")
             continue
-        m = do_copy(rp, dest, a.execute)
+        m = do_copy(rp, dest, a.execute, write_arm_meta=False)
         print(f"  {cell.tag:<22} {m['n_files']:>5} files  {m['n_bytes']/1e9:>6.2f} GB  -> {dest}")
         for note in m["notes"]:
             print(f"      · {note}")
