@@ -91,7 +91,10 @@ BUDGETS=${BUDGETS:-100}                    # the PRIMARY readout only; the other
 SB_MAX_SECONDS=${SB_MAX_SECONDS:-21600}    # 6 h vs the 1800 s that these rows hit
 GAP_REL=${GAP_REL:-0.01}
 CUTOFF=${CUTOFF:-0.5}
-TAG_SUFFIX=${TAG_SUFFIX:-_stage2}
+# `-` not `:-`, deliberately: a route-carrying generator has NO Stage 2 and so takes an EMPTY suffix,
+# and `${TAG_SUFFIX:-_stage2}` would silently rewrite that empty string back to `_stage2` and then
+# look for a pool that never existed. Caught by the guard below on the first SynFormer smoke.
+TAG_SUFFIX=${TAG_SUFFIX-_stage2}
 # The dense ladder. Superset of the 25/50/75/100/125/150 default, with the low rungs that let a
 # pool-limited cell report a number at all -- FragGFN cells routing 10-23 molecules had EMPTY
 # frontiers purely because the first rung was 25.
@@ -116,6 +119,13 @@ source /home/markymoo/miniconda3/etc/profile.d/conda.sh
 
 POOL_ROOT=$SCRATCH/rgfn_runs/lsdflow_sparrow/multiaiz_pools
 RES_ROOT=$SCRATCH/rgfn_runs/lsdflow_sparrow/results
+# ROUTE-CARRYING generators (SynFormer) keep their routes with the generator's own output, not in the
+# pool directory, and the frontier reads them as `external`. They are re-priced HERE rather than
+# through submit_native_routes.sh for the same reason the chain is bypassed: that launcher rebuilds
+# the pool, and build_s3gfn_pools.py has since gained the NaN gate, so a rebuild would change the
+# ladder AND the molecule set in one step. TAG_SUFFIX must be "" for these -- they never had Stage 2.
+ROUTE_SOURCE=${ROUTE_SOURCE:-multiaiz}
+FR_ROOT=${FR_ROOT:-$SCRATCH/rgfn_runs/experiments/fixed_reward}   # same default as submit_native_routes.sh
 
 # Gate resolved from matrix16/targets.py, never a default here — same reasoning, and the same code,
 # as submit_competitor_routes.sh. A stale bar would silently re-price against a different question.
@@ -158,12 +168,16 @@ for CELL in $CELLS; do
         ACTUAL=$(ls -d "$POOL_ROOT/${TAG}"_N[0-9]* 2>/dev/null | head -1)
         [ -n "$ACTUAL" ] && POOL_DIR="$ACTUAL"
     fi
-    ROUTES="$POOL_DIR/multiaiz_routes.json"
+    if [ "$ROUTE_SOURCE" = multiaiz ]; then
+        ROUTES="$POOL_DIR/multiaiz_routes.json"
+    else
+        ROUTES="$FR_ROOT/${GEN}_${TGT}/seed${SD}/fixed_reward/candidates/routes.jsonl"
+    fi
 
     # REFUSE rather than rediscover. If the cache is missing, the cheap re-price this script promises
     # would silently become a multi-hour MultiAiZ run under a walltime that is not sized for it.
     if [ ! -s "$ROUTES" ] || [ ! -s "$POOL_DIR/pool_scores.csv" ]; then
-        echo "SKIP $TAG — no cached routes/pool at $POOL_DIR (run the chain first, do not rediscover here)" >&2
+        echo "SKIP $TAG — no cached routes/pool ($ROUTES / $POOL_DIR) — run the chain first, do not rediscover here" >&2
         NSKIP=$((NSKIP + 1)); RC=1; continue
     fi
 
@@ -174,7 +188,7 @@ for CELL in $CELLS; do
         [ -s "$PREV" ] && awk -F, -v b="$BUDGETS" '$2==b{printf "  was: R=%s modes_kept=%s status=%s capped=%s solve=%ss\n",$2,$6,$17,$18,$19}' "$PREV"
         conda run --no-capture-output -n rgfn python \
             experiments/lsd_hubs/campaign/sparrow_select_frontier.py \
-            --routes "$ROUTES" --pool "$POOL_DIR/pool_scores.csv" --route-source multiaiz \
+            --routes "$ROUTES" --pool "$POOL_DIR/pool_scores.csv" --route-source "$ROUTE_SOURCE" \
             --gate "$GATE" --higher-is-better "$HIB" --cutoff "$CUTOFF" --budgets "$BUDGETS" \
             --max-seconds "$SB_MAX_SECONDS" --gap-rel "$GAP_REL" \
             --out-dir "$OUT" --tag "${TAG}_longsolve" || RC=1
@@ -186,7 +200,7 @@ for CELL in $CELLS; do
         [ -s "$OUT/greedy_frontier.csv" ] && awk -F, 'NR>1 && $2<=100{m=$1;u=$2} END{if(m)printf "  was: %s modes @ %s rxn (coarse, %s rxn of 100 unspent)\n",m,u,100-u; else print "  was: no rung fits R=100"}' "$OUT/greedy_frontier.csv"
         conda run --no-capture-output -n rgfn python \
             experiments/lsd_hubs/campaign/sparrow_select_frontier.py \
-            --routes "$ROUTES" --pool "$POOL_DIR/pool_scores.csv" --route-source multiaiz \
+            --routes "$ROUTES" --pool "$POOL_DIR/pool_scores.csv" --route-source "$ROUTE_SOURCE" \
             --selection greedy --gate "$GATE" --higher-is-better "$HIB" \
             --cutoff "$CUTOFF" --mode-points "$MODE_POINTS" \
             --out-dir "$OUT" --tag "${TAG}_multiaiz_greedy" || RC=1
