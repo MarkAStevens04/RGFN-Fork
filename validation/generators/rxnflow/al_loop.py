@@ -323,14 +323,21 @@ class RxnFlowActiveLearningLoop:
         return top
 
     # ----------------------------------------------------------------- internals
-    def _train_steps(self, n: int, checkpoint_every: int = 100) -> None:
+    def _train_steps(self, n: int, checkpoint_every: int = 100, on_iteration=None) -> None:
         """Drive the RxnFlow trainer for ``n`` minibatches against the current ``M``
         (held by the task). Mirrors the inner loop of the gflownet trainer but under
         our control so we can refit ``M`` between rounds (cf. the FragGFN loop).
 
         Writes a full-state checkpoint every ``checkpoint_every`` steps (and at the end) so a
         walltime-killed run resumes from the last checkpoint (campaign Logs/030); ``_it`` is
-        updated in-loop so a mid-loop checkpoint records the true step."""
+        updated in-loop so a mid-loop checkpoint records the true step.
+
+        ``on_iteration(it)`` fires at every iteration boundary, after ``_it`` is updated. It exists
+        so benchmark_v2's arm-A checkpoint can land on a real boundary the moment the oracle-call
+        budget is reached, instead of at the next ``checkpoint_every`` multiple: at batch 64 the
+        10,000th call falls near step 156, and the nearest cadence boundary (200) would overshoot
+        by 28%. The callback is not allowed to break training -- see BudgetCheckpointer, which
+        swallows its own failures."""
         from gflownet.trainer import cycle
 
         tr = self.trainer
@@ -341,6 +348,8 @@ class RxnFlowActiveLearningLoop:
         for it, batch in zip(range(start, start + n), cycle(train_dl)):
             info = tr.train_batch(batch.to(tr.device), 0, 0, it)
             self._it = it
+            if on_iteration is not None:
+                on_iteration(it)
             if it % max(1, tr.print_every) == 0:
                 loss = info.get("loss", float("nan"))
                 print(f"[RXN-AL]   gfn step {it}: loss={loss:.3f}", flush=True)

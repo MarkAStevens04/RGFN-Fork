@@ -84,16 +84,93 @@ That *is* the continuation, on one trajectory, at zero extra training compute �
 reproducibility entirely, which matters because the docking reward is genuinely stochastic, so two
 runs at the same seed would **not** agree on ClpP or 6TD3-B.
 
+### Resume, per generator — and why SCENT's arm B must not requeue
+
+Verified from the checkpoint code 2026-09-07 (agent A), not from comments.
+
+| generator | what the checkpoint holds | resumable? |
+|---|---|---|
+| **RxnFlow** | model + **both** optimizers + **both** LR schedulers + step (`al_loop.save_checkpoint`) | **yes**, fully |
+| **RGFN** | model + optimizer + lr_scheduler + metrics + replay buffer | **yes, but only after a cache strip** |
+| **SCENT** | the same five — and **not the dynamic fragment library** | **partially, and it silently corrupts** |
+
+**RGFN needs a cache strip.** Its forward policy carries lazily-populated `*_cache` buffers that a
+freshly constructed model does not have, so a strict `load_state_dict` against a raw checkpoint
+*fails* (Logs/021). The production chain works around it at resume time
+(`experiments/fixed_reward/scale5k/submit_rgfn.sh` strips every `model` key ending in `_cache`), which
+means **a raw RGFN checkpoint is not by itself resumable**. The caches are 78% of the file — 404 MB →
+90 MB on `rgfn_seh_5k/seed42`. The arm-A checkpoint is therefore written **already stripped**; it is
+the one checkpoint whose entire purpose is to be resumed from.
+
+**SCENT's dynamic library is not in the checkpoint, and the damage is worse than a smaller library.**
+`external/scent/rgfn/trainer/trainer.py:281-287` saves `model / optimizer / lr_scheduler / metrics /
+replay_buffer`; the promoted-fragment library is only ever serialized to
+`additional_fragments/fragments_<N>.json` for analysis and is never restored. So a resumed SCENT run
+restarts with an **empty** library. v1 shows this happened: `scent_6td3_5k/seed42` progressed
+400/800/**400**/800 (two resets, final 800) and `scent_clpp_5k/seed43,44` 400/**400**/800/1200
+(one reset, final 1200), against a clean 1,600 for the cells that ran straight through — so the final
+library size in v1 is a function of **requeue timing**, not of the science.
+
+The second half is the nastier one, and it is silent. `FragmentOneHotEmbedding.weights` is
+pre-allocated to `418 + max_additional` rows and `_get_embeddings()` returns `weights[:
+current_fragments]` — **indexed by position**, while `on_update_fragments_library` updates only the
+*count*. After a reset, a re-promoted fragment therefore inherits the **trained embedding row of the
+slot's previous occupant**. Nothing crashes; the content-based `all_fingerprints` rebuilds correctly,
+so only the one-hot half carries stale identity.
+
+**Three consequences for this campaign:**
+
+1. **Train one process straight through to arm B, checkpointing at arm A on the way past.** Already
+   the plan above — but it is now load-bearing for a second reason, not just continuation semantics.
+2. **"Train the cheap 10,000-call arm everywhere, extend later" is available for RGFN and RxnFlow
+   only.** For SCENT the extension would not continue the same library trajectory.
+3. **A SCENT arm-B run must finish inside one walltime.** Arm B is 320,000 calls = 5,000 iterations,
+   SLURM `compute` caps at 3 days, and v1 proves SCENT 5k does *not* fit on at least some targets. A
+   requeued SCENT arm-B cell is confounded and must be discarded, not repaired.
+
+⟦OPEN, for the researcher — persisting the library across a requeue. The 2026-07-29 audit declined to
+fix this because a fix changes training behaviour mid-campaign. **That objection has expired**:
+`benchmark_v2` is a clean slate, so persisting and restoring `DynamicLibrary` state (and pinning
+fragment→row identity) is now available in a way it was not in July. Not built here — it is a
+training-behaviour change. But without it, SCENT arm B is walltime-limited by a defect the project has
+now chosen twice not to fix.⟧
+
+### What "arm A" precisely means
+
+Two details that a later reader will otherwise simplify away, both in
+`validation/generators/_trace.py`:
+
+* **The checkpoint fires at the first iteration BOUNDARY at or after 10,000 calls**, not at the
+  10,000th row. A GFlowNet scores a whole minibatch inside one iteration, so the 10,000th call lands
+  mid-iteration where no coherent optimizer/replay state exists to check-point. Overshoot is bounded
+  by one batch (64–100 molecules, ≤1%), and `arm_a.json` records **both** numbers:
+  `crossed_at_n_scored` is the truth, `saved_at_iteration` is where the weights are.
+* **`step` is stamped from `on_start_sampling`, the budget checked from `on_end_sampling`.** Reward
+  evaluation happens *during* sampling, so reading the step at the end would label every row with the
+  previous iteration — off by one for the entire file.
+* **`phase` is load-bearing.** RGFN and SCENT score the final candidate batch through the *same*
+  proxy the training loop uses, so those rows are flipped to `phase="eval"` before sampling. Without
+  it a smoke measured 600 training calls followed by 185 scoring calls, indistinguishable — and every
+  budget or modes-vs-calls reading would count the second set. **Filter to `phase == "train"` for any
+  budget claim.**
+
 ### Batch sizes: each paper's own
 
 | generator | batch | source |
 |---|---|---|
 | RGFN | 100/step | `configs/rgfn_base.gin` `train_forward_n_trajectories` (upstream, pristine) |
 | SCENT | 64/step | `configs/scent_base.gin` (clone default) |
-| RxnFlow | **64/step (was 128)** | `external/RxnFlow/src/gflownet/algo/config.py:187` `num_from_policy: int = 64`, and their own `seh_frag` task |
+| RxnFlow | 64/step | `external/RxnFlow/src/gflownet/algo/config.py:187` `num_from_policy: int = 64`. The runner never overrides it, so it already inherits the authors' value |
 
-RxnFlow has been running at **2× its authors' batch**. Correct it. The step count follows from the
-budget, not the other way round.
+**CORRECTION (2026-09-07, agent A).** An earlier draft of this runbook said RxnFlow ran at 2× its
+authors' batch and had to be fixed. **That was wrong, and no config change is needed.** The `128` is
+`reward.batch_size` in `rxnflow_*_5k.yaml`, which is passed to `SEHFrozenReward(batch_size=...)` —
+the sEH proxy's *scoring* batch, a pure throughput knob with no effect on the training budget. The
+*policy* batch is `algo.num_from_policy`, which `run_rxnflow_fixed.py` never sets, so it inherits the
+authors' 64. FragGFN's own configs already record the same conclusion for the shared Recursion
+codebase ("The batch was already right"), and `validation/generators/fraggfn/task.py:104` pins it
+explicitly. Two different knobs, one name — check which one a number refers to before calling it an
+error. The step count still follows from the budget, not the other way round.
 
 ---
 
@@ -502,9 +579,10 @@ learning curve costs nothing extra.
   lands on the **correct answer by luck** (it is higher-is-better, unlike both existing docking
   targets). Add it explicitly and make unknown targets fail loudly.
 
-### 7.4 Correct RxnFlow's batch size
+### 7.4 ~~Correct RxnFlow's batch size~~ — WITHDRAWN, no change needed
 
-128 → 64, the authors' `num_from_policy`. See §1.
+Verified 2026-09-07 (agent A): RxnFlow already runs at the authors' `num_from_policy = 64`. The
+`128` that prompted this item is `reward.batch_size`, the sEH proxy's scoring batch. See §1.
 
 ### 7.5 `pick_hubs.py` — pass `--pool all`, and give it the depth knob it lacks
 

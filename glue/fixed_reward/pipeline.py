@@ -32,6 +32,7 @@ benchmark harness can read next to the baselines.
 """
 
 import json
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -97,6 +98,8 @@ class FixedRewardPipeline:
         self.generator_name = generator_name
         self.reward_name = reward_name
         self.score_units = score_units
+        self.trace = None
+        self.arm_a = None
 
     # --------------------------------------------------------------------- driver
     def run(self) -> List[tuple]:
@@ -115,9 +118,19 @@ class FixedRewardPipeline:
             flush=True,
         )
 
+        # 0. instrument the reward BEFORE training: one row per evaluation, written continuously.
+        self._attach_trace()
+
         # 1. train pi_theta ONCE against r(x) = reward_generator(x)^beta.
         with timer.phase("train_gfn", 1):
             self.trainer.train()
+
+        # 1b. Everything from here is EVALUATION, not training signal. The final candidate batch
+        #     is scored through the same proxy, so without this flip those rows would be labelled
+        #     "train" and inflate the cell's oracle-call count (measured: 600 training calls then
+        #     185 scoring calls, indistinguishable). Filter on phase for any budget claim.
+        if getattr(self, "_trace_handle", None) is not None:
+            self._trace_handle.set_phase("eval")
 
         # 2. sample a batch from the trained forward policy (keeping each route + the
         #    terminal state object, which we score directly below).
@@ -143,6 +156,7 @@ class FixedRewardPipeline:
         top = pairs[: self.top_k]
         self._write_top_k(out_dir / "top_k.csv", top)
         timer.report_total()
+        self._close_trace(timer)
         self._report_dock_timing(out_dir, timer, logger)
         print(f"[FR] done. candidates + Top-{self.top_k} written to {out_dir}", flush=True)
         return top
@@ -171,6 +185,114 @@ class FixedRewardPipeline:
                 logger.log_metrics(metrics=summary, prefix="dock_timing")
             except Exception:  # noqa: BLE001 - logging must never break the run
                 pass
+
+    # ------------------------------------------------------------------- trace / arm A
+    def _attach_trace(self) -> None:
+        """Record every reward evaluation, and preserve the arm-A checkpoint when it is reached.
+
+        WHY PATCH THE PROXY INSTANCE rather than wrap it. gin hands the SAME ``%train_proxy``
+        object to this pipeline and to the trainer's reward; substituting a wrapper here would
+        leave the trainer holding the unwrapped original, so training would go untraced and only
+        the final scoring pass would land in the file. Patching two bound methods on the instance
+        reaches every holder. ``rgfn/`` stays untouched -- this is our code patching our own
+        run's object, the same technique SCENT's recipe logging already uses.
+
+        Arm A is the checkpoint at 10,000 ORACLE CALLS, not at a step count: RGFN samples 100
+        trajectories per iteration against SCENT's 64 and RxnFlow's 64, and replay makes the
+        conversion unreliable, so the trace triggers it. ``ProxyBase`` inherits
+        ``TrainingHooksMixin``, so the proxy is handed the live ``iteration_idx`` once per
+        iteration -- which is what makes the checkpoint land on a real, resumable boundary.
+        """
+        try:
+            from validation.generators._trace import (
+                ARM_A_ORACLE_CALLS,
+                BudgetCheckpointer,
+                TraceWriter,
+                attach_proxy_trace,
+            )
+        except Exception as exc:  # noqa: BLE001 - instrumentation must never block a run
+            print(f"[FR] WARNING trace unavailable ({exc}); continuing untraced", flush=True)
+            return
+
+        self._trace_t0 = time.time()
+        self.trace = TraceWriter(self.run_dir / "trace.csv", t0=self._trace_t0)
+
+        def _save_arm_a(iteration_idx: int) -> None:
+            # make_checkpoint writes <run_dir>/train/checkpoints/<name>.pt. `epoch` is the field
+            # the Trainer reads back as start_iteration, so a resume from this file continues at
+            # the right step rather than restarting.
+            self.trainer.make_checkpoint("arm_a_10k", {"epoch": int(iteration_idx)})
+            # ...and immediately make it RESUME-CLEAN. RGFN's forward policy carries lazily
+            # populated `*_cache` buffers that a freshly constructed model does not have, so a
+            # strict load_state_dict against a raw checkpoint FAILS (Logs/021). The production
+            # chain works around this by stripping them at resume time
+            # (experiments/fixed_reward/scale5k/submit_rgfn.sh), which means a checkpoint is not
+            # by itself resumable -- and the caches are 78% of the file (404 MB -> 90 MB measured
+            # on rgfn_seh_5k/seed42). Arm A is the ONE checkpoint whose whole purpose is to be
+            # resumed from later, so it is written clean rather than leaving the next person to
+            # discover the strip. Best-effort: a failure here leaves the raw file, which is still
+            # loadable after the usual strip.
+            try:
+                import torch
+
+                ckpt = Path(self.trainer.run_dir) / "train" / "checkpoints" / "arm_a_10k.pt"
+                state = torch.load(ckpt, map_location="cpu")
+                dropped = [k for k in list(state.get("model", {})) if k.endswith("_cache")]
+                for k in dropped:
+                    state["model"].pop(k)
+                if dropped:
+                    torch.save(state, ckpt)
+                    print(
+                        f"[FR] arm A: stripped {len(dropped)} *_cache keys -> resume-clean",
+                        flush=True,
+                    )
+            except Exception as exc:  # noqa: BLE001
+                print(
+                    f"[FR] WARNING arm-A cache strip failed ({exc}); the checkpoint is raw and "
+                    f"needs the usual *_cache strip before resuming",
+                    flush=True,
+                )
+
+        self.arm_a = BudgetCheckpointer(self.trace, ARM_A_ORACLE_CALLS, _save_arm_a, tag="FR")
+        self._trace_handle = attach_proxy_trace(
+            self.reward_generator, self.trace, tag="FR", budget_checkpointer=self.arm_a
+        )
+        print(
+            f"[FR] trace -> {self.run_dir / 'trace.csv'} (arm A at {ARM_A_ORACLE_CALLS} calls)",
+            flush=True,
+        )
+
+    def _close_trace(self, timer) -> None:
+        """Close the trace and write timing.json + arm_a.json beside it."""
+        if self.trace is None:
+            return
+        try:
+            from validation.generators._trace import write_timing
+
+            self.trace.close()
+            phases = {}
+            for name in ("train_gfn", "sample_batch", "score"):
+                secs = timer.total_for(name)
+                if secs:
+                    phases[name] = secs
+            write_timing(self.run_dir / "timing.json", phases, total_s=time.time() - self._trace_t0)
+            if self.arm_a is not None:
+                (self.run_dir / "arm_a.json").write_text(
+                    json.dumps(self.arm_a.manifest(), indent=2)
+                )
+                if not self.arm_a.fired:
+                    print(
+                        f"[FR] NOTE arm-A checkpoint never fired: {self.trace.n_scored} molecules "
+                        f"scored, below budget. This cell is arm A in its entirety.",
+                        flush=True,
+                    )
+            print(
+                f"[FR] trace closed: {self.trace.n_scored} scored / {self.trace.n_distinct} "
+                f"distinct -> trace.csv; timing -> timing.json",
+                flush=True,
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"[FR] WARNING closing trace failed ({exc})", flush=True)
 
     # ----------------------------------------------------------------- internals
     def _sample_batch(self) -> Tuple[List[str], List[Dict], List]:

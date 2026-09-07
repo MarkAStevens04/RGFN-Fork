@@ -17,8 +17,11 @@ Candidate emission shells to ``scripts/ingest_candidates.py`` under the ``rgfn``
 
 import argparse
 import csv
+import json
+import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import torch
@@ -28,6 +31,13 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
+from validation.generators._trace import (
+    ARM_A_ORACLE_CALLS,
+    BudgetCheckpointer,
+    TracedReward,
+    TraceWriter,
+    write_timing,
+)
 from validation.generators.rxnflow.al_loop import LabelStore, RxnFlowActiveLearningLoop
 from validation.generators.rxnflow.fixed_reward import (
     DockingBridgeReward,
@@ -140,7 +150,17 @@ def main() -> None:
             clip=float(reward_c.get("clip", 10.0)),
             batch_size=int(reward_c.get("batch_size", 128)),
         )
-    print(f"[RXN-FR] reward={reward_type} system={system}", flush=True)
+    # --- trace: every reward evaluation, continuously (benchmark_v2 arm A/B) --------
+    # Wrapped HERE, before the trainer and the loop take their references, so both the training
+    # loop and the final candidate scoring land in one file. RxnFlow has three providers and the
+    # trainer calls reward() while the emitter calls predict(); one wrapper catches all of them.
+    _t0 = time.time()
+    trace = TraceWriter(run_dir / "trace.csv", t0=_t0)
+    reward = TracedReward(reward, trace, tag="RXN-FR")
+    print(
+        f"[RXN-FR] reward={reward_type} system={system} | trace -> {run_dir / 'trace.csv'}",
+        flush=True,
+    )
 
     # --- RxnFlow Config (mirrors run_rxnflow_al.py). -------------------------------
     from rxnflow.config import Config, init_empty
@@ -194,6 +214,20 @@ def main() -> None:
     # 1. train the synthesis-GFN ONCE. Resume from a prior 3-day auto-requeue chain link's
     #    checkpoint if present (campaign Logs/030), then train only the REMAINING steps.
     loop.load_checkpoint()
+
+    # ARM A (benchmark_v2): preserve the checkpoint taken when the trace's n_scored first reaches
+    # 10,000 oracle calls. Defined on the CALL axis, never the step axis -- RxnFlow at the authors'
+    # num_from_policy=64 crosses it near step 156, but replay makes that arithmetic unreliable, so
+    # the trace triggers it. Copied aside rather than left as last_gfn.pt, which the periodic
+    # cadence overwrites minutes later.
+    def _save_arm_a(iteration_idx: int) -> None:
+        loop.save_checkpoint()
+        src = loop._ckpt_path()
+        dst = src.parent / "arm_a_10k.pt"
+        shutil.copy2(src, dst)
+
+    arm_a = BudgetCheckpointer(trace, ARM_A_ORACLE_CALLS, _save_arm_a, tag="RXN-FR")
+
     remaining = n_train_steps - loop._it
     if remaining > 0:
         print(
@@ -201,7 +235,7 @@ def main() -> None:
             f"against frozen {reward_type} reward (beta={beta})",
             flush=True,
         )
-        loop._train_steps(remaining)
+        loop._train_steps(remaining, on_iteration=arm_a.note_iteration)
     else:
         print(
             f"[RXN-FR] already trained {loop._it} >= {n_train_steps} steps; skipping to sampling.",
@@ -257,6 +291,28 @@ def main() -> None:
     ]
     print(f"[RXN-FR] ingest -> {' '.join(ingest_cmd)}", flush=True)
     subprocess.run(ingest_cmd, check=True)
+
+    # Close the trace and record where the wall-clock went, so RxnFlow appears in the end-to-end
+    # compute comparison on the same footing as the five competitors.
+    trace.close()
+    n_scored, n_distinct = trace.n_scored, trace.n_distinct
+    write_timing(
+        run_dir / "timing.json",
+        {"train_and_sample_s": time.time() - _t0},
+        total_s=time.time() - _t0,
+    )
+    (run_dir / "arm_a.json").write_text(json.dumps(arm_a.manifest(), indent=2))
+    print(
+        f"[RXN-FR] trace closed: {n_scored} scored / {n_distinct} distinct "
+        f"-> {run_dir / 'trace.csv'}; timing -> timing.json; arm_a -> arm_a.json",
+        flush=True,
+    )
+    if not arm_a.fired:
+        print(
+            f"[RXN-FR] NOTE arm-A checkpoint never fired: the run scored {n_scored} molecules, "
+            f"below the {ARM_A_ORACLE_CALLS}-call budget. This cell is arm A in its entirety.",
+            flush=True,
+        )
 
     try:
         trainer.terminate()

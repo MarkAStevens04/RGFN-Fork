@@ -17,7 +17,9 @@ loop shells to the oracle bridge).
 
 import csv
 import json
+import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -122,12 +124,24 @@ class ScentFixedRewardRun:
                 self._save_guidance_models()
 
             self.trainer.make_checkpoint = _make_ckpt_with_guidance
+
+        # 1a. Instrument the reward, and preserve the arm-A checkpoint at 10,000 oracle calls.
+        #     Attached AFTER the guidance patch above so the arm-A save goes through it and gets
+        #     its P_B sidecar too -- an arm-A checkpoint without one has an UNRECOVERABLE backward
+        #     policy (Logs/024), which is the whole reason the sidecar exists.
+        self._attach_trace()
         self.trainer.train()
 
         # 1b. Final guidance-model save — persists the trained P_B (cost + decomposability MLPs)
         #     that objective.state_dict() -> last_gfn.pt silently drops, so it stays exactly
         #     recoverable for flow analysis and for the next chain link. See guidance_io.
         self._save_guidance_models()
+
+        # 1c. Everything from here is EVALUATION, not training signal -- the candidate batch is
+        #     scored through the same proxy. Without the flip those rows read as training calls and
+        #     inflate the cell's budget. See _trace.attach_proxy_trace.
+        if getattr(self, "_trace_handle", None) is not None:
+            self._trace_handle.set_phase("eval")
 
         # 2. sample a batch (unique valid terminals + routes + state objects).
         _free_gpu_cache()
@@ -188,6 +202,7 @@ class ScentFixedRewardRun:
         pairs.sort(key=lambda p: p[1], reverse=higher_is_better)
         top = pairs[: self.top_k]
         self._write_top_k(out_dir / "top_k.csv", top)
+        self._close_trace()
         print(f"[SCENT-FR] done. candidates at {cand_dir}", flush=True)
         return top
 
@@ -211,6 +226,108 @@ class ScentFixedRewardRun:
             )
         except Exception as e:  # noqa: BLE001
             print(f"[SCENT-FR] WARNING guidance-model save failed: {e}", flush=True)
+
+    # ------------------------------------------------------------------- trace / arm A
+    def _attach_trace(self) -> None:
+        """Record every reward evaluation; preserve the arm-A checkpoint when 10,000 calls land.
+
+        Patches the gin-built ``%train_proxy`` instance in place, because the trainer's Reward and
+        this run hold the SAME object -- wrapping here would leave training untraced. Arm A is
+        defined on the ORACLE-CALL axis (SCENT is batch 64, so the crossing is near step 156, but
+        replay makes that arithmetic unreliable), and lands on a real iteration boundary because
+        ``ProxyBase`` inherits ``TrainingHooksMixin`` and is handed the live ``iteration_idx``.
+        """
+        try:
+            import sys as _sys
+
+            _repo = str(self.repo_root) if getattr(self, "repo_root", None) else None
+            if _repo and _repo not in _sys.path:
+                _sys.path.insert(0, _repo)
+            from validation.generators._trace import (
+                ARM_A_ORACLE_CALLS,
+                BudgetCheckpointer,
+                TraceWriter,
+                attach_proxy_trace,
+            )
+        except Exception as exc:  # noqa: BLE001 - instrumentation must never block a run
+            print(f"[SCENT-FR] WARNING trace unavailable ({exc}); continuing untraced", flush=True)
+            return
+
+        self._trace_t0 = time.time()
+        self.trace = TraceWriter(self.run_dir / "trace.csv", t0=self._trace_t0)
+
+        def _save_arm_a(iteration_idx: int) -> None:
+            # Goes through the guidance-patched make_checkpoint, so guidance_models.pt is written
+            # too -- then BOTH are copied aside. The sidecar path is fixed, so the next periodic
+            # save overwrites it with a LATER P_B; without this copy the arm-A weights would end up
+            # paired with the arm-B backward policy, silently.
+            self.trainer.make_checkpoint("arm_a_10k", {"epoch": int(iteration_idx)})
+            ckpt_dir = Path(self.trainer.run_dir) / "train" / "checkpoints"
+            src = ckpt_dir / "guidance_models.pt"
+            if src.exists():
+                shutil.copy2(src, ckpt_dir / "guidance_models_arm_a_10k.pt")
+            # Make it resume-clean, same as RGFN: SCENT is an RGFN fork, so its forward policy may
+            # carry the same lazily populated `*_cache` buffers that break a strict
+            # load_state_dict (Logs/021). SCENT's own runner resumes straight from last_gfn.pt
+            # with no strip, so either it has none or nobody has hit it -- stripping if present
+            # and no-opping if not is correct under both, and arm A is the checkpoint that will
+            # actually be resumed from.
+            try:
+                import torch
+
+                ckpt = ckpt_dir / "arm_a_10k.pt"
+                state = torch.load(ckpt, map_location="cpu")
+                dropped = [k for k in list(state.get("model", {})) if k.endswith("_cache")]
+                for k in dropped:
+                    state["model"].pop(k)
+                if dropped:
+                    torch.save(state, ckpt)
+                    print(
+                        f"[SCENT-FR] arm A: stripped {len(dropped)} *_cache keys -> resume-clean",
+                        flush=True,
+                    )
+            except Exception as exc:  # noqa: BLE001
+                print(f"[SCENT-FR] WARNING arm-A cache strip failed ({exc})", flush=True)
+
+        self.arm_a = BudgetCheckpointer(self.trace, ARM_A_ORACLE_CALLS, _save_arm_a, tag="SCENT-FR")
+        self._trace_handle = attach_proxy_trace(
+            self.reward_generator, self.trace, tag="SCENT-FR", budget_checkpointer=self.arm_a
+        )
+        print(
+            f"[SCENT-FR] trace -> {self.run_dir / 'trace.csv'} "
+            f"(arm A at {ARM_A_ORACLE_CALLS} calls)",
+            flush=True,
+        )
+
+    def _close_trace(self) -> None:
+        """Close the trace; write timing.json + arm_a.json beside it."""
+        trace = getattr(self, "trace", None)
+        if trace is None:
+            return
+        try:
+            from validation.generators._trace import write_timing
+
+            trace.close()
+            elapsed = time.time() - self._trace_t0
+            write_timing(
+                self.run_dir / "timing.json", {"train_and_sample_s": elapsed}, total_s=elapsed
+            )
+            arm_a = getattr(self, "arm_a", None)
+            if arm_a is not None:
+                (self.run_dir / "arm_a.json").write_text(json.dumps(arm_a.manifest(), indent=2))
+                if not arm_a.fired:
+                    print(
+                        f"[SCENT-FR] NOTE arm-A checkpoint never fired: {trace.n_scored} molecules "
+                        f"scored, below budget. This cell is arm A in its entirety.",
+                        flush=True,
+                    )
+            print(
+                f"[SCENT-FR] trace closed: {trace.n_scored} scored / {trace.n_distinct} distinct "
+                f"-> trace.csv; timing -> timing.json",
+                flush=True,
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"[SCENT-FR] WARNING closing trace failed ({exc})", flush=True)
 
     def _load_guidance_models(self) -> bool:
         """Reload the backward-policy guidance MLPs from the sidecar on resume (campaign

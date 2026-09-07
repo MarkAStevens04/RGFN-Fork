@@ -353,3 +353,263 @@ def trace_from_reinvent(
             rows.append((smi, unshape(_v) if unshape else _v, step_i))
             elapsed.append(el_by_step.get(step_i) if step_i is not None else None)
     return write_trace_rows(out_path, rows, elapsed)
+
+
+# --------------------------------------------------------------------------------------------
+# Arm-A checkpointing + the two wrapper shapes the reaction-GFNs need
+#
+# WHY THIS LIVES HERE. `benchmark_v2` defines its two training budgets on the ORACLE-CALL axis,
+# never the step axis (docs/RETRAIN_RUNBOOK.md sec 1): the three reaction-GFNs have three different
+# per-step call counts (RGFN 100, SCENT 64, RxnFlow 64) and replay buffers make the arithmetic
+# unsettleable. So "arm A" is defined as "the checkpoint taken when the trace's n_scored first
+# reaches 10,000" -- which means the trace, not a step counter, has to trigger it. One helper here
+# rather than three per-runner copies, because three copies of a budget rule is how the four
+# hardcoded ("6td3","clpp") target lists happened.
+# --------------------------------------------------------------------------------------------
+
+
+def _arm_a_budget() -> int:
+    """The arm-A budget, overridable ONLY for smokes via ``BENCHMARK_V2_ARM_A_CALLS``.
+
+    A 6-iteration smoke scores ~600 molecules, so at the real 10,000 the checkpoint path would
+    never execute and the smoke would prove nothing about the thing it exists to prove. The
+    override is read once at import; a production run leaves it unset and gets 10,000. It is
+    recorded in ``arm_a.json`` as ``budget_oracle_calls``, so a cell accidentally trained under an
+    override is self-identifying rather than silently off-budget.
+    """
+    import os
+
+    raw = os.environ.get("BENCHMARK_V2_ARM_A_CALLS")
+    if not raw:
+        return 10_000
+    try:
+        val = int(raw)
+    except ValueError:
+        print(
+            f"[trace] WARNING BENCHMARK_V2_ARM_A_CALLS={raw!r} is not an int; using 10000",
+            flush=True,
+        )
+        return 10_000
+    print(f"[trace] arm-A budget OVERRIDDEN to {val} calls (smoke only)", flush=True)
+    return val
+
+
+ARM_A_ORACLE_CALLS = _arm_a_budget()
+
+
+class BudgetCheckpointer:
+    """Fires ``save(label)`` ONCE, at the first iteration boundary at or after ``budget`` calls.
+
+    WHY AT A BOUNDARY AND NOT THE EXACT ROW. A GFlowNet scores a whole minibatch inside one
+    training iteration, so the 10,000th oracle call lands *mid-iteration*, where no coherent
+    optimizer/replay state exists to check-point. Saving at the next boundary gives a genuinely
+    resumable checkpoint whose recorded ``epoch`` is real, and overshoots the budget by at most one
+    batch (64-100 molecules, <= 1%). The exact crossing row stays in ``trace.csv``, so any analysis
+    that wants the budget honoured to the molecule slices the trace, and only the *weights* carry
+    the rounding. Recording both is the point: ``crossed_at_n_scored`` is the truth,
+    ``saved_at_iteration`` is where the weights are.
+
+    ``save`` is called as ``save(iteration_idx)`` and must be exception-safe on the caller's side;
+    a failure here is logged and swallowed, because losing a run to a checkpointing bug costs more
+    than losing the arm-A checkpoint (which a re-read of the trace can always re-derive by
+    resuming from the nearest periodic checkpoint).
+    """
+
+    def __init__(self, trace: "TraceWriter", budget: int, save, tag: str = "trace") -> None:
+        self.trace = trace
+        self.budget = int(budget)
+        self._save = save
+        self.tag = tag
+        self.fired = False
+        self.crossed_at_n_scored: Optional[int] = None
+        self.saved_at_iteration: Optional[int] = None
+
+    def note_iteration(self, iteration_idx: int) -> None:
+        """Call at every training-iteration boundary. Saves when the budget has been reached."""
+        if self.fired or self.trace.n_scored < self.budget:
+            return
+        self.fired = True
+        self.crossed_at_n_scored = self.trace.n_scored
+        self.saved_at_iteration = int(iteration_idx)
+        try:
+            self._save(int(iteration_idx))
+            print(
+                f"[{self.tag}] ARM A: checkpointed at iteration {iteration_idx} "
+                f"(n_scored={self.trace.n_scored} >= {self.budget}, "
+                f"n_distinct={self.trace.n_distinct})",
+                flush=True,
+            )
+        except Exception as exc:  # noqa: BLE001 - never kill a training run over a checkpoint
+            self.fired = False  # let the next boundary retry
+            print(f"[{self.tag}] WARNING arm-A checkpoint failed ({exc}); will retry", flush=True)
+
+    def manifest(self) -> dict:
+        return {
+            "budget_oracle_calls": self.budget,
+            "fired": self.fired,
+            "crossed_at_n_scored": self.crossed_at_n_scored,
+            "saved_at_iteration": self.saved_at_iteration,
+        }
+
+
+class TracedReward:
+    """Wrap a *shaped-reward* generator (``reward``/``predict``/``raw_scores``) so every evaluation
+    lands in the trace. The RxnFlow / FragGFN shape.
+
+    RECORDS THE RAW ORACLE VALUE, never the shaped one. For docking, ``reward()`` is
+    ``exp(clip(-vina))`` and ``predict()`` is ``clip(-vina)``, while the mode gates are defined on
+    raw Vina (ClpP -9.1). Getting this wrong is not hypothetical: nine ClpP traces recorded the
+    shaped value and NOT ONE row cleared the gate, so those cells' whole training histories read as
+    empty (fixed 2026-08-28, commit 736c8e0). ``raw_scores()`` is preferred wherever the provider
+    exposes it, and is cached per SMILES inside the docking bridge, so tracing costs no extra docks.
+
+    ``phase`` stays "train": these runners have no separate evaluation pass, so every call is
+    training signal. (S3-GFN's ``evaluate()`` is the counter-example, which is why the column exists.)
+    """
+
+    def __init__(self, inner, trace: Optional["TraceWriter"], tag: str = "trace") -> None:
+        self._inner = inner
+        self._trace = trace
+        self._tag = tag
+
+    def _record(self, smiles) -> None:
+        if self._trace is None or not smiles:
+            return
+        try:
+            if hasattr(self._inner, "raw_scores"):
+                vals = list(self._inner.raw_scores(smiles))
+            else:
+                vals = list(self._inner.predict(smiles))
+            self._trace.add_many(list(smiles), vals)
+        except Exception as exc:  # noqa: BLE001 - a trace failure must never kill a run
+            print(f"[{self._tag}] WARNING: trace write failed ({exc})", flush=True)
+
+    def reward(self, smiles):
+        self._record(smiles)
+        return self._inner.reward(smiles)
+
+    def predict(self, smiles):
+        return self._inner.predict(smiles)
+
+    def __getattr__(self, name):  # set_device, fit, raw_scores, dock_accountant, ...
+        return getattr(self._inner, name)
+
+
+def attach_proxy_trace(
+    proxy,
+    trace: Optional["TraceWriter"],
+    *,
+    tag: str = "trace",
+    budget_checkpointer: Optional["BudgetCheckpointer"] = None,
+):
+    """Instrument a ``ProxyBase``-shaped reward IN PLACE, by patching the instance's bound methods.
+
+    THE RGFN / SCENT SHAPE, and why it is a patch rather than a wrapper. Both build their proxy
+    through gin as ``%train_proxy`` and hand the SAME instance to the trainer's reward and to the
+    pipeline. Substituting a wrapper would mean rebinding every gin reference after construction;
+    patching two bound methods on the instance reaches every holder for free. Same technique SCENT's
+    own ``recipe_logging.enable_recipe_logging()`` already uses on ``DynamicLibrary``.
+
+    Patches TWO methods:
+
+    * ``compute_proxy_output`` -- the single surface every reward evaluation crosses. Patching the
+      OUTER (caching) method rather than ``_compute_proxy_output`` is deliberate: the outer one is
+      called with every requested state including cache hits, which is exactly ``n_scored``
+      ("oracle calls, counting repeats"), while the inner one would silently report only cache
+      misses. ``n_distinct`` covers the other question.
+    * ``on_end_sampling`` -- ``ProxyBase`` inherits ``TrainingHooksMixin``, so the proxy is handed
+      the live ``iteration_idx`` once per training iteration. That is what lets the arm-A checkpoint
+      land on a real iteration boundary without inferring a step count from batch arithmetic.
+
+    Returns the proxy (patched in place) so callers can chain.
+    """
+    if trace is None:
+        return proxy
+
+    inner_compute = proxy.compute_proxy_output
+    # Mutable so the two hooks below can stamp rows with the iteration that is actually running.
+    # A list rather than a nonlocal because these are plain closures over a patched instance.
+    current_step = [None]
+    # PHASE IS LOAD-BEARING, not decoration. RGFN and SCENT score the final candidate batch through
+    # the SAME compute_proxy_output the training loop uses, so without this flip those rows land in
+    # the trace labelled "train" and inflate the cell's apparent oracle-call count -- measured on a
+    # 6-iteration smoke: 600 training calls followed by 185 scoring calls, all indistinguishable.
+    # Any "did this cell hit its 10,000-call budget" or modes-vs-calls reading would then be wrong,
+    # and wrong in the direction that makes a cell look further trained than it is. Callers flip it
+    # via the returned handle the moment training returns.
+    current_phase = ["train"]
+
+    def _traced_compute(states, _inner=inner_compute):
+        output = _inner(states)
+        try:
+            smiles = [_state_smiles(s) for s in states]
+            values = [float(v) for v in output.value.detach().cpu().reshape(-1).tolist()]
+            keep = [(s, v) for s, v in zip(smiles, values) if s is not None]
+            if keep:
+                trace.add_many(
+                    [s for s, _ in keep],
+                    [v for _, v in keep],
+                    step=current_step[0],
+                    phase=current_phase[0],
+                )
+        except Exception as exc:  # noqa: BLE001 - a trace failure must never kill a run
+            print(f"[{tag}] WARNING: trace write failed ({exc})", flush=True)
+        return output
+
+    proxy.compute_proxy_output = _traced_compute
+
+    # ``step`` is stamped from on_START_sampling and the budget checked from on_END_sampling, and
+    # the split is deliberate. Reward evaluation happens DURING sampling, so a step read at the end
+    # would label every row with the previous iteration -- off by one for the whole file. The budget
+    # check wants the opposite: firing at the end means the iteration is complete and its optimizer
+    # / replay state is coherent enough to check-point.
+    inner_start = proxy.on_start_sampling
+
+    def _traced_on_start_sampling(iteration_idx, recursive=True, _inner=inner_start):
+        current_step[0] = int(iteration_idx)
+        return _inner(iteration_idx, recursive=recursive)
+
+    proxy.on_start_sampling = _traced_on_start_sampling
+
+    if budget_checkpointer is not None:
+        inner_hook = proxy.on_end_sampling
+
+        def _traced_on_end_sampling(iteration_idx, trajectories, recursive=True, _inner=inner_hook):
+            out = _inner(iteration_idx, trajectories, recursive=recursive)
+            budget_checkpointer.note_iteration(iteration_idx)
+            return out
+
+        proxy.on_end_sampling = _traced_on_end_sampling
+
+    return _ProxyTraceHandle(proxy, current_phase)
+
+
+class _ProxyTraceHandle:
+    """What :func:`attach_proxy_trace` returns: the patched proxy plus the phase switch.
+
+    The proxy itself is patched IN PLACE, so callers that only need the side effect can ignore this.
+    Callers that run a scoring pass after training must call :meth:`set_phase` first.
+    """
+
+    def __init__(self, proxy, phase_holder) -> None:
+        self.proxy = proxy
+        self._phase = phase_holder
+
+    def set_phase(self, phase: str) -> None:
+        self._phase[0] = str(phase)
+
+
+def _state_smiles(state) -> Optional[str]:
+    """Best-effort SMILES for a reaction state. ``None`` -> the row is skipped, never fabricated.
+
+    Terminal states carry ``state.molecule.smiles``; the fallbacks exist because a proxy may be
+    handed a state shape this module has not seen, and dropping one untraceable row is strictly
+    better than either crashing a multi-day training run or writing a ``str(obj)`` repr into a
+    column that downstream code will canonicalise as a molecule.
+    """
+    mol = getattr(state, "molecule", None)
+    smi = getattr(mol, "smiles", None) if mol is not None else None
+    if isinstance(smi, str) and smi:
+        return smi
+    smi = getattr(state, "smiles", None)
+    return smi if isinstance(smi, str) and smi else None
