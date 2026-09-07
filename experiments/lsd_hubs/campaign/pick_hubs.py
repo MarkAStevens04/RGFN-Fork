@@ -95,6 +95,19 @@ def _read_hub_keys(path: str) -> set:
         return {(r["smiles"], int(r["depth"])) for r in csv.DictReader(fh)}
 
 
+def _depth_hist(keys) -> dict:
+    """``{depth: count}`` over hub keys ``(stereo_smiles, depth)``, sorted by depth.
+
+    Reported at every stage because depth is what separates the two things hub-batching can be
+    doing: amortising a BUILT intermediate (depth >= 1) versus diversifying off a BOUGHT block
+    (depth 0). A hub set whose depth mix is unknown cannot be read as evidence for either.
+    """
+    h: dict = {}
+    for k in keys:
+        h[k[1]] = h.get(k[1], 0) + 1
+    return dict(sorted(h.items()))
+
+
 def _candidate_order(best_reward, best_flow, higher_is_better):
     """Distinct parent hubs in best-candidate order: walk candidates by reward, take each one's
     highest-flow parent, keep first occurrences. Returns ``[(hub_key, candidate_rank, reward)]``."""
@@ -135,6 +148,34 @@ def main() -> None:
         help="walk order (Logs/053): flow_desc (default) | flow_asc | random | candidate_reward",
     )
     ap.add_argument("--seed", type=int, default=0, help="RNG seed for --order random")
+    # ---- depth band (added 2026-09-07) --------------------------------------------------------
+    # DEFAULT UNFILTERED, DELIBERATELY. This exists so the sensitivity arm is expressible, not to
+    # change what hub-batching does; flipping the default would silently redefine every published
+    # hub set.
+    #
+    # WHY IT IS NEEDED NOW. `--pool all` (the v2 standard) removes the reward pre-filter that used
+    # to keep bought building blocks out by accident: depth-0 hubs go from 2 to 11 of the top 200,
+    # and from 2 to 8 of the first 40 -- the part actually walked. That is legitimate, and priced
+    # correctly (a chemist BUYS a depth-0 hub; shallow_couplings(depth=0, promoted=()) == 0), but
+    # depth-0 catalogue picking is the metric's own named degenerate optimum, so the comparison
+    # "is the win late-stage diversification or catalogue picking?" has to be runnable.
+    # `--min-hub-depth 1` is that arm.
+    #
+    # IT ALSO CLOSES A DISAGREEMENT INSIDE THE CODEBASE. The AL acquisition path
+    # (glue/samplers/lsdflow/acquisition.py) has defaulted to min_hub_depth=1 / max_hub_depth=3 all
+    # along -- depth 0 is "huge fan-out, zero amortization, not the build-once-diversify signal"
+    # (Logs/025), and depth 4 sits at the reaction cap where P_B is unrecoverable. This path had no
+    # depth control at all, so two implementations of "what is a hub" disagreed.
+    ap.add_argument(
+        "--min-hub-depth", type=int, default=None,
+        help="drop hubs shallower than this. UNSET = no floor (default). `1` excludes depth-0 "
+        "bought building blocks -- the labelled sensitivity arm against --pool all",
+    )
+    ap.add_argument(
+        "--max-hub-depth", type=int, default=None,
+        help="drop hubs deeper than this. UNSET = no ceiling (default). `3` matches the AL "
+        "acquisition path, which skips depth-4 hubs at the reaction cap (P_B unrecoverable)",
+    )
     ap.add_argument(
         "--restrict-to",
         default="",
@@ -161,6 +202,35 @@ def main() -> None:
             if key not in hub_flow or log_f > hub_flow[key]:
                 hub_flow[key] = log_f
     pool_size = len(hub_flow)
+
+    # ---- 1b. depth band ------------------------------------------------------------------------
+    # Applied to ELIGIBILITY, before ordering and before --restrict-to, because the band is a
+    # statement about what counts as a hub -- not a post-hoc trim of a chosen walk. The dropped
+    # count and the surviving histogram are printed and recorded, so a hub set can never be read
+    # without knowing which band produced it.
+    depth_of = lambda k: k[1]  # noqa: E731 -- hub key is (stereo_smiles, depth)
+    pool_depths_before = _depth_hist(hub_flow)
+    n_dropped_depth = 0
+    if a.min_hub_depth is not None or a.max_hub_depth is not None:
+        lo = a.min_hub_depth if a.min_hub_depth is not None else -(1 << 30)
+        hi = a.max_hub_depth if a.max_hub_depth is not None else (1 << 30)
+        if lo > hi:
+            raise SystemExit(f"--min-hub-depth {lo} exceeds --max-hub-depth {hi}")
+        kept = {k: v for k, v in hub_flow.items() if lo <= depth_of(k) <= hi}
+        n_dropped_depth = len(hub_flow) - len(kept)
+        if not kept:
+            raise SystemExit(
+                f"depth band [{a.min_hub_depth}, {a.max_hub_depth}] removed every one of "
+                f"{len(hub_flow)} eligible hubs (depths present: {pool_depths_before}). "
+                f"Refusing to write an empty hubs.csv -- downstream an empty hub set prices the "
+                f"EMPTY library as trivially optimal at zero cost."
+            )
+        hub_flow = kept
+        print(
+            f"[pick_hubs] depth band [{a.min_hub_depth}, {a.max_hub_depth}]: "
+            f"{n_dropped_depth} of {pool_size} eligible hubs dropped, {len(hub_flow)} remain "
+            f"(before {pool_depths_before} -> after {_depth_hist(hub_flow)})"
+        )
 
     # ---- 2. optional restriction to an existing hub set --------------------------------------
     if a.restrict_to:
@@ -228,6 +298,18 @@ def main() -> None:
             "order": a.order,
             "seed": a.seed if a.order == "random" else None,
             "restrict_to": a.restrict_to or None,
+            # The depth band and its effect. `walked_depth_hist` is the headline: it is the depth
+            # mix of the hubs this file actually hands the enumerator, and the depth-0 share of it
+            # is what says whether a library was diversified off built intermediates or off bought
+            # catalogue blocks.
+            "min_hub_depth": a.min_hub_depth,
+            "max_hub_depth": a.max_hub_depth,
+            "n_dropped_by_depth": n_dropped_depth,
+            "pool_depth_hist": pool_depths_before,
+            "walked_depth_hist": _depth_hist(ranked),
+            "walked_depth0_frac": round(
+                sum(1 for k in ranked if k[1] == 0) / max(len(ranked), 1), 4
+            ),
         },
         open(timing_path, "w"),
         indent=2,

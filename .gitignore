@@ -193,6 +193,24 @@ Miniconda3-latest-Linux-x86_64.sh
 *.sdf
 *.csv
 
+# ...but the blanket `*.csv` above is why `experiments/` holds 454 result CSVs of which 7 are
+# tracked, including every headline artifact (reaction_axis_ratio.csv, greedy_oracle_summary.csv,
+# pipeline_headline.csv). ARCHITECTURE.md says small committed result CSVs live under experiments/;
+# they do not, and nobody noticed because `git add` no-ops silently on an ignored path.
+#
+# SCOPED DELIBERATELY TO benchmark_v2. That tree is designed so only SMALL results live in the repo
+# (heavy artifacts mirror to $SCRATCH), so un-ignoring its CSVs is correct by construction and keeps
+# the new campaign self-describing. grid.csv is the cell list every driver reads and PROVENANCE.csv
+# is the only record of what was generated here versus copied forward -- losing either would leave
+# the tree unable to say what it contains, which is the one thing benchmark_v2 exists to guarantee.
+#
+# The other ~447 CSVs under experiments/lsd_hubs are the v1 record and are NOT un-ignored here:
+# committing 12.4 MB of superseded results is the researcher's call, not a side effect of an
+# infrastructure fix. Flagged 2026-09-07; they currently exist only on this filesystem plus the
+# /project backups (their .json siblings ARE tracked, and RGFN-LSD's artifacts/ holds the numbers
+# the paper rests on, so nothing the paper needs is at risk).
+!experiments/benchmark_v2/**/*.csv
+
 # superseded scaffold library (large; not part of the curated pipeline)
 data/validation-molecules/Enamine_CRBN_Molecular_Glue_Library_*.smiles
 

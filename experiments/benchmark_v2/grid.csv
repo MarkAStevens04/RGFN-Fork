@@ -1,0 +1,109 @@
+generator,gen_class,role,pipeline,target,seed,phase,arm_a_calls,arm_b_calls,train_plan,note
+rgfn,reaction_gfn,hub_batching,ours,clpp,42,1,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,clpp,43,1,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,clpp,44,1,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,drd2,42,1,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,drd2,43,1,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,drd2,44,1,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,seh,42,1,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,seh,43,1,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,seh,44,1,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,6td3b,42,2,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,6td3b,43,2,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rgfn,reaction_gfn,hub_batching,ours,6td3b,44,2,10000,320000,generate,batch 100/step = upstream configs/rgfn_base.gin train_forward_n_trajectories
+rxnflow,reaction_gfn,hub_batching,ours,clpp,42,1,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,clpp,43,1,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,clpp,44,1,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,drd2,42,1,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,drd2,43,1,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,drd2,44,1,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,seh,42,1,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,seh,43,1,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,seh,44,1,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,6td3b,42,2,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,6td3b,43,2,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+rxnflow,reaction_gfn,hub_batching,ours,6td3b,44,2,10000,320000,generate,"batch 64/step = authors' algo.num_from_policy, inherited (the runner never sets it). The 128 in rxnflow_*_5k.yaml is reward.batch_size -- the sEH proxy's SCORING batch, a throughput knob with no effect on the training budget. Two knobs, one name"
+scent,reaction_gfn,hub_batching,ours,clpp,42,1,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,clpp,43,1,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,clpp,44,1,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,drd2,42,1,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,drd2,43,1,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,drd2,44,1,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,seh,42,1,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,seh,43,1,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,seh,44,1,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,6td3b,42,2,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,6td3b,43,2,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+scent,reaction_gfn,hub_batching,ours,6td3b,44,2,10000,320000,generate,"batch 64 = clone default; only generator with a dynamic library, so only one needing recipes"
+fraggfn,nonreaction_gfn,competitor,competitor,clpp,42,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,clpp,43,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,clpp,44,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,drd2,42,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,drd2,43,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,drd2,44,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,seh,42,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,seh,43,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,seh,44,1,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,6td3b,42,2,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,6td3b,43,2,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+fraggfn,nonreaction_gfn,competitor,competitor,6td3b,44,2,10000,,generate,reclassified 2026-08-28; old runs ~30x over budget (a327c3a). Stage-2 capable (has a sampler)
+s3gfn,nonreaction_gfn,competitor,competitor,clpp,42,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
+s3gfn,nonreaction_gfn,competitor,competitor,clpp,43,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
+s3gfn,nonreaction_gfn,competitor,competitor,clpp,44,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
+s3gfn,nonreaction_gfn,competitor,competitor,drd2,42,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
+s3gfn,nonreaction_gfn,competitor,competitor,drd2,43,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
+s3gfn,nonreaction_gfn,competitor,competitor,drd2,44,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
+s3gfn,nonreaction_gfn,competitor,competitor,seh,42,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
+s3gfn,nonreaction_gfn,competitor,competitor,seh,43,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
+s3gfn,nonreaction_gfn,competitor,competitor,seh,44,1,10000,,copy,corrected to ~10k calls 2026-08-21; aux_coefficient restored to the authors' 0.001
+s3gfn,nonreaction_gfn,competitor,competitor,6td3b,42,2,10000,,generate,never run on this target
+s3gfn,nonreaction_gfn,competitor,competitor,6td3b,43,2,10000,,generate,never run on this target
+s3gfn,nonreaction_gfn,competitor,competitor,6td3b,44,2,10000,,generate,never run on this target
+synformer,reaction_nongfn,competitor,competitor,clpp,42,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,clpp,43,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,clpp,44,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,drd2,42,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,drd2,43,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,drd2,44,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,seh,42,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,seh,43,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,seh,44,1,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,6td3b,42,2,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,6td3b,43,2,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+synformer,reaction_nongfn,competitor,competitor,6td3b,44,2,10000,,generate,"EXEMPT from Stage 2: its pool is a slice of an accumulated GA population, so more molecules means more TRAINING. Those cells stay pool-limited by construction, and that is a finding"
+reinvent,nonreaction_nongfn,competitor,competitor,clpp,42,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
+reinvent,nonreaction_nongfn,competitor,competitor,clpp,43,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
+reinvent,nonreaction_nongfn,competitor,competitor,clpp,44,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
+reinvent,nonreaction_nongfn,competitor,competitor,drd2,42,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
+reinvent,nonreaction_nongfn,competitor,competitor,drd2,43,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
+reinvent,nonreaction_nongfn,competitor,competitor,drd2,44,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
+reinvent,nonreaction_nongfn,competitor,competitor,seh,42,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
+reinvent,nonreaction_nongfn,competitor,competitor,seh,43,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
+reinvent,nonreaction_nongfn,competitor,competitor,seh,44,1,10000,,copy,"corrected to batch 64 x 157 steps = 10,048 scored"
+reinvent,nonreaction_nongfn,competitor,competitor,6td3b,42,2,10000,,generate,never run on this target
+reinvent,nonreaction_nongfn,competitor,competitor,6td3b,43,2,10000,,generate,never run on this target
+reinvent,nonreaction_nongfn,competitor,competitor,6td3b,44,2,10000,,generate,never run on this target
+saturn,nonreaction_nongfn,competitor,competitor,clpp,42,1,10000,,copy,config verbatim from the authors' constrained_synthesizability/experiment.json
+saturn,nonreaction_nongfn,competitor,competitor,clpp,43,1,10000,,copy,config verbatim from the authors' constrained_synthesizability/experiment.json
+saturn,nonreaction_nongfn,competitor,competitor,clpp,44,1,10000,,copy,config verbatim from the authors' constrained_synthesizability/experiment.json
+saturn,nonreaction_nongfn,competitor,competitor,drd2,42,1,10000,,copy,config verbatim from the authors' constrained_synthesizability/experiment.json
+saturn,nonreaction_nongfn,competitor,competitor,drd2,43,1,10000,,copy,config verbatim from the authors' constrained_synthesizability/experiment.json
+saturn,nonreaction_nongfn,competitor,competitor,drd2,44,1,10000,,copy,config verbatim from the authors' constrained_synthesizability/experiment.json
+saturn,nonreaction_nongfn,competitor,competitor,seh,42,1,10000,,copy,config verbatim from the authors' constrained_synthesizability/experiment.json
+saturn,nonreaction_nongfn,competitor,competitor,seh,43,1,10000,,copy,config verbatim from the authors' constrained_synthesizability/experiment.json
+saturn,nonreaction_nongfn,competitor,competitor,seh,44,1,10000,,copy,config verbatim from the authors' constrained_synthesizability/experiment.json
+saturn,nonreaction_nongfn,competitor,competitor,6td3b,42,2,10000,,generate,never run on this target
+saturn,nonreaction_nongfn,competitor,competitor,6td3b,43,2,10000,,generate,never run on this target
+saturn,nonreaction_nongfn,competitor,competitor,6td3b,44,2,10000,,generate,never run on this target
+tango,nonreaction_nongfn,competitor,competitor,clpp,42,1,10000,,copy,Saturn's generator + a constrained-synthesizability reward; ships routes natively (ARM 2 only)
+tango,nonreaction_nongfn,competitor,competitor,clpp,43,1,10000,,copy,Saturn's generator + a constrained-synthesizability reward; ships routes natively (ARM 2 only)
+tango,nonreaction_nongfn,competitor,competitor,clpp,44,1,10000,,copy,Saturn's generator + a constrained-synthesizability reward; ships routes natively (ARM 2 only)
+tango,nonreaction_nongfn,competitor,competitor,drd2,42,1,10000,,copy,Saturn's generator + a constrained-synthesizability reward; ships routes natively (ARM 2 only)
+tango,nonreaction_nongfn,competitor,competitor,drd2,43,1,10000,,copy,Saturn's generator + a constrained-synthesizability reward; ships routes natively (ARM 2 only)
+tango,nonreaction_nongfn,competitor,competitor,drd2,44,1,10000,,copy,Saturn's generator + a constrained-synthesizability reward; ships routes natively (ARM 2 only)
+tango,nonreaction_nongfn,competitor,competitor,seh,42,1,10000,,copy,Saturn's generator + a constrained-synthesizability reward; ships routes natively (ARM 2 only)
+tango,nonreaction_nongfn,competitor,competitor,seh,43,1,10000,,copy,Saturn's generator + a constrained-synthesizability reward; ships routes natively (ARM 2 only)
+tango,nonreaction_nongfn,competitor,competitor,seh,44,1,10000,,copy,Saturn's generator + a constrained-synthesizability reward; ships routes natively (ARM 2 only)
+tango,nonreaction_nongfn,competitor,competitor,6td3b,42,2,10000,,generate,never run on this target
+tango,nonreaction_nongfn,competitor,competitor,6td3b,43,2,10000,,generate,never run on this target
+tango,nonreaction_nongfn,competitor,competitor,6td3b,44,2,10000,,generate,never run on this target
