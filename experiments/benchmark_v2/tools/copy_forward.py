@@ -45,6 +45,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -91,6 +92,23 @@ def _md5(p: Path) -> str:
         for chunk in iter(lambda: fh.read(1 << 20), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _already_recorded(ledger, stage: str, gen: str, target: str, seed: int) -> bool:
+    """True if the ledger already carries this (stage, cell, arm-a) row.
+
+    The ledger is append-only, so a fix-up pass must not add a second row for a cell it merely
+    topped up -- two `copied` rows for one artifact would make `ledger verify` ambiguous about which
+    digest is current. Skipping it also skips the tree_digest, which is the expensive part: hashing
+    every source run dir costs ~236 GB of reads for a 56 GB copy, dominated by subtrees we do not
+    even copy (TANGO's 4.1 GB retired ARM 1).
+    """
+    try:
+        return any(r["stage"] == stage and r["generator"] == gen and r["target"] == target
+                   and str(r["seed"]) == str(seed) and r["arm"] == "a"
+                   for r in ledger.read_rows())
+    except Exception:
+        return False
 
 
 def _final_checkpoint(rels: list[str]) -> str | None:
@@ -160,10 +178,25 @@ def plan_cell(gen: str, target: str, seed: int) -> dict | None:
     ckpts = []
     for g in CKPT_GLOBS.get(gen, []):
         ckpts += [f for f in sorted(src.glob(g)) if f.is_file()]
+    ckpts = sorted(set(ckpts))
+    # EVERY checkpoint lands in checkpoints/, and the source subdir name is deliberately DROPPED.
+    # S3-GFN hardcodes its run name to "s3gfn_seh" for every target, so its DRD2 and ClpP cells keep
+    # weights in a directory called `s3gfn_seh/` named `s3gfn_seh-seed42_model.pt` -- verified 2026-09-07
+    # that seh/drd2/clpp seed 42 hold three DIFFERENT models (md5 5a3ec69f / 05584483 / 958890e9)
+    # under one identical filename. Propagating that name into v2 would carry a lie about which target
+    # a checkpoint belongs to; the cell directory (train/s3gfn_drd2_s42/) is the honest disambiguator,
+    # so the basename alone goes under checkpoints/ and the path says what the filename does not.
+    # A source subdir is KEPT when it already names itself honestly, and DROPPED otherwise. Keeping
+    # `population_checkpoints/` preserves real information (SynFormer's "model" is a GA population,
+    # not weights, and the name says so); keeping `s3gfn_seh/` would preserve a falsehood. Top-level
+    # weights (REINVENT's agent.chkpt) get a home rather than sitting loose.
     for f in ckpts:
-        rel = f.relative_to(src)
-        # Flatten top-level weights into checkpoints/ so every cell has one predictable home.
-        pairs.append((f, str(rel) if rel.parent.name else f"checkpoints/{f.name}"))
+        parent = f.parent.name if f.parent != src else ""
+        keep = parent in ("checkpoints", "population_checkpoints")
+        pairs.append((f, f"{parent}/{f.name}" if keep else f"checkpoints/{f.name}"))
+    if gen == "s3gfn":
+        notes.append("checkpoint FILENAMES say 's3gfn_seh' on every target -- S3-GFN hardcodes its run "
+                     "name; the cell directory is what identifies the target, never the filename")
     notes.append(f"{len(ckpts)} checkpoint file(s) — ALL milestones travel (logging-spec decision)")
 
     # -- 4. config and provenance-bearing logs -----------------------------------------------
@@ -179,11 +212,34 @@ def plan_cell(gen: str, target: str, seed: int) -> dict | None:
 
 def do_copy(plan: dict, dest: Path, execute: bool) -> dict:
     """Copy, then re-hash every landed file. Returns the destination manifest."""
+    prior = {}
+    mp = dest / ".copy_manifest.json"
+    if mp.is_file():
+        try:
+            prior = json.loads(mp.read_text()).get("files", {})
+        except Exception:
+            prior = {}
     files = {}
     for s, rel in plan["pairs"]:
         d = dest / rel
         if execute:
             d.parent.mkdir(parents=True, exist_ok=True)
+            # INCREMENTAL. A fix-up pass exists to land the files an earlier plan missed; re-copying
+            # the 56 GB that is already correct would turn a nine-file repair into an hour of I/O.
+            # Size first (cheap) and only then content, so the common "already identical" case does
+            # not pay for a full re-hash of a 530 MB checkpoint.
+            # A fix-up pass that re-hashes 56 GB to add one small JSON file is not a fix-up. The
+            # previous run already recorded each file's md5 in .copy_manifest.json, so an unchanged
+            # file (same source, same size) is trusted from that record rather than re-read. Where
+            # there is no record we fall back to hashing, so correctness never depends on the cache.
+            if d.is_file() and d.stat().st_size == s.stat().st_size:
+                cached = prior.get(rel)
+                if cached and cached.get("src") == str(s) and cached.get("bytes") == s.stat().st_size:
+                    files[rel] = cached
+                    continue
+                if _md5(d) == _md5(s):
+                    files[rel] = {"src": str(s), "bytes": s.stat().st_size, "md5": _md5(d)}
+                    continue
             shutil.copy2(s, d)
             got = _md5(d)
             if got != _md5(s):  # a truncated copy is silent; catch it here, not in Stage 2
@@ -365,7 +421,7 @@ def main():
         print(f"{tag:<26} {m['n_files']:>4} files  {m['n_bytes']/1e9:>7.2f} GB  -> {dest}")
         for note in m["notes"]:
             print(f"    · {note}")
-        if a.execute and ledger is not None:
+        if a.execute and ledger is not None and not _already_recorded(ledger, "train", gen, target, seed):
             digest, nf, nb = ledger.tree_digest(plan["src"], quick=a.quick_digest)
             ledger.record(
                 stage="train", generator=gen, target=target, seed=seed, arm="a",
