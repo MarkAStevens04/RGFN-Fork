@@ -93,9 +93,11 @@ favourable one, and it makes the reaction-axis readout mean what the paper says 
   every certified row is one more cell that can carry a ratio. Note in any table that certification
   is now at a 1% gap rather than SPARROW's 1e-7.
 - Present the benchmark as a **two-by-two** — {naive, pruned} × {greedy, SPARROW-Batching} — with the
-  mechanism named on each axis (reward-ranking redundancy; route sharing). Three of the four
-  quadrants favour S3-GFN on current data and one favours REINVENT, and showing a single quadrant
-  would let us choose our own winner.
+  mechanism named on each axis (reward-ranking redundancy; route sharing). Showing a single quadrant
+  would let us choose our own winner. **The SELECTOR is the dominant axis, not the pool:** across sEH
+  and ClpP the greedy arm favours S3-GFN in 4 of 4 pool×target combinations while SPARROW-Batching
+  favours REINVENT in 3 of 4 (S3-GFN holds only sEH/pruned). An earlier draft of this entry said
+  "three of four quadrants favour S3-GFN", which was true of sEH alone and does not generalise.
 - Re-check that no table mixes ladder resolutions. After the queued pass every cell should be on
   `2,5,…,90,100,125,150`; a band mixing a 25-spaced cell with a 5-spaced one reads as a seed effect,
   which has cost this project a result before.
@@ -439,3 +441,37 @@ details matter when doing it:
   * A later SB re-run through the chain will overwrite a merged row with a fresh 1e-7 solve, which
     may cap again. That is correct behaviour, not a regression, but it means the merge is not
     permanent and the `gap_rel` column is what makes the difference visible.
+
+**THE COMPLETED TWO-BY-TWO**, modes at R=100, seeds 42/43/44, after both the certification and the
+fine-ladder passes. DRD2 is omitted: S3-GFN routes almost nothing there ([078] traced it to an amine
+absent from our ZINC stock), so the row cannot be compared.
+
+| target | GREEDY naive | GREEDY pruned | SB naive | SB pruned |
+|---|---|---|---|---|
+| **sEH** S3-GFN | 45/50/75 | 40/60/70 | 56/38/49 | **98/100/100** |
+| **sEH** REINVENT | 30/30/35 | 30/30/35 | **61/47/83** | 80/70/92 |
+| **ClpP** S3-GFN | 40/40/40 | 40/40/45 | 45/43/42 | 64/57/62 |
+| **ClpP** REINVENT | 30/35/30 | 30/35/30 | **81\*/69/71\*** | **86/74\*/72\*** |
+
+`*` = still time-capped. Those rows are LOWER bounds, so certifying them can only raise REINVENT —
+the direction of every REINVENT win above is therefore safe, and only its margin is uncertain.
+
+**The selector is the dominant axis, and this corrects an earlier claim in this entry.** The greedy
+arm favours S3-GFN in 4 of 4 pool×target combinations, with disjoint three-seed bands in all four.
+SPARROW-Batching favours REINVENT in 3 of 4 — every combination except sEH/pruned, which is exactly
+the one where S3-GFN reaches the 1.0 rxn/mode ceiling and cannot be beaten. An earlier version of
+this entry reported "three of four quadrants favour S3-GFN"; that was read off sEH alone, and adding
+ClpP reverses the summary. The pool axis matters, but it moves margins; the selector axis moves the
+winner.
+
+That is consistent with the uplift table rather than a separate fact: REINVENT gains 1.86×/2.57×
+from greedy→SB against S3-GFN's 1.01×/1.65×, and a ~1.6× relative advantage is more than enough to
+overturn the greedy ordering wherever S3-GFN is not already at the arithmetic ceiling. The
+uncomfortable reading for us is that the arm CLAUDE.md designates to carry the headline — SB, being
+the competitor's own optimiser and the stronger arm — is the arm on which the competitor usually
+wins. That has to be stated plainly in the paper rather than resolved by choosing the greedy arm.
+
+**Fine-ladder pass, second round (jobs 75801 naive / 75803 pruned, 5 min / 7 min):** all 12 cells
+gained, uniformly +5 or +10 modes, closing 18-28 reactions of unspent budget down to 5-16. Examples:
+`s3gfn_seh_seed44_pruned` 60→70, `s3gfn_clpp_seed44_pruned` 40→45, `reinvent_clpp_seed44_pruned`
+25→30. No cell lost modes, consistent with a strictly finer superset of the previous rungs.
