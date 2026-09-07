@@ -549,3 +549,43 @@ solves as the lower bound, and do not assume a small pool implies a cheap solve.
 of this entry advised "pick the gap against the mode count" — that is too neat. The gap governs how
 early CBC may stop; whether a cell certifies at all is a property of the instance that we cannot
 currently predict from anything we record.
+
+**FINAL STATE.**
+
+*Ladder.* Every campaign cell is now on the fine ladder and **99 of 99 resolve at R=100** (the one
+"no readable number" is a leftover smoke-test directory, `fraggfn_seh_seed42_stage2smoke50`, not a
+cell). Getting there took four rounds, because two jobs reverted finished work: job 75769's SB
+backfill overwrote `tango_clpp_seed44`'s dense row with a coarse one, and 75770 did the same to
+`reinvent_drd2_seed42_pruned`. Both were found by auditing first rungs across the tree, not from any
+log. `RUN_GREEDY=0` now exists so an SB-only backfill leaves the greedy arm alone.
+
+*Certification.* `merge_longsolve_rows.py --apply` merged **11 cells** back into their main CSVs and
+**refused 4** that are still capped, keeping `select_frontier.csv.pre_merge` backups. Merged files
+carry a new final column: `gap_rel = 0.01` on the re-solved R=100 row and `1e-07` on the nine
+untouched budget points, so the two tolerances stay distinguishable in the file itself rather than in
+a reader's memory.
+
+*The four that cannot be certified*, with the best lower bound across all three gaps tried. Recorded
+in `results/UNCERTIFIED_R100_BOUNDS.json` (written by `write_uncertified_bounds.py`) because the
+merge cannot touch a capped row and two of these main CSVs **understate the competitor**, which
+flatters us:
+
+| cell | 1e-7 | 1e-2 | 1e-6 | best bound | in main CSV |
+|---|---|---|---|---|---|
+| saturn seh 42 pruned | 4 | 3 | 3 | **4** | 4 ok |
+| tango clpp 43 pruned | 14 | 13 | 13 | **14** | 14 ok |
+| tango clpp 44 pruned | 8 | 9 | 10 | **10** | 8 — **understated by 2** |
+| saturn seh 44 naive | 4 | 5 | — | **5** | 4 — **understated by 1** |
+
+*DRD2 is no longer empty on the S3-GFN side, and it needs no further runs.* A claim made earlier in
+this session — that seed 42 was a "pre-fix leftover" needing the same `_stage2fix` treatment as
+seeds 43/44 — was **wrong**, and the Stage-2 logs say so plainly: seed 42 records
+`stop_reason: target-reached` with 500 modes from 5,740 eligible molecules, while 43 and 44 record
+`stalled` at 422 and 168 modes from 2,463 and 378. The tag marks **which cells stalled**, not two
+pipelines, and there are no separate fix directories — all three consumed the same
+`stage2_candidates.csv`. So 47/99/90 (SB, pruned) is a legitimate three-seed band.
+
+What the band shows is large within-generator variance, driven by ROUTABILITY rather than by the
+pipeline: seed 42's route artifact is 286 KB against seed 43's 2.3 MB (~10% vs ~83% routed). [075]
+traced DRD2's routing failures to an amine absent from our ZINC stock, so seed 42 plausibly made more
+of that chemistry. **Quote the DRD2 band with its spread, never a mean.**
