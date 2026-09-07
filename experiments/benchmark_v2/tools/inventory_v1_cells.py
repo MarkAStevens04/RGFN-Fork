@@ -25,11 +25,14 @@ a post-Stage-2 pool; where it does not, ``fixed_reward/`` is still original. Cop
 ships an upsampled pool as if it were the training sample, which is invisible downstream. This script
 reports both and names which it would copy.
 
-BUDGET CHECK. Arm A is 10,000 oracle calls. The trace's LAST ``n_scored`` is the authority, not the
-row count and not steps x batch -- generators differ in replay handling and some score outside the
-training loop (S3-GFN's evaluate() scores 1,000 molecules), so ``phase == "train"`` is reported
-separately. A cell whose trace stops far short of 10,000 did not get the budget; one that runs far
-past it is an over-budget v1 run and must be regenerated.
+BUDGET CHECK -- COUNT THE TRAINING ROWS, DO NOT READ ``n_scored``. Arm A is 10,000 oracle calls,
+and the honest measure is the number of ``phase == "train"`` rows. ``n_scored`` is a single
+cumulative counter SHARED across phases, and S3-GFN INTERLEAVES a 2,000-molecule evaluation sample
+with training (s3gfn_drd2/42: three phase switches, eval spanning n_scored 65..12,048). So its last
+``n_scored`` reads 12,048 and even ``max(n_scored)`` over training rows reads 11,048, while the true
+training budget is 10,048 -- exactly on budget, like every other entrant. Reading either number makes
+a healthy cell look 10-20% over and invites a re-train nobody needs. Steps x batch is wrong for a
+third reason (replay handling differs per generator), which is why the trace exists at all.
 
 Read-only. Touches nothing, decides nothing on its own -- prints a table and writes JSON.
 
@@ -126,6 +129,7 @@ def _trace_stats(path: Path):
         return None
     last = None
     train_max = 0
+    train_rows = 0
     n = 0
     try:
         with open(path, newline="") as fh:
@@ -133,6 +137,7 @@ def _trace_stats(path: Path):
                 n += 1
                 last = r
                 if (r.get("phase") or "") == "train":
+                    train_rows += 1
                     try:
                         train_max = max(train_max, int(r["n_scored"]))
                     except (ValueError, KeyError, TypeError):
@@ -140,7 +145,8 @@ def _trace_stats(path: Path):
     except Exception as exc:  # a truncated trace is a finding, not a crash
         return {"error": str(exc), "n_rows": n}
     if last is None:
-        return {"n_rows": 0, "n_scored": 0, "n_distinct": 0, "train_max": 0}
+        return {"n_rows": 0, "n_scored": 0, "n_distinct": 0,
+                "train_rows": 0, "train_max": 0}
 
     def _i(k):
         try:
@@ -148,10 +154,17 @@ def _trace_stats(path: Path):
         except (ValueError, KeyError, TypeError):
             return None
 
+    # THE BUDGET IS THE TRAIN ROW COUNT, NOT max(n_scored) OVER TRAIN ROWS. `n_scored` is a single
+    # cumulative counter SHARED across phases, and S3-GFN INTERLEAVES its 2,000-molecule evaluation
+    # sample with training -- measured on s3gfn_drd2/42: three phase switches, eval n_scored spanning
+    # 65..12,048. So by the last training row the counter has already absorbed eval calls, and
+    # train_max reads 11,048 where the true training budget is 10,048, making an ON-BUDGET cell look
+    # 10% over. Counting rows is immune to the interleaving. train_max is kept only to expose the gap.
     return {
         "n_rows": n,
         "n_scored": _i("n_scored"),
         "n_distinct": _i("n_distinct"),
+        "train_rows": train_rows,
         "train_max": train_max,
     }
 
@@ -207,7 +220,8 @@ def _verdict(r: dict):
         return "attention", "NO trace.csv — copyable but stage 2 loses its free-pool harvest"
     if "error" in t:
         return "attention", f"trace unreadable ({t['error']})"
-    scored = t.get("n_scored") or 0
+    # Phase-filtered where a phase column exists; n_scored only as a fallback.
+    scored = t.get("train_rows") or t.get("n_scored") or 0
     if scored == 0:
         return "attention", (
             f"trace GONE — trace.csv and all {r['trace_rotations']} rotation(s) are "
