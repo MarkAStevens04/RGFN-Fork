@@ -206,13 +206,24 @@ ROUTES="$POOL_DIR/multiaiz_routes.json"
 # kill costs the arm we cannot use rather than the one we can.
 echo "=== [3/3] frontiers (diversity-aware greedy FIRST, then optional SPARROW-Batching) ==="
 RC=0
-conda run --no-capture-output -n rgfn python \
-    experiments/lsd_hubs/campaign/sparrow_select_frontier.py \
-    --routes "$ROUTES" --pool "$POOL_DIR/pool_scores.csv" --route-source multiaiz \
-    --selection greedy --gate "$GATE" --higher-is-better "$HIB" \
-    --cutoff "$CUTOFF" --mode-points "$MODE_POINTS" \
-    --out-dir "$RES_ROOT/${TAG}_greedy_N${N}" \
-    --tag "${TAG}_multiaiz_greedy" || RC=1
+# RUN_GREEDY=0 for an SB-ONLY BACKFILL. Both arms write into $RES_ROOT, and this arm re-prices on
+# $MODE_POINTS, which defaults to the COARSE 25/50/75/... ladder. So a backfill run purely to add a
+# missing SB arm will also silently REVERT any finer greedy re-price the cell has received since —
+# measured 2026-09-07: job 75769 backfilled SB for tango:clpp:44 and overwrote a dense greedy row
+# (30 modes @ 95 rxn, 5 reactions unspent) with the coarse one (25 @ 81, 19 unspent) three hours
+# later, with nothing in either log flagging the revert. The clobber is invisible because both runs
+# report success; only the first rung in the CSV distinguishes them.
+if [ "${RUN_GREEDY:-1}" = "1" ]; then
+    conda run --no-capture-output -n rgfn python \
+        experiments/lsd_hubs/campaign/sparrow_select_frontier.py \
+        --routes "$ROUTES" --pool "$POOL_DIR/pool_scores.csv" --route-source multiaiz \
+        --selection greedy --gate "$GATE" --higher-is-better "$HIB" \
+        --cutoff "$CUTOFF" --mode-points "$MODE_POINTS" \
+        --out-dir "$RES_ROOT/${TAG}_greedy_N${N}" \
+        --tag "${TAG}_multiaiz_greedy" || RC=1
+else
+    echo "  greedy skipped (RUN_GREEDY=0) — existing $RES_ROOT/${TAG}_greedy_N${N} left untouched"
+fi
 
 if [ "${RUN_SB:-1}" = "1" ]; then
     conda run --no-capture-output -n rgfn python \
