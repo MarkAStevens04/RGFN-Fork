@@ -147,6 +147,11 @@ class FixedRewardPipeline:
         with timer.phase("score", 1):
             scores, components = self._score_with_reward_generator(states)
 
+        # 3b. Close the training record NOW, before anything that writes candidates. Same reason
+        #     as the RxnFlow runner: the record of what was trained must not depend on a later
+        #     step succeeding. Every phase it reports (train/sample/score) is already complete.
+        self._close_trace(timer)
+
         # 4. write the standard candidate dataset + a batch-metrics sidecar + Top-K.
         self._write_candidates(out_dir, smiles, scores, routes, components, higher_is_better)
         self._log_metrics(logger, smiles, scores, higher_is_better)
@@ -156,7 +161,6 @@ class FixedRewardPipeline:
         top = pairs[: self.top_k]
         self._write_top_k(out_dir / "top_k.csv", top)
         timer.report_total()
-        self._close_trace(timer)
         self._report_dock_timing(out_dir, timer, logger)
         print(f"[FR] done. candidates + Top-{self.top_k} written to {out_dir}", flush=True)
         return top

@@ -228,6 +228,12 @@ def main() -> None:
 
     arm_a = BudgetCheckpointer(trace, ARM_A_ORACLE_CALLS, _save_arm_a, tag="RXN-FR")
 
+    def _on_iteration(it: int) -> None:
+        # Stamp the NEXT iteration's rows before checking the budget: _train_steps calls this after
+        # train_batch, so rows scored from here belong to it+1.
+        reward.set_step(it + 1)
+        arm_a.note_iteration(it)
+
     remaining = n_train_steps - loop._it
     if remaining > 0:
         print(
@@ -235,7 +241,8 @@ def main() -> None:
             f"against frozen {reward_type} reward (beta={beta})",
             flush=True,
         )
-        loop._train_steps(remaining, on_iteration=arm_a.note_iteration)
+        reward.set_step(loop._it + 1)
+        loop._train_steps(remaining, on_iteration=_on_iteration)
     else:
         print(
             f"[RXN-FR] already trained {loop._it} >= {n_train_steps} steps; skipping to sampling.",
@@ -260,6 +267,31 @@ def main() -> None:
             w.writerow([smi, sc] + ([raws[i]] if raws is not None else []))
     routes_path = out_dir / "routes.jsonl"
     loop._write_routes_jsonl(routes_path, batch, routes)
+
+    # CLOSE THE TRACE BEFORE THE INGEST, not after. Ingest is a `conda run` subprocess into a
+    # different env and it CAN fail for reasons that have nothing to do with training -- a smoke on
+    # 2026-09-07 died there on a missing libnvrtc, and because these writes used to sit after the
+    # call, a complete 214-row training history plus its timing and arm-A manifest were lost with
+    # it. The training record must not depend on a downstream step succeeding.
+    trace.close()
+    n_scored, n_distinct = trace.n_scored, trace.n_distinct
+    write_timing(
+        run_dir / "timing.json",
+        {"train_and_sample_s": time.time() - _t0},
+        total_s=time.time() - _t0,
+    )
+    (run_dir / "arm_a.json").write_text(json.dumps(arm_a.manifest(), indent=2))
+    print(
+        f"[RXN-FR] trace closed: {n_scored} scored / {n_distinct} distinct "
+        f"-> {run_dir / 'trace.csv'}; timing -> timing.json; arm_a -> arm_a.json",
+        flush=True,
+    )
+    if not arm_a.fired:
+        print(
+            f"[RXN-FR] NOTE arm-A checkpoint never fired: the run scored {n_scored} molecules, "
+            f"below the {ARM_A_ORACLE_CALLS}-call budget. This cell is arm A in its entirety.",
+            flush=True,
+        )
 
     ingest_cmd = [
         "conda",
@@ -291,28 +323,6 @@ def main() -> None:
     ]
     print(f"[RXN-FR] ingest -> {' '.join(ingest_cmd)}", flush=True)
     subprocess.run(ingest_cmd, check=True)
-
-    # Close the trace and record where the wall-clock went, so RxnFlow appears in the end-to-end
-    # compute comparison on the same footing as the five competitors.
-    trace.close()
-    n_scored, n_distinct = trace.n_scored, trace.n_distinct
-    write_timing(
-        run_dir / "timing.json",
-        {"train_and_sample_s": time.time() - _t0},
-        total_s=time.time() - _t0,
-    )
-    (run_dir / "arm_a.json").write_text(json.dumps(arm_a.manifest(), indent=2))
-    print(
-        f"[RXN-FR] trace closed: {n_scored} scored / {n_distinct} distinct "
-        f"-> {run_dir / 'trace.csv'}; timing -> timing.json; arm_a -> arm_a.json",
-        flush=True,
-    )
-    if not arm_a.fired:
-        print(
-            f"[RXN-FR] NOTE arm-A checkpoint never fired: the run scored {n_scored} molecules, "
-            f"below the {ARM_A_ORACLE_CALLS}-call budget. This cell is arm A in its entirety.",
-            flush=True,
-        )
 
     try:
         trainer.terminate()

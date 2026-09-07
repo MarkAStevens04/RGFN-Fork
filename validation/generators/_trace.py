@@ -471,6 +471,17 @@ class TracedReward:
         self._inner = inner
         self._trace = trace
         self._tag = tag
+        # Stamped by the caller's per-iteration hook so this shape's trace carries `step` too --
+        # otherwise RxnFlow's file would be the only one of the three without it, and any per-step
+        # reading would silently cover two generators out of three.
+        self._step = None
+        self._phase = "train"
+
+    def set_step(self, step) -> None:
+        self._step = None if step is None else int(step)
+
+    def set_phase(self, phase: str) -> None:
+        self._phase = str(phase)
 
     def _record(self, smiles) -> None:
         if self._trace is None or not smiles:
@@ -480,7 +491,7 @@ class TracedReward:
                 vals = list(self._inner.raw_scores(smiles))
             else:
                 vals = list(self._inner.predict(smiles))
-            self._trace.add_many(list(smiles), vals)
+            self._trace.add_many(list(smiles), vals, step=self._step, phase=self._phase)
         except Exception as exc:  # noqa: BLE001 - a trace failure must never kill a run
             print(f"[{self._tag}] WARNING: trace write failed ({exc})", flush=True)
 

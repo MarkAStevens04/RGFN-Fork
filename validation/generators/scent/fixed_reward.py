@@ -238,17 +238,23 @@ class ScentFixedRewardRun:
         ``ProxyBase`` inherits ``TrainingHooksMixin`` and is handed the live ``iteration_idx``.
         """
         try:
-            import sys as _sys
+            # LOADED BY FILE PATH, NOT sys.path. SCENT's own package is ALSO named `rgfn`, and this
+            # process has already chdir'd into the clone with it on sys.path -- putting the repo
+            # root on sys.path too would make `import rgfn` ambiguous and could silently resolve
+            # SCENT's imports to OUR fork. That is the namespace hygiene rule run_scent_fixed.py
+            # states explicitly ("never put the repo root on sys.path"), and an earlier draft of
+            # this method broke it. importlib gives us the one module we need with no path effects.
+            import importlib.util as _ilu
 
-            _repo = str(self.repo_root) if getattr(self, "repo_root", None) else None
-            if _repo and _repo not in _sys.path:
-                _sys.path.insert(0, _repo)
-            from validation.generators._trace import (
-                ARM_A_ORACLE_CALLS,
-                BudgetCheckpointer,
-                TraceWriter,
-                attach_proxy_trace,
-            )
+            _mod_path = Path(self.repo_root) / "validation" / "generators" / "_trace.py"
+            _spec = _ilu.spec_from_file_location("_benchmark_v2_trace", _mod_path)
+            _trace_mod = _ilu.module_from_spec(_spec)
+            _spec.loader.exec_module(_trace_mod)
+            ARM_A_ORACLE_CALLS = _trace_mod.ARM_A_ORACLE_CALLS
+            BudgetCheckpointer = _trace_mod.BudgetCheckpointer
+            TraceWriter = _trace_mod.TraceWriter
+            attach_proxy_trace = _trace_mod.attach_proxy_trace
+            self._trace_mod = _trace_mod
         except Exception as exc:  # noqa: BLE001 - instrumentation must never block a run
             print(f"[SCENT-FR] WARNING trace unavailable ({exc}); continuing untraced", flush=True)
             return
@@ -305,7 +311,7 @@ class ScentFixedRewardRun:
         if trace is None:
             return
         try:
-            from validation.generators._trace import write_timing
+            write_timing = self._trace_mod.write_timing
 
             trace.close()
             elapsed = time.time() - self._trace_t0
