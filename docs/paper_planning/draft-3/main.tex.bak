@@ -1,0 +1,686 @@
+% =====================================================================
+%  GEM @ NeurIPS 2026 — dry-lab track, short paper (5 pp excl. refs/appendix)
+%  DRAFT v1. Swap in the GEM style file for the NeurIPS one before submitting.
+%
+%  CONVENTIONS USED IN THIS DRAFT
+%    \pending{...}  = a number or asset that does not exist yet. Search for it.
+%    \checkval{...}    = a number taken from the planning docs; verify against the
+%                     cited log before submission.
+%  Delete both macros (and their definitions) once everything is filled in.
+% =====================================================================
+
+\documentclass{article}
+\usepackage[dblblindworkshop]{GEM_workshop_2026}      % <-- replace with the GEM style file
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{xcolor}
+
+\newcommand{\pending}[1]{\textcolor{red}{[\,#1\,]}}
+\newcommand{\checkval}[1]{\textcolor{blue}{#1}}
+
+\graphicspath{{Formatting_Instructions_For_NeurIPS_2026/figures/v5/}}
+
+\title{Synthesizability is per-molecule; cost is per-library: Hub-Batching for Reaction-GFlowNets}
+
+% Anonymous for double-blind review.
+\author{%
+  Mark A. Stevens
+  Acceleration Consortium\\
+  University of Toronto\\
+  Toronto, ON \\
+  \texttt{mark.stevens@mail.utoronto.ca} \\
+  % examples of more authors
+  \And
+  Nasim Abdollahi \\
+  Acceleration Consortium \\
+  Toronto, ON \\
+  \texttt{nasim.abdollahi@utoronto.ca} \\
+  % \AND
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+}
+
+\begin{document}
+
+\maketitle
+
+% =====================================================================
+\begin{abstract}
+% Synthesizability-constrained molecular generation is evaluated one molecule at a
+% time (route solvability, synthetic accessibility, retrosynthesis success) but a laboratory does not make one molecule. It makes a library, and the cost of a library is not additive in its members: compounds sharing an intermediate are cheaper together than apart, because the expensive part of making them has already been paid for. We therefore measure \emph{distinct high-reward molecules delivered per fixed reaction budget}. Under this readout, a trained reaction-GFlowNet already contains the information needed to design a cheap library: recovering state flow at pre-terminal intermediates from a frozen checkpoint, with no retraining and no reward modification, identifies which intermediates are worth diversifying around. This procedure, which we call \emph{hub-batching}, delivers a median \checkval{$2.93\times$} more distinct high-reward molecules than reward-ranked selection across four generative models and four targets (\checkval{30 of 31} comparable generator--target--seed cells; no cell in which the baseline wins or ties), and \checkval{$2.27\times$} on \emph{identical} candidate sets where only the selection rule differs. We also report where the picture is less flattering: a cost-optimal solver beats us on cost per candidate, and one of our four scoring oracles failed calibration against property-matched decoys. Reaction-grounded generation earns its keep at the library level even where per-molecule synthesizability does not distinguish it.
+%
+% =====
+%  revised to add a bit clarification, shorter sentences, and adding Santha's comment on the relenance of this to the hit optimization:
+% Synthesizability-constrained molecular generation is evaluated one molecule at a time (route solvability, synthetic accessibility, retrosynthesis success) but a laboratory does not make one molecule. It makes a library, and the cost of a library is not additive in its members: compounds sharing an intermediate---the partially-assembled cores that branch into multiple final products---are cheaper together than apart, because the expensive part of making them has already been paid for. We therefore measure \emph{distinct high-reward molecules delivered per fixed reaction budget}. Under this readout, a trained reaction-GFlowNet already contains the information needed to design a cheap library. State flow at pre-terminal intermediates---recovered from a frozen checkpoint with no retraining and no reward modification---reveals which cores are worth diversifying around. This procedure, which we call \emph{hub-batching}, mirrors the scaffold-decoration logic of hit optimisation: make analogues that explore chemical space around a high-value core so that the cost of building it is amortised across many structurally distinct compounds.
+% Hub-batching delivers a median \checkval{2.93×} more distinct high-reward molecules than reward-ranked selection across three reaction-grounded generators, one fragment-based control, and four targets (30 of 31 comparable conditions, with no case in which the baseline wins or ties). On \emph{identical} candidate sets where only the selection rule differs, the advantage is \checkval{$2.27\times$}. We also report where the picture is less flattering: a cost-optimal solver beats us on cost per candidate, and one of our four scoring oracles failed calibration against property-matched decoys. Reaction-grounded generation earns its keep at the library level even where per-molecule synthesizability does not distinguish it.
+
+%  revised to amake the latest version, the abowe commenetd section, a bit shorter to fit in the page limit:
+Synthesizability-constrained molecular generation is evaluated one molecule at a time, but a laboratory makes a library. The cost of a library is not additive: compounds sharing an intermediate are cheaper together than apart, because the expensive part of making them has already been paid for. We therefore measure \emph{distinct high-reward molecules delivered per fixed reaction budget}. Under this readout, a trained reaction-GFlowNet already contains the information needed to design a cost-efficient library: state flow at pre-terminal intermediates, recovered from a frozen checkpoint with no retraining or reward modification, reveals which cores are worth diversifying around. This procedure, which we call \emph{hub-batching}, mirrors scaffold decoration in hit optimisation: make analogues around a high-value core so the cost of building it is amortized across many structurally distinct compounds. Hub-batching delivers a median \checkval{$2.48\times$} more distinct high-reward molecules than reward-ranked selection across three reaction-grounded generators and four targets (\checkval{23 of 24} comparable conditions; no case in which the baseline wins or ties), and, where only the selection rule differs on an \emph{identical} candidate pool, \checkval{$2.51\times$} against a cost-optimal solver. That solver is cheaper per candidate purchased, and one scoring oracle failed calibration against property-matched decoys. Reaction-grounded generation earns its keep at the library level even where per-molecule synthesizability does not distinguish it.
+\end{abstract}
+
+% =====================================================================
+\section{Introduction}
+
+% Generative models for molecular design are scored, almost universally, one molecule at a
+% time. A model is called synthesis-aware if its outputs are individually route-solvable or
+% individually score well on a synthetic accessibility heuristic
+% \citep{gao2020synthesizability,ertl2009sascore}. That convention is a poor match for how
+% compounds are actually made.
+
+% \paragraph{What a library costs.}
+% The dominant cost of realizing a designed compound is not reagents; it is the time of a
+% trained chemist. A synthetic step is the unit in which that time is spent (setup,
+% monitoring, workup, purification, characterization) and it is spent whether the step
+% produces a promising compound or a disappointing one. This makes the cost of a
+% \emph{set} of compounds structurally different from the sum of its parts. If two target
+% molecules share a late intermediate, the steps leading to that intermediate are paid for
+% once and their cost is amortized across everything downstream
+% \citep{fromer2024sparrow}. Medicinal chemistry has organized itself around this
+% asymmetry for decades: late-stage diversification is attractive precisely because it
+% spreads the cost of an expensive, hard-won parent across many structurally distinct and
+% individually informative children.
+
+% A per-molecule metric cannot see any of this. Route solvability is a property of a
+% molecule evaluated in isolation, so it is by construction blind to what a molecule shares
+% with its neighbours. Two libraries can be indistinguishable under every per-molecule
+% synthesizability measure in common use and still differ severalfold in the number of
+% bench steps required to produce them. Per-molecule synthesizability is a property of a
+% molecule; cost is a property of a set; the two come apart.
+
+% \paragraph{Why this matters now.}
+% It is widely acknowledged that the binding constraint on generative chemistry is not
+% model capacity but data: the public record of measured molecules is small, fragmented
+% across incompatible assays, and expensive to extend. Efforts to unify existing datasets
+% help, but the field has been visibly shifting its central question from \emph{how do we
+% build better models from the data we have} toward \emph{how do we generate better data},
+% which is much of the motivation behind autonomous and self-driving laboratories
+% \citep{abolhasani2023sdl,tom2024sdl}. Under that framing, the cost of realizing a
+% designed library is not an afterthought to the modelling problem. It is the exchange
+% rate between compute and data. We do not close that gap here; everything we report is
+% \emph{in silico}. But we do argue that it is measurable, that current metrics do not
+% measure it, and that a generator's choice of state space matters more for it than the
+% per-molecule literature suggests.
+
+% \paragraph{Where the field stands.}
+% \emph{Synthesis-aware generation} builds molecules by applying reaction templates to
+% purchasable building blocks, so a route exists by construction rather than by inspection
+% \citep{koziarski2024rgfn,cretu2025synflownet,seo2024rxnflow,gainski2026scent,gao2025synformer}.
+% \emph{Cost-aware selection} takes an existing candidate pool and chooses a batch, pricing
+% shared intermediates explicitly \citep{fromer2024sparrow} and, in a recent extension,
+% adding terms for diversity and for compatibility with parallel chemistry
+% \citep{fromer2025diversity}. Between them sits an open dispute over whether the reaction
+% MDP is needed at all: \citet{kim2026s3gfn} argue that template-based state and action
+% spaces are unnecessarily rigid, and show that a sequence-based GFlowNet with soft
+% synthesizability regularization achieves high synthesizable fractions with better
+% flexibility and scale. Related work reaches similar conclusions by optimizing
+% retrosynthesis models directly as an oracle \citep{guo2024saturn,guo2026tango}.
+
+% Measured per molecule, that argument holds. Our question is what happens one level up.
+
+% \paragraph{This work.}
+% We introduce \emph{hub-batching}. Given any trained reaction-GFlowNet, we sample from a
+% frozen checkpoint, recover the state flow $F(h)$ at pre-terminal intermediates by
+% rearranging the detailed-balance condition
+% \citep{bengio2023gflownetfoundations,malkin2022trajectorybalance}, rank intermediates by
+% that quantity, exhaustively enumerate every one-reaction child of the top-ranked ones, and
+% walk the ranking greedily under a reward gate and a hard diversity constraint. There is no
+% retraining, no reward modification, and no requirement beyond a reaction-grounded action
+% space.
+
+% We note one thing that hub-batching is \emph{not}. Parallel chemistry applies a single
+% reaction across many reagents, and is the notion of batching that
+% \citet{fromer2025diversity} optimize for. Hub-batching amortizes a shared \emph{parent}
+% across children reached by \emph{different} reactions. Both save steps by reusing prior
+% work, but they are different savings, and a library optimized for one is not automatically
+% good under the other.
+
+% Our contributions are:
+% \begin{itemize}
+% \itemsep0.15em
+% \item \textbf{A library-level cost readout} with an explicit threat model, three run-status
+%       labels that make fixed-budget comparisons well-posed, and an audit against an
+%       independent mixed-integer optimum (Section~\ref{sec:metric}).
+% \item \textbf{Hub-batching}, a post-hoc selection rule that reads the flow field of a
+%       frozen reaction-GFlowNet, evaluated across four generators and four targets
+%       (Sections~\ref{sec:method}--\ref{sec:results}).
+% \item \textbf{A measured optimality gap and a set of severe tests}, two of which
+%       overturned our own earlier conclusions---including one of our four scoring oracles
+%       failing calibration (Section~\ref{sec:severe}).
+% \end{itemize}
+
+% \paragraph{Two distinctions.}
+% SCENT's Dynamic Library \citep{gainski2026scent} also reuses high-reward intermediates,
+% but does so \emph{during training}, to grow the building-block vocabulary; hub-batching
+% reads a \emph{frozen} model at inference time and prices a delivered library. And SPARROW
+% \citep{fromer2024sparrow,fromer2025diversity} chooses among candidates that already exist,
+% whereas hub-batching changes which candidates exist, by enumerating around selected
+% intermediates. We compare against SPARROW directly, using its own diversity formulation
+% rather than a rule of our own (Section~\ref{sec:selection}).
+%
+% =============================================
+% REVISION NOTE — why the intro changed
+%
+% Two things were bothering me about the original:
+%
+% 1. We were spending almost half a page explaining that library cost is
+%    non-additive — which a GEM reviewer already knows. The three paragraphs
+%    ("What a library costs", the follow-up, "Why this matters now") are now
+%    two short ones. Same facts, same citations, much less real estate.
+%
+% 2. The actual insight — that the model already knows where the hubs are —
+%    was buried. It showed up in the abstract and then again in "This work",
+%    but the intro opened with problem motivation instead. Flipping that order
+%    means a reviewer understands what's new before they hit the field survey.
+%
+% Nothing scientific was cut: the shared-intermediate argument and citations
+% are in Para 1, the SDL motivation is in Para 2 (one sentence), and
+% "Where the field stands" / "This work" / contributions are untouched.
+% "Two distinctions" moved to the top of Section 3 — it fits better there
+% as "here is what hub-batching is not" right after introducing the method.
+%=============================================
+
+Generative models for molecular design are scored, almost universally, one molecule at a time. A model is called synthesis-aware if its outputs are individually route-solvable or individually score well on a synthetic accessibility heuristic \citep{gao2020synthesizability,ertl2009sascore}. That convention is a poor match for how compounds are actually made. A laboratory makes a library, not a single molecule, and the cost of a library is not additive in its members: if two target molecules share a late intermediate, the steps leading to it are paid for once and their cost amortized across everything downstream \citep{fromer2024sparrow}. Per-molecule synthesizability is a property of a molecule; library cost is a property of a set; the two come apart.
+
+We therefore measure \emph{distinct high-reward molecules delivered per fixed reaction budget}. Under this readout, a trained reaction-GFlowNet already contains the information needed to design a cost-efficient library: state flow at pre-terminal intermediates, recovered from a frozen checkpoint with no retraining and no reward modification, identifies which intermediates are worth diversifying around.
+Why the information is there at all is a property of the generator: a GFlowNet routes trajectories in proportion to reward, so the intermediates carrying the most flow are the ones whose descendants are both numerous and good --- which is exactly what makes them worth building once and decorating many times. We find supporting evidence for this in Appendix~\ref{app:flow}. The field's central bottleneck is not model capacity but experimental data \citep{abolhasani2023sdl,tom2024sdl}; the cost of synthesizing a designed library is the exchange rate between compute and wet-lab time, and it is not what current metrics measure.
+
+\paragraph{Where the field stands.}
+\emph{Synthesis-aware generation} builds molecules by applying reaction templates to
+purchasable building blocks, so a route exists by construction rather than by inspection \citep{koziarski2024rgfn,cretu2025synflownet,seo2024rxnflow,gainski2026scent,gao2025synformer}. \emph{Cost-aware selection} takes an existing candidate pool and chooses a batch, pricing shared intermediates explicitly \citep{fromer2024sparrow} and, in a recent extension,
+adding terms for diversity and for compatibility with parallel chemistry
+\citep{fromer2025diversity}. Between them sits an open dispute over whether the reaction Markov decision process (MDP) is needed at all: \citet{kim2026s3gfn} argue that template-based state and action spaces are unnecessarily rigid, and show that a sequence-based GFlowNet with soft synthesizability regularization achieves high synthesizable fractions with better flexibility and scale. Related work reaches similar conclusions by optimizing retrosynthesis models directly as an oracle \citep{guo2024saturn,guo2026tango}. Measured per molecule, that argument holds. Our question is what happens one level up.
+
+\paragraph{This work.}
+We introduce \emph{hub-batching}. Given any trained reaction-GFlowNet, we sample from a
+frozen checkpoint, recover the state flow $F(h)$ at pre-terminal intermediates by
+rearranging the detailed-balance condition
+\citep{bengio2023gflownetfoundations,malkin2022trajectorybalance}, rank the pre-terminal intermediates behind the highest-reward candidates by that quantity, exhaustively enumerate every one-reaction child of the top-ranked ones, and walk the ranking greedily under a reward gate and a hard diversity constraint. There is no retraining, no reward modification, and no requirement beyond a reaction-grounded action space.
+
+We note one thing that hub-batching is \emph{not}. Parallel chemistry applies a single
+reaction across many reagents, and is the notion of batching that \citet{fromer2025diversity} optimize for. Hub-batching amortizes a shared \emph{parent}
+across children reached by \emph{different} reactions. Both save steps by reusing prior
+work, but they are different savings, and a library optimized for one is not automatically good under the other.
+
+Our contributions are:
+\begin{itemize}
+\itemsep0.15em
+\item \textbf{A library-level cost readout} with an explicit threat model, a comparability
+      condition that makes fixed-budget comparisons well-posed, and an audit against an
+      independent mixed-integer optimum (Section~\ref{sec:metric}).
+\item \textbf{Hub-batching}, a post-hoc selection rule that reads the flow field of a
+      frozen reaction-GFlowNet, evaluated across three reaction-grounded generators, a
+      fragment-based GFlowNet as a cost-model control, and four targets
+      (Sections~\ref{sec:method}-\ref{sec:results}).
+\item \textbf{A measured optimality gap and a set of severe tests}, two of which
+      overturned our own earlier conclusions, including one of our four scoring oracles
+      failing calibration (Section~\ref{sec:severe}, Appendix~\ref{app:training}).
+\end{itemize}
+
+% ---------------------------------------------------------------------
+% FIGURE 1 — two-track pipeline comparison.
+%
+% DRAWING SPEC (make it wide and short, ~1.9in tall, full text width):
+%   Upper track, "route-less generation":
+%     sample -> top-1k by reward -> RETROSYNTHESIS (shaded, labelled as an
+%     extra stage) -> cost-optimal selection over a FIXED pool of 1k
+%   Lower track, "reaction-grounded generation + hub-batching" (ours):
+%     construct DAG -> sample -> top-1k -> estimate hub flow -> sort hubs ->
+%     EXHAUSTIVELY ENUMERATE children of selected hubs (shaded, labelled as
+%     pool expansion) -> greedy walk under reward gate + diversity constraint
+%   Two annotations carry the paper's argument and must be legible:
+%     (a) the upper track needs a stage the lower track does not;
+%     (b) the upper track SELECTS from a fixed pool, the lower track CREATES
+%         the pool it selects from — which is why our candidate count is two
+%         orders of magnitude larger (Sec 4.4) and why we lose on cost per
+%         candidate while winning on cost per distinct molecule.
+%   Keep it monochrome + one accent colour; no clip art.
+% ---------------------------------------------------------------------
+% \begin{figure}[t]
+% \centering
+% \includegraphics[width=\linewidth]{\pending{fig1\_pipeline\_comparison}}
+% \caption{\textbf{Where library cost is decided.} Route-less generation requires a
+% retrosynthesis stage before any cost can be assigned, and then selects from a fixed
+% candidate pool. Reaction-grounded generation carries routes throughout, and hub-batching
+% uses the model's own flow field to choose which intermediates to expand---so the pool is
+% constructed rather than given. \pending{Draw per the spec in the source comment.}}
+% \label{fig:pipeline}
+% \end{figure}
+
+% =====================================================================
+\section{Library cost}
+\label{sec:metric}
+
+\paragraph{Definitions.}
+Following previous literature for GFlowNet molecular design
+\citep{bengio2021flow,zhang2023quantileflows,lau2024qgfn,shen2025cgflow}, we define a \emph{mode} as a molecule that passes two filters: reward exceeds a per-target threshold, and Tanimoto similarity ($\tau = 0.5$, Morgan radius 3, 2048 bits) to every mode already accepted is below $\tau$, grown greedily best-reward-first. We choose $\tau = 0.5$ to match the synthesis-aware work closest to ours \citep{shen2025cgflow} and stricter than the 0.7 in common use. Cost is charged \emph{count-once}: each distinct reaction in the library's shared synthesis DAG is paid for once, regardless of how many delivered molecules depend on its product. Our primary readout is the number of modes delivered at a fixed budget of \textbf{100 reactions}. We discuss filter choice and an external audit of the cost model in Appendix~\ref{app:fair}.
+
+\paragraph{Only runs that spent their budget are comparable.}
+A fixed-budget comparison invites an obvious objection: a method that runs out of candidates before spending its budget will look cost efficient. We therefore label every run \textbf{budget-binding} (spent its budget with some candidates remaining) or \textbf{pool-exhausted} (ran out of qualifying candidates with budget unspent). Only budget-binding runs enter our analysis (Appendix~\ref{app:fair}).
+
+% \paragraph{Three run statuses, and why they matter.}
+% A fixed-budget comparison invites an obvious objection: a method that runs out of things to buy will look thrifty. We therefore label every run \textbf{budget-binding} (spent its budget and could have spent more), \textbf{pool-exhausted} (ran out of qualifying candidates with budget unspent), or \textbf{solver-truncated} (a mixed-integer solver hit its time limit while still reporting optimality). Only budget-binding runs enter a ratio.
+% The distinction carries a measurement rather than only a convention: outside the
+% budget-binding regime a solver arm's reported reaction count inflates relative to the cost of what it kept---in one pruned cell, \checkval{65} molecules priced at \checkval{247} reactions are reported against a budget usage of \checkval{300--387}---so the gap between reported and kept cost is itself an exhaustion detector.
+
+\paragraph{Threat model.}
+\label{sec:threat}
+The readout, number of modes at 100 reactions, is gameable from two directions: loosening what counts as a distinct molecule, or lowering what counts as a good one. Both are threshold choices, so rather than defend two particular values, we sweep both and report the surface (Figure~\ref{fig:twoknob}). Our defaults ($\tau=0.5$; reward at the $5\%$ false-positive rate) are reported throughout for legibility, but hub-batching's advantage ties or holds across $\tau\in[0.30,0.90]$ and every reward cutoff we measured, with no crossover (Appendix~\ref{app:fair}). Structural triviality is the one exploit a threshold sweep cannot rule out, so we additionally report synthetic-depth distributions (Appendix~\ref{app:yield}). Taken to its limit, this exploit is the metric's true degenerate optimum: purchasing diverse catalogue compounds costs zero reactions and yields many modes. This is distinct from concentrating on one intermediate with maximally diverse children, which is late-stage diversification and is what the method is for.
+
+% Inflating the mode count (loosing what counts as distinct) would improve the metric without improving the library. We fix $\tau=0.5$, at the strict end of the 0.3-0.7 range used in the GFlowNet molecular literature \citep{lau2024qgfn,shen2025cgflow}, and report the full sweep rather than a single value. Hub-batching's advantage holds across the range, so no particular threshold is load-bearing (Appendix~\ref{app:fair}). Cheapening the molecules counted would improve it just as well; we therefore report synthetic-depth distributions (Appendix~\ref{app:yield}) and gate on a per-target reward threshold calibrated against property-matched decoys (Appendix~\ref{app:fair}). Taken to its limit, the numerator exploit is the metric's true degenerate optimum: purchasing diverse catalogue compounds costs zero reactions and yields many modes. We filter on reward to prevent this. We distinguish this from the \emph{constrained} optimum (one intermediate with maximally diverse children) which is the best achievable point conditional on synthesizing toward a target. This is not degenerate, and is a description of late-stage diversification.
+
+% Mark, I am suggesting this, but reviwe my comment on above pargraphand, plase do a fact check, and change as needed.!!!!!
+% \paragraph{Threat model.}
+% The readout is a ratio, gameable from both ends. Loosening what counts as a mode inflates the \emph{denominator} without improving the library; we fix $\tau = 0.5$ and report results at this threshold throughout. Choosing structurally trivial molecules cheapens the \emph{numerator}. Taken to its limit, this exploit is the metric's true degenerate optimum: purchasing diverse catalogue compounds costs zero reactions and yields many modes. The reward gate closes it. We distinguish this from the \emph{constrained} optimum---one intermediate with maximally diverse children---which is the best achievable point conditional on synthesizing toward a target, is not degenerate, and is a description of late-stage diversification.
+
+% =====================================================================
+\section{Hub-batching}
+\label{sec:method}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figmethod.pdf}
+\caption{\textbf{Two ways to spend a reaction budget.} Reward-ranked selection
+(\textsc{best-candidate}, top) sorts the generator's own samples and takes them greedily.
+Hub-batching (bottom) inserts one stage: it estimates state flow at pre-terminal
+intermediates, ranks them, and then \emph{exhaustively enumerates} every one-reaction child
+of the top-ranked ones --- so it \emph{constructs} the candidate pool it selects from rather
+than choosing among candidates it was given, which is why its candidate count is orders of
+magnitude larger and why it costs more molecule scorings (Section~\ref{sec:severe}).
+\textbf{Both tracks end in the identical greedy acceptance rule}: take a molecule only if it
+clears the reward gate and is Tanimoto-far from everything already accepted. Only the
+\emph{order} in which candidates are offered differs.}
+\label{fig:method}
+\end{figure}
+
+\paragraph{Procedure.}
+Given a trained, frozen reaction-GFlowNet (Figure~\ref{fig:method}):
+(i) sample \checkval{30{,}000} trajectories from a trained, frozen checkpoint; (ii) at each pre-terminal intermediate $h$ with sampled terminal child $x$, recover the state flow; (iii) rank the pre-terminal intermediates of the highest-reward candidates by that estimated flow and keep the top 200 as \emph{hubs}; (iv) exhaustively enumerate every one-reaction child of each selected hub and score it; (v) walk the hubs in flow order, accepting a child only if it clears the reward gate and is Tanimoto $<\tau$ from every already-accepted member; (vi) price the result with count-once, applied identically to every arm.
+
+\paragraph{The flow identity.}
+Step (ii) is the detailed-balance condition at edge $h \to x$, rearranged:
+\begin{equation}
+F(h) \;=\; F(x)\,\frac{P_B(h \mid x)}{P_F(x \mid h)},
+\qquad
+F(x) \;=\; \frac{R(x)}{P_F(\text{stop} \mid x)},
+\end{equation}
+computed in log space. We state this as a lemma rather than a theorem: it is a one-line rearrangement of a known condition \citep{bengio2023gflownetfoundations,malkin2022trajectorybalance}. Its value is
+interpretive. State flow is the reward mass of an intermediate's terminal descendants, weighted by backward reachability---so ranking hubs by flow ranks them by the reward mass they capture, which is exactly the quantity a library designer wants to amortize an expensive parent against. The estimator we ship is the maximum over \emph{sampled} children, the near-unbiased variant; alternatives averaging over enumerated children are biased upward, and we quantify this in Appendix~\ref{app:flow}.
+
+\paragraph{Baseline.}
+\textsc{best-candidate} sorts the generator's own samples by reward and accepts modes greedily. We credit \textsc{best-candidate} for any shared hubs or intermediates it happens to find, which corrected an earlier inflated result (Section~\ref{sec:severe}). Best-candidate is a greedy upper bound on the savings a chemist would realistically capture.
+
+% =====================================================================
+\section{Results}
+\label{sec:results}
+
+\paragraph{Setup.}
+Four generative models (RGFN, SCENT, RxnFlow, and a fragment-based GFlowNet) $\times$ four reward models spanning GPU docking (ClpP, CDK12--DDB1), a docking-score surrogate MPNN (sEH), and a bioactivity classifier (DRD2). Training details, building block library, and reward generator calibration are included in Appendix~\ref{app:training}.
+
+\subsection{More distinct molecules per unit of bench time}
+
+Hub-batching delivers a median \checkval{$2.48\times$} more distinct high-reward molecules than best-candidate selection at a 100-reaction budget, over \checkval{23 of 24} comparable cells, range \checkval{1.70--3.64$\times$}, with \textbf{no cell in which the baseline wins or ties} (Figure~\ref{fig:main}); the advantage holds between \checkval{$2.23$} and \checkval{$2.49\times$} at every budget from 50 to 200 reactions. We report 100 because it is the constraint a chemist actually has and the budget at which the competitor's solver reliably converges (Appendix~\ref{app:fair}), not because it is the most favorable point.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig1.pdf}
+\caption{\textbf{Distinct high-reward molecules delivered at a fixed budget of 100
+reactions}, hub-batching against reward-ranked selection, per generator--target cell; error bars show variance across random seeds. Pool-exhausted cells are hatched and excluded from ratios.}
+\label{fig:main}
+\end{figure}
+
+\subsection{Selection, not enumeration}
+\label{sec:selection}
+
+% A natural objection is that the generator, not the selection rule, is doing the work. To investigate this, we keep the generator constant \citep{gainski2026scent}, and investigate two different approaches to molecule selection: best-candidate with an established molecular solver (SPARROW),  against hub-batching. We use SPARROW's own diversity mechanism \citep{fromer2025diversity} to address the problem of pool starvation (Figure~\ref{fig:selec_strat}). We compare cases where diversity is a rigid constraint (modes) versus a soft optimization goal (candidates).
+
+% When diversity is a rigid constraint, hub-batching delivers \checkval{$2.51\times$} and \checkval{$2.51\times$} more modes at a 100-reaction budget compared to SPARROW at $\lambda = 0$ and $\lambda = 1$, respectively. Hub-batching finds \checkval{$2.51\times$} and \checkval{$2.51\times$} fewer reactions per mode.
+
+% However, when diversity is a soft optimization goal, SPARROW with $\lambda=1$ finds \checkval{$1.2\times$} more candidates, and costs \checkval{$2.51\times$} fewer reactions per mode. Hub-batching is stable across seeds (\checkval{81.7 $\pm$ 0.6} modes, \checkval{1.2 $\pm$ 0.1} rxns/mode), while best-candidate with SPARROW shows variance (\checkval{81.7 $\pm$ 0.6} modes, \checkval{1.2 $\pm$ 0.1} rxns/mode).
+
+A natural objection is that the generator, not the selection rule, is doing the work. We address this by holding the generator fixed \citep{gainski2026scent} and comparing hub-batching against SPARROW, using SPARROW's own diversity mechanism \citep{fromer2025diversity} (Figure~\ref{fig:selec_strat}, Appendix~\ref{app:selection}).
+
+
+Measured by distinct modes, hub-batching delivers \checkval{$3.26\times$} and \checkval{$2.51\times$} more modes at a 100-reaction budget compared to SPARROW at $\lambda = 0$ and $\lambda = 1$, respectively, with \checkval{$3.25\times$} and \checkval{$2.5\times$} fewer reactions per mode. Measured by candidates, SPARROW with $\lambda=1$ finds \checkval{$1.21\times$} more candidates at \checkval{$1.22\times$} fewer reactions per candidate.
+
+\paragraph{Mechanism: a hard constraint beats a soft penalty when the budget binds.}
+SPARROW maximizes reward under a reaction cap with diversity entering as a penalty. When
+the cap binds, the cheapest available reward is another analogue hanging off an intermediate already paid for, and no affordable diversity weight outbids it: at $\lambda = 0$ the solver returns \checkval{99} compounds amounting to \checkval{24} and \checkval{26} distinct molecules on the two seeds. Hub-batching instead \emph{refuses} any molecule within $\tau$ of one already accepted, and so pays to move elsewhere from the first selection onward. A soft penalty loses to a hard constraint precisely when the budget is small, which is the regime of a chemist working against a fixed labor budget.
+
+Their knob is real: raising $\lambda$ from 0 to 1 takes the solver from \checkval{24} to \checkval{33} distinct molecules on one seed and \checkval{26} to \checkval{32} on the other. Selection effort is itself a result:
+at a two-hour cap, \checkval{25 of 36} solver configurations did not converge, and neither a twelve-hour cap nor a relaxed tolerance fixed it, while our greedy walk answers the same problem on the same pool in about a second. We exclude non-converged rows, since each bounds the competitor from below rather than measuring it.
+
+One result cuts against us. With a converged solve the competitor is \emph{cheaper per candidate purchased} than we are (\checkval{1.01} against \checkval{1.23}) and buys slightly more of them; our claim is about cost per \emph{distinct} molecule, where the ordering reverses (\checkval{1.23} against \checkval{3.08}). Because every compound we buy is distinct by construction those two figures are the same number for us, while theirs diverge.
+
+Hub-batching also outperforms a full external pipeline (a route-less generator
+\citep{kim2026s3gfn} planned by retrosynthesis and selected by SPARROW) winning
+on laboratory reactions while costing more candidates to score
+(Appendix~\ref{app:external}).
+
+% ====== Moving this section to the appendix to reduce the length and keep it withing the page limit.
+% \subsection{Against a full external pipeline}
+
+% \begin{table}[t]
+% \centering
+% \caption{\textbf{External comparison at a 100-reaction budget, sEH.}}
+% \label{tab:external}
+% \small
+% \begin{tabular}{lcc}
+% \toprule
+% Pipeline & Modes at $R=100$ ($\uparrow$) & Vs ours \\
+% \midrule
+% \citet{kim2026s3gfn} $\to$ retrosynthesis $\to$ SPARROW selection & 46 & 1.76x \\
+% \citet{kim2026s3gfn} $\to$ retrosynthesis $\to$ greedy selection & 55 & 1.47x \\
+% \citet{gainski2026scent} $\to$ Hub-batching (ours) & 82 & - \\
+% \bottomrule
+% \end{tabular}
+% \end{table}
+
+% To confirm this is not an internal comparison, we run a full comparison of hub-batching against an external candidate generation pipeline. We plan its molecules with a retrosynthesis model, and select molecules over the resulting pool by using either SPARROW or a diversity-aware greedy rule (Table~\ref{tab:external}).
+
+% % To confirm this is not an internal comparison, we run the full upper track of
+% % Figure~\ref{tab:external}: a route-less generator \citep{kim2026s3gfn}, its molecules
+% % planned by a retrosynthesis model, and the resulting pool selected either by SPARROW or by
+% % a diversity-aware greedy rule (Table~\ref{tab:external}).
+
+% We report the asymmetries rather than equalizing them: the competitor's selector saw \checkval{2,000} candidates to our \checkval{26{,}069} and spent \checkval{2.25\,h} on retrosynthesis and route planning against our our zero. The honest trade is that the competitor is roughly \checkval{$4\times$} more mode-dense per candidate while our molecules are roughly \checkval{$2\times$} cheaper each. \textbf{Hub-batching outperforms on laboratory reactions, but loses on the number of candidates you must score}, which is the structural consequence of constructing a candidate pool rather than selecting from a given one.
+
+% \subsection{What batching costs a laboratory}
+
+% Amortizing a shared parent makes failures correlated. Expected molecule count is unchanged,
+% but the spread rises \checkval{1.8--4.8$\times$}: \checkval{94--100\%} of a delivered library
+% sits behind a handful of shared prefixes, the largest single batch holds \checkval{63 of 96}
+% molecules, and the worst prefix fails with probability \checkval{0.30--0.44}. Reward-ranked
+% selection shows no such concentration. We still deliver \checkval{2.7--5.3$\times$} more
+% molecules in expectation, so this is a risk profile attached to a real gain rather than a
+% reversal---but it is what a chemist should be told before committing the campaign, and it
+% is invisible to every per-molecule metric.
+
+% =====================================================================
+\section{Severe testing and limitations}
+\label{sec:severe}
+
+We tried to break these claims in several independent ways. Two attempts succeeded.
+
+\paragraph{One oracle failed calibration.}
+The CDK12--DDB1 oracle (PDB 6TD3) returns AUROC \checkval{0.688} against property-matched decoys (enrichment of \checkval{$2.1\times$} where structurally matched decoys had
+suggested \checkval{$82.9\times$}). We exclude those cells from the headline and report the failure here; a correction will accompany our next round of training.
+
+\paragraph{We corrected an inflation in our own favor.}
+An earlier version of our cost model double-counted fragments in the baseline, reducing the naive-policy advantage from \checkval{$\sim$1.81$\times$} to
+\checkval{$\sim$1.13$\times$} after correction. All results use the corrected model, verified against SPARROW within \checkval{$0.75\%$}.
+
+\paragraph{Limitations.}
+Everything reported is \emph{in silico}; ground truth is docking, not affinity. Yield and reaction-success probability sit outside the cost model
+(Appendix~\ref{app:yield}). The solver receives roughly \checkval{13.1} alternative recipes per molecule on the competitor's side against \checkval{1.0} on ours, so the optimizer has strictly more freedom against us than for us, which cuts against our reported advantage. Trained models also violate the detailed-balance identity at interior states (\checkval{$-6.05$} to \checkval{$-14.03$} nats at hubs); we analyze this in forthcoming work.
+
+% We tried to break these claims in several independent ways. Two attempts succeeded and changed what we report.
+
+% \paragraph{One of our own oracles failed its own calibration.}
+% We calibrated all four scoring systems with known hits and \emph{property-matched} decoys. The DDB1 oracle returns AUROC \checkval{0.688} with
+% \checkval{31\%} of property-matched decoys clearing the gate, enrichment of
+% \checkval{$2.1\times$} where structurally matched decoys had suggested \checkval{$82.9\times$}.
+% This contradicts our own earlier analyses, and so we exclude those cells from our headline numbers and report the failure here. A correction using a \checkval{$5\%$ false positive rate} across all oracles will accompany our next round of training.
+
+% \paragraph{We found and corrected an inflation in our own favour.}
+% An earlier version of our cost model double-counted fragments in the baseline; correcting
+% it reduced the naive-policy advantage from \checkval{$\sim$2.34$\times$} to
+% \checkval{$\sim$1.47$\times$}. All results here use the corrected model, and the larger
+% effects above come from the child-selection policy and the calibrated gate rather than the
+% accounting. To ensure our new cost accounting is correct, we use SPARROW to count over hub-batching's existing candidate tree, and find that they now both produce synthetic step counts within \checkval{$5\%$} of one another.
+
+% \paragraph{Trained models violate their own conservation law at interior states.}
+% Summing a model's forward probabilities over our enumerated children recovers
+% \checkval{0.999 to 1.000} of the available mass, independently confirming the enumeration is
+% exhaustive and the policy correctly read. But the dimensionless identity
+% $R(h)/(R(h)+N(h)) = P_F(\text{stop} \mid h)$, with both sides measured independently, is
+% violated at hubs by \checkval{$-6.05$} nats in one model and \checkval{$-14.03$} in another. The violation is larger in the model whose backward policy is trained and exactly
+% recovered, so it is a property of trained models rather than of one model's
+% approximations. We report the measurement and analyze it in forthcoming work.
+
+% \paragraph{Limitations.}
+% Everything reported is \emph{in silico}; ground truth is docking, not affinity. Docking
+% cells are single- or two-seed. Yield and reaction-success probability sit outside the cost
+% model, though we measure their consequence for batch risk in Appendix~\ref{app:yield}. And the solver receives
+% roughly \checkval{16} alternative recipes per molecule on the competitor's side against
+% \checkval{1.07} on ours, because we log one recipe per product, so the optimizer has strictly
+% more freedom against us than for us, which cuts against our reported advantage.
+
+% =====================================================================
+\section{Conclusion}
+
+In the regimes we measure, reaction-grounded generation delivers more distinct high-reward molecules per unit of bench effort than route-less generation followed by post-hoc planning and cost-optimal selection over its highest-scoring pool---while costing more candidates to score. The selection signal was already inside the trained model; it had simply not been read. Future work should give cost-aware selectors pools that are diverse at construction time, so a selector is tested on its choices rather than on what it was handed. The field's binding constraint is the cost of producing measured molecules. \emph{Diverse} library synthesis cost is not downstream of the modeling problem. It is the problem.
+
+% In the regimes we measure, reaction-grounded generation delivers more distinct high-reward molecules per unit of bench effort than route-less generation followed by post-hoc planning and cost-optimal selection---while costing more candidates to score. The selection signal was already inside the trained model; it had simply not been read. More generally: when the deliverable is a set rather than an item, the decision process that produced its members is not interchangeable, even where per-item metrics say it is. If the field's binding constraint is the cost of producing measured molecules, then how cheaply a design pipeline can deliver a \emph{diverse} set of them is not a secondary property of that pipeline. It is close to the point.
+
+% =====================================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+% =====================================================================
+\appendix
+\section{Yield of material}
+\label{app:yield}
+A reaction count treats every reaction as equal. Each has a \emph{yield} --- the fraction
+of material that survives the step --- and compounding those along a route gives the share
+reaching the final compound. We ask whether hub-batching buys its advantage by choosing
+riskier chemistry.
+
+It does not, and the mechanism is unambiguous (Figure~\ref{fig:yield_survival}). Per-template yields are taken from the SMALL
+library's own reaction definitions \citep{gainski2026scent}, joined by exact SMARTS, and
+multiplied along each delivered molecule's route. Mean \emph{step} yield is
+\checkval{0.730--0.765} for \textbf{both arms on every cell}, so the two arms are drawing on
+the same chemistry. What differs is route \emph{length}, and the direction follows it: on
+DRD2 hub-batching's routes are shorter (\checkval{2.66} against \checkval{3.37} steps) and
+more material survives, while on sEH they are longer (\checkval{2.00} against \checkval{1.82})
+and less does. Yield is therefore a consequence of route length rather than of reaction
+choice, and it is a quantity a reaction count cannot see.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figA1.pdf}
+\caption{\textbf{How much material survives a route.} Mean route yield per cell,
+hub-batching against best-candidate, with the seeds shown individually. Mean \emph{step}
+yield is \checkval{0.730--0.765} for both arms on every cell, so the differences are route
+\emph{length}, not reaction choice. Read at the \checkval{$5\%$}-false-positive gates
+(sEH \checkval{5.68}, DRD2 \checkval{0.345}).}
+\label{fig:yield_survival}
+\end{figure}
+
+% =====================================================================
+\section{Flow field contributes most advantage}
+\label{app:flow}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig2.pdf}
+\caption{\textbf{Floor and ceiling for the hub ordering.} \emph{Floor} holds everything
+fixed except the order hubs are visited in: SCENT with the sEH surrogate, 200 hubs,
+$R > 7.0$ and $\tau < 0.5$, one cell and one seed on a different checkpoint from
+Figure~\ref{fig:main}. \emph{Ceiling} compares our one-shot flow ordering against an
+adaptive optimizer that re-scores every remaining hub at each step and takes the argmax
+marginal modes per marginal reaction. The reported figure is the share of the distance from
+the baseline to that optimizer which our ordering recovers.}
+\label{fig:hub_ordering}
+\end{figure}
+
+\paragraph{Floor.}
+Figure~\ref{fig:hub_ordering} reports both halves. Reversing the ranking leaves the method unable to complete the library while burning the most compute; randomizing it completes but costs \checkval{$1.53\times$} the reactions; the three arms that draw on high-flow intermediates land within \checkval{9\%} of each other. The honest claim is therefore that \textbf{flow identifies the right neighborhood of intermediates, not the exact rank}, and we make no stronger one.
+One arm appears to threaten this and on inspection supports it: ordering hubs by their single best molecule never reads flow, yet its selections sit at median flow rank \checkval{546 of 20{,}874} against random's \checkval{11{,}043}---because a GFlowNet routes trajectories through high-flow intermediates, so that ordering reads the flow field indirectly. Estimating flow is nearly free (\checkval{0.2\,s} for every observed intermediate; expanding one costs \checkval{$\sim$3{,}000\,s}), so the reward pre-filter in step (iii) is not a compute saving: letting flow select from all \checkval{20{,}874} observed intermediates instead changes the result by one mode (\checkval{73} against \checkval{72}).
+
+\paragraph{Ceiling.}
+To bound what a better ordering could buy, we built an adaptive optimizer that re-scores every remaining hub at each step by marginal modes per marginal reaction. Our one-shot ranking recovers a median \checkval{94.6\%} (range \checkval{82--99\%}) of the distance from baseline to that optimizer, costing a median \checkval{9.2\%} more reactions, or \checkval{10.9\%} fewer modes at $R = 100$. The optimizer buys the remainder at a price it does not advertise: \checkval{1.0--26.8$\times$} more molecule scorings, since it cannot rank
+a hub it has not scored, and \checkval{0.6--79.8$\times$} the selection wall clock. Part of the residual gap is not a saving at all---its libraries sit closer to the acceptance bar on \checkval{12 of 14} cells and are the most structurally collapsed of the three arms under a strict reward-blind clustering; forcing quality parity on the worst cell removes \checkval{$\sim$37\%} of its apparent advantage. It also does not rediscover our hubs (median flow rank \checkval{76} against a uniform null of \checkval{100}; Jaccard \checkval{0.00--0.19}), which is the same ``neighborhood, not rank'' conclusion from the opposite direction.
+
+
+% =====================================================================
+\section{Selection versus enumeration}
+\label{app:selection}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{fig3.pdf}
+\caption{\textbf{Selection under a 100-reaction budget from the same candidate pool.} Both
+conditions select from the same set of candidates (\checkval{41{,}817} from \checkval{64}
+hubs on seed 43; \checkval{39{,}969} from \checkval{73} on seed 44) so only the selection
+rule differs. We show SPARROW with its own diversity formulation ($\lambda=1$) and without
+($\lambda=0$) \citep{fromer2025diversity}. Dots show results for individual random seeds.
+Discussed in Section~\ref{sec:selection}.}
+\label{fig:selec_strat}
+\end{figure}
+
+\section{Training Details}
+\label{app:training}
+We trained four models against four reward generators for \checkval{5{,}000} iterations with a reaction cap of 4 over a shared vocabulary of \checkval{418} building blocks and \checkval{112} reaction templates, following the SMALL library from \cite{gainski2026scent}. The design is not balanced: sEH and DRD2 carry three seeds and ClpP and CDK12--DDB1 two, giving \checkval{40} generator--target--seed cells, of which \checkval{24} enter the headline. The fragment-based model is a \textbf{cost-model control, never a peer}: its ``reactions'' are fragment attachments rather than synthetic steps, and it is labeled as such wherever it appears.
+
+\paragraph{Thresholds.}
+Every reward gate is the \checkval{$5\%$} false-positive point on that oracle's own actives-versus-decoys set: sEH \checkval{5.68}, DRD2 \checkval{0.345}, ClpP \checkval{$-9.1$}. Figure~\ref{fig:main} and Appendix~\ref{app:yield} are read at those bars. The head-to-head comparisons (Figure~\ref{fig:selec_strat}, Table~\ref{tab:external}) are read at sEH \checkval{7.0}, the bar at which prior sEH results are quoted, so they can be set against the published literature; the competitor's pool is non-binding at both bars, holding \checkval{499} molecules above gate at each. CDK12--DDB1 keeps a provisional \checkval{$-2.0$} and is excluded from every ratio, because its calibrated gate belongs to a different reward signal and so requires re-docking rather than re-gating.
+
+\paragraph{Hub selection.}
+Hub selection ranks the pre-terminal intermediates behind the highest-reward sampled candidates and expands the top \checkval{200} (\checkval{64} in the head-to-head cell). Expanding \checkval{200} rather than \checkval{64} there moves our count by \checkval{$-2$} and \checkval{$+1$} modes across the two seeds and leaves the baseline unchanged at \checkval{27}, since the baseline selects from the model's own samples rather than from our enumeration.
+
+\paragraph{The four targets are not interchangeable.} ClpP is calibrated against property-matched decoys (AUROC \checkval{0.895}). DRD2 is calibrated (\checkval{0.949} held-out, \checkval{0.961} training-era, \checkval{$18\times$} enrichment) but \emph{saturated}: \checkval{97.5\%} of generated molecules clear it, so DRD2 cells are effectively a diversity-only comparison. The sEH proxy is weaker and reported as such (\checkval{0.76} against random molecules, \checkval{0.68} against property-matched decoys); we treat it as a scale, not an activity claim. The CDK12--DDB1 system \emph{failed} calibration and its cells are excluded from the headline (Section~\ref{sec:severe}). We report per-cell rather than pooled results so these differences stay visible.
+
+
+
+% =====================================================================
+\section{Metric validation and cost model audit}
+\label{app:fair}
+\paragraph{Both filters are load-bearing, and both cost us.}
+Removing the reward gate makes hub-batching look \checkval{13\%} cheaper while \checkval{91\%} of the delivered library falls below the bar; removing the diversity constraint makes it look \checkval{12\%} cheaper while a 300-molecule library collapses to \checkval{39} distinct compounds. Priced per molecule worth keeping, those apparent savings cost \checkval{$9.8\times$} and \checkval{$6.8\times$} respectively, and \checkval{$29\times$} with both filters removed. The baseline is exactly indifferent to the reward gate, so the entire cost of that filter falls on the method that could otherwise exploit its absence.
+
+\paragraph{The result is not an artifact of where the two thresholds sit.}
+Every headline number is quoted at one setting of two knobs a reader can reasonably
+argue with: the reward bar, and the diversity cutoff. We therefore measure the whole
+grid rather than defend a point --- \checkval{9} reward bars $\times$ \checkval{13}
+cutoffs, all four generators, at the paper's own 100-reaction budget
+(Figure~\ref{fig:twoknob}). Each cell is the ratio of the two arms' reactions per
+distinct molecule, so $1.0$ is parity; because the budget is fixed this is monotone in
+modes-at-100-reactions, the primary readout swept rather than a different metric.
+\textbf{No setting favors the baseline}: of \checkval{452} comparable cells,
+\checkval{0} fall below parity, and of the \checkval{400} drawn, \checkval{397} are
+strictly cheaper with \checkval{3} exact ties --- all three at the strictest diversity
+settings. Median advantage is \checkval{2.57--3.06$\times$} across the three
+reaction-grounded generators (\checkval{4.40$\times$} for the fragment-based control,
+which is not a peer; Appendix~\ref{app:training}).
+
+Two classes of cell are deliberately left uncoloured, because counting them would
+flatter us. \emph{Pool-limited} cells (hatched) are ones where an arm could not spend
+the budget --- either it ran short of library, or nothing cleared the bar at all --- so
+its cost is measured over a shorter run and is not comparable. Both causes concentrate
+at the strict end, which is exactly where an unflagged surface would look most
+impressive.
+
+The surface is close to flat in the reward bar (median \checkval{2.79$\times$} at
+\checkval{4.0} against \checkval{2.56$\times$} at \checkval{7.0}) and narrows as the
+diversity requirement tightens (\checkval{2.86$\times$} at $\tau=0.7$,
+\checkval{2.49$\times$} at our \checkval{0.5}, \checkval{1.19$\times$} at
+\checkval{0.3}). That asymmetry is what the method predicts rather than a weakness of
+it: hub-batching earns its saving by amortizing one intermediate across many children,
+and children of a shared intermediate are similar by construction, so demanding extreme
+dissimilarity forces the walk off the hub and the amortization stops paying. Our
+operating point sits on the falling edge of that curve, not at its peak. This sweep
+varies thresholds on one cached enumeration per generator at seed 42; seed variance is
+Figure~\ref{fig:selec_strat}'s question. Each panel runs at its own generator's operating
+configuration rather than a single shared one.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\linewidth]{figA2.pdf}
+\caption{\textbf{Hub-batching is cheaper across a wide range of molecule requirements.}
+Sweeping both thresholds over their full range leaves the conclusion unchanged, so the
+result is not an artifact of where the thresholds were set. Reactions per distinct
+molecule, baseline $\div$ hub-batching, at a 100-reaction budget on sEH; $1.0$ is parity.
+Rows are the reward bar, columns the diversity cutoff (Tanimoto), oriented so that
+up-and-right is \emph{stricter} on both axes --- the advantage narrows in that direction.
+Filled circle: \checkval{5.68}, the 5\%-FPR threshold. Hollow circle: \checkval{7.0},
+where the head-to-head comparison is quoted; both at cutoff \checkval{0.5}. Hatched cells
+are pool-limited --- an arm could not spend the budget --- and are excluded, as are cells
+where no molecule clears the bar for either arm. Of \checkval{452} comparable settings,
+\checkval{0} favor the baseline. This varies thresholds, not seeds: one enumeration per
+generator, seed 42, so the magnitudes are not necessarily typical even though the ordering
+holds throughout. The fragment-based generator is a cost-model control, not a peer.}
+\label{fig:twoknob}
+\end{figure}
+
+\paragraph{Default thresholds are strict}
+To address the metric's failure mode discussed in Section~\ref{sec:threat}, we chose thresholds which were especially strict, as this gives the best case to \emph{best-candidate}. Our choice of $\tau=0.5$ is
+at the strict end of the 0.3--0.7 range used in the GFlowNet molecular literature \citep{lau2024qgfn,shen2025cgflow}. We calibrated the reward threshold with property-matched decoys to a $5\%$ false-positive (FP) rate.
+
+\paragraph{The cost model is audited externally.}
+Against an independent mixed-integer optimum computed by SPARROW \citep{fromer2024sparrow} on the same molecules and routes, count-once places
+hub-batching \checkval{0.75\%} above provably optimal and the baseline
+\checkval{4.8--5.0\%}. Our selections sit closer to a global optimizer's answer than the baseline's do, so the advantage below is not an artifact of the accounting; where the two models disagree, ours is the conservative one.
+
+\paragraph{Run status affects reported cost.}
+Outside the budget-binding regime, a solver arm's reported reaction count inflates relative to the cost of what it kept: in one pruned cell, \checkval{65} molecules priced at \checkval{247} reactions are reported against a budget usage of \checkval{300--387}---so the gap between reported and kept cost is itself an exhaustion detector. Non-convergence is detected by wall-clock rather than by the solver's status: CBC reports whichever incumbent it holds when the limit stops it as optimal, so a truncated run is indistinguishable from a converged one on status alone.
+
+
+% =====================================================================
+\section{Against a full external pipeline}
+\label{app:external}
+\begin{table}[t]
+\centering
+\caption{\textbf{External comparison at a 100-reaction budget, sEH, seed 43.} Read at
+reward $>7.0$; the competitor's pool is threshold-non-binding, holding \checkval{499}
+molecules above gate at both bars we report.}
+\label{tab:external}
+\small
+\begin{tabular}{lcc}
+\toprule
+Pipeline & Modes at $R=100$ ($\uparrow$) & Ours $\div$ theirs \\
+\midrule
+\citet{kim2026s3gfn} $\to$ retrosynthesis $\to$ SPARROW selection & 46 & 1.76x \\
+\citet{kim2026s3gfn} $\to$ retrosynthesis $\to$ greedy selection & 55 & 1.47x \\
+\citet{gainski2026scent} $\to$ Hub-batching (ours) & 81 & - \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+To confirm this is not an internal comparison, we run a full comparison of hub-batching against an external candidate generation pipeline. We plan its molecules with a retrosynthesis model, and select molecules over the resulting pool by using either SPARROW or a diversity-aware greedy rule (Table~\ref{tab:external}).
+
+% To confirm this is not an internal comparison, we run the full upper track of
+% Figure~\ref{tab:external}: a route-less generator \citep{kim2026s3gfn}, its molecules
+% planned by a retrosynthesis model, and the resulting pool selected either by SPARROW or by
+% a diversity-aware greedy rule (Table~\ref{tab:external}).
+
+We report the asymmetries rather than equalizing them. The competitor's selector chose from
+\checkval{438} routed candidates, drawn from its own frozen policy at a cost of
+\checkval{41{,}346} eval-phase scoring calls, and \checkval{2.25\,h} of retrosynthesis it
+must pay and we do not; our selector chose from \checkval{41{,}817} enumerated children
+above the gate, at \checkval{167{,}833} scoring calls and no route planning. Those draws
+cost \checkval{10{,}271} / \checkval{41{,}346} / \checkval{10{,}342} calls for seeds
+42/43/44 against a \checkval{10{,}048}-call training budget, so we report them per seed
+rather than averaging: the seeds differ fourfold in how much sampling the pool required.
+\textbf{Hub-batching outperforms on laboratory reactions and loses on the number of
+molecules you must score}, which is the structural consequence of constructing a candidate
+pool rather than selecting from a given one.
+
+\paragraph{A caveat on the competitor's pool.}
+Its candidates are the highest-scoring molecules its generator produced. That is the
+pipeline as normally run, but it concentrates the pool on similar chemistry before the
+solver sees it, and pool construction rather than the selector may be what bounds the
+result: a diversity-enforced pool changes the picture materially. We report the
+score-ranked construction because it is the default, and treat the comparison as unsettled
+rather than closed.
+
+\end{document}

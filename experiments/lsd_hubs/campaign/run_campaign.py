@@ -18,6 +18,7 @@ import argparse
 import csv
 import json
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from glue.samplers.lsdflow.campaign import (
@@ -459,6 +460,66 @@ def main() -> None:
         default=None,
         help="pick_hubs_timing.json (Stage-2 hub-pick wall-clock); default = beside --enum-children.",
     )
+    ap.add_argument(
+        "--min-synth-depth",
+        type=int,
+        default=0,
+        help="DELIVERABLE SPECIFICATION (default 0 = off, every existing result unchanged). Keep only "
+        "molecules whose FULLY-NESTED reaction count from purchasable material is >= this. "
+        "0/1 admit everything a depth-0 (purchasable) hub can make in one step -- the metric's "
+        "degenerate optimum, where the competitor pipeline saturates at 1.00 reactions/mode. Raising "
+        "it asks the question that number can no longer answer: who wins when the library must "
+        "consist of molecules you cannot simply buy-and-couple? "
+        "PARITY WARNING: our depth counts reactions from the 418-block library, while the "
+        "competitor's counts reactions from ZINC's 17.4M. ZINC contains most of our blocks and far "
+        "more, so the SAME molecule scores a LOWER depth on their axis -- the constraint is harder "
+        "for them than for us at every threshold, and a crossover point read off the two is not yet "
+        "a like-for-like number. State this wherever the two are plotted together.",
+    )
+    ap.add_argument(
+        "--zinc-depth-cache",
+        default="",
+        help="JSONL from aiz_stock_ladder.py (stock=zinc): {smiles, solved, min_steps}. Supplies each "
+        "candidate's distance from the COMPETITOR's catalogue, so the deliverable spec can be stated "
+        "in one shared unit instead of two. Molecules absent from the cache pass through UNJUDGED -- "
+        "the driver routes whatever got selected and re-runs, so only the delivered set is ever "
+        "planned (346,762 candidates clear the sEH gate; routing them all is ~1,070 CPU-hours).",
+    )
+    ap.add_argument(
+        "--min-zinc-depth",
+        type=int,
+        default=0,
+        help="0 = off. Keep only molecules at least this many reactions from ZINC-purchasable "
+        "material. UNLIKE --min-synth-depth this is measured in the competitor's own units, which is "
+        "the whole point: our depth counts from 418 blocks, theirs from 17.4M compounds, and a "
+        "crossover read off two different origins is not a number.",
+    )
+    ap.add_argument(
+        "--unroutable",
+        default="drop",
+        choices=["drop", "deep"],
+        help="what to do with a molecule AiZynthFinder could not route against ZINC. `drop` "
+        "(default, the conservative reading) removes it -- but note it removes exactly the molecules "
+        "FURTHEST from the competitor's catalogue, i.e. the ones the spec is trying to select for, so "
+        "it understates us. `deep` counts them as passing every threshold -- the opposite bias. Run "
+        "both and report the pair; the truth is between them and neither alone is honest.",
+    )
+    ap.add_argument(
+        "--catalogue-distinct",
+        action="store_true",
+        help="CATALOGUE-DISTINCT MODES on our side, matching build_s3gfn_pools.py's flag of the same "
+        "name. Requires every candidate to be Tanimoto-< --similarity from every purchasable building "
+        "block (ZINCFrag + our 418), not just from the modes already accepted. ONE knob governs both "
+        "tests, so sweeping --similarity moves them together and the sweep is directly comparable to "
+        "the competitor's pools built the same way.",
+    )
+    ap.add_argument(
+        "--block-sim-cache",
+        default="",
+        help="--catalogue-distinct: JSONL {smiles, max_block_sim} from block_similarity_cache.py. "
+        "READ ONLY — this process has already imported the heavy diversity stack, and forking a "
+        "worker pool after that hangs (job bf5n600kr). Build the cache in a clean process first.",
+    )
     ap.add_argument("--tag", required=True)
     ap.add_argument(
         "--out-dir",
@@ -477,6 +538,121 @@ def main() -> None:
         f"[campaign] {len(cands)} candidates, {len(enum_hubs)} enumerated hubs, "
         f"{len(cost_table.promoted_set)} promoted fragments (recipes={bool(cost_table.recipes)})"
     )
+
+    if a.min_synth_depth > 0:
+        # Both pools filtered on the SAME quantity so the two strategies stay comparable.
+        #   best-candidate: `Candidate.num_reactions` is already SCENT's fully-nested count.
+        #   hub-batching:   a child is one coupling past its hub, plus the nested build of any
+        #                   promoted fragment IT attaches -- `shared_build_cost` charges the closure
+        #                   once, the same term `shallow_couplings` subtracts. `hub.depth` is
+        #                   already fully nested, so it needs no adjustment.
+        n_c0, n_h0 = len(cands), sum(len(h.children) for h in enum_hubs)
+        cands = [c for c in cands if int(c.num_reactions) >= a.min_synth_depth]
+        kept_hubs = []
+        for h in enum_hubs:
+            keep = [
+                ch
+                for ch in h.children
+                if h.depth
+                + 1
+                + (
+                    cost_table.shared_build_cost(ch.added_promoted)[0]
+                    if (cost_table and ch.added_promoted)
+                    else 0
+                )
+                >= a.min_synth_depth
+            ]
+            if keep:  # a hub with no surviving child cannot contribute and must not be counted
+                kept_hubs.append(replace(h, children=keep))
+        n_h1 = sum(len(h.children) for h in kept_hubs)
+        print(
+            f"[campaign] min-synth-depth {a.min_synth_depth}: "
+            f"best-candidate pool {n_c0} -> {len(cands)}; "
+            f"hub children {n_h0} -> {n_h1} over {len(enum_hubs)} -> {len(kept_hubs)} hubs"
+        )
+        enum_hubs = kept_hubs
+        if not cands or not enum_hubs:
+            print("[campaign] POOL COLLAPSED at this depth — nothing left to select. Flag it.")
+
+    if a.min_zinc_depth > 0:
+        if not a.zinc_depth_cache:
+            raise SystemExit("[campaign] --min-zinc-depth requires --zinc-depth-cache")
+        zc = {}
+        # A MISSING cache is the correct round-1 state, not an error: nothing has been routed yet, so
+        # every candidate is unjudged and flows through. Failing here would make the driver's first
+        # round impossible and force a chicken-and-egg pre-route of the whole pool.
+        _cache_p = Path(a.zinc_depth_cache)
+        for line in _cache_p.open() if _cache_p.exists() else []:
+            line = line.strip()
+            if not line:
+                continue
+            r = json.loads(line)
+            if r.get("stock") != "zinc":
+                continue
+            zc[r["smiles"]] = r  # last write wins; a re-route supersedes an earlier one
+
+        def _zinc_ok(smi):
+            r = zc.get(smi)
+            if r is None:
+                return True  # UNJUDGED -> flows through, the driver routes it next round
+            if not r.get("solved"):
+                return a.unroutable == "deep"
+            return int(r.get("min_steps") or 0) >= a.min_zinc_depth
+
+        n_c0, n_h0 = len(cands), sum(len(h.children) for h in enum_hubs)
+        cands = [c for c in cands if _zinc_ok(c.smiles)]
+        kept_hubs = []
+        for h in enum_hubs:
+            keep = [ch for ch in h.children if _zinc_ok(ch.smiles)]
+            if keep:
+                kept_hubs.append(replace(h, children=keep))
+        n_h1 = sum(len(h.children) for h in kept_hubs)
+        judged = sum(1 for h in enum_hubs for ch in h.children if ch.smiles in zc)
+        print(
+            f"[campaign] min-zinc-depth {a.min_zinc_depth} (unroutable={a.unroutable}, "
+            f"cache={len(zc)} routed): best-candidate {n_c0} -> {len(cands)}; "
+            f"hub children {n_h0} -> {n_h1} ({judged} judged, {n_h0 - judged} unjudged)"
+        )
+        enum_hubs = kept_hubs
+
+    if a.catalogue_distinct:
+        if not a.block_sim_cache or not Path(a.block_sim_cache).exists():
+            raise SystemExit(
+                "[campaign] --catalogue-distinct needs --block-sim-cache built first:\n"
+                "  python block_similarity_cache.py --enum-children <json> --gate <g> --out <cache>"
+            )
+        _bs = {}
+        for _line in Path(a.block_sim_cache).open():
+            _line = _line.strip()
+            if _line:
+                _r = json.loads(_line)
+                _bs[_r["smiles"]] = _r["max_block_sim"]
+        # An UNCACHED molecule is dropped, not admitted. Admitting it by default would let through
+        # exactly the molecules the filter exists to exclude -- a candidate that IS a building block.
+        n_c0, n_h0 = len(cands), sum(len(h.children) for h in enum_hubs)
+        # Report the two reasons a child disappears SEPARATELY. The cache covers only gate-passing
+        # molecules, so "uncached" is overwhelmingly just below-gate children being pre-dropped
+        # (which the reward gate would reject anyway) -- lumping them in with block rejections made
+        # the filter look ~2000x more aggressive than it is.
+        n_unc = sum(1 for h in enum_hubs for ch in h.children if ch.smiles not in _bs)
+        n_gated = n_h0 - n_unc
+        cands = [c for c in cands if _bs.get(c.smiles, 1.0) < a.similarity]
+        kept_hubs = []
+        for h in enum_hubs:
+            keep = [ch for ch in h.children if _bs.get(ch.smiles, 1.0) < a.similarity]
+            if keep:
+                kept_hubs.append(replace(h, children=keep))
+        n_h1 = sum(len(h.children) for h in kept_hubs)
+        print(
+            f"[campaign] catalogue-distinct (tau={a.similarity}, cache={len(_bs)}): "
+            f"best-candidate {n_c0} -> {len(cands)}; hub children {n_h0} total, {n_gated} above "
+            f"gate, {n_h1} also block-distinct (block test removed {n_gated - n_h1} = "
+            f"{(n_gated - n_h1) / max(n_gated, 1):.2%} of gate-passing children; {n_unc} below-gate "
+            f"pre-dropped) over {len(enum_hubs)} -> {len(kept_hubs)} hubs"
+        )
+        enum_hubs = kept_hubs
+        if not cands or not enum_hubs:
+            print("[campaign] POOL COLLAPSED — nothing clears the block test. Flag it.")
 
     child_policy = make_child_policy(a.child_policy)
 
@@ -554,15 +730,23 @@ def main() -> None:
     # scaffold audits, chemistry galleries) previously had to re-derive them -- and the
     # last such dump was written to a temp directory and lost with it.
     for name, res in (("best_candidate", bc), ("hub_batching", hb)):
-        (out / f"selection_{name}.json").write_text(json.dumps(
-            {"tag": a.tag, "strategy": name,
-             "reward_threshold": a.reward_threshold, "similarity": a.similarity,
-             "child_policy": a.child_policy, "prebuild_k": a.prebuild_k,
-             "budget_reactions": a.budget_reactions,
-             "n_accepted": len(res.accepted),
-             "accepted_smiles": [p.smiles for p in res.accepted],
-             "accepted_rewards": [p.reward for p in res.accepted]},
-            indent=2))
+        (out / f"selection_{name}.json").write_text(
+            json.dumps(
+                {
+                    "tag": a.tag,
+                    "strategy": name,
+                    "reward_threshold": a.reward_threshold,
+                    "similarity": a.similarity,
+                    "child_policy": a.child_policy,
+                    "prebuild_k": a.prebuild_k,
+                    "budget_reactions": a.budget_reactions,
+                    "n_accepted": len(res.accepted),
+                    "accepted_smiles": [p.smiles for p in res.accepted],
+                    "accepted_rewards": [p.reward for p in res.accepted],
+                },
+                indent=2,
+            )
+        )
     _plot(out / "curve.png", [bc, hb], a.tag)
     if ct_section is not None:
         write_compute_time_csv(out / "compute_time.csv", ct_section)

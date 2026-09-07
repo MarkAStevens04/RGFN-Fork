@@ -1,0 +1,325 @@
+% =====================================================================
+% References for the GEM 2026 submission.
+%
+% NOTE ON COMMENTS: BibTeX does NOT treat % as a comment character inside
+% an entry. Anything outside an entry is ignored, so comments must live on
+% their own lines BETWEEN entries -- never on the line that opens an entry,
+% and never before a closing brace. Putting a comment inside an entry makes
+% BibTeX discard that entry silently, which shows up as stray "a. b." lines
+% in the rendered bibliography. Also avoid the at-sign entirely in comments:
+% BibTeX reads it as the start of a new entry even in a comment line.
+%
+% [v]     = verified against the publisher page, Aug 2026
+% [check] = confirm this detail before submission
+% =====================================================================
+
+
+% --------------------------------------------------------------------
+% The framing citation: per-molecule synthesizability
+% [v]
+% --------------------------------------------------------------------
+@article{gao2020synthesizability,
+  title   = {The Synthesizability of Molecules Proposed by Generative Models},
+  author  = {Gao, Wenhao and Coley, Connor W.},
+  journal = {Journal of Chemical Information and Modeling},
+  volume  = {60},
+  number  = {12},
+  pages   = {5714--5723},
+  year    = {2020},
+  doi     = {10.1021/acs.jcim.0c00174}
+}
+
+@article{ertl2009sascore,
+  title   = {Estimation of synthetic accessibility score of drug-like molecules
+             based on molecular complexity and fragment contributions},
+  author  = {Ertl, Peter and Schuffenhauer, Ansgar},
+  journal = {Journal of Cheminformatics},
+  volume  = {1},
+  number  = {8},
+  year    = {2009},
+  doi     = {10.1186/1758-2946-1-8}
+}
+
+
+% --------------------------------------------------------------------
+% GFlowNet foundations
+% --------------------------------------------------------------------
+@inproceedings{bengio2021flow,
+  title     = {Flow Network based Generative Models for Non-Iterative Diverse
+               Candidate Generation},
+  author    = {Bengio, Emmanuel and Jain, Moksh and Korablyov, Maksym and
+               Precup, Doina and Bengio, Yoshua},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2021}
+}
+
+@article{bengio2023gflownetfoundations,
+  title   = {{GFlowNet} Foundations},
+  author  = {Bengio, Yoshua and Lahlou, Salem and Deleu, Tristan and
+             Hu, Edward J. and Tiwari, Mo and Bengio, Emmanuel},
+  journal = {Journal of Machine Learning Research},
+  volume  = {24},
+  number  = {210},
+  pages   = {1--55},
+  year    = {2023}
+}
+
+@inproceedings{malkin2022trajectorybalance,
+  title     = {Trajectory Balance: Improved Credit Assignment in {GFlowNets}},
+  author    = {Malkin, Nikolay and Jain, Moksh and Bengio, Emmanuel and
+               Sun, Chen and Bengio, Yoshua},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2022}
+}
+
+
+% --------------------------------------------------------------------
+% Reaction-grounded generation
+% koziarski2024rgfn  [v] NeurIPS 2024, pp. 46908--46955
+% [check] confirm the full author list against the camera-ready
+% --------------------------------------------------------------------
+@inproceedings{koziarski2024rgfn,
+  title     = {{RGFN}: Synthesizable Molecular Generation Using {GFlowNets}},
+  author    = {Koziarski, Micha{\l} and Rekesh, Andrei and Shevchuk, Dmytro and
+               van der Sloot, Almer and Gai{\'n}ski, Piotr and Bengio, Yoshua and
+               Liu, Cheng-Hao and Tyers, Mike and Batey, Robert A.},
+  booktitle = {Advances in Neural Information Processing Systems},
+  pages     = {46908--46955},
+  year      = {2024}
+}
+
+% cretu2025synflownet  [v] ICLR 2025, pp. 47101--47126
+@inproceedings{cretu2025synflownet,
+  title     = {{SynFlowNet}: Towards Molecule Design with Guaranteed Synthesis
+               Pathways},
+  author    = {Cretu, Miruna and Harris, Charles and Igashov, Ilia and
+               Schneuing, Arne and Segler, Marwin and Correia, Bruno and
+               Roy, Julien and Bengio, Emmanuel and Li{\`o}, Pietro},
+  booktitle = {International Conference on Learning Representations},
+  pages     = {47101--47126},
+  year      = {2025}
+}
+
+% [check] venue and year — confirm against the RxnFlow release you trained from
+@inproceedings{seo2024rxnflow,
+  title     = {Generative Flows on Synthetic Pathway for Drug Design},
+  author    = {Seo, Seonghwan and Kim, Minsu and Shen, Tony and
+               Ester, Martin and Park, Jinkyoo and Ahn, Sungsoo and
+               Kim, Woo Youn},
+  booktitle = {International Conference on Learning Representations},
+  year      = {2025}
+}
+
+% gainski2026scent  [v] arXiv:2506.19865
+% [check] update if it has since appeared at a venue
+@article{gainski2026scent,
+  title   = {Scalable and Cost-Efficient de Novo Template-Based Molecular
+             Generation},
+  author  = {Gai{\'n}ski, Piotr and Boussif, Oussama and Rekesh, Andrei and
+             Shevchuk, Dmytro and Parviz, Ali and Tyers, Mike and
+             Batey, Robert A. and Koziarski, Micha{\l}},
+  journal = {arXiv preprint arXiv:2506.19865},
+  year    = {2026}
+}
+
+% gao2025synformer  [v] PNAS 122(41)
+@article{gao2025synformer,
+  title   = {Generative {AI} for navigating synthesizable chemical space},
+  author  = {Gao, Wenhao and Luo, Shitong and Coley, Connor W.},
+  journal = {Proceedings of the National Academy of Sciences},
+  volume  = {122},
+  number  = {41},
+  year    = {2025},
+  doi     = {10.1073/pnas.2415665122}
+}
+
+@article{shen2025cgflow,
+  title   = {Compositional Flows for {3D} Molecule and Synthesis Pathway Co-design},
+  author  = {Shen, Tony and Seo, Seonghwan and Irwin, Ross and Didi, Kieran and
+             Olsson, Simon and Kim, Woo Youn and Ester, Martin},
+  journal = {arXiv preprint arXiv:2504.08051},
+  year    = {2025}
+}
+
+
+% --------------------------------------------------------------------
+% The counter-position: synthesizability without a reaction MDP
+% kim2026s3gfn  [v] arXiv:2602.04119
+% [check] EXPAND THE AUTHOR LIST. "and others" on the paper you argue
+%         against will read as careless to the reviewer most likely to
+%         recognise it.
+% --------------------------------------------------------------------
+@article{kim2026s3gfn,
+  title   = {Synthesizable Molecular Generation via Soft-constrained {GFlowNets}
+             with Rich Chemical Priors},
+  author  = {Kim, Hyeonah and others},
+  journal = {arXiv preprint arXiv:2602.04119},
+  year    = {2026}
+}
+
+% guo2024saturn  [v] arXiv:2405.17066
+@article{guo2024saturn,
+  title   = {Saturn: Sample-efficient Generative Molecular Design using Memory
+             Manipulation},
+  author  = {Guo, Jeff and Schwaller, Philippe},
+  journal = {arXiv preprint arXiv:2405.17066},
+  year    = {2024}
+}
+
+% guo2026tango  [v] Nature Computational Science
+% [check] author list, volume and pages
+@article{guo2026tango,
+  title   = {{TANGO}: direct optimization of constrained synthesizability for
+             generative molecular design},
+  author  = {Guo, Jeff and Schwaller, Philippe},
+  journal = {Nature Computational Science},
+  year    = {2026},
+  doi     = {10.1038/s43588-026-00959-1}
+}
+
+@article{olivecrona2017reinvent,
+  title   = {Molecular de-novo design through deep reinforcement learning},
+  author  = {Olivecrona, Marcus and Blaschke, Thomas and Engkvist, Ola and
+             Chen, Hongming},
+  journal = {Journal of Cheminformatics},
+  volume  = {9},
+  number  = {48},
+  year    = {2017},
+  doi     = {10.1186/s13321-017-0235-x}
+}
+
+
+% --------------------------------------------------------------------
+% Cost-aware and diversity-aware selection
+% fromer2024sparrow    [v] Nature Computational Science 4, 440--450
+% fromer2025diversity  [v] JCIM 65(12), 5989--5997
+% --------------------------------------------------------------------
+@article{fromer2024sparrow,
+  title   = {An algorithmic framework for synthetic cost-aware decision making in
+             molecular design},
+  author  = {Fromer, Jenna C. and Coley, Connor W.},
+  journal = {Nature Computational Science},
+  volume  = {4},
+  pages   = {440--450},
+  year    = {2024},
+  doi     = {10.1038/s43588-024-00639-y}
+}
+
+@article{fromer2025diversity,
+  title   = {Optimal Compound Downselection to Promote Diversity and Parallel
+             Chemistry},
+  author  = {Fromer, Jenna C. and Volkova, Alexandra D. and Coley, Connor W.},
+  journal = {Journal of Chemical Information and Modeling},
+  volume  = {65},
+  number  = {12},
+  pages   = {5989--5997},
+  year    = {2025},
+  doi     = {10.1021/acs.jcim.5c00606}
+}
+
+
+% --------------------------------------------------------------------
+% The data-bottleneck framing (Sec. 1, Sec. 6)
+% --------------------------------------------------------------------
+@article{abolhasani2023sdl,
+  title   = {The rise of self-driving labs in chemical and materials sciences},
+  author  = {Abolhasani, Milad and Kumacheva, Eugenia},
+  journal = {Nature Synthesis},
+  volume  = {2},
+  number  = {6},
+  pages   = {483--492},
+  year    = {2023},
+  doi     = {10.1038/s44160-022-00231-0}
+}
+
+@article{tom2024sdl,
+  title   = {Self-Driving Laboratories for Chemistry and Materials Science},
+  author  = {Tom, Gary and Schmid, Stefan P. and Baird, Sterling G. and Cao, Yang and
+             Darvish, Kourosh and Hao, Han and Lo, Stanley and Pablo-Garc{\'i}a, Sergio and
+             Rajaonson, Ella M. and Skreta, Marta and Yoshikawa, Naruki and
+             Corapi, Samantha and Akkoc, Gun Deniz and Strieth-Kalthoff, Felix and
+             Seifrid, Martin and Aspuru-Guzik, Al{\'a}n},
+  journal = {Chemical Reviews},
+  volume  = {124},
+  number  = {16},
+  pages   = {9633--9732},
+  year    = {2024},
+  doi     = {10.1021/acs.chemrev.4c00055}
+}
+
+
+% --------------------------------------------------------------------
+% Retrosynthesis and clustering machinery
+% --------------------------------------------------------------------
+@article{genheden2020aizynthfinder,
+  title   = {{AiZynthFinder}: a fast, robust and flexible open-source software for
+             retrosynthetic planning},
+  author  = {Genheden, Samuel and Thakkar, Amol and Chadimov{\'a}, Veronika and
+             Reymond, Jean-Louis and Engkvist, Ola and Bjerrum, Esben},
+  journal = {Journal of Cheminformatics},
+  volume  = {12},
+  number  = {70},
+  year    = {2020},
+  doi     = {10.1186/s13321-020-00472-1}
+}
+
+@article{butina1999clustering,
+  title   = {Unsupervised Data Base Clustering Based on Daylight's Fingerprint and
+             {T}animoto Similarity: A Fast and Automated Way To Cluster Small and
+             Large Data Sets},
+  author  = {Butina, Darko},
+  journal = {Journal of Chemical Information and Computer Sciences},
+  volume  = {39},
+  number  = {4},
+  pages   = {747--750},
+  year    = {1999},
+  doi     = {10.1021/ci9803381}
+}
+
+@article{rogers2010ecfp,
+  title   = {Extended-Connectivity Fingerprints},
+  author  = {Rogers, David and Hahn, Mathew},
+  journal = {Journal of Chemical Information and Modeling},
+  volume  = {50},
+  number  = {5},
+  pages   = {742--754},
+  year    = {2010},
+  doi     = {10.1021/ci100050t}
+}
+
+
+% --------------------------------------------------------------------
+% Mode-counting convention (Sec. 2 definitions)
+% zhang2023quantileflows -- arXiv:2302.05793. States the accept-if-reward-
+%   above-threshold-and-Tanimoto-below-cutoff rule explicitly, and notes it
+%   is stricter than Bemis-Murcko scaffold counting.
+% [check] venue -- ICLR 2023 vs TMLR; confirm before submission
+% --------------------------------------------------------------------
+@article{zhang2023quantileflows,
+  title   = {Distributional {GFlowNets} with Quantile Flows},
+  author  = {Zhang, Dinghuai and Pan, Ling and Chen, Ricky T. Q. and
+             Courville, Aaron and Bengio, Yoshua},
+  journal = {arXiv preprint arXiv:2302.05793},
+  year    = {2023}
+}
+
+% lau2024qgfn -- arXiv:2402.05234. Uses Tanimoto cutoffs of 0.70 (QM9) and
+%   0.65 (fragment task); useful for documenting the range.
+% [check] confirm NeurIPS 2024 camera-ready details
+@inproceedings{lau2024qgfn,
+  title     = {{QGFN}: Controllable Greediness with Action Values},
+  author    = {Lau, Elaine and Lu, Stephen Zhewen and Pan, Ling and
+               Precup, Doina and Bengio, Emmanuel},
+  booktitle = {Advances in Neural Information Processing Systems},
+  year      = {2024}
+}
+
+
+% =====================================================================
+% STILL TO ADD before submission:
+%   - the docking engine used (gnina / QuickVina-GPU / Vina), with its paper
+%   - the sEH proxy's source
+%   - the ClpP receptor structure (PDB 7UVU) as a data citation
+%   - MultiAiZ, if it has a separate citable description
+%   - your own prior work, cited in THIRD PERSON for double-blind
+% =====================================================================

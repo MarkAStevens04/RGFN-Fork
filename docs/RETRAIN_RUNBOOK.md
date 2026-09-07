@@ -123,7 +123,70 @@ be averaged into one number without saying so.
 
 ### 2.2 Hub-batching configuration — one algorithm across all three generators
 
-**`--child-policy free_frag --prebuild-k 0`.**
+**`--pool all --child-policy free_frag --prebuild-k 0`.**
+
+#### `--pool all` — no reward pre-filter on the hub set (decided 2026-08-28)
+
+v1 ranked flow only over the parents of the top-`TOPK` candidates by reward (`TOPK=1000` in
+production). That is a **reward pre-filter**, and `pick_hubs.py`'s own docstring describes it as
+legacy continuity with the original Logs/028 recipe, not as a justified choice — `--pool all` was
+added specifically so "does the flow signal buy anything?" is answerable.
+
+**It is free to remove.** The flow estimate is read straight off the record's log-terms
+(`logR + logP_B − logP_F(move) − logP_F(stop)`) — no model, no scoring. Measured on `scent_seh`
+seed 42: **0.17 s over 575 filtered hubs, 0.17 s over all 20,874.** Enumeration cost is set by
+`--n-hubs`, identical either way.
+
+**It changes 60% of the walked hub set and ~1 mode of outcome.** Overlap between the two
+flow-descending orders is **40% across the first 5/10/20/40 hubs** (46% at 200); three of the
+unfiltered top-10 hubs are absent from the filtered list entirely. Yet Logs/053 measured, on
+identical everything else:
+
+| arm | pool | modes @ R=100 | reactions | rxn/mode | reward-gen calls | compute |
+|---|---|---|---|---|---|---|
+| `incumbent` | reward-filtered | 72 | 365 | 1.217 | 241,158 | 5,685 s |
+| **`flow_top`** | **all** | **73** | **357** | **1.190** | 244,685 | 5,648 s |
+
+Swap 60% of the hubs, move one mode. That is "flow finds the neighbourhood, not the rank" arriving
+from a third direction, and it is the reason the switch is safe.
+
+**Why do it:** it removes a confound from our own ordering ablation — with the pre-filter, "flow
+ordering wins" is measured on a pool that was *itself reward-selected*, so a reviewer can say the
+reward filter did the selecting and flow only sorted the survivors. It also deletes an arbitrary knob
+(`TOPK`) from the method description.
+
+**⚠ The consequence that must be reported, not just accepted: depth-0 exposure rises 4×.**
+`pick_hubs.py` applies **no depth filter**, so `--pool all` admits bought building blocks that the
+reward pre-filter happened to exclude — measured on the same cell, depth distribution of the top-200:
+
+| pool | depth 0 | 1 | 2 | 3 | **depth-0 in the first 40 (the part actually walked)** |
+|---|---|---|---|---|---|
+| reward-filtered | 2 | 104 | 84 | 10 | **2** |
+| `all` | **11** | 150 | 37 | 2 | **8** |
+
+A depth-0 hub is legitimately priced at **zero** reactions — a chemist buys it
+(`shallow_couplings(depth=0, promoted=()) == 0`) — and since `cc25046` the competitor gets catalogue
+starting materials too, so this is not an unfair advantage. But "a bought scaffold costs 0 reactions
+and still carries thousands of children, so it ranks near the top by flow" (`cc25046`), and the paper
+itself names depth-0 catalogue picking as the metric's **degenerate optimum**. Leaning harder on it
+without saying so would be the single most attackable move in the benchmark. So:
+
+1. **Every cell reports the depth distribution of the hubs it walked AND the share of delivered modes
+   that came off depth-0 hubs.** This is a new required output — v1's committed curves record
+   `source_hub` but the hub-ordering arms kept only plots, so the delivered library's depth mix
+   **cannot be recovered for the v1 comparison** and is unmeasured today.
+2. **Run `--min-hub-depth 1` as a labelled sensitivity arm.** It is exactly the "is the win late-stage
+   diversification or catalogue picking?" question a reviewer asks, it is cheap (same enumeration
+   cache, different `hubs.csv`), and it matches the AL acquisition path's own default — which uses
+   `min_hub_depth=1` precisely because depth-0 is "huge fan-out, zero amortization — not the 'build
+   once, diversify' signal" (Logs/025). See §7.5: the campaign's `pick_hubs.py` has no such knob while
+   the acquisition path does, which is an inconsistency between two implementations of the same idea.
+
+**`--n-hubs` becomes the method's single width knob.** Under the pre-filter, `TOPK=1000` capped
+eligibility at 575, so `--n-hubs 200` was a soft cap. Under `--pool all` it is the only thing between
+the walk and 20,874 hubs. Report it beside the competitor's Stage-2 cap (§2.3).
+
+#### `--child-policy free_frag --prebuild-k 0`
 
 These are two knobs, not one. `free_frag` is the *filter*: keep only children whose last step attaches
 an already-available fragment, so each kept child costs exactly one marginal reaction. `prebuild-k` is
@@ -443,7 +506,25 @@ learning curve costs nothing extra.
 
 128 → 64, the authors' `num_from_policy`. See §1.
 
-### 7.5 A `manifest.py` for `benchmark_v2`
+### 7.5 `pick_hubs.py` — pass `--pool all`, and give it the depth knob it lacks
+
+- **The v2 driver must pass `--pool all`** (§2.2). v1's `submit_cell.sh` does not, and **must not be
+  edited** — jobs are in the queue, bash resumes a script at a byte offset, and SLURM runs a submit
+  script as of its start. Leave v1 alone; put the flag in the v2 driver.
+- **Add a depth band to `pick_hubs.py`.** It has no depth filter at all, while the AL acquisition path
+  defaults to `min_hub_depth=1 / max_hub_depth=3` for reasons that apply equally here (depth 0 = huge
+  fan-out, zero amortization; depth 4 = at the reaction cap, `P_B` unrecoverable). Two
+  implementations of "pick hubs" should not disagree about what a hub is. The default stays
+  unfiltered — the sensitivity arm needs the knob, not a new default.
+- **Emit the depth mix.** The per-cell campaign output must carry the walked hubs' depth distribution
+  and the share of delivered modes sitting on depth-0 hubs. `source_hub` is already recorded; joining
+  it to depth is all that is missing.
+- **Two incidental bugs, both of which vanish under `--pool all`:** `pick_hubs.py`'s own
+  `--top-k-candidates` default is **100** (yielding 64 hubs, never reaching `--n-hubs 200`) while
+  `submit_cell.sh` passes 1000 — so invoking the script directly runs a silently different method.
+  And `submit_cell.sh`'s Knobs comment says `TOPK (100)` on line 18 while line 35 sets 1000.
+
+### 7.6 A `manifest.py` for `benchmark_v2`
 
 Spanning both pipelines, resolving a cell from `grid.csv` + `targets.py` + live filesystem status, the
 way `matrix16/manifest.py` does for one. Deliberately not written yet — a bad duplicate is worse than
@@ -501,7 +582,7 @@ quoted from a mixed vintage.
 | Reaction-budget readout (the headline) | every reaction-GFN cell's campaign curves | rebuild; **note the headline moves 2.93× → 2.73×** once FragGFN leaves (verified 2026-08-28: 3 reaction-GFNs, n=23 comparable at R=100, range 1.67–3.56) |
 | External head-to-head | competitor pools + routes + selection | rebuild — and on the **primary** axis. The committed figure is still on the secondary axis (reactions-for-100-modes) |
 | Diversity-aware SPARROW comparison | our enumerations + competitor selection | rebuild |
-| Ordering floor + ceiling | per-cell enumerations | rebuild; robust to the taxonomy change (median recovery 94.6% → 94.0%) |
+| Ordering floor + ceiling | per-cell enumerations | rebuild; robust to the taxonomy change (median recovery 94.6% → 94.0%). **The claim gets stronger under `--pool all`**: v1 measured flow ordering over a reward-pre-filtered pool, so "flow does the selecting" was confounded. Re-run the arms on the unfiltered pool |
 | Filter ablation | one cell's enumeration | rebuild; currently `scent_seh` seed 42 only |
 | Two-knob surfaces | per-cell enumerations | rebuild at **R=100**; currently budget 300, sEH only, seed 42 |
 | Cost-model audit vs SPARROW MILP | selected libraries | rebuild — CPU-cheap, and it is the credibility anchor |
@@ -530,7 +611,11 @@ committing there — the default scans only *tracked* files, so a new file is in
    made reward and gate the same column again, so even there the standing exploitation check needs a
    signal that is not a component of `cnn_vs` — `vina_t2` is the candidate. The other three targets
    have no such signal at all. Free for the docking targets; ~100 molecules/cell for sEH.
-2. **Do pruned pools change more widely than naive ones under the new gates?** (§4) — unmeasured.
-3. **Arm B's downstream** — paused by decision; revisit only if arm A trains badly.
-4. **SynFormer** — 1 of 9 cells; blocked on a worker-pool memory leak. If it stays blocked, the
+2. **How much of the delivered library sits on depth-0 (bought) hubs?** (§2.2) — unmeasured, and
+   `--pool all` raises depth-0 exposure 4× in the walked prefix. v1's hub-ordering arms kept only
+   plots, not the per-step curves, so the v1 baseline for this cannot be recovered. Answer it in the
+   arm-A pilot, alongside the `--min-hub-depth 1` sensitivity arm.
+3. **Do pruned pools change more widely than naive ones under the new gates?** (§4) — unmeasured.
+4. **Arm B's downstream** — paused by decision; revisit only if arm A trains badly.
+5. **SynFormer** — 1 of 9 cells; blocked on a worker-pool memory leak. If it stays blocked, the
    reaction-grounded / not-a-GFlowNet quadrant has one entrant and thin coverage.

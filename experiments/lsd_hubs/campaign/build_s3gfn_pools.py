@@ -91,6 +91,15 @@ def load_ranked(
                 continue
             if not smi:
                 continue
+            # NaN REJECTION IS NOT REDUNDANT WITH THE GATE. The gate is written as "skip if it fails"
+            # and every comparison against NaN is False, so an unscored molecule slipped THROUGH the
+            # gate and entered the pool as if it had passed. Found 2026-09-06 on
+            # s3gfn_seh_seed42_cmode: 3 of 8,925 rows carry score=nan, and all three are
+            # organometallics (Pt, Au) the sEH proxy could not score -- exactly the molecules that
+            # must never reach a deliverable library. `sparrow_select_frontier.load_pool` phrases the
+            # same test positively (`val > gate`) and is unaffected.
+            if val != val:
+                continue
             if (val < gate) if higher_is_better else (val > gate):
                 continue
             n_rows += 1
@@ -180,6 +189,30 @@ def main() -> None:
     ap.add_argument(
         "--cutoff", type=float, default=0.5, help="--pruned: tau for the sphere-exclusion filter"
     )
+    ap.add_argument(
+        "--catalogue-distinct",
+        action="store_true",
+        help="CATALOGUE-DISTINCT MODES. With --pruned, additionally require every molecule to be "
+        "Tanimoto-< --cutoff from EVERY purchasable building block (ZINCFrag + our 418), not just "
+        "from the modes already accepted. Answers 'what if the library must be genuinely different "
+        "from what you can buy?' -- the structural counterpart to the route-depth constraint, and it "
+        "needs no retrosynthesis at all. Applied BEFORE the sphere-exclusion walk, so the pool is "
+        "still N molecules and the comparison is not confounded by a smaller pool.",
+    )
+    ap.add_argument(
+        "--block-sim-cache",
+        default="",
+        help="--catalogue-distinct: JSONL {smiles, max_block_sim} to read and extend. The value does "
+        "not depend on tau, so one cache serves every rung of a sweep.",
+    )
+    ap.add_argument("--block-nproc", type=int, default=8)
+    ap.add_argument(
+        "--zincfrag",
+        default="external/s3gfn/data/envs/zincfrag_hb105/building_block.smi",
+        help="the ZINC-derived blocks we have STRUCTURES for. NOTE zinc_stock.hdf5 holds InChIKeys "
+        "only and cannot be fingerprinted, so this is ZINCFrag and figures must say so.",
+    )
+    ap.add_argument("--fragments", default="data/libraries/glue_standard_v1/fragments.csv")
     a = ap.parse_args()
 
     hib = not a.lower_is_better
@@ -203,6 +236,48 @@ def main() -> None:
         from validation.lsdflow.metrics.diversity import ecfp, mode_representatives
 
         biggest = max(int(x) for x in a.sizes.split(",") if x.strip())
+
+        if a.catalogue_distinct:
+            # Reject anything too close to a purchasable BLOCK first, then let the existing
+            # sphere-exclusion walk enforce mutual distinctness over the survivors. Order matters
+            # only for speed, not for the result: both tests use the same tau and the same metric.
+            # READ a precomputed cache; never fork a worker pool from here. This function runs
+            # AFTER `validation.lsdflow.metrics.diversity` (and its transitive heavy imports) are
+            # already loaded in this process, and forking a multiprocessing.Pool after a heavy
+            # import is the hang this project has hit before -- job bf5n600kr died at SIGTERM having
+            # produced no output and no cache rows at all. Precomputing in a clean process
+            # (`block_similarity_cache.py`) removes the hazard instead of racing it.
+            import json as _json
+
+            if not a.block_sim_cache or not Path(a.block_sim_cache).exists():
+                raise SystemExit(
+                    "[pools] --catalogue-distinct needs --block-sim-cache built first:\n"
+                    "  python block_similarity_cache.py --candidates <csv> --gate <g> --out <cache>"
+                )
+            sims = {}
+            for _line in Path(a.block_sim_cache).open():
+                _line = _line.strip()
+                if _line:
+                    _r = _json.loads(_line)
+                    sims[_r["smiles"]] = _r["max_block_sim"]
+            n_before = len(rows)
+            _missing = [s_ for s_, _ in rows if s_ not in sims]
+            if _missing:
+                raise SystemExit(
+                    f"[pools] block-sim cache is missing {len(_missing)} of {n_before} candidates. "
+                    "Re-run block_similarity_cache.py on this candidates file first — silently "
+                    "treating them as passing would admit molecules that ARE building blocks."
+                )
+            rows = [(s_, v) for s_, v in rows if sims.get(s_, 1.0) < a.cutoff]
+            print(
+                f"  CATALOGUE-DISTINCT (tau={a.cutoff}): {n_before} -> {len(rows)} clear the block "
+                f"test against ZINCFrag+SMALL ({n_before - len(rows)} too close to a purchasable block)"
+            )
+            if not rows:
+                raise SystemExit(
+                    "[pools] nothing clears the block test — cell is catalogue-limited"
+                )
+
         smis = [s_ for s_, _ in rows]
         rews = [v for _, v in rows]
         fps = [ecfp(s_) for s_ in smis]

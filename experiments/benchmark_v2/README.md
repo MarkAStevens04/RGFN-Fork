@@ -108,7 +108,9 @@ compute nodes.
 | arm B (secondary) | 320,000 oracle calls, the 3 reaction-GFNs only; downstream paused |
 | batch size | each paper's own — RGFN 100, SCENT 64, RxnFlow 64 (**not** 128) |
 | gates | resolve by importing `matrix16/targets.py`; never hardcode, never default |
-| hub-batching | `--child-policy free_frag --prebuild-k 0`, all three reaction-GFNs |
+| hub-batching | `--pool all --child-policy free_frag --prebuild-k 0`, all three reaction-GFNs |
+| hub width knob | `--n-hubs 200` — the ONLY cap under `--pool all` (eligibility is ~20k hubs) |
+| required per-cell output | walked hubs' depth distribution + share of delivered modes on depth-0 hubs |
 | primary readout | modes at **100 reactions** (emit 50/100/150/200/300 on the reaction-GFN side) |
 | phase 1 | sEH, DRD2, ClpP — 81 cells |
 | phase 2 | 6TD3-B — 27 cells; reward *and* gate are `cnn_vs` at **6.718** (runbook §7.1), oracle wiring in progress |
