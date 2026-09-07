@@ -63,7 +63,26 @@ SCRATCH_ROOT = Path(os.environ.get("BENCHMARK_V2_SCRATCH", "/scratch/markymoo/rg
 RESULTS_ROOT = Path(os.environ.get("BENCHMARK_V2_RESULTS", str(V2_ROOT / "results")))
 
 ARMS = ("a", "b")
-POOLS = ("naive", "pruned")
+
+# THREE POOL VALUES, AND THE THIRD IS RESTRICTED ON PURPOSE (settled 2026-09-07).
+#
+#   naive      top-N by reward, whatever diversity the generator's own machinery produced
+#   pruned     N guaranteed-distinct molecules, our sphere-exclusion rule applied to its output
+#   full_pool  routes over the WHOLE emitted pool -- a superset of both, not a variant of either
+#
+# `full_pool` exists because TANGO and SynFormer ship routes by construction: syntheseus searches
+# each target INDEPENDENTLY, so a route set over the full pool genuinely CONTAINS the routes for any
+# subset. Route once, subset per variant at read time -- cheaper, and strictly more informative than
+# two overlapping runs.
+#
+# It is REFUSED for the route-planned generators, and that refusal is the point. MultiAiZ is
+# SET-BASED: planning 500 diverse molecules converges on different shared intermediates than planning
+# 500 near-duplicates, so its naive and pruned results are not subsets of a larger run and never can
+# be. Someone later "optimising" the pipeline by planning once and subsetting would silently price a
+# library on intermediates the planner never actually shared -- a wrong answer that looks like a
+# saving. Encoding it here rather than in a README on one directory is what makes it a guard.
+POOLS = ("naive", "pruned", "full_pool")
+ROUTE_NATIVE = {"synformer", "tango"}
 
 # Which conda env and entry point each generator runs under. Mirrors
 # experiments/fixed_reward/scale5k/submit_baseline.sh -- the two must not drift, and the awkward
@@ -160,14 +179,36 @@ class Cell:
     def enum_dir(self, arm: str = "a") -> Path:
         return self.scratch_campaign_dir(arm) / "enum"
 
+    def _check_pool(self, pool: str) -> str:
+        """Validate a pool value against this generator. Raises rather than returning a path.
+
+        `full_pool` is permitted ONLY for generators that ship routes by construction -- see the
+        POOLS comment. A route-planned generator asking for it is a category error, not a typo.
+        """
+        if pool not in POOLS:
+            raise ValueError(f"unknown pool {pool!r}; known: {list(POOLS)}")
+        if pool == "full_pool" and self.generator not in ROUTE_NATIVE:
+            raise ValueError(
+                f"{self.generator!r} is route-PLANNED (MultiAiZ), so it has no 'full_pool': "
+                f"MultiAiZ is set-based, and its naive/pruned results are not subsets of a larger "
+                f"run. Planning once and subsetting would price the library on intermediates the "
+                f"planner never shared. Use 'naive' or 'pruned'. "
+                f"(full_pool is for {sorted(ROUTE_NATIVE)}.)"
+            )
+        return pool
+
     def pool_dir(self, arm: str = "a", pool: str = "naive") -> Path:
-        return SCRATCH_ROOT / "pools" / self.tag / f"arm{arm}" / pool
+        return SCRATCH_ROOT / "pools" / self.tag / f"arm{arm}" / self._check_pool(pool)
 
     def routes_dir(self, arm: str = "a", pool: str = "naive") -> Path:
-        return SCRATCH_ROOT / "routes" / self.tag / f"arm{arm}" / pool
+        return SCRATCH_ROOT / "routes" / self.tag / f"arm{arm}" / self._check_pool(pool)
 
     def selection_dir(self, arm: str = "a", pool: str = "naive") -> Path:
-        return SCRATCH_ROOT / "selection" / self.tag / f"arm{arm}" / pool
+        return SCRATCH_ROOT / "selection" / self.tag / f"arm{arm}" / self._check_pool(pool)
+
+    def pools_for(self) -> tuple:
+        """The pool variants this generator legitimately has. Drivers should iterate THIS, not POOLS."""
+        return POOLS if self.generator in ROUTE_NATIVE else ("naive", "pruned")
 
     def results_dir(self, arm: str = "a") -> Path:
         return RESULTS_ROOT / self.tag / f"arm{arm}"
@@ -334,7 +375,10 @@ def emit_shell(cell: Cell, arm: str = "a") -> str:
         kv["SAMPLE_DIR"] = str(cell.sample_dir(arm))
         kv["ENUM_DIR"] = str(cell.enum_dir(arm))
     else:
-        for pool in POOLS:
+        # Only the pools this generator legitimately has -- a route-planned generator never gets a
+        # FULL_POOL variable, so a driver cannot accidentally reference one.
+        kv["POOLS"] = " ".join(cell.pools_for())
+        for pool in cell.pools_for():
             kv[f"POOL_DIR_{pool.upper()}"] = str(cell.pool_dir(arm, pool))
             kv[f"ROUTES_DIR_{pool.upper()}"] = str(cell.routes_dir(arm, pool))
             kv[f"SELECTION_DIR_{pool.upper()}"] = str(cell.selection_dir(arm, pool))
