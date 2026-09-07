@@ -1,0 +1,47 @@
+{
+  "run_dir": "/scratch/markymoo/rgfn_runs/v2_pilot/depthmix/d3",
+  "budget_rxns": 100,
+  "min_synth_depth": null,
+  "reward_threshold": 5.68,
+  "hub_batching": {
+    "modes_at_budget": 71,
+    "total_modes": 300,
+    "modes_with_named_hub": 71,
+    "unjoined_hubs": 1,
+    "joined_via_stereo_strip": 0,
+    "distinct_hubs_walked": 19,
+    "hub_depth_of_walked_hubs": {
+      "1": 10,
+      "2": 8
+    },
+    "modes_by_hub_depth": {
+      "1": 15,
+      "2": 55
+    },
+    "share_modes_on_depth0": 0.0
+  },
+  "best_candidate": {
+    "modes_at_budget": 28,
+    "total_modes": 300,
+    "modes_with_named_hub": 26,
+    "unjoined_hubs": 12,
+    "joined_via_stereo_strip": 0,
+    "distinct_hubs_walked": 23,
+    "hub_depth_of_walked_hubs": {
+      "1": 7,
+      "2": 5
+    },
+    "modes_by_hub_depth": {
+      "1": 9,
+      "2": 5
+    },
+    "share_modes_on_depth0": 0.0
+  },
+  "n_hubs_in_hubs_csv": 200,
+  "depth_of_full_hub_set": {
+    "0": 2,
+    "1": 86,
+    "2": 95,
+    "3": 17
+  }
+}
