@@ -874,20 +874,20 @@ def main():
         json.dump(compositions, open(out_dir / "compositions.json", "w"))
         json.dump(routes, open(out_dir / "routes.json", "w"))
         _routes.validate_sample_routes("scent", out_dir, routes=routes)
-        json.dump(
-            {
-                "meta": {
-                    "setup_s": round(setup_s, 3),
-                    "device": str(device),
-                    "cuda_synchronized": _use_cuda,
-                    "reward_name": args.reward_name,
-                    "model": args.model_name,
-                    "n_trajectories": total,
-                    "totals_s": {k: round(v, 3) for k, v in sample_timing.items()},
-                },
-            },
-            open(out_dir / "sample_timings.json", "w"),
-            indent=2,
+        # Same writer as the other three workers. SCENT's split was the richest of the four and is
+        # unchanged; routing it through the shared helper is what stops the file shape drifting
+        # apart again (RGFN put its timing in meta.json, SCENT here, and two workers nowhere -- so a
+        # probe of meta.json reported "no timing" for the generator with the BEST instrumentation).
+        A.write_sample_timings(
+            out_dir / "sample_timings.json",
+            setup_s=setup_s,
+            totals_s=sample_timing,
+            n_trajectories=total,
+            n_records=len(all_records),
+            device=str(device),
+            reward_name=args.reward_name,
+            model=args.model_name,
+            cuda_synchronized=_use_cuda,
         )
         print(
             f"[scent_worker] compute-time: setup {setup_s:.1f}s | "

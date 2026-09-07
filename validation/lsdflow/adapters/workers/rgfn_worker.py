@@ -154,6 +154,22 @@ def main() -> None:
             }
         )
         A.write_json(out_dir / "meta.json", meta)
+        # Also emit the shared sidecar the other three workers write, so a reader of whole-pipeline
+        # GPU-hours has ONE filename to open for every generator. `sample_s` stays in meta.json for
+        # the v1 artifacts that already carry it. RGFN times the stage as a whole rather than
+        # splitting sampling from flow extraction, so it declares itself `lumped` -- stated in the
+        # file rather than implied by a zero column, the same convention write_enum_timings uses.
+        A.write_sample_timings(
+            out_dir / "sample_timings.json",
+            setup_s=setup_s,
+            totals_s={"unattributed_s": meta["sample_s"]},
+            n_trajectories=sample.n_trajectories,
+            n_records=len(rows),
+            device=str(args.device),
+            reward_name=args.reward_name,
+            model=args.model_name,
+            component_split="lumped",
+        )
         print(
             f"[rgfn_worker] sample: {sample.n_trajectories} trajectories -> {len(rows)} records, "
             f"{len(sample.visit_counts)} nodes -> {out_dir}",
