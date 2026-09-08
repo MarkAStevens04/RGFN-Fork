@@ -12,6 +12,43 @@ that for one cell before 108 cells are committed.
 
 ---
 
+## VERDICT — arm A is viable for the external head-to-head, NOT for hub-batching
+
+The flow field at 10,000 calls is genuinely learned (separation comparable to the 320,000-call field,
+and better evidenced). But hub-batching's advantage collapses, because arm A removes the thing that
+puts hubs where amortisation can happen. Measured on scent_seh/42, same gate, same config, only the
+budget differing:
+
+| | modes @ R=100 | vs best-candidate | rxn/mode | hub depth of delivered modes | promoted frags |
+|---|---|---|---|---|---|
+| **arm A** (10,048 calls) | **39** | **1.56x** | **1.918** | {2:7, 3:32} | **0** |
+| **v1** (320,000 calls) | **96** | **3.43x** | **1.067** | {0:35, 1:48, 2:13} | 1,600 |
+
+This independently confirms the researcher's decision to run the internal matrix at arm B.
+
+**Caveat on the magnitude, not the direction:** the two runs are not matched on enumeration -- arm A
+used 64 hubs at `enum_max 4000`, v1 used 200 hubs uncapped (post-Logs/068). At R=100 only ~5 hubs are
+walked so the hub count should not bind, but the per-hub child cap plausibly does. Re-measure at
+matched enumeration before the ratio goes in a draft.
+
+---
+
+## Finding 0 — the mechanism is the LIBRARY, not the budget (controlled 2x2)
+
+The cleanest result here. RGFN never has a dynamic library at any budget; SCENT has one only at v1.
+Top-40 hub depths under `--pool all`, sEH seed 42:
+
+| generator | arm A (10k calls) | v1 (320k calls) | moves with budget? |
+|---|---|---|---|
+| **RGFN** (never has a library) | {1:1, 2:5, 3:34} | {1:2, 2:4, 3:34} | **no -- identical** |
+| **SCENT** (library only at v1) | {2:3, 3:37} | {0:6, 1:30, 2:4} | **yes -- flips 3 -> 1** |
+
+Budget alone does not make a flow field hub deep: RGFN is depth-3 at both budgets. SCENT moves
+*because* the budget is what decides whether it has a library. That isolates the mechanism to the
+library rather than to training length, which no single-generator comparison could do.
+
+---
+
 ## Finding 1 — ⛔ SCENT's dynamic library never activates at arm A
 
 **Confirmed three ways: from the clone config, from the pilot's own resolved `operative_config.gin`,
@@ -96,7 +133,13 @@ share is quoted.
 | generator | mechanism | achieved | evidence |
 |---|---|---|---|
 | SCENT | 157 iterations × batch 64 | **10,048 calls** | `paths.csv` last iteration 10,047, 10,048 rows |
-| RGFN | agent A's `BudgetCheckpointer` on the trace counter | pending | `trace.csv` + `arm_a.json` |
+| RGFN | agent A's `BudgetCheckpointer` on the trace counter | **10,007 calls at iteration 83** | `arm_a.json`: `fired: true, crossed_at_n_scored: 10007, saved_at_iteration: 83` |
+
+**The RGFN row is the case for the trace counter over arithmetic.** I planned 100 iterations expecting
+100 calls each. It crossed at iteration **83**, because RGFN scores `train_forward_n_trajectories`
+(100) **plus** `train_replay_n_trajectories` (20) = 120.6/iteration measured. Placing the checkpoint by
+step count would have trained RGFN ~20% past the arm-A budget and made the external head-to-head
+quietly unfair in our favour.
 
 **SCENT emitted no `trace.csv`.** At this pilot's launch, agent A's instrumentation covered RGFN's
 `glue/fixed_reward/pipeline.py` but not `validation/generators/scent/run_scent_fixed.py`. SCENT's
@@ -142,8 +185,55 @@ Committed results: `results/depthmix_{base,d2,d3}.json`.
 
 ---
 
+## Timings — arm A, sEH, one A100 (published numbers, per runbook's compute-vs-reactions exhibit)
+
+| stage | SCENT | RGFN |
+|---|---|---|
+| train to arm-A budget | 1,159 s (19 min) | 3,864 s (64 min) |
+| — `train_gfn` | — | 3,166 s |
+| — `sample_batch` | — | 659 s |
+| stage-2 sample, 30,000 trajectories | 1,189 s | 4,324 s |
+| `pick_hubs` (either pool) | 0.18 s | 0.19 s |
+| enumerate, 64 hubs, `enum_max` 4000 | 922 s | — |
+| campaign | 17 s | — |
+
+RGFN costs ~3.3x SCENT per oracle call at arm A.
+
+**DO NOT quote RGFN's `score: 0.052 s`.** `timing.json` reports 52 ms for scoring 16,919 molecules --
+3 us each -- which is not credible for an MPNN forward pass. The proxy call is most likely happening
+inside `train_gfn` and the `score` timer wrapping something else, i.e. mis-attributed rather than
+genuinely free. A near-zero column reads as "measured and fast" when it may be "not measured here";
+confirm the measurement happened before treating it as a finding. These timings should be re-emitted
+through C's `write_sample_timings()`, which omits an unmeasured component rather than writing 0.0.
+
+---
+
+## Defects found, and where they landed
+
+1. **`pick_hubs` silently overwrites its own provenance.** Both sidecars go to a FIXED name in the
+   parent of `--out` (`hub_scores.csv`, `pick_hubs_timing.json`, lines 276/289), so two invocations
+   differing only in `--out` basename -- exactly what a pool comparison does -- share one sidecar and
+   the second clobbers the first. It bit this pilot twice: I analysed a `topk` ranking believing it
+   was `--pool all`, caught it because `pick_hubs_timing.json` said `pool: topk_candidates`, and
+   re-ran into separate directories. **This is the cause of the project's standing "hub_scores.csv is
+   often STALE, never join against it" warning** -- the file does not age, the next run overwrites it.
+   Reported to agent C.
+2. **`run_campaign`'s hub provenance is null on any real cell.** `depth_mix` and
+   `n_promoted_fragments` populate correctly (verified here -- and `n_promoted_fragments: 0`
+   independently confirms Finding 1 from a second code path). But `hub_pool`, `min_hub_depth`,
+   `max_hub_depth` and `walked_depth_hist` came back **null**, because `pick_hubs` is a separate
+   stage and the campaign is never told which pool produced the enumeration. In the production
+   pipeline those stages are *always* separate, so this is not an artifact of how I ran it.
+3. **v1 RGFN's flow ranking rests on unreplicated estimates.** Median observed children backing a
+   top-40 hub: **1**, with **72.5%** singletons -- against 21 (12.5% singletons) for the arm-A RGFN
+   sample and 10 for v1 SCENT. Any v1 RGFN hub-ordering claim inherits that.
+
+---
+
 ## Still open
 
-- **Arm-A hub structure** — the actual go/no-go. Jobs in flight.
-- **`--pool all` depth share** — needs a fresh enumeration of the unfiltered hub set.
-- **Per-stage wall clock** for the cost model — partial (SCENT arm-A training: 19 min on one A100).
+- **`--pool all` depth-0 share** — needs a fresh enumeration of the unfiltered hub set.
+- **Matched-enumeration re-measure** of the arm-A vs v1 ratio (64/capped vs 200/uncapped).
+- **DRD2 and the other seeds** — `pick_hubs` is 0.2 s, so the depth grid extends for seconds; the
+  campaign half does not.
+- **Re-emit timings** through `write_sample_timings()`.

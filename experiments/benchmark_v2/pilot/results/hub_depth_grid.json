@@ -1,0 +1,727 @@
+[
+  {
+    "cell": "fraggfn_6td3",
+    "generator": "fraggfn",
+    "target": "6td3",
+    "seed": 42,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_clpp",
+    "generator": "fraggfn",
+    "target": "clpp",
+    "seed": 42,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_drd2",
+    "generator": "fraggfn",
+    "target": "drd2",
+    "seed": 42,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_seh",
+    "generator": "fraggfn",
+    "target": "seh",
+    "seed": 42,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "3": 2,
+      "4": 38
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "rgfn_6td3",
+    "generator": "rgfn",
+    "target": "6td3",
+    "seed": 42,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "2": 2,
+      "3": 38
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rgfn_clpp",
+    "generator": "rgfn",
+    "target": "clpp",
+    "seed": 42,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 3,
+      "2": 16,
+      "3": 21
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rgfn_drd2",
+    "generator": "rgfn",
+    "target": "drd2",
+    "seed": 42,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "2": 20,
+      "3": 20
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "rgfn_seh",
+    "generator": "rgfn",
+    "target": "seh",
+    "seed": 42,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 2,
+      "2": 4,
+      "3": 34
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_6td3",
+    "generator": "rxnflow",
+    "target": "6td3",
+    "seed": 42,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 1,
+      "2": 39
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_clpp",
+    "generator": "rxnflow",
+    "target": "clpp",
+    "seed": 42,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 19,
+      "2": 21
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_drd2",
+    "generator": "rxnflow",
+    "target": "drd2",
+    "seed": 42,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 4,
+      "2": 36
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_seh",
+    "generator": "rxnflow",
+    "target": "seh",
+    "seed": 42,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "2": 40
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "scent_6td3",
+    "generator": "scent",
+    "target": "6td3",
+    "seed": 42,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 5,
+      "1": 10,
+      "2": 13,
+      "3": 12
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "scent_clpp",
+    "generator": "scent",
+    "target": "clpp",
+    "seed": 42,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 8,
+      "1": 9,
+      "2": 8,
+      "3": 15
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "scent_drd2",
+    "generator": "scent",
+    "target": "drd2",
+    "seed": 42,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 16,
+      "1": 18,
+      "2": 3,
+      "3": 3
+    },
+    "modal_depth": 1,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "scent_seh",
+    "generator": "scent",
+    "target": "seh",
+    "seed": 42,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 6,
+      "1": 30,
+      "2": 4
+    },
+    "modal_depth": 1,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_6td3",
+    "generator": "fraggfn",
+    "target": "6td3",
+    "seed": 43,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_clpp",
+    "generator": "fraggfn",
+    "target": "clpp",
+    "seed": 43,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_drd2",
+    "generator": "fraggfn",
+    "target": "drd2",
+    "seed": 43,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_seh",
+    "generator": "fraggfn",
+    "target": "seh",
+    "seed": 43,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "rgfn_6td3",
+    "generator": "rgfn",
+    "target": "6td3",
+    "seed": 43,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 1,
+      "1": 1,
+      "2": 4,
+      "3": 34
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rgfn_clpp",
+    "generator": "rgfn",
+    "target": "clpp",
+    "seed": 43,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 3,
+      "2": 22,
+      "3": 15
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "rgfn_drd2",
+    "generator": "rgfn",
+    "target": "drd2",
+    "seed": 43,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 1,
+      "2": 16,
+      "3": 23
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rgfn_seh",
+    "generator": "rgfn",
+    "target": "seh",
+    "seed": 43,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 2,
+      "2": 7,
+      "3": 31
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_6td3",
+    "generator": "rxnflow",
+    "target": "6td3",
+    "seed": 43,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 1,
+      "1": 3,
+      "2": 36
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_clpp",
+    "generator": "rxnflow",
+    "target": "clpp",
+    "seed": 43,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 4,
+      "2": 36
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_drd2",
+    "generator": "rxnflow",
+    "target": "drd2",
+    "seed": 43,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 178,
+    "top_depth_hist": {
+      "0": 1,
+      "1": 8,
+      "2": 31
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_seh",
+    "generator": "rxnflow",
+    "target": "seh",
+    "seed": 43,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 2,
+      "2": 38
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "scent_6td3",
+    "generator": "scent",
+    "target": "6td3",
+    "seed": 43,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 5,
+      "2": 5,
+      "3": 30
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "scent_clpp",
+    "generator": "scent",
+    "target": "clpp",
+    "seed": 43,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 4,
+      "1": 5,
+      "2": 7,
+      "3": 24
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "scent_drd2",
+    "generator": "scent",
+    "target": "drd2",
+    "seed": 43,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 1,
+      "1": 22,
+      "2": 12,
+      "3": 5
+    },
+    "modal_depth": 1,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "scent_seh",
+    "generator": "scent",
+    "target": "seh",
+    "seed": 43,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 6,
+      "1": 28,
+      "2": 5,
+      "3": 1
+    },
+    "modal_depth": 1,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_6td3",
+    "generator": "fraggfn",
+    "target": "6td3",
+    "seed": 44,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_clpp",
+    "generator": "fraggfn",
+    "target": "clpp",
+    "seed": 44,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_drd2",
+    "generator": "fraggfn",
+    "target": "drd2",
+    "seed": 44,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "fraggfn_seh",
+    "generator": "fraggfn",
+    "target": "seh",
+    "seed": 44,
+    "cap": null,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "4": 40
+    },
+    "modal_depth": 4,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "rgfn_clpp",
+    "generator": "rgfn",
+    "target": "clpp",
+    "seed": 44,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 1,
+      "2": 14,
+      "3": 25
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rgfn_drd2",
+    "generator": "rgfn",
+    "target": "drd2",
+    "seed": 44,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "1": 1,
+      "2": 21,
+      "3": 18
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "rgfn_seh",
+    "generator": "rgfn",
+    "target": "seh",
+    "seed": 44,
+    "cap": 4,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "2": 6,
+      "3": 34
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_6td3",
+    "generator": "rxnflow",
+    "target": "6td3",
+    "seed": 44,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "2": 40
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_clpp",
+    "generator": "rxnflow",
+    "target": "clpp",
+    "seed": 44,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "2": 40
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_drd2",
+    "generator": "rxnflow",
+    "target": "drd2",
+    "seed": 44,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 112,
+    "top_depth_hist": {
+      "0": 10,
+      "1": 3,
+      "2": 27
+    },
+    "modal_depth": 2,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "rxnflow_seh",
+    "generator": "rxnflow",
+    "target": "seh",
+    "seed": 44,
+    "cap": 3,
+    "has_library": false,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 1,
+      "1": 21,
+      "2": 18
+    },
+    "modal_depth": 1,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "scent_6td3",
+    "generator": "scent",
+    "target": "6td3",
+    "seed": 44,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 2,
+      "1": 7,
+      "2": 12,
+      "3": 19
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "scent_clpp",
+    "generator": "scent",
+    "target": "clpp",
+    "seed": 44,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 3,
+      "1": 11,
+      "2": 11,
+      "3": 15
+    },
+    "modal_depth": 3,
+    "modal_is_cap_minus_1": true
+  },
+  {
+    "cell": "scent_drd2",
+    "generator": "scent",
+    "target": "drd2",
+    "seed": 44,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 12,
+      "1": 15,
+      "2": 7,
+      "3": 6
+    },
+    "modal_depth": 1,
+    "modal_is_cap_minus_1": false
+  },
+  {
+    "cell": "scent_seh",
+    "generator": "scent",
+    "target": "seh",
+    "seed": 44,
+    "cap": 4,
+    "has_library": true,
+    "n_ranked": 200,
+    "top_depth_hist": {
+      "0": 10,
+      "1": 28,
+      "2": 2
+    },
+    "modal_depth": 1,
+    "modal_is_cap_minus_1": false
+  }
+]
