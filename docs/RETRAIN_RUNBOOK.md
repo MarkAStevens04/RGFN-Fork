@@ -71,13 +71,30 @@ unsettleable. **The trace counter decides, not multiplication.**
 
 | arm | budget | who | purpose |
 |---|---|---|---|
-| **A — headline** | **10,000 oracle calls** | all 9 generators | the only budget at which cross-generator comparison is defensible |
-| **B — secondary** | **320,000 oracle calls** | the 3 reaction-GFNs only | continuity with published numbers; a fallback if arm A trains badly |
+| **A** | **10,000 oracle calls** | all 9 generators | the PMO convention the competitors' own papers use |
+| **B** | **320,000 oracle calls** | the 3 reaction-GFNs | **SCENT's own published protocol** — 64 forward trajectories × 5,000 iterations |
 
-**Arm B is an internal comparison only** (hub-batching vs best-candidate on the same pool), never
-external — budget parity is what makes arm A meaningful and arm B would break it. Its downstream
-(sample → enumerate → campaign) is **paused**: build the checkpoints, run the downstream only if arm A
-underperforms. The infrastructure must exist; the compute does not have to be spent.
+**Each exhibit uses the arm that makes it valid (decided 2026-09-08). Arm B's downstream is NOT
+paused.**
+
+| exhibit | arm | why |
+|---|---|---|
+| **external head-to-head** (us vs 6 competitors) | **A** | budget parity is what makes a cross-generator claim fair |
+| **internal matrix** (hub-batching vs best-candidate) | **B** | within-generator on an identical pool, so parity was never needed — and at arm A one of our three generators is not itself (§7.1, Logs/078) |
+| **compute↔reactions tradeoff** (new) | **A vs B**, our generators | prices GPU-hours against bench reactions: *"X more GPU-hours buys Y fewer reactions"* |
+| **route dataset** | **B** | SCENT promotes nothing at arm A, so its arm-A routes bottom out at stock and lose the nested promoted-fragment case the schema is built around |
+
+**Why this is not "short vs long" but two literatures.** SCENT's paper contains the word "oracle"
+**zero** times in 23 pages — it normalises on iterations, and explicitly matched RGFN ("we changed the
+number of sampled forward trajectories to 64") and SynFlowNet ("64 forward trajectories and 5000
+iterations") to its own 64 × 5,000 = 320,000. RGFN normalises on *training time*. S3-GFN is the PMO
+paper ("oracle budget is limited to 10K"). So the reaction-GFN and PMO literatures normalise **32×
+apart**, and this benchmark is the first thing to span both. Report under both and say so.
+
+**Arm B is not available to the competitors, on a measured basis.** SynFormer trains at 10,048 calls
+in 19.30 / 20.70 / 20.17 h (`timing.json`, `total_run_s` 69,489 / 74,502 / 72,605), so 320,000 would
+be ~615 h/cell and ~5,530 GPU-h for its nine cells. Saturn and TANGO are the same shape. An
+iteration-matched external comparison is therefore *unavailable*, not merely expensive.
 
 **One training run yields both arms.** Train to 320,000 calls and checkpoint on the way past 10,000.
 That *is* the continuation, on one trajectory, at zero extra training compute — and it sidesteps
@@ -93,6 +110,13 @@ Verified from the checkpoint code 2026-09-07 (agent A), not from comments.
 | **RxnFlow** | model + **both** optimizers + **both** LR schedulers + step (`al_loop.save_checkpoint`) | **yes**, fully |
 | **RGFN** | model + optimizer + lr_scheduler + metrics + replay buffer | **yes, but only after a cache strip** |
 | **SCENT** | the same five — and **not the dynamic fragment library** | **partially, and it silently corrupts** |
+
+**A second, independent reason SCENT's arm B must not requeue (added 2026-09-08).** The RNG is not
+checkpointed, so a resumed segment samples differently and promotes different fragments. Since
+`7134642` a requeued run is *correct* — the library, its costs, the path-cost cache and the recipe
+routes all restore — but it is **not reproducible**: it will not promote what an uninterrupted run
+would. Do not relax the one-walltime rule on the grounds that the library is now safe; that fixes
+correctness, not reproducibility.
 
 **RGFN needs a cache strip.** Its forward policy carries lazily-populated `*_cache` buffers that a
 freshly constructed model does not have, so a strict `load_state_dict` against a raw checkpoint
@@ -326,6 +350,19 @@ Equalising the second would force the fixed-*mode* readout this project demoted 
 asymmetry is not directional — the calls make the competitor look expensive while the resulting pool
 makes it stronger — so report it and say so. Our side's width knobs (`n_hubs=200`,
 `n_traj=30,000`) belong in the same table as the competitor's Stage-2 cap, so a reader can see both.
+
+**The competitor matrix is NOT a clean 10,000, and must not be labelled one.** Stage 2 equalises
+POOLS (500 modes), not oracle calls, so each cell carries a measured surcharge on top of arm-A
+training — REINVENT/Saturn/TANGO 12,018–12,048, FragGFN 12,047–14,046, **S3-GFN 10,048–18,048**. A
+1.80× spread, 122,411 calls over 45 cells, concentrated on S3-GFN. Label it *"arm-A training plus a
+measured Stage-2 surcharge of 2,000–8,000"* and state the spread rather than averaging it away.
+
+**But the asymmetry runs toward us, not away.** Our own inference-time spend is 33,099–69,896
+reward-gen calls per v1 campaign cell and reaches **791,503** on a budget-scale cell — **50–100×** the
+competitors' entire Stage-2 cost. The inference-time axis is uncontrolled for everyone and we are by
+far its heavier user. Equalising it is not the fix: that would force the fixed-MODE readout this
+project demoted to secondary. Report it; do not equalise it. One within-field reading does survive:
+S3-GFN's edge over Saturn and TANGO is partly bought with up to 1.8× their oracle calls.
 
 ### 2.4 Reporting conventions (unchanged, restated so a cell can be checked against them)
 
@@ -601,10 +638,11 @@ learning curve costs nothing extra.
 
 ### 7.3 Close the stale-gate and unknown-target defaults
 
-- `experiments/lsd_hubs/campaign/submit_competitor_routes.sh` still carries **pre-standard gates as
-  shell defaults** (`seh 7.0`, `drd2 0.5`, `clpp −8.0`) and hard-fails 6TD3 with an out-of-date
-  "PAUSED" message. Every other script was made `required=True` for exactly this reason. Make it
-  resolve gates by importing `targets.py`, as `upsample_to_modes.gate_for()` does.
+- ~~`submit_competitor_routes.sh` still carries pre-standard gates as shell defaults.~~
+  **STRUCK 2026-09-08 — this was already done and the item was written from a stale read.** Line 88
+  of that script reads `from targets import get_target` and line 90 calls it, on both this branch
+  and the competitor branch. Flagged by the Standard Pipeline session and verified. The remaining
+  bullets below were NOT re-checked at the same time and should be treated as still open.
 - `upsample_to_modes.py`'s `--target` choices are `sorted(DEFAULT_CAP)` = clpp/drd2/seh, and
   `DEFAULT_CAP` has no `6td3b` entry.
 - About eight hardcoded `("6td3","clpp")` membership tests and `_HIGHER_IS_BETTER_BY_REWARD` dicts in
@@ -658,27 +696,51 @@ rotates) and `dd8f1a9` (Stage 2 snapshots `fixed_reward/` → `fixed_reward.budg
 invocation destroys exactly what was copied. The structural fix is §5 step 3 — freeze `train/`
 read-only after verification. Do not rely on remembering.
 
-### 8.2 Never edit a running bash script
+### 8.2 Fields whose names lie — check the writer before you quote the reader
+
+Two near-misses on 2026-09-08 were the **measurement being right and the reading being wrong**, and
+neither would have been caught by re-running anything: a cumulative field summed as if incremental,
+and `19:18` read as minutes when it was hours. Both were caught only because the wrong number looked
+surprising. The unsurprising instances of this class are still out there.
+
+The defence is not vigilance, it is a lookup. Every field below has produced a wrong number in this
+project at least once:
+
+| field | reads as | actually is |
+|---|---|---|
+| `asked` (`upsample_log.json`) | this round's request | **cumulative** across rounds — summing it double-counts (24,000 reported for a cell whose distinct set grew by 1,216) |
+| `used_rxns` | what the selection cost | **inflates** outside the budget-binding regime; quote `cost_kept_rxns` (65 molecules priced at 247 read as 300→387) |
+| `n_modes` | modes delivered | modes **requested**; `n_targets_priced` is delivered (89 vs 100 on native routes) |
+| `n_modes_kept` | same as `n_modes` | post-filter count — a co-agent lost a result to the difference |
+| `n_scored` (`trace.csv`) | training oracle calls | **all phases**, eval interleaved; count `phase == "train"` ROWS, and note that `max(n_scored)` over filtered rows is still contaminated |
+| `total_modes` | a total | capped at the 500-molecule prefix |
+| `sample_s` / any timing component | 0.0 when absent | **absent ≠ zero** — a missing component must be omitted from the total, never written as 0.0, or an untimed stage becomes a free one |
+| durations in prose | `20:10` = 20 min 10 s | on this cluster it is as likely **20 h 10 min**. Always write `19.30 h` |
+
+**The rule:** read the field's writer before quoting its reader. The names lie by omission, and a
+plausible reading of a plausible number is exactly what no re-run will catch.
+
+### 8.3 Never edit a running bash script
 
 bash resumes at a **byte offset**; an edit mid-job runs garbage hours later (this killed job 74318
 five hours in, *after* its work had succeeded). The chain scripts snapshot their callee to `/tmp` for
 this reason. Copy that pattern; do not reinvent it.
 
-### 8.3 Shared scratch is rewritten by other agents
+### 8.4 Shared scratch is rewritten by other agents
 
 On 2026-08-19 all three `scent_seh` enumerations were re-run mid-experiment (a correct fix) *after* a
 comparison arm had read the old ones — silently turning a same-chemistry comparison into a
 cross-chemistry one, with both runs reporting success. The pools differed by 6× and nothing in the
 outputs showed it. See §6.8.
 
-### 8.4 Environment traps that a login smoke cannot catch
+### 8.5 Environment traps that a login smoke cannot catch
 
 `$HOME` is read-only on compute nodes — export `TRITON_CACHE_DIR`, `MPLCONFIGDIR`, `XDG_CACHE_HOME`,
 `HF_HOME`, `TORCH_HOME`, `SYNTHESEUS_CACHE_DIR` to `$SCRATCH` in every submit script. Any job that
 docks must `source ~/bin/rgfn-smoke-env.sh` — omitting it leaves QuickVina2-GPU with three unresolved
 boost libraries, which surfaces as all-`nan` and reads exactly like a degraded GPU.
 
-### 8.5 Do not submit a cell another chain has already claimed
+### 8.6 Do not submit a cell another chain has already claimed
 
 Chains claim cells before any file appears. Grep every queued job's `CELLS=` line first, and prefer
 `scontrol hold` over cancel.
