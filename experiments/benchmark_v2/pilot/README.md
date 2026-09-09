@@ -12,24 +12,31 @@ that for one cell before 108 cells are committed.
 
 ---
 
-## VERDICT — arm A is viable for the external head-to-head, NOT for hub-batching
+## VERDICT — arm A breaks SCENT specifically, not hub-batching in general
 
-The flow field at 10,000 calls is genuinely learned (separation comparable to the 320,000-call field,
-and better evidenced). But hub-batching's advantage collapses, because arm A removes the thing that
-puts hubs where amortisation can happen. Measured on scent_seh/42, same gate, same config, only the
-budget differing:
+All four cells priced at the **same gate (5.68)**, same config, same target and seed; only the budget
+differs within each generator.
 
-| | modes @ R=100 | vs best-candidate | rxn/mode | hub depth of delivered modes | promoted frags |
-|---|---|---|---|---|---|
-| **arm A** (10,048 calls) | **39** | **1.56x** | **1.918** | {2:7, 3:32} | **0** |
-| **v1** (320,000 calls) | **96** | **3.43x** | **1.067** | {0:35, 1:48, 2:13} | 1,600 |
+| | HB modes @ R=100 | best-candidate | ratio | rxn/mode |
+|---|---|---|---|---|
+| RGFN v1 (320,000 calls) | 57 | 25 | 2.28x | 1.890 |
+| **RGFN arm A (10,007 calls)** | **65** | 25 | **2.60x** | **1.965** |
+| SCENT v1 (320,000 calls) | **96** | 28 | **3.43x** | **1.067** |
+| **SCENT arm A (10,048 calls)** | **39** | 25 | **1.56x** | **1.918** |
 
-This independently confirms the researcher's decision to run the internal matrix at arm B.
+**RGFN is unharmed** by the 32x budget cut -- slightly better, though on one seed that is a claim of
+no damage, not of improvement. **SCENT is halved.** And SCENT at arm A costs 1.918 rxn/mode against
+RGFN's 1.965 at the same budget, within 2.5%: stripped of its library it lands on the library-less
+cost profile rather than degrading in a SCENT-specific way.
 
-**Caveat on the magnitude, not the direction:** the two runs are not matched on enumeration -- arm A
-used 64 hubs at `enum_max 4000`, v1 used 200 hubs uncapped (post-Logs/068). At R=100 only ~5 hubs are
-walked so the hub count should not bind, but the per-hub child cap plausibly does. Re-measure at
-matched enumeration before the ratio goes in a draft.
+So the earlier framing here -- "arm A is viable for the external head-to-head, NOT for hub-batching"
+-- was too broad and is superseded. Hub-batching is fine at arm A on a generator that never had a
+library. The penalty is entirely SCENT's, and entirely the library.
+
+**The enumeration mismatch does not explain it and cuts the other way.** Both arm-A runs used the
+*smaller* enumeration (64 hubs at `enum_max` 4000 against v1's 200 uncapped). The same handicap
+applied to both generators; only SCENT collapsed, and RGFN improved under it. It remains a caveat on
+exact magnitudes, not a candidate explanation.
 
 ---
 

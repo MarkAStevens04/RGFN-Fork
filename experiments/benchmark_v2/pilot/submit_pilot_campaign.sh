@@ -63,7 +63,11 @@ nvidia-smi -L || true
 echo "=== [1/2] ENUMERATE ==="
 T0=$(date +%s)
 GARG=(); [ -n "$GUIDANCE" ] && GARG=(--guidance "$GUIDANCE")
-if [ -z "$(ls "$(dirname "$(dirname "$CKPT")")"/additional_fragments/fragments_*.json 2>/dev/null)" ]; then
+# --no-freeze and --guidance are SCENT-ONLY flags; rgfn_worker.py rejects them (argparse exit 2).
+# The GEN test is load-bearing, not defensive: RGFN has no dynamic library, so it NEVER has an
+# additional_fragments/ directory, and a snapshot test alone therefore fires on every RGFN run.
+if [ "$GEN" = scent ] && \
+   [ -z "$(ls "$(dirname "$(dirname "$CKPT")")"/additional_fragments/fragments_*.json 2>/dev/null)" ]; then
     echo "[pilot-campaign] no additional_fragments snapshot -> --no-freeze (418 base library)"
     GARG+=(--no-freeze)
 fi

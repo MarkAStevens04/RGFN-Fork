@@ -29,28 +29,33 @@ actually costs.
 
 ## Answer
 
-**The low budget does not break the flow field — it changes what the field points at, and that is
-what costs us.** At ten thousand calls the field is just as informative as at the full budget and
-rests on ten times more supporting evidence, so it is not noise. But the libraries it produces are
-much worse value: roughly a third as many molecules for the same bench effort, and the advantage over
-the naive alternative falls from about 3.4× to 1.6×.
+**Arm A does not break library-based library design in general — it breaks SCENT specifically, and
+leaves the other generator untouched.** Priced at an identical gate, the generator with no learned
+library (RGFN) is *unharmed* by the thirty-two-fold budget cut, while SCENT loses more than half its
+delivered library and its advantage over the naive alternative falls from 3.4× to 1.6×.
 
-The reason turns out to be specific and unexpected. **SCENT's defining feature — it learns to reuse
-its own best intermediates — never switches on at the low budget.** It is scheduled to start doing
-that after a thousand training rounds, and the low budget stops at a hundred and fifty-seven. Without
-it, SCENT commits to intermediates at the very last assembly step, which is the worst possible place,
-because there is almost nothing left to share. A second generator that never has this feature at all
-behaves identically at both budgets, which is what shows the feature — not the training length — is
-the thing that matters.
+The reason is specific. **SCENT's defining feature — it learns to reuse its own best intermediates —
+never switches on at the low budget.** It is scheduled to start after a thousand training rounds and
+the low budget stops at a hundred and fifty-seven. The clinching number is that SCENT at the low
+budget costs almost exactly what the library-less generator costs (1.918 against 1.965 reactions per
+molecule, within 2.5%): stripped of its library, it converges onto the library-less cost profile
+rather than degrading in some generator-specific way.
+
 
 ## Relevance to our Publication
 
 This is the entry the whole re-run turned on. The plan had been to run every comparison at the
-matched budget; this shows that would have quietly crippled our own method and understated our result
-against the competitors — the opposite of the fairness the change was meant to buy. It supports
-splitting the campaign: the head-to-head against other programs runs at the matched budget, where
-fairness is the point, and our own internal comparison runs at the full budget, which is what our
-generators' papers use.
+matched budget; this shows that would have quietly disabled the distinguishing feature of one of our
+three generators and understated our result against the competitors — the opposite of the fairness
+the change was meant to buy. It supports splitting the campaign: the head-to-head against other
+programs runs at the matched budget, where fairness is the point, and our own internal comparison
+runs at the full budget, which is what our generators' papers use.
+
+The precision matters for how the paper words it. The problem is **not** that our approach needs a
+large training budget — the library-less generator is fine at the small one. It is that one specific
+mechanism, learned intermediate reuse, has a start-up cost in training rounds that the matched budget
+does not reach. That is a statement about a *method's* sample efficiency, which is publishable, rather
+than a weakness in the benchmark.
 
 It also hands ICLR and NCS reviewers a clean answer to a question they will certainly ask about our
 strongest result — "isn't your method just picking cheap molecules off the shelf?" We can now say how
@@ -61,9 +66,10 @@ about two percent.
 
 **Refining for publication**
 
-- **Re-measure the headline ratio with the two arms matched on enumeration.** The low-budget run
-  enumerated fewer candidate intermediates than the full-budget one, so while the direction is not in
-  doubt, the size of the gap is not yet a quotable number.
+- **Re-measure with the two arms matched on enumeration.** The low-budget runs enumerated fewer
+  candidate intermediates (64 hubs capped at 4,000 children against 200 uncapped). This is now a
+  caveat on the exact magnitudes only, not on the finding: the same handicap applied to both
+  generators, and only one of them collapsed while the other improved under it.
 - **Extend to a second target and the other seeds.** The hub-depth half of this costs seconds and is
   already done across every cell we hold; the library-cost half is one GPU job per cell.
 - **Measure the bought-starting-material share on the unfiltered intermediate pool.** The number we
@@ -73,9 +79,12 @@ about two percent.
 **Next steps in project**
 
 - **Decide what to do about SCENT at the matched budget** — the three options are to rescale its
-  schedule (which changes what SCENT is and must be disclosed), to report the failure as a finding
-  about how much training library-learning methods need, or to run SCENT only at the full budget.
-  This is a research decision and nothing has been built for any of the three.
+  schedule (which changes what SCENT is and must be disclosed), to report it as a finding about how
+  much training a library-learning method needs before its library exists, or to run SCENT only at
+  the full budget. This is a research decision and nothing has been built for any of the three. Note
+  the decision is now narrower than when it was raised: it affects **one generator**, not the arm.
+- **Confirm the other library-less generator behaves like RGFN.** RxnFlow has no dynamic library
+  either, so the prediction is that it is also unharmed at arm A. That is one cell.
 - **Price the compute-versus-reactions tradeoff**, now an approved exhibit: this pilot is its first
   datapoint, showing what the extra GPU time at the full budget buys in saved bench chemistry.
 
@@ -219,17 +228,25 @@ Eligible pools: SCENT arm A 7,111 hubs, RGFN arm A 13,842. Note the last row —
 top-40 hubs rest on a single observed child**, so any v1 RGFN hub-ordering claim inherits an
 unreplicated point estimate.
 
-**2 — what arm A costs, measured.** `scent_seh/42`, same gate, config and seed; only the budget
-differs.
+**2 — what arm A costs, measured.** All four cells at the **same gate (5.68)**, same
+config, same target and seed. Only the budget differs within each generator.
 
-| | modes @ R=100 | vs best-candidate | rxn/mode | delivered-mode depths | promoted frags |
-|---|---|---|---|---|---|
-| arm A (10,048 calls) | **39** | **1.56×** | **1.918** | {2:7, 3:32} | **0** |
-| v1 (320,000 calls) | **96** | **3.43×** | **1.067** | {0:35, 1:48, 2:13} | 1,600 |
+| | HB modes @ R=100 | best-candidate | ratio | **rxn/mode** |
+|---|---|---|---|---|
+| RGFN v1 (320,000 calls) | 57 | 25 | 2.28× | 1.890 |
+| **RGFN arm A (10,007 calls)** | **65** | 25 | **2.60×** | **1.965** |
+| SCENT v1 (320,000 calls) | **96** | 28 | **3.43×** | **1.067** |
+| **SCENT arm A (10,048 calls)** | **39** | 25 | **1.56×** | **1.918** |
 
-**Not matched on enumeration** — arm A used 64 hubs at `enum_max 4000`, v1 used 200 uncapped
-(entry `068`). At R=100 only ~5 hubs are walked so the hub count should not bind, but the per-hub
-child cap plausibly does. Direction is solid; the magnitude is not yet quotable.
+**RGFN is not harmed** — slightly better at arm A, though on one seed that is not a claim of
+improvement, only of no damage. **SCENT is halved.** And SCENT at arm A costs **1.918 rxn/mode
+against RGFN's 1.965 at the same budget, within 2.5%** — stripped of its library it lands on the
+library-less cost profile rather than degrading in some SCENT-specific way.
+
+**The enumeration mismatch does not explain it, and cuts the other way.** Both arm-A runs used the
+*smaller* enumeration (64 hubs at `enum_max` 4000 against v1's 200 uncapped). The same handicap
+applied to both generators; only SCENT collapsed, and RGFN improved under it. So the mismatch is a
+caveat on the exact magnitudes, not a candidate explanation for the SCENT result.
 
 **3 — the mechanism is the dynamic library, not the training length.** RGFN never has a dynamic
 library at any budget; SCENT has one only at v1. Top-40 hub depths, `--pool all`:
