@@ -120,12 +120,26 @@ rsync -a --info=stats2 $DRY \
 # agent.chkpt in the run root. A wrong pattern is indistinguishable from a correct one in rsync's
 # output, which is what makes it dangerous.
 #
-# The right fix is not a longer allowlist. **v2/train is ALREADY curated** -- the copy step put
-# exactly what the plan named there, file by file, with a .copy_manifest.json recording every one.
+# The right fix is not a longer allowlist. **v2 is ALREADY curated** -- the copy step put exactly
+# what the plan named there, file by file, with a .copy_manifest.json recording every one.
 # Re-filtering an already-filtered tree through a narrower rule IS the bug. Let the copy manifest be
 # the definition of what belongs and take the tree wholesale. Retention is not a space question:
 # /project holds 949 G free of 1.2 T against a 54 GB payload, and the milestone checkpoints were
 # kept deliberately because they are irreplaceable without a retrain.
+#
+# THE LOSS WAS NOT ONLY WEIGHTS. The same allowlist dropped TANGO's ARM-2 route pickles --
+# 9,696 route_*.pkl under routes/tango_seh_s42/arma/full_pool/ -- which are the 3.5 GPU-h artifact
+# carried forward specifically so nobody regenerates it. Checking only the checkpoint half of a
+# too-narrow filter is how the other half stays missing.
+#
+# THE ROUTE PDFs ARE KEPT DELIBERATELY, not by omission. Beside every pickle sits a same-basename
+# PDF -- syntheseus's graphviz render, emitted five per target because TANGO's config writer never
+# overrides num_top_results. Measured: pkl 9,696 files / 0.067 GiB, pdf 9,696 files / 0.809 GiB, so
+# the regenerable decoration is 12x the irreplaceable data and 2x everything the old allowlist kept.
+# A denylist for `*.pdf` here would be entirely reasonable and is NOT used, for two reasons: 0.8 GiB
+# against 949 G free defends no budget, and adding a second differently-shaped filter to the script
+# we are fixing BECAUSE of a filter reintroduces the failure class -- a denylist can be wrong in the
+# other direction just as silently. If the PDFs ever matter, drop them here knowingly.
 #
 # PER-CELL, NOT PER-PHASE. Cells run concurrently and reach each stage at different times, so waiting
 # for a phase boundary means waiting a long time and probably forgetting. rsync is incremental, so
