@@ -25,6 +25,18 @@
 #     candidates.csv     the training run's own candidate pool; the "did this finish?" evidence and
 #                        the best-candidate baseline's input.
 #     *.gin/*.yaml/meta  the config actually used, so a cell is re-runnable and citable.
+#     trace.csv*         ADDED 2026-09-07, and now as irreplaceable as a checkpoint. Two reasons.
+#                        (a) Stage 2 (upsample_to_modes.py) harvests the training trace as a FREE
+#                        pool of already-scored molecules -- saturn_clpp/s42 reaches its 500-mode
+#                        target from history alone, turning 28 GPU-hours into 0. (b) It is the only
+#                        evidence of what budget a checkpoint was trained at, which is what the
+#                        whole budget-matched v2 campaign rests on.
+#                        The GLOB IS LOAD-BEARING: a re-invoked runner truncates trace.csv to its
+#                        59-byte header while the real history survives as trace.csv.1, so backing
+#                        up `trace.csv` alone would faithfully preserve a stub. Nine v1 cells are
+#                        in exactly that state.
+#     timing.json        per-phase wall clock; the compute-frontier exhibit's only source.
+#     arm_meta.json      which oracle-call count a v2 checkpoint sits at (see benchmark_v2).
 #
 #   TIER 2 (regenerable, but hours of GPU each) — the LSD-Flow pipeline outputs:
 #     sample/  30k-trajectory flow records + compositions + routes (~30 min/cell)
@@ -86,8 +98,50 @@ rsync -a --info=stats2 $DRY \
     --include='*.yaml' \
     --include='meta.json' \
     --include='fragments_*.json' \
+    --include='trace.csv*' \
+    --include='timing.json' \
+    --include='arm_meta.json' \
     --exclude='*' \
     "$SRC/experiments/" "$DEST/experiments/" || echo "WARNING: tier-1 rsync returned $?"
+
+# ---- TIER 1b: the benchmark_v2 tree ---------------------------------------------------------------
+# v2 lives at $SRC/v2/, NOT under experiments/, so the pass above does not see it at all. Its train/
+# stage is the tier-1 case in its purest form: a copied cell's checkpoint plus the trace that
+# evidences its budget, and once verified the directory is chmod'ed read-only precisely because
+# re-creating it is impossible.
+#
+# PER-CELL, NOT PER-PHASE. Cells run concurrently and reach each stage at different times, so waiting
+# for a phase boundary means waiting a long time and probably forgetting. rsync is incremental, so
+# calling this after each cell's stage passes verification is cheap and idempotent.
+#
+# rsync copies file CONTENT, not the read-only mode of a frozen source, so a restored backup lands
+# writable -- re-run freeze_cell.sh after any restore.
+V2_SRC=${V2_SRC:-$SRC/v2}
+if [ -d "$V2_SRC" ]; then
+    echo
+    echo "=== TIER 1b: benchmark_v2 train/ + provenance ==="
+    rsync -a --info=stats2 $DRY \
+        --prune-empty-dirs \
+        --include='*/' \
+        --include='last_gfn.pt' \
+        --include='guidance_models.pt' \
+        --include='checkpoint*.pt' \
+        --include='candidates.csv' \
+        --include='trace.csv*' \
+        --include='timing.json' \
+        --include='arm_meta.json' \
+        --include='.verified.json' \
+        --include='.copy_manifest.json' \
+        --include='*.gin' \
+        --include='*.yaml' \
+        --include='meta.json' \
+        --include='fragments_*.json' \
+        --exclude='*' \
+        "$V2_SRC/" "$DEST/v2/" || echo "WARNING: tier-1b rsync returned $?"
+else
+    echo
+    echo "=== TIER 1b: no $V2_SRC yet -- skipping benchmark_v2 ==="
+fi
 
 if [ "$TIER1_ONLY" = 1 ]; then
     echo; echo "=== tier-1 only requested; stopping ==="

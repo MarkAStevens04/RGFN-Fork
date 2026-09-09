@@ -39,6 +39,18 @@ that child had a better estimate for some other parent.
 Writes ``hubs.csv`` (the enumerator contract: ``smiles,depth`` only), plus two sidecars —
 ``hub_scores.csv`` (rank, score, #estimates, provenance) and ``pick_hubs_timing.json`` (Logs/039).
 
+**Sidecar names follow the ``--out`` basename, and a mismatched overwrite is refused.** Both
+sidecars used to be written to FIXED names in ``--out``'s parent, so two invocations differing only
+in basename shared one of each and the second silently replaced the first — measured, running
+``--pool all`` then ``--pool topk_candidates`` into one directory left two ``hubs_*.csv`` but a
+single ranking, of which only **8 of 20** hubs belonged to the run you were about to read. That is
+the standing "``hub_scores.csv`` is often stale — never join against it" warning, and it is not
+staleness: the next run overwrites it. The canonical ``hubs.csv`` keeps the canonical sidecar names
+so every existing reader and v1 artifact is unaffected; any other basename gets prefixed ones. On
+top of that, writing over a sidecar whose recorded pool/order/depth-band/``n_hubs`` differs from the
+current run aborts with the diff (``--force`` to override); an identical re-run is idempotent and
+never trips it.
+
 Pure stdlib (CSV only), so it runs anywhere before the GPU enumeration step.
 """
 import argparse
@@ -95,6 +107,19 @@ def _read_hub_keys(path: str) -> set:
         return {(r["smiles"], int(r["depth"])) for r in csv.DictReader(fh)}
 
 
+def _depth_hist(keys) -> dict:
+    """``{depth: count}`` over hub keys ``(stereo_smiles, depth)``, sorted by depth.
+
+    Reported at every stage because depth is what separates the two things hub-batching can be
+    doing: amortising a BUILT intermediate (depth >= 1) versus diversifying off a BOUGHT block
+    (depth 0). A hub set whose depth mix is unknown cannot be read as evidence for either.
+    """
+    h: dict = {}
+    for k in keys:
+        h[k[1]] = h.get(k[1], 0) + 1
+    return dict(sorted(h.items()))
+
+
 def _candidate_order(best_reward, best_flow, higher_is_better):
     """Distinct parent hubs in best-candidate order: walk candidates by reward, take each one's
     highest-flow parent, keep first occurrences. Returns ``[(hub_key, candidate_rank, reward)]``."""
@@ -136,6 +161,40 @@ def main() -> None:
     )
     ap.add_argument("--seed", type=int, default=0, help="RNG seed for --order random")
     ap.add_argument(
+        "--force", action="store_true",
+        help="overwrite a sidecar that records a DIFFERENT run. Without this, pick_hubs refuses "
+        "rather than replacing another run's ranking in place -- the failure that made "
+        "'hub_scores.csv is often stale' a standing warning",
+    )
+    # ---- depth band (added 2026-09-07) --------------------------------------------------------
+    # DEFAULT UNFILTERED, DELIBERATELY. This exists so the sensitivity arm is expressible, not to
+    # change what hub-batching does; flipping the default would silently redefine every published
+    # hub set.
+    #
+    # WHY IT IS NEEDED NOW. `--pool all` (the v2 standard) removes the reward pre-filter that used
+    # to keep bought building blocks out by accident: depth-0 hubs go from 2 to 11 of the top 200,
+    # and from 2 to 8 of the first 40 -- the part actually walked. That is legitimate, and priced
+    # correctly (a chemist BUYS a depth-0 hub; shallow_couplings(depth=0, promoted=()) == 0), but
+    # depth-0 catalogue picking is the metric's own named degenerate optimum, so the comparison
+    # "is the win late-stage diversification or catalogue picking?" has to be runnable.
+    # `--min-hub-depth 1` is that arm.
+    #
+    # IT ALSO CLOSES A DISAGREEMENT INSIDE THE CODEBASE. The AL acquisition path
+    # (glue/samplers/lsdflow/acquisition.py) has defaulted to min_hub_depth=1 / max_hub_depth=3 all
+    # along -- depth 0 is "huge fan-out, zero amortization, not the build-once-diversify signal"
+    # (Logs/025), and depth 4 sits at the reaction cap where P_B is unrecoverable. This path had no
+    # depth control at all, so two implementations of "what is a hub" disagreed.
+    ap.add_argument(
+        "--min-hub-depth", type=int, default=None,
+        help="drop hubs shallower than this. UNSET = no floor (default). `1` excludes depth-0 "
+        "bought building blocks -- the labelled sensitivity arm against --pool all",
+    )
+    ap.add_argument(
+        "--max-hub-depth", type=int, default=None,
+        help="drop hubs deeper than this. UNSET = no ceiling (default). `3` matches the AL "
+        "acquisition path, which skips depth-4 hubs at the reaction cap (P_B unrecoverable)",
+    )
+    ap.add_argument(
         "--restrict-to",
         default="",
         help="an existing hubs.csv; keep only its hubs, so --order is applied to a FIXED set "
@@ -161,6 +220,35 @@ def main() -> None:
             if key not in hub_flow or log_f > hub_flow[key]:
                 hub_flow[key] = log_f
     pool_size = len(hub_flow)
+
+    # ---- 1b. depth band ------------------------------------------------------------------------
+    # Applied to ELIGIBILITY, before ordering and before --restrict-to, because the band is a
+    # statement about what counts as a hub -- not a post-hoc trim of a chosen walk. The dropped
+    # count and the surviving histogram are printed and recorded, so a hub set can never be read
+    # without knowing which band produced it.
+    depth_of = lambda k: k[1]  # noqa: E731 -- hub key is (stereo_smiles, depth)
+    pool_depths_before = _depth_hist(hub_flow)
+    n_dropped_depth = 0
+    if a.min_hub_depth is not None or a.max_hub_depth is not None:
+        lo = a.min_hub_depth if a.min_hub_depth is not None else -(1 << 30)
+        hi = a.max_hub_depth if a.max_hub_depth is not None else (1 << 30)
+        if lo > hi:
+            raise SystemExit(f"--min-hub-depth {lo} exceeds --max-hub-depth {hi}")
+        kept = {k: v for k, v in hub_flow.items() if lo <= depth_of(k) <= hi}
+        n_dropped_depth = len(hub_flow) - len(kept)
+        if not kept:
+            raise SystemExit(
+                f"depth band [{a.min_hub_depth}, {a.max_hub_depth}] removed every one of "
+                f"{len(hub_flow)} eligible hubs (depths present: {pool_depths_before}). "
+                f"Refusing to write an empty hubs.csv -- downstream an empty hub set prices the "
+                f"EMPTY library as trivially optimal at zero cost."
+            )
+        hub_flow = kept
+        print(
+            f"[pick_hubs] depth band [{a.min_hub_depth}, {a.max_hub_depth}]: "
+            f"{n_dropped_depth} of {pool_size} eligible hubs dropped, {len(hub_flow)} remain "
+            f"(before {pool_depths_before} -> after {_depth_hist(hub_flow)})"
+        )
 
     # ---- 2. optional restriction to an existing hub set --------------------------------------
     if a.restrict_to:
@@ -203,7 +291,53 @@ def main() -> None:
         w.writerow(["smiles", "depth"])
         for hub_stereo, hub_depth in ranked:
             w.writerow([hub_stereo, hub_depth])
-    scores_path = Path(a.out).parent / "hub_scores.csv"
+    # ---- 4a. sidecar naming + collision guard --------------------------------------------------
+    # BOTH SIDECARS USED FIXED NAMES IN THE PARENT OF --out, so two invocations differing only in
+    # the --out basename shared one hub_scores.csv and one pick_hubs_timing.json, and the second
+    # silently clobbered the first. Measured: running `--pool all` then `--pool topk_candidates`
+    # into one directory leaves two hubs_*.csv but ONE ranking, and only 8 of its 20 hubs belong to
+    # the run whose file you are about to read.
+    #
+    # THIS IS THE STANDING "hub_scores.csv IS OFTEN STALE" WART, AND IT IS NOT STALENESS. The
+    # project warning -- "seed 44's rank-#1 hub is not even in the enum; never join against it" --
+    # describes this overwrite. The file does not drift over time; the next pick_hubs run replaces
+    # it. So the caveat can become a fix.
+    #
+    # The canonical basename keeps the canonical sidecar names, so every existing reader and every
+    # v1 artifact is untouched. Only a caller who chose a DIFFERENT basename -- which is exactly
+    # when a collision is possible -- gets disambiguated names.
+    stem = Path(a.out).stem
+    _sfx = "" if stem == "hubs" else f"{stem}."
+    scores_path = Path(a.out).parent / f"{_sfx}hub_scores.csv"
+    timing_path = Path(a.out).parent / f"{_sfx}pick_hubs_timing.json"
+
+    # Identity of THIS run. Two runs sharing a sidecar path must agree on all of it, or one of them
+    # is about to read a ranking it did not produce.
+    identity = {
+        "pool": a.pool,
+        "order": a.order,
+        "n_hubs": a.n_hubs,
+        "top_k_candidates": a.top_k_candidates if a.pool == "topk_candidates" else None,
+        "min_hub_depth": a.min_hub_depth,
+        "max_hub_depth": a.max_hub_depth,
+        "seed": a.seed if a.order == "random" else None,
+        "restrict_to": a.restrict_to or None,
+    }
+    if timing_path.exists() and not a.force:
+        try:
+            prev = json.load(open(timing_path))
+        except Exception:
+            prev = {}
+        differing = {k: (prev.get(k), v) for k, v in identity.items() if prev.get(k) != v}
+        if differing:
+            raise SystemExit(
+                f"[pick_hubs] REFUSING to overwrite {timing_path.name}: it records a DIFFERENT run.\n"
+                + "".join(f"    {k}: {was!r} -> {now!r}\n" for k, (was, now) in differing.items())
+                + f"  Its sibling {scores_path.name} is that run's ranking, and overwriting it is how\n"
+                  f"  a hub set gets analysed as though it came from another pool -- which has already\n"
+                  f"  happened. Write to a different --out basename, or pass --force if you really\n"
+                  f"  mean to replace it."
+            )
     with open(scores_path, "w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(
@@ -216,18 +350,26 @@ def main() -> None:
     elapsed = time.perf_counter() - _t0
     # Stage-2 timing sidecar (Logs/039): the drivers add this to hub-batching's compute-time (it is
     # work best-candidate never does). Written next to hubs.csv so the enum dir carries it.
-    timing_path = Path(a.out).parent / "pick_hubs_timing.json"
     json.dump(
         {
+            **identity,  # the fields the collision guard compares, first so they are easy to read
             "hub_pick_s": round(elapsed, 3),
-            "n_hubs": len(ranked),
+            "n_hubs_written": len(ranked),
             "n_candidates": len(best_reward),
-            "top_k_candidates": a.top_k_candidates,
-            "pool": a.pool,
             "pool_size": pool_size,
-            "order": a.order,
-            "seed": a.seed if a.order == "random" else None,
-            "restrict_to": a.restrict_to or None,
+            "hubs_csv": Path(a.out).name,  # which hubs.csv this sidecar describes
+            # The depth band and its effect. `walked_depth_hist` is the headline: it is the depth
+            # mix of the hubs this file actually hands the enumerator, and the depth-0 share of it
+            # is what says whether a library was diversified off built intermediates or off bought
+            # catalogue blocks.
+            # (min_hub_depth / max_hub_depth are already in `identity` above -- the guard compares
+            # them, so they must live there.)
+            "n_dropped_by_depth": n_dropped_depth,
+            "pool_depth_hist": pool_depths_before,
+            "walked_depth_hist": _depth_hist(ranked),
+            "walked_depth0_frac": round(
+                sum(1 for k in ranked if k[1] == 0) / max(len(ranked), 1), 4
+            ),
         },
         open(timing_path, "w"),
         indent=2,

@@ -60,16 +60,26 @@ N=${N:-500}
 # RESOLVE THE GATE FROM targets.py, NEVER FROM A DEFAULT HERE. This script is the competitor
 # pipeline's entry point, and it used to carry seh 7.0 / drd2 0.5 / clpp -8.0 as shell defaults --
 # the PRE-STANDARD bars. Since 2026-08-21 every gate is the score at which 5% of that target's
-# property-matched decoys pass (5.68 / 0.345 / -9.10 / 7.97), and a stale default here is worse than
+# property-matched decoys pass, and a stale default here is worse than
 # a stale default anywhere else: sparrow_select_frontier, mode_saturation, s3gfn_sample_more and
 # build_s3gfn_pools were all made `required=True` precisely so a caller could not supply the wrong
 # bar silently, and this script is the caller. On ClpP the old -8.0 admitted 23% of decoys against
 # the intended 5%, so a "mode" there was ~6x more contaminated than a DRD2 one.
 #
-# Reading the source of truth also means 6TD3-B needs no branch here: the old `*)` arm hard-failed it
-# with a "PAUSED, -2.0 rests on warhead-matched decoys" message that stopped being true when 6td3b
-# was calibrated at 7.97. An unknown target now fails on targets.py's own error, which stays correct
-# as targets are added or retired.
+# Reading the source of truth also means 6TD3-B needs no branch here, and DELIBERATELY SHOULD NOT
+# GET ONE: the old `*)` arm hard-failed it with a "PAUSED, -2.0 rests on warhead-matched decoys"
+# message that stopped being true once 6td3b was calibrated. An unknown target now fails on
+# targets.py's own error, which stays correct as targets are added or retired -- adding a per-target
+# branch back would reintroduce exactly the hardcoding this replaced.
+#
+# DO NOT WRITE ANY GATE VALUE IN THIS FILE, not even in a comment. An earlier version of these notes
+# listed the bars inline and went stale within days: it recorded 6TD3-B as 7.97, which was the
+# briefly-adopted `cnnaff_t2` bar, superseded by 6.718 on `cnn_vs` when cnnaff_t2 turned out to score
+# our known reward-exploiting candidates at CHANCE against real glues (AUROC 0.521). A comment
+# asserting a superseded gate in the competitor pipeline's entry point is exactly what someone
+# picking up a new target reads first. The live values are one command away:
+#   conda run -n rgfn python -c "import sys; sys.path.insert(0,'experiments/lsd_hubs/matrix16'); \
+#       from targets import TARGETS; [print(k, t.mode_reward_threshold) for k,t in TARGETS.items()]"
 read -r GATE DIR <<EOF
 $(conda run --no-capture-output -n rgfn python - "$TARGET" <<'PYGATE'
 import sys
