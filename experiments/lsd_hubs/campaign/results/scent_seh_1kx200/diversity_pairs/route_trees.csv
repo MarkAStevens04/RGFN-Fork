@@ -1,0 +1,14 @@
+cutoff,tanimoto,same_hub,hub_a,hub_b,frag_a,frag_b,n_shared_steps,shared_drawn,shared_all
+0.3,0.3,True,ClCC1CC1,ClCC1CC1,c1ccc2c(CNc3ccc4[nH]c(C5CNC5)nc4c3)c[nH]c2c1,C#Cc1ccc2nc(C3CNC3)[nH]c2c1,2,Nc1ccc(Br)cc1N,Nc1ccc(Br)cc1N;O=C(O)C1CNC1
+0.35,0.35,False,ClCC1CC1,O=C(O)C1Cc2ccccc2CN1,c1nc(-c2ccc(NCC3CCN3)cc2)c[nH]1,Nc1cccc(-c2cn(CC3CC3)cn2)c1,0,,
+0.4,0.4,True,ClCC1CC1,ClCC1CC1,O=C(NCc1c[nH]c2ccccc12)N1CCN(C[C@@H]2Cc3ccccc3CN2)CC1,O=C(NCc1c[nH]c2ccccc12)[C@H]1CCCN(C(=O)Nc2cc(Br)n[nH]2)C1,1,NCc1c[nH]c2ccccc12,NCc1c[nH]c2ccccc12
+0.45,0.45,False,ClCC1CC1,NCCc1cn(CC2CC2)c2ccccc12,O=C(NC1CC1)c1ccc(CNCCc2c[nH]c3ccccc23)cc1,O=C(Nc1ccc(-c2cccc(C(=O)O)c2)cc1)Nc1cccc2ccccc12,0,,
+0.5,0.5,True,ClCC1CC1,ClCC1CC1,N#Cc1ccc(Cn2cc(CNC(=O)C3CNC3)c3ccccc32)cc1,N#Cc1ccc(Cn2cc(CCNC(=O)C3CNC3)c3ccccc32)cc1,2,N#Cc1ccc(CBr)cc1,N#Cc1ccc(CBr)cc1;O=C(O)C1CNC1
+0.55,0.5496,True,ClCC1CC1,ClCC1CC1,N#Cc1ccc(CN2CCC(C(=O)NCCc3c[nH]c4ccccc34)CC2)cn1,N#Cc1ccc(-c2nc3c(C(=O)NCCc4c[nH]c5ccccc45)cccc3o2)cn1,2,NCCc1c[nH]c2ccccc12,N#Cc1ccc(C(=O)O)cn1;NCCc1c[nH]c2ccccc12
+0.6,0.6,True,ClCC1CC1,ClCC1CC1,c1ccc2c(CNc3ccc4oc(C5CCN5)nc4c3)c[nH]c2c1,Nc1cc(-c2nc3cc(NCc4c[nH]c5ccccc45)ccc3o2)ccc1O,3,Nc1cc(NCc2c[nH]c3ccccc23)ccc1O,NCc1c[nH]c2ccccc12;Nc1cc(Br)ccc1O;Nc1cc(NCc2c[nH]c3ccccc23)ccc1O
+0.65,0.65,True,ClCC1CC1,ClCC1CC1,N#Cc1cccc(-c2cc(NCc3nc4ccccc4[nH]3)[nH]n2)c1,N#Cc1cccc(-c2ccc(NCc3nc4ccccc4[nH]3)cc2)c1,2,O=Cc1nc2ccccc2[nH]1,N#Cc1cccc(B(O)O)c1;O=Cc1nc2ccccc2[nH]1
+0.7,0.7,True,ClCC1CC1,ClCC1CC1,c1cc2cc(-c3ccc4oc(C5CNC5)nc4c3)ccc2[nH]1,c1cc2cc(-c3ccc4nc(C5CNC5)oc4c3)ccc2[nH]1,2,OB(O)c1ccc2[nH]ccc2c1,O=C(O)C1CNC1;OB(O)c1ccc2[nH]ccc2c1
+0.75,0.75,True,ClCC1CC1,ClCC1CC1,O=C(NCc1c[nH]c2ccccc12)c1ccc2nc(C3CNC3)oc2c1,O=C(NCc1c[nH]c2ccccc12)c1ccc2oc(C3CNC3)nc2c1,2,NCc1c[nH]c2ccccc12,NCc1c[nH]c2ccccc12;O=C(O)C1CNC1
+0.8,0.8,True,ClCC1CC1,ClCC1CC1,N#Cc1ccc(-c2nc3cc(CNc4cccc5cc[nH]c45)ccc3o2)cn1,N#Cc1ccc(-c2nc3ccc(CNc4cccc5cc[nH]c45)cc3o2)cn1,2,N#Cc1ccc(C(=O)O)cn1,N#Cc1ccc(C(=O)O)cn1;Nc1cccc2cc[nH]c12
+0.85,0.8438,True,ClCC1CC1,ClCC1CC1,N#Cc1ccc(Cn2cc(CNC(=O)C3CNC3)c3ccccc32)cc1,N#Cc1ccc(Cn2cc(CNC(=O)C3CCNCC3)c3ccccc32)cc1,2,NCc1c[nH]c2ccccc12,N#Cc1ccc(CBr)cc1;NCc1c[nH]c2ccccc12
+0.9,0.8837,True,ClCC1CC1,ClCC1CC1,c1ccc2c(CNc3ccc4oc(C5CCN5)nc4c3)c[nH]c2c1,c1ccc2c(CNc3ccc4oc([C@@H]5CCCN5)nc4c3)c[nH]c2c1,3,Nc1cc(NCc2c[nH]c3ccccc23)ccc1O,NCc1c[nH]c2ccccc12;Nc1cc(Br)ccc1O;Nc1cc(NCc2c[nH]c3ccccc23)ccc1O

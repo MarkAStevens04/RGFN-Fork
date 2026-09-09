@@ -1,0 +1,3 @@
+strategy,n_modes,n_native_routes,native_route_coverage,count_once_reactions,sparrow_reactions,sparrow_priced_modes,abs_diff,rel_diff,sparrow_milp_status,sparrow_n_reaction_nodes,sparrow_n_shared_compounds
+best_candidate,100,59,0.59,346,202,59,144,0.4162,Optimal,202,59
+hub_batching,100,100,1.0,289,282,100,7,0.0242,Optimal,282,56

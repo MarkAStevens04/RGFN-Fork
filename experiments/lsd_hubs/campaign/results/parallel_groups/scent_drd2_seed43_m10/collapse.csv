@@ -1,0 +1,73 @@
+cell,arm,slice,named_reaction,parent_input,local_modes,local_capped,delivered_modes,retained_frac,delivered_ge_min,hub_truncated,n_wells,first_step,last_step
+scent_drd2_seed43_m10,hub_batching_modes10_reward,at100rxn,Direct acid -> amine (reductive),Oc1ccc(CCNCC2CCN2)cc1,20,False,17,0.85,True,False,16,16,58
+scent_drd2_seed43_m10,hub_batching_modes10_reward,at100rxn,Buchwald-Hartwig amination,Oc1ccc(CCNCC2CCN2)cc1,17,False,17,1.0,True,False,14,19,68
+scent_drd2_seed43_m10,hub_batching_modes10_reward,at100rxn,Direct acid -> amine (reductive),CN(CC(=O)O)C1CCC1,12,False,12,1.0,True,False,12,1,12
+scent_drd2_seed43_m10,hub_batching_modes10_reward,at100rxn,Urea formation (amine + amine),Oc1ccc(CCNCC2CCN2)cc1,10,False,9,0.9,False,False,6,42,70
+scent_drd2_seed43_m10,hub_batching_modes10_reward,at100rxn,Amide coupling,Oc1ccc(CCNCC2CCN2)cc1,15,False,8,0.533,False,False,6,36,69
+scent_drd2_seed43_m10,hub_batching_modes10_reward,at100rxn,Reductive amination (aldehyde),Oc1ccc(CCNCC2CCN2)cc1,10,False,7,0.7,False,False,5,13,44
+scent_drd2_seed43_m10,hub_batching_modes10_reward,at100rxn,Direct acid -> amine (reductive),O=C(O)CNC1CCC1,12,False,5,0.417,False,False,5,71,75
+scent_drd2_seed43_m10,hub_batching_modes10_reward,at100rxn,Direct acid -> amine (reductive),Oc1ccc(CCNC[C@@H]2CCCN2)cc1,14,False,1,0.071,False,True,1,76,76
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Buchwald-Hartwig amination,CCCN1CCC[C@@H]1CNc1ccc(Br)cc1,21,False,20,0.952,True,False,18,191,218
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),Oc1ccc(CCNCC2CCN2)cc1,20,False,17,0.85,True,False,16,16,58
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Buchwald-Hartwig amination,Oc1ccc(CCNCC2CCN2)cc1,17,False,17,1.0,True,False,14,19,68
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Reductive amination (ketone),NCCCN1CCC(=O)C1,17,False,16,0.941,True,False,15,90,105
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Buchwald-Hartwig amination,O=C1CCN(CCC2NCCc3c(Br)cccc32)C1,15,False,15,1.0,True,False,14,233,253
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),CN(CCC1NCCc2ccccc21)CC(=O)O,18,False,14,0.778,True,False,14,120,133
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),COc1cccc2c1CCN(C1CCNCC1)C2C(=O)O,14,False,14,1.0,True,False,13,134,147
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Buchwald-Hartwig amination,CN(CCCN)CCNCCc1ccccc1,14,False,14,1.0,True,False,12,154,167
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),CN(CC(=O)O)C1CCC1,12,False,12,1.0,True,False,12,1,12
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Urea formation (amine + amine),CC[C@H](N)CN1CCN(c2ccccc2CCN)CC1,12,False,12,1.0,True,False,11,254,265
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Urea formation (amine + amine),NCCCN(CCc1ccc(O)cc1)CC1(N)CCC1,12,False,12,1.0,True,False,12,266,277
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),NCCc1ccccc1N(C1CCC1)C1CNC1,11,False,11,1.0,True,False,9,168,189
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Pictet-Spengler cyclisation,NCCc1ccccc1N(C1CCC1)C1CNC1,11,False,11,1.0,True,False,11,169,188
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Urea formation (amine + amine),CCCN1CCC[C@@H]1CNc1ccc(Br)cc1,11,False,10,0.909,True,False,10,190,219
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Reductive amination (ketone),O=C1CCN(CCC2NCCc3c(Br)cccc32)C1,12,False,10,0.833,True,False,10,229,252
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Buchwald-Hartwig amination,N[C@H](Cc1ccc(O)cc1)CN(C1CC1)C1CNC1,10,False,10,1.0,True,True,8,291,300
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Urea formation (amine + amine),Oc1ccc(CCNCC2CCN2)cc1,10,False,9,0.9,False,False,6,42,70
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),Oc1ccc(CCNCC2(NC3CNC3)CCC2)cc1,11,False,9,0.818,False,False,6,220,228
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Urea formation (amine + amine),NCCN1CCCC(NCCc2ccc(O)cc2)C1,12,False,9,0.75,False,False,8,278,286
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Amide coupling,Oc1ccc(CCNCC2CCN2)cc1,15,False,8,0.533,False,False,6,36,69
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Buchwald-Hartwig amination,Oc1ccc(CCNC[C@@H]2CCCN2)cc1,13,False,8,0.615,False,False,8,80,89
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Reductive amination (aldehyde),Oc1ccc(CCNCC2CCN2)cc1,10,False,7,0.7,False,False,5,13,44
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),NCCC(=O)O,14,False,7,0.5,False,False,7,106,112
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),CN(CC(=O)O)C1CCNC1,13,False,7,0.538,False,False,7,113,119
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),Oc1ccc(CCNC[C@@H]2CCCN2)cc1,14,False,6,0.429,False,False,6,76,83
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),O=CCCN1CCC1C(=O)O,11,False,6,0.545,False,False,6,148,153
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Direct acid -> amine (reductive),O=C(O)CNC1CCC1,12,False,5,0.417,False,False,5,71,75
+scent_drd2_seed43_m10,hub_batching_modes10_reward,full,Urea formation (amine + amine),NCCCN1CCC1CNCCc1ccc(O)cc1,10,False,4,0.4,False,False,4,287,290
+scent_drd2_seed43_m10,hub_batching_modes10_group,at100rxn,Buchwald-Hartwig amination,Oc1ccc(CCNCC2CCN2)cc1,17,False,17,1.0,True,False,14,36,52
+scent_drd2_seed43_m10,hub_batching_modes10_group,at100rxn,Direct acid -> amine (reductive),Oc1ccc(CCNCC2CCN2)cc1,20,False,13,0.65,True,False,12,23,35
+scent_drd2_seed43_m10,hub_batching_modes10_group,at100rxn,Direct acid -> amine (reductive),CN(CC(=O)O)C1CCC1,12,False,12,1.0,True,False,12,1,12
+scent_drd2_seed43_m10,hub_batching_modes10_group,at100rxn,Reductive amination (aldehyde),Oc1ccc(CCNCC2CCN2)cc1,10,False,10,1.0,True,False,7,13,22
+scent_drd2_seed43_m10,hub_batching_modes10_group,at100rxn,Amide coupling,Oc1ccc(CCNCC2CCN2)cc1,15,False,9,0.6,False,False,6,53,61
+scent_drd2_seed43_m10,hub_batching_modes10_group,at100rxn,Urea formation (amine + amine),Oc1ccc(CCNCC2CCN2)cc1,10,False,9,0.9,False,False,6,62,70
+scent_drd2_seed43_m10,hub_batching_modes10_group,at100rxn,Direct acid -> amine (reductive),O=C(O)CNC1CCC1,12,False,5,0.417,False,False,5,71,75
+scent_drd2_seed43_m10,hub_batching_modes10_group,at100rxn,Direct acid -> amine (reductive),Oc1ccc(CCNC[C@@H]2CCCN2)cc1,14,False,1,0.071,False,True,1,76,76
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Buchwald-Hartwig amination,CCCN1CCC[C@@H]1CNc1ccc(Br)cc1,21,False,20,0.952,True,False,18,206,225
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Buchwald-Hartwig amination,Oc1ccc(CCNCC2CCN2)cc1,17,False,17,1.0,True,False,14,36,52
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Reductive amination (ketone),NCCCN1CCC(=O)C1,17,False,16,0.941,True,False,15,95,110
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Buchwald-Hartwig amination,O=C1CCN(CCC2NCCc3c(Br)cccc32)C1,15,False,15,1.0,True,False,14,245,259
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),CN(CCC1NCCc2ccccc21)CC(=O)O,18,False,14,0.778,True,False,14,125,138
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),COc1cccc2c1CCN(C1CCNCC1)C2C(=O)O,14,False,14,1.0,True,False,13,139,152
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Buchwald-Hartwig amination,CN(CCCN)CCNCCc1ccccc1,14,False,14,1.0,True,False,12,159,172
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),Oc1ccc(CCNCC2CCN2)cc1,20,False,13,0.65,True,False,12,23,35
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),CN(CC(=O)O)C1CCC1,12,False,12,1.0,True,False,12,1,12
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Urea formation (amine + amine),CC[C@H](N)CN1CCN(c2ccccc2CCN)CC1,12,False,12,1.0,True,False,11,260,271
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Urea formation (amine + amine),NCCCN(CCc1ccc(O)cc1)CC1(N)CCC1,12,False,12,1.0,True,False,12,272,283
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),Oc1ccc(CCNC[C@@H]2CCCN2)cc1,14,False,11,0.786,True,False,8,76,86
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),NCCc1ccccc1N(C1CCC1)C1CNC1,11,False,11,1.0,True,False,9,173,183
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Pictet-Spengler cyclisation,NCCc1ccccc1N(C1CCC1)C1CNC1,11,False,11,1.0,True,False,11,184,194
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Urea formation (amine + amine),CCCN1CCC[C@@H]1CNc1ccc(Br)cc1,11,False,11,1.0,True,False,11,195,205
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Reductive amination (aldehyde),Oc1ccc(CCNCC2CCN2)cc1,10,False,10,1.0,True,False,7,13,22
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Reductive amination (ketone),O=C1CCN(CCC2NCCc3c(Br)cccc32)C1,12,False,10,0.833,True,False,10,235,244
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Amide coupling,Oc1ccc(CCNCC2CCN2)cc1,15,False,9,0.6,False,False,6,53,61
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Urea formation (amine + amine),Oc1ccc(CCNCC2CCN2)cc1,10,False,9,0.9,False,False,6,62,70
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),Oc1ccc(CCNCC2(NC3CNC3)CCC2)cc1,11,False,9,0.818,False,False,6,226,234
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Urea formation (amine + amine),NCCN1CCCC(NCCc2ccc(O)cc2)C1,12,False,9,0.75,False,False,8,284,292
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Buchwald-Hartwig amination,Oc1ccc(CCNC[C@@H]2CCCN2)cc1,13,False,8,0.615,False,False,8,87,94
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),NCCC(=O)O,14,False,7,0.5,False,False,7,111,117
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),CN(CC(=O)O)C1CCNC1,13,False,7,0.538,False,False,7,118,124
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),O=CCCN1CCC1C(=O)O,11,False,6,0.545,False,False,6,153,158
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Direct acid -> amine (reductive),O=C(O)CNC1CCC1,12,False,5,0.417,False,False,5,71,75
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Urea formation (amine + amine),NCCCN1CCC1CNCCc1ccc(O)cc1,10,False,4,0.4,False,False,4,293,296
+scent_drd2_seed43_m10,hub_batching_modes10_group,full,Buchwald-Hartwig amination,N[C@H](Cc1ccc(O)cc1)CN(C1CC1)C1CNC1,10,False,4,0.4,False,True,3,297,300

@@ -1,0 +1,14 @@
+strategy,cutoff,modes_at_100rxn
+s3gfn,0.3,26
+s3gfn,0.35,24
+s3gfn,0.4,35
+s3gfn,0.45,35
+s3gfn,0.5,34
+s3gfn,0.55,33
+s3gfn,0.6,35
+s3gfn,0.65,35
+s3gfn,0.7,35
+s3gfn,0.75,35
+s3gfn,0.8,35
+s3gfn,0.85,35
+s3gfn,0.9,35

@@ -1,0 +1,301 @@
+cum_reactions,n_reagents,named_reaction,parent,reactions_added,reagents,reward,smiles,step,template_id
+22,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,2,O=C(NCc1c[nH]c2ccccc12)C1CNC1,7.6208,O=C(NCc1c[nH]c2ccccc12)C1CN(c2ccc3nc(C4CNC4)[nH]c3c2)C1,1,115
+23,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,NC12CC(C1)C2,7.4493,c1cc2nc(C3CNC3)[nH]c2cc1NC12CC(C1)C2,2,113
+24,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,C[C@@H](N)c1ccccc1,7.2596,CC(Nc1ccc2nc(C3CNC3)[nH]c2c1)c1ccccc1,3,113
+25,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,NCCc1c[nH]c2ccccc12,7.2228,c1ccc2c(CCNc3ccc4nc(C5CNC5)[nH]c4c3)c[nH]c2c1,4,113
+26,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1ccc(NCC2CCN2)cc1,7.2206,Brc1ccc(NCC2CCN2c2ccc3nc(C4CNC4)[nH]c3c2)cc1,5,115
+27,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,7.0906,Brc1cccc2nc(C3CCN(c4ccc5nc(C6CNC6)[nH]c5c4)CC3)[nH]c12,6,115
+28,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,NCc1ccc(C(F)(F)F)cc1,7.0528,FC(F)(F)c1ccc(CNc2ccc3nc(C4CNC4)[nH]c3c2)cc1,7,113
+29,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1ccc(NCC2CCN2)cc1,6.9204,Brc1ccc(N(CC2CCN2)c2ccc3nc(C4CNC4)[nH]c3c2)cc1,8,115
+30,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,O=C(Nc1cc(Br)n[nH]1)[C@@H]1Cc2ccccc2CN1,6.8723,O=C(Nc1cc(N2CC(c3nc4ccc(Br)cc4[nH]3)C2)n[nH]1)C1Cc2ccccc2CN1,9,114
+31,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.7638,Brc1cc(N(CC2Cc3ccccc3CN2)c2ccc3nc(C4CNC4)[nH]c3c2)[nH]n1,10,115
+32,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1ccc2[nH]c([C@@H]3CCCN3)nc2c1,6.6354,Brc1ccc2[nH]c(C3CCCN3c3ccc4nc(C5CNC5)[nH]c4c3)nc2c1,11,115
+33,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.6274,Brc1cc(NCC2Cc3ccccc3CN2c2ccc3nc(C4CNC4)[nH]c3c2)[nH]n1,12,115
+34,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1ccc(NCC2CCN2)cc1,6.6228,Brc1ccc2nc(C3CN(c4ccc(NCC5CCN5)cc4)C3)[nH]c2c1,13,114
+35,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Nc1ccccc1-n1cccc1,6.5717,c1ccc(-n2cccc2)c(Nc2ccc3nc(C4CNC4)[nH]c3c2)c1,14,113
+36,1,Urea formation (amine + amine),Brc1ccc2nc(C3CNC3)[nH]c2c1,1,NC1CC1,6.5332,O=C(NC1CC1)N1CC(c2nc3ccc(Br)cc3[nH]2)C1,15,126
+37,1,Urea formation (amine + amine),Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,6.4034,O=C(N1CCC(c2nc3cccc(Br)c3[nH]2)CC1)N1CC(c2nc3ccc(Br)cc3[nH]2)C1,16,129
+38,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,OCC1CNC1,6.1431,OCC1CN(c2ccc3nc(C4CNC4)[nH]c3c2)C1,17,115
+39,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,N[C@@H]1CCCC[C@@H]1O,6.0672,OC1CCCCC1Nc1ccc2nc(C3CNC3)[nH]c2c1,18,113
+40,1,Urea formation (amine + amine),Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1cc(NCC2CCN2)[nH]n1,5.8967,O=C(N1CC(c2nc3ccc(Br)cc3[nH]2)C1)N1CCC1CNc1cc(Br)n[nH]1,19,129
+41,1,Urea formation (amine + amine),Brc1ccc2nc(C3CNC3)[nH]c2c1,1,O=C(O)c1ccc2oc(C3CNC3)nc2c1,5.7197,O=C(O)c1ccc2oc(C3CN(C(=O)N4CC(c5nc6ccc(Br)cc6[nH]5)C4)C3)nc2c1,20,129
+42,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Nc1nc(F)nc2[nH]cnc12,5.6641,Fc1nc(Nc2ccc3nc(C4CNC4)[nH]c3c2)c2nc[nH]c2n1,21,113
+43,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Nc1ccc(C(=O)O)cc1Br,5.6466,O=C(O)c1ccc(Nc2ccc3nc(C4CNC4)[nH]c3c2)c(Br)c1,22,113
+44,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,N[C@@H](Cc1ccc([N+](=O)[O-])cc1)C(=O)O,5.6211,O=C(O)C(Cc1ccc([N+](=O)[O-])cc1)Nc1ccc2nc(C3CNC3)[nH]c2c1,23,113
+45,1,Urea formation (amine + amine),Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1cc(NCC2CCN2)[nH]n1,5.4983,O=C(N1CC(c2nc3ccc(Br)cc3[nH]2)C1)N(CC1CCN1)c1cc(Br)n[nH]1,24,129
+46,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,O=C(O)[C@@H]1CCCN1,5.4973,O=C(O)C1CCCN1c1ccc2nc(C3CNC3)[nH]c2c1,25,115
+47,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,N#Cc1cc(N)cc(Br)c1,5.4389,N#Cc1cc(Br)cc(Nc2ccc3nc(C4CNC4)[nH]c3c2)c1,26,113
+48,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,NCCN1CCOCC1,5.421,c1cc2nc(C3CNC3)[nH]c2cc1NCCN1CCOCC1,27,113
+49,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,O=C(O)c1cccc2oc(C3CNC3)nc12,5.3825,O=C(O)c1cccc2oc(C3CN(c4ccc5nc(C6CNC6)[nH]c5c4)C3)nc12,28,115
+50,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,COc1ccc(N)c(N)c1,5.3125,COc1ccc(N)c(Nc2ccc3nc(C4CNC4)[nH]c3c2)c1,29,113
+51,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Cc1ccnc(Br)c1N,5.261,Cc1ccnc(Br)c1Nc1ccc2nc(C3CNC3)[nH]c2c1,30,113
+52,1,Urea formation (amine + amine),Brc1ccc2nc(C3CNC3)[nH]c2c1,1,N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O,5.1628,O=C(O)C(Cc1c[nH]c2ccccc12)NC(=O)N1CC(c2nc3ccc(Br)cc3[nH]2)C1,31,126
+53,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,CC1(C)OB(c2ccc(N)nc2)OC1(C)C,5.0796,CC1(C)OB(c2ccc(Nc3ccc4nc(C5CNC5)[nH]c4c3)nc2)OC1(C)C,32,113
+54,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,Brc1ccc2[nH]c(C3CNC3)nc2c1,5.0287,Brc1ccc2nc(C3CN(c4ccc5[nH]c(C6CNC6)nc5c4)C3)[nH]c2c1,33,114
+55,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,O=C(NCc1c[nH]c2ccccc12)C1CNC1,7.3619,O=C(NCc1c[nH]c2ccccc12)C1CN(C(=O)C2Cc3ccccc3CN2)C1,34,78
+56,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Brc1ccc2oc(C3CNC3)nc2c1,7.1537,O=C(C1Cc2ccccc2CN1)N1CC(c2nc3cc(Br)ccc3o2)C1,35,78
+57,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,7.0726,O=C(C1Cc2ccccc2CN1)N1CCC(c2nc3cccc(Br)c3[nH]2)CC1,36,78
+58,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,NC1CC1,7.0078,O=C(NC1CC1)C1Cc2ccccc2CN1,37,76
+59,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,O=C(O)c1ccc2oc(C3CNC3)nc2c1,6.9693,O=C(O)C1Cc2ccccc2CN1Cc1ccc2oc(C3CNC3)nc2c1,38,139
+60,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,NC12CC(C1)C2,6.906,c1ccc2c(c1)CNC(CNC13CC(C1)C3)C2,39,136
+61,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Nc1ccnc2ccccc12,6.8845,O=C(Nc1ccnc2ccccc12)C1Cc2ccccc2CN1,40,76
+62,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,6.8158,O=C(O)c1ccc2[nH]c(C3CN(C(=O)C4Cc5ccccc5CN4)C3)nc2c1,41,78
+63,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Brc1ccc(NCC2CCN2)cc1,6.7456,O=C(C1Cc2ccccc2CN1)N1CCC1CNc1ccc(Br)cc1,42,78
+64,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,O=C(O)c1ccc2nc(C3CNC3)oc2c1,6.6373,O=C(O)C1Cc2ccccc2CN1C(=O)c1ccc2nc(C3CNC3)oc2c1,43,79
+65,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Brc1ccc2[nH]c([C@@H]3CCCN3)nc2c1,6.6266,O=C(C1Cc2ccccc2CN1)N1CCCC1c1nc2cc(Br)ccc2[nH]1,44,78
+66,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Brc1ccc2[nH]c(C3CNC3)nc2c1,6.5644,Brc1ccc2[nH]c(C3CN(CC4Cc5ccccc5CN4)C3)nc2c1,45,138
+67,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Brc1ccc(NCC2CCN2)cc1,6.5306,O=C(C1Cc2ccccc2CN1)N(CC1CCN1)c1ccc(Br)cc1,46,78
+68,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,O=C(O)[C@H]1CCCN(C(=O)C2CNC2)C1,6.5137,O=C(O)C1Cc2ccccc2CN1C(=O)C1CCCN(C(=O)C2CNC2)C1,47,79
+69,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,O=C(O)c1ccc2oc(C3CNC3)nc2c1,6.468,O=C(O)c1ccc2oc(C3CN(CC4Cc5ccccc5CN4)C3)nc2c1,48,138
+70,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,O=C(Nc1cc(Br)n[nH]1)C1CNC1,6.4479,O=C(Nc1cc(Br)n[nH]1)C1CN(C(=O)C2Cc3ccccc3CN2)C1,49,78
+71,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Brc1ccc(NCC2CCN2)cc1,6.4428,Brc1ccc(N(CC2CCN2)CC2Cc3ccccc3CN2)cc1,50,138
+72,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,COc1ccccc1CCN,6.4417,COc1ccccc1CCNC(=O)C1Cc2ccccc2CN1,51,76
+73,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Nc1ccccc1-n1cccc1,6.4193,O=C(Nc1ccccc1-n1cccc1)C1Cc2ccccc2CN1,52,76
+74,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,NCc1ccc(C(F)(F)F)cc1,6.4182,O=C(NCc1ccc(C(F)(F)F)cc1)C1Cc2ccccc2CN1,53,76
+75,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Nc1ccnc2ccccc12,6.394,c1ccc2c(c1)CNC(CNc1ccnc3ccccc13)C2,54,136
+76,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.3829,O=C(C1Cc2ccccc2CN1)N(CC1Cc2ccccc2CN1)c1cc(Br)n[nH]1,55,78
+77,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,NCc1c[nH]c2ccccc12,6.3711,c1ccc2c(c1)CNC(CNCc1c[nH]c3ccccc13)C2,56,136
+78,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Nc1cccc2cc[nH]c12,6.3168,O=C(Nc1cccc2cc[nH]c12)C1Cc2ccccc2CN1,57,76
+79,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,NCc1ccc(C(F)(F)F)cc1,6.247,FC(F)(F)c1ccc(CNCC2Cc3ccccc3CN2)cc1,58,136
+80,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Brc1cc(NCC2CCN2)[nH]n1,6.2427,Brc1cc(NCC2CCN2CC2Cc3ccccc3CN2)[nH]n1,59,138
+81,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,C1CNCCN1,6.2048,O=C(C1Cc2ccccc2CN1)N1CCNCC1,60,78
+82,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.1522,O=C(C1Cc2ccccc2CN1)N1Cc2ccccc2CC1CNc1cc(Br)n[nH]1,61,78
+83,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Nc1nc(F)nc2[nH]cnc12,6.1324,O=C(Nc1nc(F)nc2[nH]cnc12)C1Cc2ccccc2CN1,62,76
+84,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Nc1ccccn1,6.106,c1ccc(NCC2Cc3ccccc3CN2)nc1,63,136
+85,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,C[C@@H](N)c1ccccc1,6.0191,CC(NCC1Cc2ccccc2CN1)c1ccccc1,64,136
+86,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,N[C@@H](C(=O)Nc1cc(Br)n[nH]1)c1ccccc1,6.0088,O=C(NC(C(=O)Nc1cc(Br)n[nH]1)c1ccccc1)C1Cc2ccccc2CN1,65,76
+87,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Nc1cccc2cc[nH]c12,5.8712,c1ccc2c(c1)CNC(CNc1cccc3cc[nH]c13)C2,66,136
+88,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,NCCc1c[nH]c2ccc(O)cc12,5.8668,Oc1ccc2[nH]cc(CCNCC3Cc4ccccc4CN3)c2c1,67,136
+89,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,O=C(O)[C@@H]1Cc2ccccc2CN1,5.8639,O=C(O)C1Cc2ccccc2CN1C(=O)C1Cc2ccccc2CN1,68,79
+90,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,O=C(O)[C@@H]1Cc2ccccc2CN1,5.8182,O=C(O)C1Cc2ccccc2CN1CC1Cc2ccccc2CN1,69,139
+91,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Nc1ccccc1-n1cccc1,5.7917,c1ccc2c(c1)CNC(CNc1ccccc1-n1cccc1)C2,70,136
+92,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Nc1ccc(F)nc1Br,5.7815,O=C(Nc1ccc(F)nc1Br)C1Cc2ccccc2CN1,71,76
+93,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Nc1cccc(Br)c1N,5.7631,Nc1cccc(Br)c1NC(=O)C1Cc2ccccc2CN1,72,76
+94,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,N#Cc1cc(N)cc(Br)c1,5.6771,N#Cc1cc(Br)cc(NC(=O)C2Cc3ccccc3CN2)c1,73,76
+95,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Nc1ccc(C(F)(F)F)cc1N,5.6564,Nc1cc(C(F)(F)F)ccc1NCC1Cc2ccccc2CN1,74,136
+96,1,Urea formation (amine + amine),O=C(O)C1Cc2ccccc2CN1,1,NCCc1c[nH]c2ccccc12,5.5946,O=C(O)C1Cc2ccccc2CN1C(=O)NCCc1c[nH]c2ccccc12,75,126
+97,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,COc1ccc(N)c(N)c1,5.5582,COc1ccc(N)c(NC(=O)C2Cc3ccccc3CN2)c1,76,76
+98,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,NCCc1ccc(S(N)(=O)=O)cc1,5.535,NS(=O)(=O)c1ccc(CCNCC2Cc3ccccc3CN2)cc1,77,136
+99,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,N#Cc1cc(N)cc(Br)c1,5.497,N#Cc1cc(Br)cc(NCC2Cc3ccccc3CN2)c1,78,136
+100,1,Urea formation (amine + amine),O=C(O)C1Cc2ccccc2CN1,1,Brc1ccc2[nH]c(C3CNC3)nc2c1,5.4473,O=C(O)C1Cc2ccccc2CN1C(=O)N1CC(c2nc3cc(Br)ccc3[nH]2)C1,79,129
+101,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Nc1cc(C(=O)O)ccc1O,5.4424,O=C(O)c1ccc(O)c(NCC2Cc3ccccc3CN2)c1,80,136
+102,1,Urea formation (amine + amine),O=C(O)C1Cc2ccccc2CN1,1,Brc1ccc(NCC2CCN2)cc1,5.4342,O=C(O)C1Cc2ccccc2CN1C(=O)N1CCC1CNc1ccc(Br)cc1,81,129
+103,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O,5.4042,O=C(O)C(Cc1c[nH]c2ccccc12)NC(=O)C1Cc2ccccc2CN1,82,76
+104,1,Urea formation (amine + amine),O=C(O)C1Cc2ccccc2CN1,1,O=C(O)c1ccc2oc(C3CNC3)nc2c1,5.3706,O=C(O)c1ccc2oc(C3CN(C(=O)N4Cc5ccccc5CC4C(=O)O)C3)nc2c1,83,129
+105,1,Urea formation (amine + amine),O=C(O)C1Cc2ccccc2CN1,1,NCc1ccc(C(F)(F)F)cc1,5.3454,O=C(O)C1Cc2ccccc2CN1C(=O)NCc1ccc(C(F)(F)F)cc1,84,126
+106,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,Cc1cc(Br)cnc1N,5.3302,Cc1cc(Br)cnc1NC(=O)C1Cc2ccccc2CN1,85,76
+107,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Cc1cc(Br)cnc1N,5.3115,Cc1cc(Br)cnc1NCC1Cc2ccccc2CN1,86,136
+108,1,Urea formation (amine + amine),O=C(O)C1Cc2ccccc2CN1,1,NC1CC1,5.3084,O=C(O)C1Cc2ccccc2CN1C(=O)NC1CC1,87,126
+109,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,O=C(O)[C@H]1CCCN(C(=O)C2CNC2)C1,5.3047,O=C(O)C1CCCN(C(=O)C2CN(CC3Cc4ccccc4CN3)C2)C1,88,138
+110,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,C1CCNCC1,5.2824,c1ccc2c(c1)CNC(CN1CCCCC1)C2,89,138
+111,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Nc1ccncc1C=O,5.1555,O=Cc1cnccc1NCC1Cc2ccccc2CN1,90,136
+112,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,FC(F)(F)[C@@H]1CCCN1,5.1461,FC(F)(F)C1CCCN1CC1Cc2ccccc2CN1,91,138
+113,1,Urea formation (amine + amine),O=C(O)C1Cc2ccccc2CN1,1,Nc1ccnc2ccccc12,5.1292,O=C(O)C1Cc2ccccc2CN1C(=O)Nc1ccnc2ccccc12,92,126
+114,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,N[C@@H]1CCCC[C@@H]1O,5.1259,OC1CCCCC1NCC1Cc2ccccc2CN1,93,136
+115,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,O=C(O)c1ccc(C(F)(F)F)cn1,5.0862,O=C(O)C1Cc2ccccc2CN1C(=O)c1ccc(C(F)(F)F)cn1,94,79
+116,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,NCCN1CCNCC1,5.0657,O=C(NCCN1CCNCC1)C1Cc2ccccc2CN1,95,76
+117,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,CC1(C)OB(c2ccc(N)nc2)OC1(C)C,5.054,CC1(C)OB(c2ccc(NC(=O)C3Cc4ccccc4CN3)nc2)OC1(C)C,96,76
+118,1,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,1,Cc1ccc(S(=O)(=O)F)cc1N,5.0383,Cc1ccc(S(=O)(=O)F)cc1NCC1Cc2ccccc2CN1,97,136
+119,1,Amide coupling,O=C(O)C1Cc2ccccc2CN1,1,N[C@@H](C(=O)O)c1ccccc1,5.0203,NC(C(=O)N1Cc2ccccc2CC1C(=O)O)c1ccccc1,98,79
+121,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,2,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,7.3426,Brc1ccc2nc(C3CCN3c3cc(NCC4Cc5ccccc5CN4)[nH]n3)oc2c1,99,114
+122,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,NCc1c[nH]c2ccccc12,7.128,c1ccc2c(CNc3ccc4nc(C5CCN5)oc4c3)c[nH]c2c1,100,113
+123,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,C[C@@H](N)c1ccccc1,7.0606,CC(Nc1ccc2nc(C3CCN3)oc2c1)c1ccccc1,101,113
+124,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,NC12CC(C1)C2,7.0599,c1cc2nc(C3CCN3)oc2cc1NC12CC(C1)C2,102,113
+125,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,Brc1ccc(NCC2CCN2)cc1,6.9625,Brc1ccc(NCC2CCN2c2ccc3nc(C4CCN4)oc3c2)cc1,103,115
+126,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,Brc1ccc(NCC2CCN2)cc1,6.9193,Brc1ccc2nc(C3CCN3c3ccc(NCC4CCN4)cc3)oc2c1,104,114
+127,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,NCCc1ccncc1,6.9018,c1cc(CCNc2ccc3nc(C4CCN4)oc3c2)ccn1,105,113
+128,1,Urea formation (amine + amine),Brc1ccc2nc(C3CCN3)oc2c1,1,O=C(NCc1c[nH]c2ccccc12)C1CNC1,6.7667,O=C(NCc1c[nH]c2ccccc12)C1CN(C(=O)N2CCC2c2nc3ccc(Br)cc3o2)C1,106,129
+129,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,Brc1ccc(NCC2CCN2)cc1,6.6285,Brc1ccc(N(CC2CCN2)c2ccc3nc(C4CCN4)oc3c2)cc1,107,115
+130,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,Brc1cc(NCC2CNC2)[nH]n1,6.3587,Brc1cc(NCC2CN(c3ccc4nc(C5CCN5)oc4c3)C2)[nH]n1,108,115
+131,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,Nc1ccccc1-n1cccc1,6.3437,c1ccc(-n2cccc2)c(Nc2ccc3nc(C4CCN4)oc3c2)c1,109,113
+132,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,Brc1ccc2[nH]c(C3CNC3)nc2c1,6.1597,Brc1ccc2nc(C3CCN3c3ccc4[nH]c(C5CNC5)nc4c3)oc2c1,110,114
+133,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,O=C(Nc1cc(Br)n[nH]1)[C@@H]1Cc2ccccc2CN1,6.1248,O=C(Nc1cc(Br)n[nH]1)C1Cc2ccccc2CN1c1ccc2nc(C3CCN3)oc2c1,111,115
+134,1,Urea formation (amine + amine),Brc1ccc2nc(C3CCN3)oc2c1,1,COc1ccccc1CCN,6.0902,COc1ccccc1CCNC(=O)N1CCC1c1nc2ccc(Br)cc2o1,112,126
+135,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,N[C@@H]1CCCC[C@@H]1O,5.9824,OC1CCCCC1Nc1ccc2nc(C3CCN3)oc2c1,113,113
+136,1,Urea formation (amine + amine),Brc1ccc2nc(C3CCN3)oc2c1,1,Brc1ccc(NCC2CCN2)cc1,5.8708,O=C(N1CCC1CNc1ccc(Br)cc1)N1CCC1c1nc2ccc(Br)cc2o1,114,129
+137,1,Urea formation (amine + amine),Brc1ccc2nc(C3CCN3)oc2c1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,5.6722,O=C(N(CC1Cc2ccccc2CN1)c1cc(Br)n[nH]1)N1CCC1c1nc2ccc(Br)cc2o1,115,129
+138,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,O=C(O)[C@H]1CCCN(C(=O)C2CNC2)C1,5.6699,O=C(O)C1CCCN(C(=O)C2CN(c3ccc4nc(C5CCN5)oc4c3)C2)C1,116,115
+139,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,Nc1nc(F)nc2[nH]cnc12,5.6397,Fc1nc(Nc2ccc3nc(C4CCN4)oc3c2)c2nc[nH]c2n1,117,113
+140,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,Nc1ccc(C(F)(F)F)cc1N,5.6259,Nc1ccc(C(F)(F)F)cc1Nc1ccc2nc(C3CCN3)oc2c1,118,113
+141,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,NCCN1CCNCC1,5.5849,NCCN1CCN(c2ccc3nc(C4CCN4)oc3c2)CC1,119,115
+142,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,Nc1ccc(C(=O)O)cc1Br,5.5418,O=C(O)c1ccc(Nc2ccc3nc(C4CCN4)oc3c2)c(Br)c1,120,113
+143,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,O=C(O)[C@@H]1CCCN1,5.5245,O=C(O)C1CCCN1c1ccc2nc(C3CCN3)oc2c1,121,115
+144,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,5.4235,Brc1ccc2nc(C3CCN3c3cccc4nc(C5CCNCC5)[nH]c34)oc2c1,122,114
+145,1,Urea formation (amine + amine),Brc1ccc2nc(C3CCN3)oc2c1,1,O=C(O)c1ccc2nc(C3CNC3)[nH]c2c1,5.3397,O=C(O)c1ccc2nc(C3CN(C(=O)N4CCC4c4nc5ccc(Br)cc5o4)C3)[nH]c2c1,123,129
+146,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,N#Cc1cc(N)cc(Br)c1,5.2733,N#Cc1cc(Br)cc(Nc2ccc3nc(C4CCN4)oc3c2)c1,124,113
+147,1,Urea formation (amine + amine),Brc1ccc2nc(C3CCN3)oc2c1,1,Nc1ccnc2ccccc12,5.2579,O=C(Nc1ccnc2ccccc12)N1CCC1c1nc2ccc(Br)cc2o1,125,126
+148,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,FC(F)(F)c1ccc(Br)nc1,5.1464,FC(F)(F)c1ccc(N2CCC2c2nc3ccc(Br)cc3o2)nc1,126,114
+149,1,Urea formation (amine + amine),Brc1ccc2nc(C3CCN3)oc2c1,1,O=C(Nc1cc(Br)n[nH]1)[C@@H]1Cc2ccccc2CN1,5.1201,O=C(Nc1cc(Br)n[nH]1)C1Cc2ccccc2CN1C(=O)N1CCC1c1nc2ccc(Br)cc2o1,127,129
+150,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,N[C@@H](Cc1c[nH]cn1)C(=O)O,5.0789,O=C(O)C(Cc1c[nH]cn1)Nc1ccc2nc(C3CCN3)oc2c1,128,113
+151,1,Buchwald-Hartwig amination,Brc1ccc2nc(C3CCN3)oc2c1,1,CC1(C)OB(c2ccc(N)nc2)OC1(C)C,5.0483,CC1(C)OB(c2ccc(Nc3ccc4nc(C5CCN5)oc4c3)nc2)OC1(C)C,129,113
+152,1,Urea formation (amine + amine),Brc1ccc2nc(C3CCN3)oc2c1,1,Nc1nc(F)nc2[nH]cnc12,5.0083,O=C(Nc1nc(F)nc2[nH]cnc12)N1CCC1c1nc2ccc(Br)cc2o1,130,126
+154,1,Urea formation (amine + amine),NCc1cn(CC2CC2)c2ccccc12,2,NCc1cn(CC2CC2)c2ccccc12,8.0456,O=C(NCc1cn(CC2CC2)c2ccccc12)NCc1cn(CC2CC2)c2ccccc12,131,125
+155,1,Urea formation (amine + amine),NCc1cn(CC2CC2)c2ccccc12,1,O=C(NCc1c[nH]c2ccccc12)C1CNC1,7.6468,O=C(NCc1c[nH]c2ccccc12)C1CN(C(=O)NCc2cn(CC3CC3)c3ccccc23)C1,132,127
+156,1,Urea formation (amine + amine),NCc1cn(CC2CC2)c2ccccc12,1,Brc1ccc2oc(C3CNC3)nc2c1,7.47,O=C(NCc1cn(CC2CC2)c2ccccc12)N1CC(c2nc3cc(Br)ccc3o2)C1,133,127
+157,1,Urea formation (amine + amine),NCc1cn(CC2CC2)c2ccccc12,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,7.4013,O=C(NCc1cn(CC2CC2)c2ccccc12)N1CCC(c2nc3cccc(Br)c3[nH]2)CC1,134,127
+158,1,Urea formation (amine + amine),NCc1cn(CC2CC2)c2ccccc12,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.9733,O=C(NCc1cn(CC2CC2)c2ccccc12)N(CC1Cc2ccccc2CN1)c1cc(Br)n[nH]1,135,127
+159,1,Urea formation (amine + amine),NCc1cn(CC2CC2)c2ccccc12,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.7484,O=C(NCc1cn(CC2CC2)c2ccccc12)N1Cc2ccccc2CC1CNc1cc(Br)n[nH]1,136,127
+161,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,2,O=C(NCc1c[nH]c2ccccc12)C1CNC1,7.7746,O=C(NCc1c[nH]c2ccccc12)C1CN(c2cc(NC(=O)C3CNC3)[nH]n2)C1,137,115
+162,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,NC12CC(C1)C2,7.4669,O=C(Nc1cc(NC23CC(C2)C3)n[nH]1)C1CNC1,138,113
+163,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1ccc(NCC2CCN2)cc1,7.4375,O=C(Nc1cc(N2CCC2CNc2ccc(Br)cc2)n[nH]1)C1CNC1,139,115
+164,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,C[C@@H](N)c1ccccc1,7.4136,CC(Nc1cc(NC(=O)C2CNC2)[nH]n1)c1ccccc1,140,113
+165,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,NCCc1c[nH]c2ccccc12,7.4114,O=C(Nc1cc(NCCc2c[nH]c3ccccc23)n[nH]1)C1CNC1,141,113
+166,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1ccc2[nH]c([C@@H]3CCCN3)nc2c1,7.2746,O=C(Nc1cc(N2CCCC2c2nc3cc(Br)ccc3[nH]2)n[nH]1)C1CNC1,142,115
+167,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,7.2655,O=C(Nc1cc(N2CCC(c3nc4cccc(Br)c4[nH]3)CC2)n[nH]1)C1CNC1,143,115
+168,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,NCc1ccc(C(F)(F)F)cc1,7.208,O=C(Nc1cc(NCc2ccc(C(F)(F)F)cc2)n[nH]1)C1CNC1,144,113
+169,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1ccc(NCC2CCN2)cc1,7.1463,O=C(Nc1cc(N(CC2CCN2)c2ccc(Br)cc2)n[nH]1)C1CNC1,145,115
+170,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Nc1ccnc2ccccc12,7.0692,O=C(Nc1cc(Nc2ccnc3ccccc23)n[nH]1)C1CNC1,146,113
+171,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1cc(NCC2CNC2)[nH]n1,6.9867,O=C(Nc1cc(N2CC(CNc3cc(Br)n[nH]3)C2)n[nH]1)C1CNC1,147,115
+172,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.9725,O=C(Nc1cc(N(CC2Cc3ccccc3CN2)c2cc(Br)n[nH]2)n[nH]1)C1CNC1,148,115
+173,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.9614,O=C(Nc1cc(Br)n[nH]1)C1CN(c2cc(NCC3Cc4ccccc4CN3)[nH]n2)C1,149,114
+174,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Nc1ccccc1-n1cccc1,6.8877,O=C(Nc1cc(Nc2ccccc2-n2cccc2)n[nH]1)C1CNC1,150,113
+175,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,O=C(O)[C@@H]1Cc2ccccc2CN1,6.8553,O=C(Nc1cc(N2Cc3ccccc3CC2C(=O)O)n[nH]1)C1CNC1,151,115
+176,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,N[C@@H](C(=O)Nc1cc(Br)n[nH]1)c1ccccc1,6.8087,NC(C(=O)Nc1cc(N2CC(C(=O)Nc3cc(Br)n[nH]3)C2)n[nH]1)c1ccccc1,152,114
+177,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,FC(F)(F)[C@@H]1CCCN1,6.7447,O=C(Nc1cc(N2CCCC2C(F)(F)F)n[nH]1)C1CNC1,153,115
+178,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1ccc2oc(C3CNC3)nc2c1,6.6493,O=C(Nc1cc(N2CC(c3nc4cc(Br)ccc4o3)C2)n[nH]1)C1CNC1,154,115
+179,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1ccc(NCC2CCN2)cc1,6.6306,O=C(Nc1cc(Br)n[nH]1)C1CN(c2ccc(NCC3CCN3)cc2)C1,155,114
+180,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,O=C(O)c1ccc2nc(C3CNC3)[nH]c2c1,6.4679,O=C(O)c1ccc2nc(C3CN(c4cc(NC(=O)C5CNC5)[nH]n4)C3)[nH]c2c1,156,115
+181,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1ccc2oc(C3CNC3)nc2c1,6.4505,O=C(Nc1cc(Br)n[nH]1)C1CN(c2ccc3oc(C4CNC4)nc3c2)C1,157,114
+182,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,N[C@@H]1CCCC[C@@H]1O,6.4269,O=C(Nc1cc(NC2CCCCC2O)n[nH]1)C1CNC1,158,113
+183,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Nc1ccc(Br)cc1,6.3981,O=C(Nc1cc(Nc2ccc(Br)cc2)n[nH]1)C1CNC1,159,113
+184,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,O=C(O)[C@H]1CCCN(C(=O)C2CNC2)C1,6.34,O=C(O)C1CCCN(C(=O)C2CN(c3cc(NC(=O)C4CNC4)[nH]n3)C2)C1,160,115
+185,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1ccc2[nH]c([C@@H]3CCCN3)nc2c1,6.2281,O=C(Nc1cc(Br)n[nH]1)C1CN(c2ccc3[nH]c(C4CCCN4)nc3c2)C1,161,114
+186,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,6.1684,O=C(Nc1cc(Br)n[nH]1)C1CN(c2cccc3nc(C4CCNCC4)[nH]c23)C1,162,114
+187,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,O=C1CCNC1,6.1597,O=C1CCN(c2cc(NC(=O)C3CNC3)[nH]n2)C1,163,115
+188,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Nc1nc(F)nc2[nH]cnc12,6.1505,O=C(Nc1cc(Nc2nc(F)nc3[nH]cnc23)n[nH]1)C1CNC1,164,113
+189,1,Urea formation (amine + amine),O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Nc1ccnc2ccccc12,6.1156,O=C(Nc1cc(Br)n[nH]1)C1CN(C(=O)Nc2ccnc3ccccc23)C1,165,126
+190,1,Urea formation (amine + amine),O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,NC1CC1,6.0963,O=C(Nc1cc(Br)n[nH]1)C1CN(C(=O)NC2CC2)C1,166,126
+191,1,Urea formation (amine + amine),O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1ccc2[nH]c(C3CNC3)nc2c1,5.8424,O=C(Nc1cc(Br)n[nH]1)C1CN(C(=O)N2CC(c3nc4cc(Br)ccc4[nH]3)C2)C1,167,129
+192,1,Urea formation (amine + amine),O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1ccc(NCC2CCN2)cc1,5.8291,O=C(Nc1cc(Br)n[nH]1)C1CN(C(=O)N2CCC2CNc2ccc(Br)cc2)C1,168,129
+193,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,N#Cc1ccc(N)c(N)c1,5.7848,N#Cc1ccc(Nc2cc(NC(=O)C3CNC3)[nH]n2)c(N)c1,169,113
+194,1,Urea formation (amine + amine),O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,O=C(O)c1ccc2nc(C3CNC3)oc2c1,5.7714,O=C(O)c1ccc2nc(C3CN(C(=O)N4CC(C(=O)Nc5cc(Br)n[nH]5)C4)C3)oc2c1,170,129
+195,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,N[C@@H](Cc1ccc([N+](=O)[O-])cc1)C(=O)O,5.7532,O=C(Nc1cc(NC(Cc2ccc([N+](=O)[O-])cc2)C(=O)O)n[nH]1)C1CNC1,171,113
+196,1,Urea formation (amine + amine),O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,COc1ccccc1CCN,5.6847,COc1ccccc1CCNC(=O)N1CC(C(=O)Nc2cc(Br)n[nH]2)C1,172,126
+197,1,Urea formation (amine + amine),O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Brc1ccc(NCC2CCN2)cc1,5.6679,O=C(Nc1cc(Br)n[nH]1)C1CN(C(=O)N(CC2CCN2)c2ccc(Br)cc2)C1,173,129
+198,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,NCCN1CCNCC1,5.6253,O=C(Nc1cc(NCCN2CCNCC2)n[nH]1)C1CNC1,174,113
+199,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,FC(F)(F)c1ccc(Br)nc1,5.5117,O=C(Nc1cc(Br)n[nH]1)C1CN(c2ccc(C(F)(F)F)cn2)C1,175,114
+200,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Cc1ccc(S(=O)(=O)F)cc1N,5.3682,Cc1ccc(S(=O)(=O)F)cc1Nc1cc(NC(=O)C2CNC2)[nH]n1,176,113
+201,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,CC1(C)OB(c2ccc(N)nc2)OC1(C)C,5.2688,CC1(C)OB(c2ccc(Nc3cc(NC(=O)C4CNC4)[nH]n3)nc2)OC1(C)C,177,113
+202,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,Nc1c(F)cccc1C(=O)O,5.1736,O=C(O)c1cccc(F)c1Nc1cc(NC(=O)C2CNC2)[nH]n1,178,113
+203,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,COc1ncc(Br)cc1C,5.1122,COc1ncc(N2CC(C(=O)Nc3cc(Br)n[nH]3)C2)cc1C,179,114
+204,1,Buchwald-Hartwig amination,O=C(Nc1cc(Br)n[nH]1)C1CNC1,1,O=Cc1c[nH]c2cc(Br)ccc12,5.0394,O=Cc1c[nH]c2cc(N3CC(C(=O)Nc4cc(Br)n[nH]4)C3)ccc12,180,114
+207,1,Urea formation (amine + amine),Nc1ccc(-c2cccc(NCC3Cc4ccccc4CN3)c2)cc1,3,NC1CC1,8.0053,O=C(Nc1ccc(-c2cccc(NCC3Cc4ccccc4CN3)c2)cc1)NC1CC1,181,125
+208,1,Urea formation (amine + amine),Nc1ccc(-c2cccc(NCC3Cc4ccccc4CN3)c2)cc1,1,NC1CC1,7.2296,Nc1ccc(-c2cccc(N(CC3Cc4ccccc4CN3)C(=O)NC3CC3)c2)cc1,182,126
+209,1,Urea formation (amine + amine),Nc1ccc(-c2cccc(NCC3Cc4ccccc4CN3)c2)cc1,1,O=C(NCc1c[nH]c2ccccc12)C1CNC1,7.1444,Nc1ccc(-c2cccc(NCC3Cc4ccccc4CN3C(=O)N3CC(C(=O)NCc4c[nH]c5ccccc45)C3)c2)cc1,183,129
+210,1,Urea formation (amine + amine),Nc1ccc(-c2cccc(NCC3Cc4ccccc4CN3)c2)cc1,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,6.8848,Nc1ccc(-c2cccc(NCC3Cc4ccccc4CN3C(=O)N3CCC(c4nc5cccc(Br)c5[nH]4)CC3)c2)cc1,184,129
+211,1,Urea formation (amine + amine),Nc1ccc(-c2cccc(NCC3Cc4ccccc4CN3)c2)cc1,1,COc1ccccc1CCN,6.6077,COc1ccccc1CCNC(=O)N1Cc2ccccc2CC1CNc1cccc(-c2ccc(N)cc2)c1,185,126
+212,1,Urea formation (amine + amine),Nc1ccc(-c2cccc(NCC3Cc4ccccc4CN3)c2)cc1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.436,Nc1ccc(-c2cccc(NCC3Cc4ccccc4CN3C(=O)N(CC3Cc4ccccc4CN3)c3cc(Br)n[nH]3)c2)cc1,186,129
+214,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,2,NC12CC(C1)C2,7.7317,O=C(NC1CC1)c1ccc(CNC23CC(C2)C3)cc1,187,69
+215,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,O=C(NCc1c[nH]c2ccccc12)C1CNC1,7.4361,O=C(NC1CC1)c1ccc(CN2CC(C(=O)NCc3c[nH]c4ccccc34)C2)cc1,188,71
+216,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Nc1ccnc2ccccc12,7.35,O=C(NC1CC1)c1ccc(CNc2ccnc3ccccc23)cc1,189,69
+217,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Brc1ccc2oc(C3CNC3)nc2c1,7.3298,O=C(NC1CC1)c1ccc(CN2CC(c3nc4cc(Br)ccc4o3)C2)cc1,190,71
+218,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,7.2768,O=C(NC1CC1)c1ccc(CN2CCC(c3nc4cccc(Br)c4[nH]3)CC2)cc1,191,71
+219,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Brc1ccc(NCC2CCN2)cc1,7.1222,O=C(NC1CC1)c1ccc(CN2CCC2CNc2ccc(Br)cc2)cc1,192,71
+220,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,NCCc1ccccc1,7.0348,O=C(NC1CC1)c1ccc(CNCCc2ccccc2)cc1,193,69
+221,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Brc1ccc2[nH]c([C@@H]3CCCN3)nc2c1,6.9923,O=C(NC1CC1)c1ccc(CN2CCCC2c2nc3cc(Br)ccc3[nH]2)cc1,194,71
+222,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Brc1ccc(NCC2CCN2)cc1,6.9284,O=C(NC1CC1)c1ccc(CN(CC2CCN2)c2ccc(Br)cc2)cc1,195,71
+223,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,6.8537,O=C(O)c1ccc2[nH]c(C3CN(Cc4ccc(C(=O)NC5CC5)cc4)C3)nc2c1,196,71
+224,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Nc1cccc2cc[nH]c12,6.7678,O=C(NC1CC1)c1ccc(CNc2cccc3cc[nH]c23)cc1,197,69
+225,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.7488,O=C(NC1CC1)c1ccc(CN(CC2Cc3ccccc3CN2)c2cc(Br)n[nH]2)cc1,198,71
+226,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Nc1ccccc1-n1cccc1,6.6916,O=C(NC1CC1)c1ccc(CNc2ccccc2-n2cccc2)cc1,199,69
+227,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,O=C(Nc1cc(Br)n[nH]1)[C@@H]1Cc2ccccc2CN1,6.6846,O=C(NC1CC1)c1ccc(CN2Cc3ccccc3CC2C(=O)Nc2cc(Br)n[nH]2)cc1,200,71
+228,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Brc1cc(NCC2CNC2)[nH]n1,6.6426,O=C(NC1CC1)c1ccc(CN2CC(CNc3cc(Br)n[nH]3)C2)cc1,201,71
+229,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,NCCc1c[nH]c2ccc(O)cc12,6.5041,O=C(NC1CC1)c1ccc(CNCCc2c[nH]c3ccc(O)cc23)cc1,202,69
+230,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Nc1ccc(C(F)(F)F)cc1N,6.455,Nc1cc(C(F)(F)F)ccc1NCc1ccc(C(=O)NC2CC2)cc1,203,69
+231,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Nc1nc(F)nc2[nH]cnc12,6.4289,O=C(NC1CC1)c1ccc(CNc2nc(F)nc3[nH]cnc23)cc1,204,69
+232,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,N[C@@H](C(=O)Nc1cc(Br)n[nH]1)c1ccccc1,6.3081,O=C(NC1CC1)c1ccc(CNC(C(=O)Nc2cc(Br)n[nH]2)c2ccccc2)cc1,205,69
+233,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,C1CCNCC1,6.1936,O=C(NC1CC1)c1ccc(CN2CCCCC2)cc1,206,71
+234,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,N#Cc1ccc(O)c(N)c1,6.1591,N#Cc1ccc(O)c(NCc2ccc(C(=O)NC3CC3)cc2)c1,207,69
+235,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,N[C@@H]1CCCC[C@@H]1O,6.0226,O=C(NC1CC1)c1ccc(CNC2CCCCC2O)cc1,208,69
+236,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Nc1n[nH]cc1Br,5.9951,O=C(NC1CC1)c1ccc(CNc2n[nH]cc2Br)cc1,209,69
+237,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Nc1ccncc1C=O,5.9902,O=Cc1cnccc1NCc1ccc(C(=O)NC2CC2)cc1,210,69
+238,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,OB(O)c1cccc(NC[C@@H]2Cc3ccccc3CN2)c1,5.7837,O=C(NC1CC1)c1ccc(CN2Cc3ccccc3CC2CNc2cccc(B(O)O)c2)cc1,211,71
+239,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Cc1ccc(S(=O)(=O)F)cc1N,5.6618,Cc1ccc(S(=O)(=O)F)cc1NCc1ccc(C(=O)NC2CC2)cc1,212,69
+240,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O,5.6588,O=C(NC1CC1)c1ccc(CNC(Cc2c[nH]c3ccccc23)C(=O)O)cc1,213,69
+241,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Nc1c(F)cccc1C(=O)O,5.4824,O=C(NC1CC1)c1ccc(CNc2c(F)cccc2C(=O)O)cc1,214,69
+242,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Nc1cccc(Br)c1C(=O)O,5.4673,O=C(NC1CC1)c1ccc(CNc2cccc(Br)c2C(=O)O)cc1,215,69
+243,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,CC1(C)OB(c2ccc(N)nc2)OC1(C)C,5.4215,CC1(C)OB(c2ccc(NCc3ccc(C(=O)NC4CC4)cc3)nc2)OC1(C)C,216,69
+244,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,N[C@@H](Cc1ccc([N+](=O)[O-])cc1)C(=O)O,5.4077,O=C(NC1CC1)c1ccc(CNC(Cc2ccc([N+](=O)[O-])cc2)C(=O)O)cc1,217,69
+245,1,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,Nc1ccc(B(O)O)cc1,5.3068,O=C(NC1CC1)c1ccc(CNc2ccc(B(O)O)cc2)cc1,218,69
+247,1,Urea formation (amine + amine),NCCc1cn(CC2CC2)c2ccccc12,2,Nc1ccnc2ccccc12,7.2722,O=C(NCCc1cn(CC2CC2)c2ccccc12)Nc1ccnc2ccccc12,219,125
+248,1,Urea formation (amine + amine),NCCc1cn(CC2CC2)c2ccccc12,1,Brc1ccc2[nH]c(C3CNC3)nc2c1,7.226,O=C(NCCc1cn(CC2CC2)c2ccccc12)N1CC(c2nc3cc(Br)ccc3[nH]2)C1,220,127
+249,1,Urea formation (amine + amine),NCCc1cn(CC2CC2)c2ccccc12,1,Brc1ccc(NCC2CCN2)cc1,7.2251,O=C(NCCc1cn(CC2CC2)c2ccccc12)N1CCC1CNc1ccc(Br)cc1,221,127
+250,1,Urea formation (amine + amine),NCCc1cn(CC2CC2)c2ccccc12,1,Brc1ccc(NCC2CCN2)cc1,7.1664,O=C(NCCc1cn(CC2CC2)c2ccccc12)N(CC1CCN1)c1ccc(Br)cc1,222,127
+251,1,Urea formation (amine + amine),NCCc1cn(CC2CC2)c2ccccc12,1,N[C@@H](C(=O)Nc1cc(Br)n[nH]1)c1ccccc1,6.4024,O=C(NCCc1cn(CC2CC2)c2ccccc12)NC(C(=O)Nc1cc(Br)n[nH]1)c1ccccc1,223,125
+252,1,Urea formation (amine + amine),NCCc1cn(CC2CC2)c2ccccc12,1,NCCc1c[nH]c2ccc(O)cc12,6.0114,O=C(NCCc1c[nH]c2ccc(O)cc12)NCCc1cn(CC2CC2)c2ccccc12,224,125
+253,1,Urea formation (amine + amine),NCCc1cn(CC2CC2)c2ccccc12,1,N[C@@H](Cc1ccc([N+](=O)[O-])cc1)C(=O)O,5.723,O=C(NCCc1cn(CC2CC2)c2ccccc12)NC(Cc1ccc([N+](=O)[O-])cc1)C(=O)O,225,125
+255,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CCN1,2,NCc1cn(CC2CC2)c2ccccc12,6.2336,O=C(Nc1cccc(B(O)O)c1)C1CCN1C(=O)NCc1cn(CC2CC2)c2ccccc12,226,126
+256,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CCN1,1,O=C(NCc1c[nH]c2ccccc12)C1CNC1,6.0417,O=C(NCc1c[nH]c2ccccc12)C1CN(C(=O)N2CCC2C(=O)Nc2cccc(B(O)O)c2)C1,227,129
+257,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CCN1,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,5.665,O=C(Nc1cccc(B(O)O)c1)C1CCN1C(=O)N1CCC(c2nc3cccc(Br)c3[nH]2)CC1,228,129
+258,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CCN1,1,Brc1ccc(NCC2CCN2)cc1,5.4071,O=C(Nc1cccc(B(O)O)c1)C1CCN1C(=O)N1CCC1CNc1ccc(Br)cc1,229,129
+259,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CCN1,1,O=C(O)c1ccc2nc(C3CNC3)oc2c1,5.3636,O=C(O)c1ccc2nc(C3CN(C(=O)N4CCC4C(=O)Nc4cccc(B(O)O)c4)C3)oc2c1,230,129
+260,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CCN1,1,COc1ccccc1CCN,5.1518,COc1ccccc1CCNC(=O)N1CCC1C(=O)Nc1cccc(B(O)O)c1,231,126
+261,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CCN1,1,Nc1ccnc2ccccc12,5.1265,O=C(Nc1cccc(B(O)O)c1)C1CCN1C(=O)Nc1ccnc2ccccc12,232,126
+263,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,2,NCc1cn(CC2CC2)c2ccccc12,7.9575,O=C(NC1CC1)c1cccc(CNCc2cn(CC3CC3)c3ccccc23)c1,233,69
+264,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,1,O=C(O)c1ccc2nc(C3CNC3)oc2c1,6.7061,O=C(O)c1ccc2nc(C3CN(Cc4cccc(C(=O)NC5CC5)c4)C3)oc2c1,234,71
+265,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,1,NCc1ccc(C(F)(F)F)cc1,6.6441,O=C(NC1CC1)c1cccc(CNCc2ccc(C(F)(F)F)cc2)c1,235,69
+266,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,1,NCCc1c[nH]c2ccccc12,6.475,O=C(NC1CC1)c1cccc(CNCCc2c[nH]c3ccccc23)c1,236,69
+267,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,6.429,O=C(NC1CC1)c1cccc(CN2Cc3ccccc3CC2CNc2cc(Br)n[nH]2)c1,237,71
+268,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,1,Nc1ccccn1,6.3889,O=C(NC1CC1)c1cccc(CNc2ccccn2)c1,238,69
+269,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,1,C[C@@H](N)c1ccccc1,6.3126,CC(NCc1cccc(C(=O)NC2CC2)c1)c1ccccc1,239,69
+270,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,1,Brc1cc(NCC2CCN2)[nH]n1,6.1844,O=C(NC1CC1)c1cccc(CN(CC2CCN2)c2cc(Br)n[nH]2)c1,240,71
+271,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,1,N#Cc1ccc(N)c(N)c1,5.8613,N#Cc1ccc(NCc2cccc(C(=O)NC3CC3)c2)c(N)c1,241,69
+272,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,1,OB(O)c1cccc(NC[C@@H]2Cc3ccccc3CN2)c1,5.7831,O=C(NC1CC1)c1cccc(CN(CC2Cc3ccccc3CN2)c2cccc(B(O)O)c2)c1,242,71
+273,1,Reductive amination (aldehyde),O=Cc1cccc(C(=O)NC2CC2)c1,1,O[C@@H]1CCNC1,5.6113,O=C(NC1CC1)c1cccc(CN2CCC(O)C2)c1,243,71
+275,1,Tetrazole formation (nitrile + alkyl halide),O=C(NC1CC1)c1ccc(CCl)cc1,2,N#Cc1ccc(F)nc1,6.7839,O=C(NC1CC1)c1ccc(Cn2nnc(-c3ccc(F)nc3)n2)cc1,244,105
+276,1,Tetrazole formation (nitrile + alkyl halide),O=C(NC1CC1)c1ccc(CCl)cc1,1,N#Cc1ccc(F)cc1,6.2517,O=C(NC1CC1)c1ccc(Cn2nnnc2-c2ccc(F)cc2)cc1,245,107
+277,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,NCc1cn(CC2CC2)c2ccccc12,7.9162,c1ccc2c(c1)c(CNCc1ccc3[nH]c(C4CNC4)nc3c1)cn2CC1CC1,246,136
+278,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,NC12CC(C1)C2,7.6789,c1cc2[nH]c(C3CNC3)nc2cc1CNC12CC(C1)C2,247,136
+279,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,NCc1ccccc1,7.5863,O=C(NCc1ccccc1)c1ccc2[nH]c(C3CNC3)nc2c1,248,76
+280,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Brc1ccc2oc(C3CNC3)nc2c1,7.3093,Brc1ccc2oc(C3CN(Cc4ccc5[nH]c(C6CNC6)nc5c4)C3)nc2c1,249,138
+281,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Brc1ccc(NCC2CCN2)cc1,7.2941,Brc1ccc(NCC2CCN2Cc2ccc3[nH]c(C4CNC4)nc3c2)cc1,250,138
+282,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Nc1ccnc2ccccc12,7.2739,c1ccc2c(NCc3ccc4[nH]c(C5CNC5)nc4c3)ccnc2c1,251,136
+283,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Brc1ccc(NCC2CCN2)cc1,7.1867,Brc1ccc(N(Cc2ccc3[nH]c(C4CNC4)nc3c2)CC2CCN2)cc1,252,138
+284,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Nc1cccc2cc[nH]c12,7.0909,O=C(Nc1cccc2cc[nH]c12)c1ccc2[nH]c(C3CNC3)nc2c1,253,76
+285,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,COc1ccccc1CCN,6.9205,COc1ccccc1CCNCc1ccc2[nH]c(C3CNC3)nc2c1,254,136
+286,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,O=C(O)[C@H]1CCCN(C(=O)C2CNC2)C1,6.9165,O=C(O)c1ccc2[nH]c(C3CN(C(=O)C4CCCN(C(=O)C5CNC5)C4)C3)nc2c1,255,79
+287,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,NCCc1c[nH]c2ccc(O)cc12,6.9149,O=C(NCCc1c[nH]c2ccc(O)cc12)c1ccc2[nH]c(C3CNC3)nc2c1,256,76
+288,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Nc1nc(F)nc2[nH]cnc12,6.9115,O=C(Nc1nc(F)nc2[nH]cnc12)c1ccc2[nH]c(C3CNC3)nc2c1,257,76
+289,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Brc1ccc2[nH]c(C3CNC3)nc2c1,6.8662,O=C(c1ccc2[nH]c(C3CNC3)nc2c1)N1CC(c2nc3cc(Br)ccc3[nH]2)C1,258,78
+290,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Brc1cc(NCC2CCN2)[nH]n1,6.866,O=C(c1ccc2[nH]c(C3CNC3)nc2c1)N1CCC1CNc1cc(Br)n[nH]1,259,78
+291,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,O=C(O)c1cccc2oc(C3CNC3)nc12,6.7929,O=C(O)c1ccc2[nH]c(C3CN(Cc4cccc5oc(C6CNC6)nc45)C3)nc2c1,260,139
+292,1,Urea formation (amine + amine),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,O=C(NCc1c[nH]c2ccccc12)C1CNC1,6.78,O=C(O)c1ccc2[nH]c(C3CN(C(=O)N4CC(C(=O)NCc5c[nH]c6ccccc56)C4)C3)nc2c1,261,129
+293,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,O=C(O)c1ccc2nc(C3CNC3)[nH]c2c1,6.7704,O=C(O)c1ccc2nc(C3CN(Cc4ccc5[nH]c(C6CNC6)nc5c4)C3)[nH]c2c1,262,138
+294,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,N[C@@H](C(=O)Nc1cc(Br)n[nH]1)c1ccccc1,6.5712,O=C(NC(C(=O)Nc1cc(Br)n[nH]1)c1ccccc1)c1ccc2[nH]c(C3CNC3)nc2c1,263,76
+295,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Brc1cc(NCC2CCN2)[nH]n1,6.4661,O=C(c1ccc2[nH]c(C3CNC3)nc2c1)N(CC1CCN1)c1cc(Br)n[nH]1,264,78
+296,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,N#Cc1cc(N)cc(Br)c1,6.3184,N#Cc1cc(Br)cc(NCc2ccc3[nH]c(C4CNC4)nc3c2)c1,265,136
+297,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,OB(O)c1cccc(NC[C@@H]2Cc3ccccc3CN2)c1,6.2834,O=C(c1ccc2[nH]c(C3CNC3)nc2c1)N(CC1Cc2ccccc2CN1)c1cccc(B(O)O)c1,266,78
+298,1,Urea formation (amine + amine),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Nc1ccnc2ccccc12,6.1197,O=C(O)c1ccc2[nH]c(C3CN(C(=O)Nc4ccnc5ccccc45)C3)nc2c1,267,126
+299,1,Urea formation (amine + amine),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Brc1ccc(NCC2CCN2)cc1,6.1054,O=C(O)c1ccc2[nH]c(C3CN(C(=O)N4CCC4CNc4ccc(Br)cc4)C3)nc2c1,268,129
+300,1,Urea formation (amine + amine),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,NCc1ccc(C(F)(F)F)cc1,6.0427,O=C(O)c1ccc2[nH]c(C3CN(C(=O)NCc4ccc(C(F)(F)F)cc4)C3)nc2c1,269,126
+301,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,OB(O)c1cccc(NC[C@@H]2Cc3ccccc3CN2)c1,5.9381,O=C(c1ccc2[nH]c(C3CNC3)nc2c1)N1Cc2ccccc2CC1CNc1cccc(B(O)O)c1,270,78
+302,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Cc1ccc(S(=O)(=O)F)cc1N,5.8731,Cc1ccc(S(=O)(=O)F)cc1NCc1ccc2[nH]c(C3CNC3)nc2c1,271,136
+303,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,Nc1c(F)cccc1C(=O)O,5.8188,O=C(O)c1cccc(F)c1NCc1ccc2[nH]c(C3CNC3)nc2c1,272,136
+304,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O,5.7827,O=C(O)C(Cc1c[nH]c2ccccc12)NCc1ccc2[nH]c(C3CNC3)nc2c1,273,136
+305,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,N#Cc1ccc(C(=O)O)cn1,5.4882,N#Cc1ccc(C(=O)N2CC(c3nc4cc(C(=O)O)ccc4[nH]3)C2)cn1,274,79
+306,1,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,N[C@@H](Cc1c[nH]cn1)C(=O)O,5.4068,O=C(NC(Cc1c[nH]cn1)C(=O)O)c1ccc2[nH]c(C3CNC3)nc2c1,275,76
+307,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,O=S(=O)(F)C1CCNCC1,5.3928,O=S(=O)(F)C1CCN(Cc2ccc3[nH]c(C4CNC4)nc3c2)CC1,276,138
+308,1,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,O=C(O)[C@@H]1C[C@@H](O)CN1,5.1989,O=C(O)C1CC(O)CN1Cc1ccc2[nH]c(C3CNC3)nc2c1,277,138
+310,1,Tetrazole formation (nitrile + alkyl halide),ClCc1ccc(C2=NCCc3ccccc32)cc1,2,N#Cc1ccc(N=C=S)cc1,6.6909,S=C=Nc1ccc(-c2nnn(Cc3ccc(C4=NCCc5ccccc54)cc3)n2)cc1,278,105
+311,1,Tetrazole formation (nitrile + alkyl halide),ClCc1ccc(C2=NCCc3ccccc32)cc1,1,N#Cc1ccc(F)nc1,6.3276,Fc1ccc(-c2nnnn2Cc2ccc(C3=NCCc4ccccc43)cc2)cn1,279,107
+313,1,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,2,NC1CC1,7.9049,O=C(Nc1cccc2ccn(CC3CC3)c12)NC1CC1,280,125
+314,1,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,1,Brc1cccc2nc(C3CCNCC3)[nH]c12,7.3352,O=C(Nc1cccc2ccn(CC3CC3)c12)N1CCC(c2nc3cccc(Br)c3[nH]2)CC1,281,127
+315,1,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,1,Brc1ccc2oc(C3CNC3)nc2c1,7.1489,O=C(Nc1cccc2ccn(CC3CC3)c12)N1CC(c2nc3cc(Br)ccc3o2)C1,282,127
+316,1,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,1,Brc1ccc(NCC2CCN2)cc1,7.0689,O=C(Nc1cccc2ccn(CC3CC3)c12)N1CCC1CNc1ccc(Br)cc1,283,127
+317,1,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,1,Brc1cc(NCC2CCN2)[nH]n1,6.5378,O=C(Nc1cccc2ccn(CC3CC3)c12)N(CC1CCN1)c1cc(Br)n[nH]1,284,127
+318,1,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,1,N[C@@H](C(=O)Nc1cc(Br)n[nH]1)c1ccccc1,6.2459,O=C(Nc1cccc2ccn(CC3CC3)c12)NC(C(=O)Nc1cc(Br)n[nH]1)c1ccccc1,285,125
+319,1,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,1,O=C(O)[C@H]1CCCN(C(=O)C2CNC2)C1,6.0243,O=C(O)C1CCCN(C(=O)C2CN(C(=O)Nc3cccc4ccn(CC5CC5)c34)C2)C1,286,127
+320,1,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,1,O=C(O)[C@@H]1Cc2ccccc2CN1,6.0138,O=C(O)C1Cc2ccccc2CN1C(=O)Nc1cccc2ccn(CC3CC3)c12,287,127
+321,1,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,1,OB(O)c1cccc(NC[C@@H]2Cc3ccccc3CN2)c1,6.0044,O=C(Nc1cccc2ccn(CC3CC3)c12)N(CC1Cc2ccccc2CN1)c1cccc(B(O)O)c1,288,127
+322,1,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,1,N[C@@H](Cc1c[nH]c2ccccc12)C(=O)O,5.3435,O=C(Nc1cccc2ccn(CC3CC3)c12)NC(Cc1c[nH]c2ccccc12)C(=O)O,289,125
+324,1,Tetrazole formation (nitrile + alkyl halide),BrCc1cccc(-c2nnn(CC3CC3)n2)c1,2,N#Cc1ccc(F)nc1,6.9349,Fc1ccc(-c2nnn(Cc3cccc(-c4nnn(CC5CC5)n4)c3)n2)cn1,290,97
+325,1,Tetrazole formation (nitrile + alkyl halide),BrCc1cccc(-c2nnn(CC3CC3)n2)c1,1,N#Cc1ccc(N=C=S)cc1,6.6149,S=C=Nc1ccc(-c2nnnn2Cc2cccc(-c3nnn(CC4CC4)n3)c2)cc1,291,99
+327,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CNC1,2,Brc1ccc2oc(C3CNC3)nc2c1,5.3617,O=C(Nc1cccc(B(O)O)c1)C1CN(C(=O)N2CC(c3nc4cc(Br)ccc4o3)C2)C1,292,129
+328,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CNC1,1,NC1CC1,5.3596,O=C(Nc1cccc(B(O)O)c1)C1CN(C(=O)NC2CC2)C1,293,126
+329,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CNC1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,5.2813,O=C(Nc1cccc(B(O)O)c1)C1CN(C(=O)N(CC2Cc3ccccc3CN2)c2cc(Br)n[nH]2)C1,294,129
+330,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CNC1,1,Brc1ccc2[nH]c([C@@H]3CCCN3)nc2c1,5.1452,O=C(Nc1cccc(B(O)O)c1)C1CN(C(=O)N2CCCC2c2nc3cc(Br)ccc3[nH]2)C1,295,129
+331,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CNC1,1,O=C(O)c1ccc2nc(C3CNC3)[nH]c2c1,5.1118,O=C(O)c1ccc2nc(C3CN(C(=O)N4CC(C(=O)Nc5cccc(B(O)O)c5)C4)C3)[nH]c2c1,296,129
+332,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CNC1,1,Brc1cc(NC[C@@H]2Cc3ccccc3CN2)[nH]n1,5.0925,O=C(Nc1cccc(B(O)O)c1)C1CN(C(=O)N2Cc3ccccc3CC2CNc2cc(Br)n[nH]2)C1,297,129
+333,1,Urea formation (amine + amine),O=C(Nc1cccc(B(O)O)c1)C1CNC1,1,NCCc1c[nH]c2ccc(O)cc12,5.003,O=C(Nc1cccc(B(O)O)c1)C1CN(C(=O)NCCc2c[nH]c3ccc(O)cc23)C1,298,126
+335,1,Amide coupling,O=C(O)c1ccc2nc(C3CNC3)[nH]c2c1,2,NC1CC1,7.8089,O=C(NC1CC1)c1ccc2nc(C3CNC3)[nH]c2c1,299,76
+336,1,Direct acid -> amine (reductive),O=C(O)c1ccc2nc(C3CNC3)[nH]c2c1,1,NCc1ccccc1,7.3372,c1ccc(CNCc2ccc3nc(C4CNC4)[nH]c3c2)cc1,300,136

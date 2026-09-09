@@ -1,0 +1,3 @@
+strategy,setup_s,hub_pick_s,enumeration_s,reward_gen_s,flow_extract_s,unattributed_s,mode_selection_s,total_s,n_hubs_walked,n_children_scored
+hub_batching,23.899,0.192,0.0,0.0,0.0,6605.1196,2.5309,6631.7415,24,27807
+best_candidate,0.0,0.0,0.0,0.0,0.0,0.0,0.2101,0.2101,0,0

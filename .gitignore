@@ -193,23 +193,8 @@ Miniconda3-latest-Linux-x86_64.sh
 *.sdf
 *.csv
 
-# ...but the blanket `*.csv` above is why `experiments/` holds 454 result CSVs of which 7 are
-# tracked, including every headline artifact (reaction_axis_ratio.csv, greedy_oracle_summary.csv,
-# pipeline_headline.csv). ARCHITECTURE.md says small committed result CSVs live under experiments/;
-# they do not, and nobody noticed because `git add` no-ops silently on an ignored path.
-#
-# SCOPED DELIBERATELY TO benchmark_v2. That tree is designed so only SMALL results live in the repo
-# (heavy artifacts mirror to $SCRATCH), so un-ignoring its CSVs is correct by construction and keeps
-# the new campaign self-describing. grid.csv is the cell list every driver reads and PROVENANCE.csv
-# is the only record of what was generated here versus copied forward -- losing either would leave
-# the tree unable to say what it contains, which is the one thing benchmark_v2 exists to guarantee.
-#
-# The other ~447 CSVs under experiments/lsd_hubs are the v1 record and are NOT un-ignored here:
-# committing 12.4 MB of superseded results is the researcher's call, not a side effect of an
-# infrastructure fix. Flagged 2026-09-07; they currently exist only on this filesystem plus the
-# /project backups (their .json siblings ARE tracked, and RGFN-LSD's artifacts/ holds the numbers
-# the paper rests on, so nothing the paper needs is at risk).
-!experiments/benchmark_v2/**/*.csv
+# (Committed result CSVs under experiments/ are un-ignored further down, beside the run-dir
+# rules they belong with -- search for "results*/".)
 
 # superseded scaffold library (large; not part of the curated pipeline)
 data/validation-molecules/Enamine_CRBN_Molecular_Glue_Library_*.smiles
@@ -255,6 +240,40 @@ experiments/**/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]_*/
 # committed seed + result CSVs sit directly in a run dir (override the global *.csv ignore)
 !experiments/**/seed_*.csv
 !experiments/**/*_results.csv
+
+# ...but the two rules above key on FILE NAMING, and the lsd_hubs analyses never adopted that
+# convention: their outputs are curve_hub_batching.csv, reaction_axis_ratio.csv, summary.csv,
+# pipeline_headline.csv. So they fell through to the blanket `*.csv` and stayed invisible --
+# 454 CSVs under experiments/lsd_hubs of which only 12 were tracked, including every headline
+# artifact (reaction_axis_ratio.csv IS the 2.93x matrix result). Nobody noticed for months because
+# `git add` NO-OPS SILENTLY on an ignored path; the failure mode is the silence, not the size.
+#
+# Un-ignore by LOCATION as well as by name. `results*/` is where analysis outputs already live by
+# convention, so this states the rule the tree was already following.
+#
+# VERIFY BOTH DIRECTIONS when touching this. It is not enough that the files you want became
+# trackable -- a representative bulk-data CSV must still be IGNORED, or this has quietly re-enabled
+# committing docking dumps. Checked 2026-09-08: analysis outputs trackable, while
+# experiments/lsd_hubs/campaign/enum_dump.csv and .../scale5k/analysis/*.csv still hit the blanket
+# rule at the top of this file.
+#
+# Scope, measured: 454 CSVs / 12.4 MB, largest single file 0.5 MB. 450 sit under a results dir; the
+# other 4 (matrix16/manifest*.csv, dropoff/funnel_*_results.csv) were already tracked, so the
+# location rule is exactly sufficient. One file outside lsd_hubs is also exposed --
+# aizynth_failure_modes/results/residual_taxonomy.csv -- an analysis result of the same class.
+#
+# THESE ARE ARCHIVAL, NOT A BASELINE. They are committed so the v1 record exists somewhere durable
+# rather than only on this filesystem and the /project backups. benchmark_v2 owes them nothing: the
+# point of the re-run is to leave the previous campaign in the past, and the two are not
+# commensurable anyway (different training budget, hit gates, generator taxonomy and pipeline
+# shape). Do not diff v1 against v2 and read the difference as a result.
+!experiments/**/results*/**/*.csv
+
+# benchmark_v2 gets ALL its CSVs, results dir or not: grid.csv (the cell list every driver reads)
+# and PROVENANCE.csv (the only record of what was generated versus copied forward) sit at its root,
+# and losing either would leave that tree unable to say what it contains -- the one thing it exists
+# to guarantee. Both were silently dropped from its first commit by the blanket rule.
+!experiments/benchmark_v2/**/*.csv
 
 oracle/drd2_current.pkl
 

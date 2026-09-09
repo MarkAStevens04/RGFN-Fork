@@ -1,0 +1,169 @@
+template_id,steps,cum_coverage,named_reaction,single_reactant,smarts
+139,93439,0.125,Direct acid -> amine (reductive),False,"[#6&!$(C=[O,N]):4]-[Nh:2]-[#6&!$(C=[O,N]):3].[C:1](=[O])[Oh] >> [C:1]-[N:2](-[#6&!$(C=[O,N]):4])-[#6&!$(C=[O,N]):3]"
+136,83401,0.2366,Direct acid -> amine (reductive),False,"[C:1](=[O])[Oh].[Nh2:2]-[#6&!$(C=[O,N]):3] >> [C:1]-[Nh:2]-[#6&!$(C=[O,N]):3]"
+137,58085,0.3143,Direct acid -> amine (reductive),False,"[Nh2:2]-[#6&!$(C=[O,N]):3].[C:1](=[O])[Oh] >> [C:1]-[Nh:2]-[#6&!$(C=[O,N]):3]"
+70,48122,0.3787,Reductive amination (aldehyde),False,"[#6&!$(C=[O,N]):10]-[Nh:1](-[#6&!$(C=[O,N]):20]).[Ch:2]([#6:3])=[O] >> [#6&!$(C=[O,N]):10]-[N:1](-[#6&!$(C=[O,N]):20])-[Ch:2]-[#6:3]"
+74,39300,0.4312,Reductive amination (ketone),False,"[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]).[#6:3][C:2]([#6:4])=[O] >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[#6:2]([C:3])[#6:4]"
+73,36454,0.48,Reductive amination (ketone),False,"[#6:3][C:2]([#6:4])=[O].[#6&!$(C=[O,N]):10][Nh2:1] >> [#6&!$(C=[O,N]):10][N:1]-[C:2]([#6:3])[#6:4]"
+138,32279,0.5232,Direct acid -> amine (reductive),False,"[C:1](=[O])[Oh].[#6&!$(C=[O,N]):4]-[Nh:2]-[#6&!$(C=[O,N]):3] >> [C:1]-[N:2](-[#6&!$(C=[O,N]):4])-[#6&!$(C=[O,N]):3]"
+76,30437,0.5639,Amide coupling,False,"[C:3](=[O:4])-[Oh].[Nh2:5]-[#6&!$(C=[O,N]):10] >> [C:3](=[O:4])-[Nh:5]-[#6&!$(C=[O,N]):10]"
+68,23452,0.5953,Reductive amination (aldehyde),False,"[#6&!$(C=[O,N]):10][Nh2:1].[Ch:2]([#6:3])=[O] >> [#6&!$(C=[O,N]):10][Nh:1]-[Ch:2]-[#6:3]"
+77,21985,0.6247,Amide coupling,False,"[Nh2:5]-[#6&!$(C=[O,N]):10].[C:3](=[O:4])-[Oh] >> [C:3](=[O:4])-[Nh:5]-[#6&!$(C=[O,N]):10]"
+86,21834,0.6539,Suzuki coupling,False,[c:1]-[B]([Oh])([Oh]).[c:2]-[Br] >> [c:1]-[c:2]
+87,20530,0.6814,Suzuki coupling,False,[c:2]-[Br].[c:1]-[B]([Oh])([Oh]) >> [c:1]-[c:2]
+72,17943,0.7054,Reductive amination (ketone),False,"[#6&!$(C=[O,N]):10][Nh2:1].[#6:3][C:2]([#6:4])=[O] >> [#6&!$(C=[O,N]):10][N:1]-[C:2]([#6:3])[#6:4]"
+69,15328,0.7259,Reductive amination (aldehyde),False,"[Ch:2]([#6:3])=[O].[#6&!$(C=[O,N]):10][Nh2:1] >> [#6&!$(C=[O,N]):10][Nh:1]-[Ch:2]-[#6:3]"
+180,14406,0.7452,Benzoxazole formation,False,[Oh:5]-[c;r6:4][c;r6:3]-[Nh2:2].[#6:6]-[C&!R:1](=[O])-[Oh] >> [o:5]1[c:4][c:3][n:2][c:1](-[#6:6])1
+104,8750,0.7569,Tetrazole formation (nitrile + alkyl halide),False,[#6:1]-[C:2]#[N:3].[#6:4]-[Ch2:5]-[Cl] >> [#6:1]-[c:2]1[n:3][n](-[C:5]-[#6:4])[n-0][n+0]1
+181,8660,0.7685,Benzoxazole formation,False,[#6:6]-[C&!R:1](=[O])-[Oh].[Oh:5]-[c;r6:4][c;r6:3]-[Nh2:2] >> [o:5]1[c:4][c:3][n:2][c:1](-[#6:6])1
+144,8540,0.7799,Pictet-Spengler cyclisation,False,[c:3]1[c:4][c:5][c:6]([C:11][C:12][Nh&!R:13])[c:7][c:8]1.[#6:15][Ch:14]=[O] >> [c:3]1[c:4][c:5]2[c:6]([C:11][C:12][N:13]-[Ch:14]2-[#6:15])[c:7][c:8]1
+114,8435,0.7912,Buchwald-Hartwig amination,False,"[#6&!$(C=[O,N]):3]-[Nh:1]-[#6&!$(C=[O,N]):4].[c:2]-[Br] >> [#6&!$(C=[O,N]):3]-[N:1](-[#6&!$(C=[O,N]):4])-[c:2]"
+58,8054,0.8019,aza-Michael addition (enone),False,"[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]).[#6:2]=[#6:3]-[#6:4]=O >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[#6:2]-[#6:3]-[#6:4]=O"
+113,7515,0.812,Buchwald-Hartwig amination,False,"[c:2]-[Br].[#6&!$(C=[O,N]):3]-[Nh2:1] >> [#6&!$(C=[O,N]):3]-[Nh:1]-[c:2]"
+200,7271,0.8217,N-alkylation (azole N-H + alkyl halide),False,[c:1][nH:2][c:3].[Cl]-[Ch2:4]-[#6:5] >> [c:1][n:2]([c:3])-[Ch2:4]-[#6:5]
+79,7100,0.8312,Amide coupling,False,"[#6&!$(C=[O,N]):20]-[Nh:5]-[#6&!$(C=[O,N]):10].[C:3](=[O:4])-[Oh] >> [C:3](=[O:4])-[N:5](-[#6&!$(C=[O,N]):20])-[#6&!$(C=[O,N]):10]"
+182,6933,0.8405,Benzimidazole formation,False,[Nh2:5]-[c;r6:4][c;r6:3]-[Nh2:2].[#6:6]-[C:1](=[O])-[Oh] >> [n:5]1[c:4][c:3][nH:2][c:1](-[#6:6])1
+145,6648,0.8494,Pictet-Spengler cyclisation,False,[#6:15][Ch:14]=[O].[c:3]1[c:4][c:5][c:6]([C:11][C:12][Nh&!R:13])[c:7][c:8]1 >> [c:3]1[c:4][c:5]2[c:6]([C:11][C:12][N:13]-[Ch:14]2-[#6:15])[c:7][c:8]1
+112,6234,0.8577,Buchwald-Hartwig amination,False,"[#6&!$(C=[O,N]):3]-[Nh2:1].[c:2]-[Br] >> [#6&!$(C=[O,N]):3]-[Nh:1]-[c:2]"
+75,6095,0.8659,Reductive amination (ketone),False,"[#6:3][C:2]([#6:4])=[O].[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]) >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[#6:2]([C:3])[#6:4]"
+78,5132,0.8728,Amide coupling,False,"[C:3](=[O:4])-[Oh].[#6&!$(C=[O,N]):20]-[Nh:5]-[#6&!$(C=[O,N]):10] >> [C:3](=[O:4])-[N:5](-[#6&!$(C=[O,N]):20])-[#6&!$(C=[O,N]):10]"
+71,4476,0.8787,Reductive amination (aldehyde),False,"[Ch:2]([#6:3])=[O].[#6&!$(C=[O,N]):10]-[Nh:1](-[#6&!$(C=[O,N]):20]) >> [#6&!$(C=[O,N]):10]-[N:1](-[#6&!$(C=[O,N]):20])-[Ch:2]-[#6:3]"
+190,4250,0.8844,Benzoxazole formation,False,[Oh:5]-[c;r6:4][c;r6:3]-[Nh2:2].[#6:6]-[Ch:1]=[O] >> [o:5]1[c:4][c:3][n:2][c:1](-[#6:6])1
+191,4115,0.8899,Benzoxazole formation,False,[#6:6]-[Ch:1]=[O].[Oh:5]-[c;r6:4][c;r6:3]-[Nh2:2] >> [o:5]1[c:4][c:3][n:2][c:1](-[#6:6])1
+115,3524,0.8947,Buchwald-Hartwig amination,False,"[c:2]-[Br].[#6&!$(C=[O,N]):3]-[Nh:1]-[#6&!$(C=[O,N]):4] >> [#6&!$(C=[O,N]):3]-[N:1](-[#6&!$(C=[O,N]):4])-[c:2]"
+202,3517,0.8994,N-alkylation (azole N-H + alkyl halide),False,[c:1][nH:2][c:3].[Br]-[Ch2:4]-[#6:5] >> [c:1][n:2]([c:3])-[Ch2:4]-[#6:5]
+165,3298,0.9038,Functional-group interconversion (Br -> Cl),True,[c:1]-[Br] >> [c:1]-[Cl]
+126,3121,0.9079,Urea formation (amine + amine),False,"[#6&!$(C=[O,N]):21]-[Nh:5]-[#6&!$(C=[O,N]):20].[Nh2:6]-[#6&!$(C=[O,N]):10] >> [#6&!$(C=[O,N]):21]-[N:5](-[#6&!$(C=[O,N]):20])-[C](=O)-[Nh:6]-[#6&!$(C=[O,N]):10]"
+183,2922,0.9119,Benzimidazole formation,False,[#6:6]-[C:1](=[O])-[Oh].[Nh2:5]-[c;r6:4][c;r6:3]-[Nh2:2] >> [n:5]1[c:4][c:3][nH:2][c:1](-[#6:6])1
+166,2716,0.9155,Functional-group interconversion (Br -> I),True,[c:1]-[Br] >> [c:1]-[I]
+153,2683,0.9191,Pictet-Spengler cyclisation,False,[#6:15][C:14](=[O])-[Oh].[c:3]1[c:4][c:5][c:6]([C:11][C:12][Nh2:13])[c:7][c:8]1 >> [c:3]1[c:4][c:5]2[c:6]([C:11][C:12][N:13]=[C:14]2-[#6:15])[c:7][c:8]1
+56,2672,0.9227,aza-Michael addition (enone),False,"[#6&!$(C=[O,N]):10][Nh2:1].[#6:2]=[#6:3]-[#6:4]=O >> [#6&!$(C=[O,N]):10][Nh:1]-[#6:2]-[#6:3]-[#6:4]=O"
+201,2377,0.9258,N-alkylation (azole N-H + alkyl halide),False,[Cl]-[Ch2:4]-[#6:5].[c:1][nH:2][c:3] >> [c:1][n:2]([c:3])-[Ch2:4]-[#6:5]
+121,2357,0.929,Sonogashira coupling,False,[c:2]-[Br].[Ch:4]#[Ch:5] >> [c:2]-[C:5]#[Ch:4]
+176,2211,0.9319,Williamson ether synthesis,False,[Ch2:1]-[Cl].[C:2]-[Oh:3] >> [Ch2:1]-[O:3]-[C:2]
+131,2088,0.9347,Esterification,False,[C:3](=[O:4])-[Oh].[#6&!$(C=[O]):1]-[Oh:2] >> [C:3](=[O:4])-[O:2]-[#6&!$(C=[O]):1]
+105,2060,0.9375,Tetrazole formation (nitrile + alkyl halide),False,[#6:4]-[Ch2:5]-[Cl].[#6:1]-[C:2]#[N:3] >> [#6:1]-[c:2]1[n:3][n](-[C:5]-[#6:4])[n-0][n+0]1
+124,1952,0.9401,Urea formation (amine + amine),False,"[Nh2:5]-[#6&!$(C=[O,N]):20].[Nh2:6]-[#6&!$(C=[O,N]):10] >> [Nh:5](-[#6&!$(C=[O,N]):20])-[C](=O)-[Nh:6]-[#6&!$(C=[O,N]):10]"
+130,1927,0.9427,Esterification,False,[#6&!$(C=[O]):1]-[Oh:2].[C:3](=[O:4])-[Oh] >> [C:3](=[O:4])-[O:2]-[#6&!$(C=[O]):1]
+106,1812,0.9451,Tetrazole formation (nitrile + alkyl halide),False,[#6:1]-[C:2]#[N:3].[#6:4]-[Ch2:5]-[Cl] >> [#6:1]-[c:2]1[n:3][n+0][n-0][n](-[C:5]-[#6:4])1
+100,1774,0.9475,Triazole formation (alkyne + alkyl halide),False,[#6:1]-[C:2]#[Ch:3].[#6:4]-[Ch2:5]-[Cl] >> [#6:1]-[c:2]1[c:3][n](-[C:5]-[#6:4])[n-0][n+0]1
+96,1740,0.9498,Tetrazole formation (nitrile + alkyl halide),False,[#6:1]-[C:2]#[N:3].[#6:4]-[Ch2:5]-[Br] >> [#6:1]-[c:2]1[n:3][n](-[C:5]-[#6:4])[n-0][n+0]1
+59,1637,0.952,aza-Michael addition (enone),False,"[#6:2]=[#6:3]-[#6:4]=O.[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]) >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[#6:2]-[#6:3]-[#6:4]=O"
+125,1619,0.9542,Urea formation (amine + amine),False,"[Nh2:6]-[#6&!$(C=[O,N]):10].[Nh2:5]-[#6&!$(C=[O,N]):20] >> [Nh:5](-[#6&!$(C=[O,N]):20])-[C](=O)-[Nh:6]-[#6&!$(C=[O,N]):10]"
+32,1571,0.9563,SNAr (halo-heteroarene + amine),False,"[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]).[F]-[c:4]1[n:5][c:6][c:7][c:8][c:9]1 >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[c:4]1[n:5][c:6][c:7][c:8][c:9]1"
+37,1431,0.9582,SNAr (halo-heteroarene + amine),False,"[F]-[c:4]1[n:5][c:6][c:7][c:8][c:9]1.[#6&!$(C=[O,N]):10][Nh2:1] >> [#6&!$(C=[O,N]):10][Nh:1]-[c:4]1[n:5][c:6][c:7][c:8][c:9]1"
+177,1394,0.96,Williamson ether synthesis,False,[C:2]-[Oh:3].[Ch2:1]-[Cl] >> [Ch2:1]-[O:3]-[C:2]
+175,1294,0.9618,Williamson ether synthesis,False,[C:2]-[Oh:3].[Ch2:1]-[Br] >> [Ch2:1]-[O:3]-[C:2]
+57,1200,0.9634,aza-Michael addition (enone),False,"[#6:2]=[#6:3]-[#6:4]=O.[#6&!$(C=[O,N]):10][Nh2:1] >> [#6&!$(C=[O,N]):10][Nh:1]-[#6:2]-[#6:3]-[#6:4]=O"
+98,1197,0.965,Tetrazole formation (nitrile + alkyl halide),False,[#6:1]-[C:2]#[N:3].[#6:4]-[Ch2:5]-[Br] >> [#6:1]-[c:2]1[n:3][n+0][n-0][n](-[C:5]-[#6:4])1
+187,1197,0.9666,Benzimidazole formation,False,[#6:6]-[Ch:1]=[O].[Nh2:5]-[c;r6:4][c;r6:3]-[Nh2:2] >> [n:5]1[c:4][c:3][nH:2][c:1](-[#6:6])1
+127,1134,0.9681,Urea formation (amine + amine),False,"[Nh2:6]-[#6&!$(C=[O,N]):10].[#6&!$(C=[O,N]):21]-[Nh:5]-[#6&!$(C=[O,N]):20] >> [#6&!$(C=[O,N]):21]-[N:5](-[#6&!$(C=[O,N]):20])-[C](=O)-[Nh:6]-[#6&!$(C=[O,N]):10]"
+174,1091,0.9696,Williamson ether synthesis,False,[Ch2:1]-[Br].[C:2]-[Oh:3] >> [Ch2:1]-[O:3]-[C:2]
+4,1077,0.971,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh:1][#6&!$(C=[O,N]):20].[F]-[c:2]1[c:3]([C:10]=O)[c:4][c:5][c:6][c:7]1 >> [#6&!$(C=[O,N]):9][N:1]([#6&!$(C=[O,N]):20])-[c:2]1[c:3]([C:10]=O)[c:4][c:5][c:6][c:7]1"
+203,1067,0.9724,N-alkylation (azole N-H + alkyl halide),False,[Br]-[Ch2:4]-[#6:5].[c:1][nH:2][c:3] >> [c:1][n:2]([c:3])-[Ch2:4]-[#6:5]
+186,935,0.9737,Benzimidazole formation,False,[Nh2:5]-[c;r6:4][c;r6:3]-[Nh2:2].[#6:6]-[Ch:1]=[O] >> [n:5]1[c:4][c:3][nH:2][c:1](-[#6:6])1
+171,883,0.9749,Functional-group interconversion (Br -> Sh),True,[c:1]-[Br] >> [c:1]-[Sh]
+156,842,0.976,Functional-group interconversion (Br -> C),True,[c:1]-[Br] >> [c:1]-[C]#N
+162,831,0.9771,Functional-group interconversion (Br -> Oh),True,[c:1]-[Br] >> [c:1]-[Oh]
+33,769,0.9781,SNAr (halo-heteroarene + amine),False,"[F]-[c:4]1[n:5][c:6][c:7][c:8][c:9]1.[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]) >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[c:4]1[n:5][c:6][c:7][c:8][c:9]1"
+6,746,0.9791,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh2:1].[F]-[c:2]1[c:3]([C:8]=O)[c:4][c:5][c:6][c:7]1 >> [#6&!$(C=[O,N]):9][N:1][c:2]1[c:3]([C:8]=O)[c:4][c:5][c:6][c:7]1"
+107,723,0.9801,Tetrazole formation (nitrile + alkyl halide),False,[#6:4]-[Ch2:5]-[Cl].[#6:1]-[C:2]#[N:3] >> [#6:1]-[c:2]1[n:3][n+0][n-0][n](-[C:5]-[#6:4])1
+36,715,0.981,SNAr (halo-heteroarene + amine),False,"[#6&!$(C=[O,N]):10][Nh2:1].[F]-[c:4]1[n:5][c:6][c:7][c:8][c:9]1 >> [#6&!$(C=[O,N]):10][Nh:1]-[c:4]1[n:5][c:6][c:7][c:8][c:9]1"
+97,687,0.982,Tetrazole formation (nitrile + alkyl halide),False,[#6:4]-[Ch2:5]-[Br].[#6:1]-[C:2]#[N:3] >> [#6:1]-[c:2]1[n:3][n](-[C:5]-[#6:4])[n-0][n+0]1
+81,687,0.9829,Urea formation (isocyanate + amine),False,"[#6:5]-[N:2]=[C:3]=[O:4].[#6&!$(C=[O,N]):6]-[Nh2:1] >> [Nh:1](-[#6&!$(C=[O,N]):6])-[C:3](=[O:4])-[N:2]-[#6:5]"
+159,680,0.9838,Functional-group interconversion (Br -> Nh),True,[c:1]-[Br] >> [c:1]-[Nh2]
+120,622,0.9846,Sonogashira coupling,False,[Ch:4]#[Ch:5].[c:2]-[Br] >> [c:2]-[C:5]#[Ch:4]
+1,578,0.9854,SNAr (activated aryl fluoride + amine),False,"[F]-[c:2]1[c:3][c:4][c:5]([C:8]=O)[c:6][c:7]1.[#6&!$(C=[O,N]):9][Nh2:1] >> [#6&!$(C=[O,N]):9][N:1][c:2]1[c:3][c:4][c:5]([C:8]=O)[c:6][c:7]1"
+80,560,0.9862,Urea formation (isocyanate + amine),False,"[#6&!$(C=[O,N]):6]-[Nh2:1].[#6:5]-[N:2]=[C:3]=[O:4] >> [Nh:1](-[#6&!$(C=[O,N]):6])-[C:3](=[O:4])-[N:2]-[#6:5]"
+90,544,0.9869,Suzuki coupling (pinacol boronate),False,[c:1](B1OC(C)(C)C(C)(C)O1).[c:2]-[Br] >> [c:1]-[c:2]
+152,509,0.9876,Pictet-Spengler cyclisation,False,[c:3]1[c:4][c:5][c:6]([C:11][C:12][Nh2:13])[c:7][c:8]1.[#6:15][C:14](=[O])-[Oh] >> [c:3]1[c:4][c:5]2[c:6]([C:11][C:12][N:13]=[C:14]2-[#6:15])[c:7][c:8]1
+99,507,0.9882,Tetrazole formation (nitrile + alkyl halide),False,[#6:4]-[Ch2:5]-[Br].[#6:1]-[C:2]#[N:3] >> [#6:1]-[c:2]1[n:3][n+0][n-0][n](-[C:5]-[#6:4])1
+91,458,0.9889,Suzuki coupling (pinacol boronate),False,[c:2]-[Br].[c:1](B1OC(C)(C)C(C)(C)O1) >> [c:1]-[c:2]
+43,433,0.9894,SNAr (halo-heteroarene + amine),False,"[F]-[c:4]1[n:5][c:6][c:7][c:8][n:9]1.[#6&!$(C=[O,N]):10][Nh2:1] >> [#6&!$(C=[O,N]):10][Nh:1]-[c:4]1[n:5][c:6][c:7][c:8][n:9]1"
+94,429,0.99,Triazole formation (alkyne + alkyl halide),False,[#6:1]-[C:2]#[Ch:3].[#6:4]-[Ch2:5]-[Br] >> [c:3]1[c:2](-[#6:1])[n](-[C:5]-[#6:4])[n-0][n+0]1
+92,426,0.9906,Triazole formation (alkyne + alkyl halide),False,[#6:1]-[C:2]#[Ch:3].[#6:4]-[Ch2:5]-[Br] >> [#6:1]-[c:2]1[c:3][n](-[C:5]-[#6:4])[n-0][n+0]1
+7,419,0.9911,SNAr (activated aryl fluoride + amine),False,"[F]-[c:2]1[c:3]([C:8]=O)[c:4][c:5][c:6][c:7]1.[#6&!$(C=[O,N]):9][Nh2:1] >> [#6&!$(C=[O,N]):9][N:1][c:2]1[c:3]([C:8]=O)[c:4][c:5][c:6][c:7]1"
+82,403,0.9917,Urea formation (isocyanate + amine),False,"[#6&!$(C=[O,N]):6]-[Nh:1]-[#6&!$(C=[O,N]):7].[#6:5]-[N:2]=[C:3]=[O:4] >> [#6&!$(C=[O,N]):7]-[N:1](-[#6&!$(C=[O,N]):6])-[C:3](=[O:4])-[N:2]-[#6:5]"
+84,349,0.9921,Suzuki coupling,False,[c:1]-[B]([Oh])([Oh]).[c:2]-[I] >> [c:1]-[c:2]
+110,336,0.9926,Buchwald-Hartwig amination,False,"[#6&!$(C=[O,N]):3]-[Nh:1]-[#6&!$(C=[O,N]):4].[c:2]-[I] >> [#6&!$(C=[O,N]):3]-[N:1](-[#6&!$(C=[O,N]):4])-[c:2]"
+122,328,0.993,Sonogashira coupling,False,[*:3]-[C:4]#[Ch:5].[c:2]-[Br] >> [c:2]-[C:5]#[C:4]-[*:3]
+108,320,0.9935,Buchwald-Hartwig amination,False,"[#6&!$(C=[O,N]):3]-[Nh2:1].[c:2]-[I] >> [#6&!$(C=[O,N]):3]-[Nh:1]-[c:2]"
+83,291,0.9938,Urea formation (isocyanate + amine),False,"[#6:5]-[N:2]=[C:3]=[O:4].[#6&!$(C=[O,N]):6]-[Nh:1]-[#6&!$(C=[O,N]):7] >> [#6&!$(C=[O,N]):7]-[N:1](-[#6&!$(C=[O,N]):6])-[C:3](=[O:4])-[N:2]-[#6:5]"
+60,261,0.9942,aza-Michael addition (vinyl sulfone),False,"[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]).[#6:2]=[#6:3]-[S:4](=O)(=O) >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[#6:2]-[#6:3]-[S:4](=O)(=O)"
+10,254,0.9945,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh2:1].[F]-[c:2]1[c:3][c:4][c:5]([C:10]#N)[c:6][c:7]1 >> [#6&!$(C=[O,N]):9][Nh:1]-[c:2]1[c:3][c:4][c:5]([C:10]#N)[c:6][c:7]1"
+0,232,0.9948,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh2:1].[F]-[c:2]1[c:3][c:4][c:5]([C:8]=O)[c:6][c:7]1 >> [#6&!$(C=[O,N]):9][N:1][c:2]1[c:3][c:4][c:5]([C:8]=O)[c:6][c:7]1"
+85,229,0.9952,Suzuki coupling,False,[c:2]-[I].[c:1]-[B]([Oh])([Oh]) >> [c:1]-[c:2]
+5,225,0.9955,SNAr (activated aryl fluoride + amine),False,"[F]-[c:2]1[c:3]([C:10]=O)[c:4][c:5][c:6][c:7]1.[#6&!$(C=[O,N]):9][Nh:1][#6&!$(C=[O,N]):20] >> [#6&!$(C=[O,N]):9][N:1]([#6&!$(C=[O,N]):20])-[c:2]1[c:3]([C:10]=O)[c:4][c:5][c:6][c:7]1"
+123,217,0.9957,Sonogashira coupling,False,[c:2]-[Br].[*:3]-[C:4]#[Ch:5] >> [c:2]-[C:5]#[C:4]-[*:3]
+8,216,0.996,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh:1]([#6&!$(C=[O,N]):20]).[F]-[c:2]1[c:3][c:4][c:5]([C:10]#N)[c:6][c:7]1 >> [#6&!$(C=[O,N]):9][N:1]([#6&!$(C=[O,N]):20])-[c:2]1[c:3][c:4][c:5]([C:10]#N)[c:6][c:7]1"
+2,193,0.9963,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh:1][#6&!$(C=[O,N]):20].[F]-[c:2]1[c:3][c:4][c:5]([C:8]=O)[c:6][c:7]1 >> [#6&!$(C=[O,N]):9][N:1]([#6&!$(C=[O,N]):20])-[c:2]1[c:3][c:4][c:5]([C:8]=O)[c:6][c:7]1"
+50,172,0.9965,SNAr (halo-heteroarene + amine),False,"[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]).[Cl]-[c:4]1[n:5][c:6][c:7][n:9]1 >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[c:4]1[n:5][c:6][c:7][n:9]1"
+102,157,0.9967,Triazole formation (alkyne + alkyl halide),False,[#6:1]-[C:2]#[Ch:3].[#6:4]-[Ch2:5]-[Cl] >> [c:3]1[c:2](-[#6:1])[n](-[C:5]-[#6:4])[n-0][n+0]1
+11,137,0.9969,SNAr (activated aryl fluoride + amine),False,"[F]-[c:2]1[c:3][c:4][c:5]([C:10]#N)[c:6][c:7]1.[#6&!$(C=[O,N]):9][Nh2:1] >> [#6&!$(C=[O,N]):9][Nh:1]-[c:2]1[c:3][c:4][c:5]([C:10]#N)[c:6][c:7]1"
+3,132,0.9971,SNAr (activated aryl fluoride + amine),False,"[F]-[c:2]1[c:3][c:4][c:5]([C:8]=O)[c:6][c:7]1.[#6&!$(C=[O,N]):9][Nh:1][#6&!$(C=[O,N]):20] >> [#6&!$(C=[O,N]):9][N:1]([#6&!$(C=[O,N]):20])-[c:2]1[c:3][c:4][c:5]([C:8]=O)[c:6][c:7]1"
+9,124,0.9973,SNAr (activated aryl fluoride + amine),False,"[F]-[c:2]1[c:3][c:4][c:5]([C:10]#N)[c:6][c:7]1.[#6&!$(C=[O,N]):9][Nh:1]([#6&!$(C=[O,N]):20]) >> [#6&!$(C=[O,N]):9][N:1]([#6&!$(C=[O,N]):20])-[c:2]1[c:3][c:4][c:5]([C:10]#N)[c:6][c:7]1"
+41,113,0.9974,SNAr (halo-heteroarene + amine),False,"[F]-[c:4]1[n:5][c:6][c:7][c:8][n:9]1.[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]) >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[c:4]1[n:5][c:6][c:7][c:8][n:9]1"
+128,100,0.9975,Urea formation (amine + amine),False,"[#6&!$(C=[O,N]):21]-[Nh:5]-[#6&!$(C=[O,N]):20].[#6&!$(C=[O,N]):11]-[Nh:6]-[#6&!$(C=[O,N]):10] >> [#6&!$(C=[O,N]):21]-[N:5](-[#6&!$(C=[O,N]):20])-[C](=O)-[N:6](-[#6&!$(C=[O,N]):11])-[#6&!$(C=[O,N]):10]"
+93,97,0.9977,Triazole formation (alkyne + alkyl halide),False,[#6:4]-[Ch2:5]-[Br].[#6:1]-[C:2]#[Ch:3] >> [#6:1]-[c:2]1[c:3][n](-[C:5]-[#6:4])[n-0][n+0]1
+45,96,0.9978,SNAr (halo-heteroarene + amine),False,"[Cl]-[c:4]1[n:5][c:6][c:7][n:9]1.[#6&!$(C=[O,N]):10][Nh2:1] >> [#6&!$(C=[O,N]):10][Nh:1]-[c:4]1[n:5][c:6][c:7][n:9]1"
+101,95,0.9979,Triazole formation (alkyne + alkyl halide),False,[#6:4]-[Ch2:5]-[Cl].[#6:1]-[C:2]#[Ch:3] >> [#6:1]-[c:2]1[c:3][n](-[C:5]-[#6:4])[n-0][n+0]1
+173,93,0.9981,?,False,[#6:7]-[Ch:6]=[O:5].[c]1[c][c](C)[c][c][c]1-[S](=[O])(=[O])-[C:2]-[N:3]=[C:4] >> [c:6]([#6:7])1[o:5][c:4][n:3][c:2]1
+42,91,0.9982,SNAr (halo-heteroarene + amine),False,"[#6&!$(C=[O,N]):10][Nh2:1].[F]-[c:4]1[n:5][c:6][c:7][c:8][n:9]1 >> [#6&!$(C=[O,N]):10][Nh:1]-[c:4]1[n:5][c:6][c:7][c:8][n:9]1"
+132,86,0.9983,Tetrazole formation (isothiocyanate),False,[Ch0:1](=[O:2])[C:3]-[Nh2:4].[#6:5]-[N:6]=[C:7]=S >> [Ch0:1](=[O:2])[C:3]-[Nh:4][c:7]1nnn[n:6]([#6:5])1
+109,80,0.9984,Buchwald-Hartwig amination,False,"[c:2]-[I].[#6&!$(C=[O,N]):3]-[Nh2:1] >> [#6&!$(C=[O,N]):3]-[Nh:1]-[c:2]"
+40,79,0.9985,SNAr (halo-heteroarene + amine),False,"[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]).[F]-[c:4]1[n:5][c:6][c:7][c:8][n:9]1 >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[c:4]1[n:5][c:6][c:7][c:8][n:9]1"
+141,79,0.9986,Pictet-Spengler cyclisation,False,[#6:2]-[Ch:1]=O.[Nh&!R:3]-[C:4]-[C:5]-[c:6]1[c:7][n:8][c:9]2[c:10][c:11][c:12][c:13][c:14]21 >> [#6:2]-[Ch:1]3[N:3]-[C:4]-[C:5]-[c:6]1[c:7]3[n:8][c:9]2[c:10][c:11][c:12][c:13][c:14]21
+163,78,0.9987,Functional-group interconversion (Cl -> Br),True,[c:1]-[Cl] >> [c:1]-[Br]
+129,75,0.9988,Urea formation (amine + amine),False,"[#6&!$(C=[O,N]):11]-[Nh:6]-[#6&!$(C=[O,N]):10].[#6&!$(C=[O,N]):21]-[Nh:5]-[#6&!$(C=[O,N]):20] >> [#6&!$(C=[O,N]):21]-[N:5](-[#6&!$(C=[O,N]):20])-[C](=O)-[N:6](-[#6&!$(C=[O,N]):11])-[#6&!$(C=[O,N]):10]"
+164,59,0.9989,Functional-group interconversion (Cl -> I),True,[c:1]-[Cl] >> [c:1]-[I]
+51,53,0.999,SNAr (halo-heteroarene + amine),False,"[Cl]-[c:4]1[n:5][c:6][c:7][n:9]1.[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]) >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[c:4]1[n:5][c:6][c:7][n:9]1"
+169,52,0.999,Functional-group interconversion (Cl -> Sh),True,[c:1]-[Cl] >> [c:1]-[Sh]
+157,50,0.9991,Functional-group interconversion (Cl -> Nh),True,[c:1]-[Cl] >> [c:1]-[Nh2]
+133,48,0.9992,Tetrazole formation (isothiocyanate),False,[#6:5]-[N:6]=[C:7]=S.[Ch0:1](=[O:2])[C:3]-[Nh2:4] >> [Ch0:1](=[O:2])[C:3]-[Nh:4][c:7]1nnn[n:6]([#6:5])1
+62,48,0.9992,aza-Michael addition (vinyl sulfone),False,"[#6&!$(C=[O,N]):10][Nh2:1].[#6:2]=[#6:3]-[S:4](=O)(=O) >> [#6&!$(C=[O,N]):10][Nh:1]-[#6:2]-[#6:3]-[S:4](=O)(=O)"
+95,46,0.9993,Triazole formation (alkyne + alkyl halide),False,[#6:4]-[Ch2:5]-[Br].[#6:1]-[C:2]#[Ch:3] >> [c:3]1[c:2](-[#6:1])[n](-[C:5]-[#6:4])[n-0][n+0]1
+44,45,0.9993,SNAr (halo-heteroarene + amine),False,"[#6&!$(C=[O,N]):10][Nh2:1].[Cl]-[c:4]1[n:5][c:6][c:7][n:9]1 >> [#6&!$(C=[O,N]):10][Nh:1]-[c:4]1[n:5][c:6][c:7][n:9]1"
+154,43,0.9994,Functional-group interconversion (Cl -> C),True,[c:1]-[Cl] >> [c:1]-[C]#N
+179,36,0.9995,Williamson ether synthesis,False,[C:2]-[Oh:3].[Ch2:1]-[I] >> [Ch2:1]-[O:3]-[C:2]
+140,34,0.9995,Pictet-Spengler cyclisation,False,[Nh&!R:3]-[C:4]-[C:5]-[c:6]1[c:7][n:8][c:9]2[c:10][c:11][c:12][c:13][c:14]21.[#6:2]-[Ch:1]=O >> [#6:2]-[Ch:1]3[N:3]-[C:4]-[C:5]-[c:6]1[c:7]3[n:8][c:9]2[c:10][c:11][c:12][c:13][c:14]21
+149,32,0.9995,Pictet-Spengler cyclisation,False,[#6:2]-[C:1](=O)-[Oh].[Nh2:3]-[C:4]-[C:5]-[c:6]1[c:7][n:8][c:9]2[c:10][c:11][c:12][c:13][c:14]21 >> [#6:2]-[C:1]3=[N:3]-[C:4]-[C:5]-[c:6]1[c:7]3[n:8][c:9]2[c:10][c:11][c:12][c:13][c:14]21
+160,32,0.9996,Functional-group interconversion (Cl -> Oh),True,[c:1]-[Cl] >> [c:1]-[Oh]
+111,31,0.9996,Buchwald-Hartwig amination,False,"[c:2]-[I].[#6&!$(C=[O,N]):3]-[Nh:1]-[#6&!$(C=[O,N]):4] >> [#6&!$(C=[O,N]):3]-[N:1](-[#6&!$(C=[O,N]):4])-[c:2]"
+148,31,0.9997,Pictet-Spengler cyclisation,False,[Nh2:3]-[C:4]-[C:5]-[c:6]1[c:7][n:8][c:9]2[c:10][c:11][c:12][c:13][c:14]21.[#6:2]-[C:1](=O)-[Oh] >> [#6:2]-[C:1]3=[N:3]-[C:4]-[C:5]-[c:6]1[c:7]3[n:8][c:9]2[c:10][c:11][c:12][c:13][c:14]21
+16,26,0.9997,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh2:1].[F]-[c:2]1[c:3]([#7+:10](=O)-[#8-])[c:4][c:5][c:6][c:7]1 >> [#6&!$(C=[O,N]):9][Nh:1]-[c:2]1[c:3]([#7+:10](=O)-[#8-])[c:4][c:5][c:6][c:7]1"
+52,25,0.9997,Sulfonamide formation (sulfonyl fluoride),False,"[#6&!$(C=[O,N]):10][Nh2:1].F-[S:4]([*:7])(=[O:5])=[O:6] >> [#6&!$(C=[O,N]):10][Nh:1]-[S:4]([*:7])(=[O:5])=[O:6]"
+48,23,0.9998,SNAr (halo-heteroarene + amine),False,"[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]).[Cl]-[c:4]1[n:5][c:6][c:7][s:9]1 >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[c:4]1[n:5][c:6][c:7][s:9]1"
+103,19,0.9998,Triazole formation (alkyne + alkyl halide),False,[#6:4]-[Ch2:5]-[Cl].[#6:1]-[C:2]#[Ch:3] >> [c:3]1[c:2](-[#6:1])[n](-[C:5]-[#6:4])[n-0][n+0]1
+46,18,0.9998,SNAr (halo-heteroarene + amine),False,"[#6&!$(C=[O,N]):10][Nh2:1].[Cl]-[c:4]1[n:5][c:6][c:7][s:9]1 >> [#6&!$(C=[O,N]):10][Nh:1]-[c:4]1[n:5][c:6][c:7][s:9]1"
+88,12,0.9998,Suzuki coupling (pinacol boronate),False,[c:1](B1OC(C)(C)C(C)(C)O1).[c:2]-[I] >> [c:1]-[c:2]
+14,12,0.9998,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh2:1].[F]-[c:2]1[c:3]([C:10]#N)[c:4][c:5][c:6][c:7]1 >> [#6&!$(C=[O,N]):9][Nh:1]-[c:2]1[c:3]([C:10]#N)[c:4][c:5][c:6][c:7]1"
+53,8,0.9999,Sulfonamide formation (sulfonyl fluoride),False,"F-[S:4]([*:7])(=[O:5])=[O:6].[#6&!$(C=[O,N]):10][Nh2:1] >> [#6&!$(C=[O,N]):10][Nh:1]-[S:4]([*:7])(=[O:5])=[O:6]"
+47,7,0.9999,SNAr (halo-heteroarene + amine),False,"[Cl]-[c:4]1[n:5][c:6][c:7][s:9]1.[#6&!$(C=[O,N]):10][Nh2:1] >> [#6&!$(C=[O,N]):10][Nh:1]-[c:4]1[n:5][c:6][c:7][s:9]1"
+22,7,0.9999,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh2:1].[F]-[c:2]1[c:3][c:4][c:5]([#7+:10](=O)-[#8-])[c:6][c:7]1 >> [#6&!$(C=[O,N]):9][Nh:1]-[c:2]1[c:3][c:4][c:5]([#7+:10](=O)-[#8-])[c:6][c:7]1"
+118,6,0.9999,Sonogashira coupling,False,[*:3]-[C:4]#[Ch:5].[c:2]-[I] >> [c:2]-[C:5]#[C:4]-[*:3]
+117,6,0.9999,Sonogashira coupling,False,[c:2]-[I].[Ch:4]#[Ch:5] >> [c:2]-[C:5]#[Ch:4]
+155,5,0.9999,Functional-group interconversion (I -> C),True,[c:1]-[I] >> [c:1]-[C]#N
+192,5,0.9999,Benzothiazole formation,False,[Sh:5]-[c;r6:4][c;r6:3]-[Nh2:2].[#6:6]-[Ch:1]=[O] >> [s:5]1[c:4][c:3][n:2][c:1](-[#6:6])1
+18,5,0.9999,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh:1]([#6&!$(C=[O,N]):20]).[F]-[c:2]1[c:3]([#7+:10](=O)-[#8-])[c:4][c:5][c:6][c:7]1 >> [#6&!$(C=[O,N]):9][N:1]([#6&!$(C=[O,N]):20])-[c:2]1[c:3]([#7+:10](=O)-[#8-])[c:4][c:5][c:6][c:7]1"
+12,5,0.9999,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh:1]([#6&!$(C=[O,N]):20]).[F]-[c:2]1[c:3]([C:10]#N)[c:4][c:5][c:6][c:7]1 >> [#6&!$(C=[O,N]):9][N:1]([#6&!$(C=[O,N]):20])-[c:2]1[c:3]([C:10]#N)[c:4][c:5][c:6][c:7]1"
+54,5,0.9999,Sulfonamide formation (sulfonyl fluoride),False,"[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]).F-[S:4]([*:7])(=[O:5])=[O:6] >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[S:4]([*:7])(=[O:5])=[O:6]"
+116,4,0.9999,Sonogashira coupling,False,[Ch:4]#[Ch:5].[c:2]-[I] >> [c:2]-[C:5]#[Ch:4]
+147,4,0.9999,?,False,[#6:2]-[Ch:1]=O.[Nh&!R:3][c:4]1[c:5][c:6][c:7][c:8][c:9]1-[n:10]1[c:11][c:12][c:13][c:14]1 >> [#6:2][C:1]2[N:3][c:4]1[c:5][c:6][c:7][c:8][c:9]1-[n:10]1[c:11]2[c:12][c:13][c:14]1
+20,4,0.9999,SNAr (activated aryl fluoride + amine),False,"[#6&!$(C=[O,N]):9][Nh:1]([#6&!$(C=[O,N]):20]).[F]-[c:2]1[c:3][c:4][c:5]([#7+:10](=O)-[#8-])[c:6][c:7]1 >> [#6&!$(C=[O,N]):9][N:1]([#6&!$(C=[O,N]):20])-[c:2]1[c:3][c:4][c:5]([#7+:10](=O)-[#8-])[c:6][c:7]1"
+193,4,0.9999,Benzothiazole formation,False,[#6:6]-[Ch:1]=[O].[Sh:5]-[c;r6:4][c;r6:3]-[Nh2:2] >> [s:5]1[c:4][c:3][n:2][c:1](-[#6:6])1
+119,4,1.0,Sonogashira coupling,False,[c:2]-[I].[*:3]-[C:4]#[Ch:5] >> [c:2]-[C:5]#[C:4]-[*:3]
+158,3,1.0,Functional-group interconversion (I -> Nh),True,[c:1]-[I] >> [c:1]-[Nh2]
+178,3,1.0,Williamson ether synthesis,False,[Ch2:1]-[I].[C:2]-[Oh:3] >> [Ch2:1]-[O:3]-[C:2]
+49,3,1.0,SNAr (halo-heteroarene + amine),False,"[Cl]-[c:4]1[n:5][c:6][c:7][s:9]1.[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]) >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[c:4]1[n:5][c:6][c:7][s:9]1"
+89,3,1.0,Suzuki coupling (pinacol boronate),False,[c:2]-[I].[c:1](B1OC(C)(C)C(C)(C)O1) >> [c:1]-[c:2]
+63,3,1.0,aza-Michael addition (vinyl sulfone),False,"[#6:2]=[#6:3]-[S:4](=O)(=O).[#6&!$(C=[O,N]):10][Nh2:1] >> [#6&!$(C=[O,N]):10][Nh:1]-[#6:2]-[#6:3]-[S:4](=O)(=O)"
+61,3,1.0,aza-Michael addition (vinyl sulfone),False,"[#6:2]=[#6:3]-[S:4](=O)(=O).[#6&!$(C=[O,N]):10][Nh:1]([#6&!$(C=[O,N]):20]) >> [#6&!$(C=[O,N]):10][N:1]([#6&!$(C=[O,N]):20])-[#6:2]-[#6:3]-[S:4](=O)(=O)"
+170,3,1.0,Functional-group interconversion (I -> Sh),True,[c:1]-[I] >> [c:1]-[Sh]
+205,3,1.0,N-alkylation (azole N-H + alkyl halide),False,[I]-[Ch2:4]-[#6:5].[c:1][nH:2][c:3] >> [c:1][n:2]([c:3])-[Ch2:4]-[#6:5]
+134,2,1.0,?,False,[Ch0:1](=[O:2])[C:3]-[Nh:4]-[C:5](=[O:6])-[C:7]-[Nh2:8].[c:9]-[N:10]=[C:11]=S >> [Ch0:1](=[O:2])[C:3]-[N:4]1-[C:5](=[O:6])-[C:7]-[Nh:8]-[C:11]1=[N:10]-[c:9]
+184,2,1.0,Benzimidazole formation (N-substituted),False,[Nh:5](-[#6:7])-[c;r6:4][c;r6:3]-[Nh2:2].[#6:6]-[C:1](=[O])-[Oh] >> [n:5]1(-[#6:7])[c:4][c:3][n:2][c:1](-[#6:6])1
+189,2,1.0,Benzimidazole formation (N-substituted),False,[#6:6]-[Ch:1]=[O].[Nh:5](-[#6:7])-[c;r6:4][c;r6:3]-[Nh2:2] >> [n:5](-[#6:7])1[c:4][c:3][n:2][c:1](-[#6:6])1
+146,1,1.0,?,False,[Nh&!R:3][c:4]1[c:5][c:6][c:7][c:8][c:9]1-[n:10]1[c:11][c:12][c:13][c:14]1.[#6:2]-[Ch:1]=O >> [#6:2][C:1]2[N:3][c:4]1[c:5][c:6][c:7][c:8][c:9]1-[n:10]1[c:11]2[c:12][c:13][c:14]1
+188,1,1.0,Benzimidazole formation (N-substituted),False,[Nh:5](-[#6:7])-[c;r6:4][c;r6:3]-[Nh2:2].[#6:6]-[Ch:1]=[O] >> [n:5](-[#6:7])1[c:4][c:3][n:2][c:1](-[#6:6])1
+161,1,1.0,Functional-group interconversion (I -> Oh),True,[c:1]-[I] >> [c:1]-[Oh]
+204,1,1.0,N-alkylation (azole N-H + alkyl halide),False,[c:1][nH:2][c:3].[I]-[Ch2:4]-[#6:5] >> [c:1][n:2]([c:3])-[Ch2:4]-[#6:5]

@@ -1,0 +1,301 @@
+assigned_hub,cum_reactions,n_reagents,named_reaction,parent,reactions_added,reagents,reward,smiles,step,template_id
+Oc1ccccc1N(CCN1CCCCC1)C1CNC1,4,1,Reductive amination (aldehyde),Oc1ccccc1N(CCN1CCCCC1)C1CNC1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,Oc1ccccc1N(CCN1CCCCC1)C1CN(Cc2c[nH]c3cc(Br)ccc23)C1,1,70
+O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,7,1,Direct acid -> amine (reductive),O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,3,NCCc1c[nH]c2ccc(O)cc12,1.0,O=CCCN(CCCNCCc1c[nH]c2ccc(O)cc12)Cc1cccc(Br)c1,2,136
+C=CCN(CCC1NCCc2ccccc21)C1CC1,11,1,Reductive amination (aldehyde),C=CCN(CCC1NCCc2ccccc21)C1CC1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,C=CCN(CCC1c2ccccc2CCN1Cc1c[nH]c2cc(Br)ccc12)C1CC1,3,70
+O=C(O)C1CCCN1C1CNC1,15,1,Direct acid -> amine (reductive),O=C(O)[C@H]1CCCN1C1CNC1,4,COc1cccc2c1CCNC2c1c[nH]c2cc(I)ccc12,1.0,COc1cccc2c1CCN(CC1CCCN1C1CNC1)C2c1c[nH]c2cc(I)ccc12,4,138
+COc1ccccc1CCN(CCCN)C1CNC1,18,1,Reductive amination (aldehyde),COc1ccccc1CCN(CCCN)C1CNC1,3,O=Cc1c[nH]c2ccc(Br)cc12,1.0,COc1ccccc1CCN(CCCNCc1c[nH]c2ccc(Br)cc12)C1CNC1,5,68
+COc1ccccc1CCNCCNC1CC1,21,1,Reductive amination (aldehyde),COc1ccccc1CCNCCNC1CC1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,COc1ccccc1CCNCCN(Cc1c[nH]c2ccc(F)cc12)C1CC1,6,70
+COc1cccc2c1CCN(CC1CCCN1)C2c1c[nH]c2ccc(Br)cc12,24,1,Reductive amination (aldehyde),COc1cccc2c1CCN(C[C@@H]1CCCN1)C2c1c[nH]c2ccc(Br)cc12,3,CCC=O,1.0,CCCN1CCCC1CN1CCc2c(OC)cccc2C1c1c[nH]c2ccc(Br)cc12,7,70
+COc1cccc2c1CCN(C1CN(C3CCC3)C1)C2c1c[nH]c2ccc(Br)cc12,28,0,Functional-group interconversion (Br -> Cl),COc1cccc2c1CCN(C1CN(C3CCC3)C1)C2c1c[nH]c2ccc(Br)cc12,4,,1.0,COc1cccc2c1CCN(C1CN(C3CCC3)C1)C2c1c[nH]c2ccc(Cl)cc12,8,165
+CNCCN(c1ccccc1S)C1CN(Cc2c[nH]c3ccc(F)cc23)C1,32,1,Reductive amination (ketone),CNCCN(c1ccccc1S)C1CN(Cc2c[nH]c3ccc(F)cc23)C1,4,O=C1CCC1,1.0,CN(CCN(c1ccccc1S)C1CN(Cc2c[nH]c3ccc(F)cc23)C1)C1CCC1,9,74
+COc1ccccc1CCN(Cc1c[nH]c2cc(Br)ccc12)C1CCCNC1,35,1,Reductive amination (ketone),COc1ccccc1CCN(Cc1c[nH]c2cc(Br)ccc12)C1CCCNC1,3,O=C1CNC1,1.0,COc1ccccc1CCN(Cc1c[nH]c2cc(Br)ccc12)C1CCCN(C2CNC2)C1,10,74
+CCC1c2cccc(OC)c2CCN1C1CCNCC1,38,1,Reductive amination (aldehyde),CCC1c2cccc(OC)c2CCN1C1CCNCC1,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,CCC1c2cccc(OC)c2CCN1C1CCN(Cc2c[nH]c3cc(Br)ccc23)CC1,11,70
+Fc1ccc(CNCCCN2CCCC(Nc3cccc4cc[nH]c34)C2)cc1,42,1,Reductive amination (aldehyde),Fc1ccc(CNCCCN2CCCC(Nc3cccc4cc[nH]c34)C2)cc1,4,CCC=O,1.0,CCCN(c1cccc2cc[nH]c12)C1CCCN(CCCNCc2ccc(F)cc2)C1,12,70
+COc1ccccc1CCN(CC1CCCN1Cc1c[nH]c2ccc(Br)cc12)C1CNC1,46,0,Functional-group interconversion (Br -> I),COc1ccccc1CCN(C[C@H]1CCCN1Cc1c[nH]c2ccc(Br)cc12)C1CNC1,4,,1.0,COc1ccccc1CCN(CC1CCCN1Cc1c[nH]c2ccc(I)cc12)C1CNC1,13,166
+COc1cccc2c1CCN(Cc1c[nH]c3ccc(Br)cc13)C2CCN1CCCCC1,50,0,Functional-group interconversion (Br -> Cl),COc1cccc2c1CCN(Cc1c[nH]c3ccc(Br)cc13)C2CCN1CCCCC1,4,,1.0,COc1cccc2c1CCN(Cc1c[nH]c3ccc(Cl)cc13)C2CCN1CCCCC1,14,165
+Oc1c(Br)cccc1NCCN1CCCC(NCCc2c[nH]c3ccccc23)C1,54,1,Direct acid -> amine (reductive),Oc1c(Br)cccc1NCCN1CCCC(NCCc2c[nH]c3ccccc23)C1,4,O=C(O)CBr,1.0,Oc1c(Br)cccc1N(CCBr)CCN1CCCC(NCCc2c[nH]c3ccccc23)C1,15,139
+Oc1ccc(CCNC2CCN(C3CNC3)C2)cc1,57,1,Pictet-Spengler cyclisation,Oc1ccc(CCNC2CCN(C3CNC3)C2)cc1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,Oc1ccc2c(c1)C(c1c[nH]c3ccc(F)cc13)N(C1CCN(C3CNC3)C1)CC2,16,144
+COc1ccccc1CCNC1CCN(C2CNC2)C1,60,1,Pictet-Spengler cyclisation,COc1ccccc1CCNC1CCN(C2CNC2)C1,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,COc1cccc2c1CCN(C1CCN(C3CNC3)C1)C2c1c[nH]c2cc(Br)ccc12,17,144
+COc1ccccc1CCNCC1CCCN1,62,1,Reductive amination (aldehyde),COc1ccccc1CCNC[C@H]1CCCN1,2,O=Cc1c[nH]c2ccc(Br)cc12,1.0,COc1ccccc1CCNCC1CCCN1Cc1c[nH]c2ccc(Br)cc12,18,70
+CN(CCN(c1cccc2cc[nH]c12)C1CCNC1)C1CNC1,66,1,Reductive amination (aldehyde),CN(CCN(c1cccc2cc[nH]c12)C1CCNC1)C1CNC1,4,O=Cc1cccc(Br)c1,1.0,CN(CCN(c1cccc2cc[nH]c12)C1CCN(Cc2cccc(Br)c2)C1)C1CNC1,19,70
+CCC1c2cc(O)ccc2CCN1CCCNCc1c[nH]c2cc(Br)ccc12,70,1,Reductive amination (ketone),CCC1c2cc(O)ccc2CCN1CCCNCc1c[nH]c2cc(Br)ccc12,4,O=C1CNC1,1.0,CCC1c2cc(O)ccc2CCN1CCCN(Cc1c[nH]c2cc(Br)ccc12)C1CNC1,20,74
+CNCCN1CCc2c(OC)cccc2C1c1c[nH]c2cc(Cl)ccc12,74,1,Reductive amination (ketone),CNCCN1CCc2c(OC)cccc2C1c1c[nH]c2cc(Cl)ccc12,4,O=C1CCC1,1.0,COc1cccc2c1CCN(CCN(C)C1CCC1)C2c1c[nH]c2cc(Cl)ccc12,21,74
+NC(CCNC1CC1)CNCCc1c[nH]c2ccc(O)cc12,77,1,Direct acid -> amine (reductive),N[C@H](CCNC1CC1)CNCCc1c[nH]c2ccc(O)cc12,3,O=C(O)c1ccc(F)cc1,1.0,NC(CCN(Cc1ccc(F)cc1)C1CC1)CNCCc1c[nH]c2ccc(O)cc12,22,139
+ClCC(c1ccc(Br)cc1)N(CCCNC1CC1)CCc1c[nH]c2ccccc12,81,1,Direct acid -> amine (reductive),ClCC(c1ccc(Br)cc1)N(CCCNC1CC1)CCc1c[nH]c2ccccc12,4,O=CC(=O)O,1.0,O=CCN(CCCN(CCc1c[nH]c2ccccc12)C(CCl)c1ccc(Br)cc1)C1CC1,23,139
+CCCN(CCc1ccccc1OC)CC1CCN1,84,1,Reductive amination (aldehyde),CCCN(CCc1ccccc1OC)CC1CCN1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,CCCN(CCc1ccccc1OC)CC1CCN1Cc1c[nH]c2ccc(F)cc12,24,70
+Oc1ccc(F)cc1NCC1c2ccccc2CCN1CC1CCN1,88,1,Pictet-Spengler cyclisation,Oc1ccc(F)cc1NCC1c2ccccc2CCN1CC1CCN1,4,CCC=O,1.0,CCC1c2cccc3c2C(CN1c1cc(F)ccc1O)N(CC1CCN1)CC3,25,144
+COc1ccccc1CCN(CCCN)C1CN(Cc2c[nH]c3cc(Br)ccc23)C1,92,0,Functional-group interconversion (Br -> Cl),COc1ccccc1CCN(CCCN)C1CN(Cc2c[nH]c3cc(Br)ccc23)C1,4,,1.0,COc1ccccc1CCN(CCCN)C1CN(Cc2c[nH]c3cc(Cl)ccc23)C1,26,165
+Nc1ccc(Br)cc1NCCN(CCc1c[nH]c2ccccc12)CC1CCN1,96,1,Reductive amination (aldehyde),Nc1ccc(Br)cc1NCCN(CCc1c[nH]c2ccccc12)CC1CCN1,4,CCC=O,1.0,CCCN(CCN(CCc1c[nH]c2ccccc12)CC1CCN1)c1cc(Br)ccc1N,27,70
+CCCN1CCC1CN(CCNC)c1cccc(Br)c1N,100,1,Reductive amination (aldehyde),CCCN1CCC1CN(CCNC)c1cccc(Br)c1N,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,CCCN1CCC1CN(CCN(C)Cc1c[nH]c2cc(Br)ccc12)c1cccc(Br)c1N,28,70
+Sc1ccccc1N(CCNCc1c[nH]c2cc(Br)ccc12)C1CCC1,104,1,Direct acid -> amine (reductive),Sc1ccccc1N(CCNCc1c[nH]c2cc(Br)ccc12)C1CCC1,4,O=C(O)C1CCN1,1.0,Sc1ccccc1N(CCN(Cc1c[nH]c2cc(Br)ccc12)CC1CCN1)C1CCC1,29,139
+c1ccc(CCNCC2CCN2C2CNC2)cc1,107,1,Pictet-Spengler cyclisation,c1ccc(CCNCC2CCN2C2CNC2)cc1,3,O=Cc1c[nH]c2ccc(Br)cc12,1.0,Brc1ccc2[nH]cc(C3c4ccccc4CCN3CC3CCN3C3CNC3)c2c1,30,144
+NC(Cc1c[nH]c2ccccc12)CN(CCNc1ccc(Br)cc1O)C1CC1,111,1,Reductive amination (aldehyde),N[C@@H](Cc1c[nH]c2ccccc12)CN(CCNc1ccc(Br)cc1O)C1CC1,4,CCC=O,1.0,CCCN(CCN(CC(N)Cc1c[nH]c2ccccc12)C1CC1)c1ccc(Br)cc1O,31,70
+Oc1ccc2c(c1)C(c1c[nH]c3cc(Br)ccc13)N(CC1CCN1)CC2,114,1,Direct acid -> amine (reductive),Oc1ccc2c(c1)C(c1c[nH]c3cc(Br)ccc13)N(CC1CCN1)CC2,3,O=C(O)C1CCN1,1.0,Oc1ccc2c(c1)C(c1c[nH]c3cc(Br)ccc13)N(CC1CCN1CC1CCN1)CC2,32,139
+Oc1ccc(CCNCC2CCN2Cc2c[nH]c3ccc(Br)cc23)cc1,117,1,Reductive amination (ketone),Oc1ccc(CCNCC2CCN2Cc2c[nH]c3ccc(Br)cc23)cc1,3,O=C1CCC1,1.0,Oc1ccc(CCN(CC2CCN2Cc2c[nH]c3ccc(Br)cc23)C2CCC2)cc1,33,74
+CN(CCN1CCCCC1)c1cccc2c1CCNC2c1c[nH]c2ccc(Br)cc12,121,1,Reductive amination (aldehyde),CN(CCN1CCCCC1)c1cccc2c1CCNC2c1c[nH]c2ccc(Br)cc12,4,C=CC=O,1.0,C=CCN1CCc2c(cccc2N(C)CCN2CCCCC2)C1c1c[nH]c2ccc(Br)cc12,34,70
+NCCN1CCC(NCCc2ccc(O)cc2)CC1,124,1,Pictet-Spengler cyclisation,NCCN1CCC(NCCc2ccc(O)cc2)CC1,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,NCCN1CCC(N2CCc3ccc(O)cc3C2c2c[nH]c3cc(Br)ccc23)CC1,35,144
+NCCN(CC(Cc1ccccc1)NCc1c[nH]c2ccc(F)cc12)C1CC1,128,1,Pictet-Spengler cyclisation,NCCN(C[C@H](Cc1ccccc1)NCc1c[nH]c2ccc(F)cc12)C1CC1,4,CCC=O,1.0,CCC1c2ccccc2CC(CN(CCN)C2CC2)N1Cc1c[nH]c2ccc(F)cc12,36,144
+COc1ccccc1CCNC(CBr)CN1CCCCC1,131,1,Pictet-Spengler cyclisation,COc1ccccc1CCNC(CBr)CN1CCCCC1,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,COc1cccc2c1CCN(C(CBr)CN1CCCCC1)C2c1c[nH]c2cc(Br)ccc12,37,144
+COc1cccc2c1CCNC2CCN(CC(C)N)C1CC1,135,1,Reductive amination (aldehyde),COc1cccc2c1CCNC2CCN(C[C@@H](C)N)C1CC1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,COc1cccc2c1CCN(Cc1c[nH]c3ccc(Br)cc13)C2CCN(CC(C)N)C1CC1,38,70
+CNCCN(c1ccc(Br)cc1)C1CCCN(CCN)C1,139,1,Reductive amination (aldehyde),CNCCN(c1ccc(Br)cc1)C1CCCN(CCN)C1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,CN(CCN(c1ccc(Br)cc1)C1CCCN(CCN)C1)Cc1c[nH]c2ccc(Br)cc12,39,70
+C=CC1c2cccc(OC)c2CCN1CCCNCc1c[nH]c2cc(Br)ccc12,143,1,Direct acid -> amine (reductive),C=CC1c2cccc(OC)c2CCN1CCCNCc1c[nH]c2cc(Br)ccc12,4,NCC(=O)O,1.0,C=CC1c2cccc(OC)c2CCN1CCCN(CCN)Cc1c[nH]c2cc(Br)ccc12,40,139
+NC1(CN(CCNc2ccc(Br)cc2)CCc2c[nH]c3ccccc23)CCC1,147,1,Direct acid -> amine (reductive),NC1(CN(CCNc2ccc(Br)cc2)CCc2c[nH]c3ccccc23)CCC1,4,NCC(=O)O,1.0,NCCN(CCN(CCc1c[nH]c2ccccc12)CC1(N)CCC1)c1ccc(Br)cc1,41,139
+Oc1ccc(CCNCC2CCN2CCCNCc2c[nH]c3cc(Br)ccc23)cc1,151,0,Functional-group interconversion (Br -> I),Oc1ccc(CCNCC2CCN2CCCNCc2c[nH]c3cc(Br)ccc23)cc1,4,,1.0,Oc1ccc(CCNCC2CCN2CCCNCc2c[nH]c3cc(I)ccc23)cc1,42,166
+Brc1ccc2[nH]cc(CNCCN(c3ccccn3)C3CNC3)c2c1,155,1,Reductive amination (aldehyde),Brc1ccc2[nH]cc(CNCCN(c3ccccn3)C3CNC3)c2c1,4,CCC=O,1.0,CCCN(CCN(c1ccccn1)C1CNC1)Cc1c[nH]c2ccc(Br)cc12,43,70
+NCCN1CCN(c2cc(F)ccc2C(CCl)Nc2ccccc2O)CC1,158,1,Reductive amination (ketone),NCCN1CCN(c2cc(F)ccc2C(CCl)Nc2ccccc2O)CC1,3,O=C1CCC1,1.0,NCCN1CCN(c2cc(F)ccc2C(CCl)N(c2ccccc2O)C2CCC2)CC1,44,74
+COc1cccc2c1CCNC2CCN1CCC1CNc1cc(Br)ccc1O,162,0,Functional-group interconversion (Br -> I),COc1cccc2c1CCNC2CCN1CCC1CNc1cc(Br)ccc1O,4,,1.0,COc1cccc2c1CCNC2CCN1CCC1CNc1cc(I)ccc1O,45,166
+NCCCN(CCCNCCc1ccccc1)C1CC1,166,1,Pictet-Spengler cyclisation,NCCCN(CCCNCCc1ccccc1)C1CC1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,NCCCN(CCCN1CCc2ccccc2C1c1c[nH]c2cc(Br)ccc12)C1CC1,46,144
+CN(CCN(Cc1c[nH]c2cc(Br)ccc12)c1ccccc1S)C1CCCNC1,170,1,aza-Michael addition (enone),CN(CCN(Cc1c[nH]c2cc(Br)ccc12)c1ccccc1S)C1CCCNC1,4,C=CC=O,1.0,CN(CCN(Cc1c[nH]c2cc(Br)ccc12)c1ccccc1S)C1CCCN(CCC=O)C1,47,58
+O=Cc1c[nH]c2cc(N(CC(=O)O)C3CN(Cc4ccc(F)cc4)C3)ccc12,174,1,Direct acid -> amine (reductive),O=Cc1c[nH]c2cc(N(CC(=O)O)C3CN(Cc4ccc(F)cc4)C3)ccc12,4,C1CCNCC1,1.0,O=Cc1c[nH]c2cc(N(CCN3CCCCC3)C3CN(Cc4ccc(F)cc4)C3)ccc12,48,138
+CNCCN(CC1NCCc2ccc(O)cc21)c1cc(Br)cc(C#N)c1,178,1,Reductive amination (aldehyde),CNCCN(CC1NCCc2ccc(O)cc21)c1cc(Br)cc(C#N)c1,4,CCC=O,1.0,CCCN(C)CCN(CC1NCCc2ccc(O)cc21)c1cc(Br)cc(C#N)c1,49,70
+Sc1ccccc1N(CCNC1CC1)Cc1c[nH]c2ccc(Br)cc12,182,1,Direct acid -> amine (reductive),Sc1ccccc1N(CCNC1CC1)Cc1c[nH]c2ccc(Br)cc12,4,O=C(O)[C@H]1CCCN1,1.0,Sc1ccccc1N(CCN(CC1CCCN1)C1CC1)Cc1c[nH]c2ccc(Br)cc12,50,139
+COc1ccccc1CCNCC1CN(C2CCC2)C1,185,1,Reductive amination (aldehyde),COc1ccccc1CCNCC1CN(C2CCC2)C1,3,O=Cc1c[nH]c2ccc(Br)cc12,1.0,COc1ccccc1CCN(Cc1c[nH]c2ccc(Br)cc12)CC1CN(C2CCC2)C1,51,70
+CCC(N)CN(CCCN)CCc1ccccc1OC,188,1,Reductive amination (aldehyde),CC[C@H](N)CN(CCCN)CCc1ccccc1OC,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,CCC(N)CN(CCCNCc1c[nH]c2cc(Br)ccc12)CCc1ccccc1OC,52,68
+CC(N)CN(CCN1CCCCC1)c1cccc(Br)c1O,192,1,Reductive amination (aldehyde),C[C@H](N)CN(CCN1CCCCC1)c1cccc(Br)c1O,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,CC(CN(CCN1CCCCC1)c1cccc(Br)c1O)NCc1c[nH]c2ccc(Br)cc12,53,68
+CCCN(CCCNc1cc(Br)cc(C#N)c1)C1CC1,196,1,Reductive amination (aldehyde),CCCN(CCCNc1cc(Br)cc(C#N)c1)C1CC1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,CCCN(CCCN(Cc1c[nH]c2cc(Br)ccc12)c1cc(Br)cc(C#N)c1)C1CC1,54,70
+Brc1ccc(NC2CCCN(CCCNCc3c[nH]c4cc(Br)ccc34)C2)cc1,200,1,Reductive amination (aldehyde),Brc1ccc(NC2CCCN(CCCNCc3c[nH]c4cc(Br)ccc34)C2)cc1,4,CCC=O,1.0,CCCN(c1ccc(Br)cc1)C1CCCN(CCCNCc2c[nH]c3cc(Br)ccc23)C1,55,70
+COc1ccccc1CCN(Cc1c[nH]c2ccc(Cl)cc12)C1CCNC1,204,0,Functional-group interconversion (Br -> Cl),COc1ccccc1CCN(Cc1c[nH]c2ccc(Br)cc12)C1CCN(CC2CCN2)C1,4,,1.0,COc1ccccc1CCN(Cc1c[nH]c2ccc(Cl)cc12)C1CCN(CC2CCN2)C1,56,165
+NCCN(CCCNCCc1ccccc1Br)C1CC1,208,1,Reductive amination (aldehyde),NCCN(CCCNCCc1ccccc1Br)C1CC1,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,NCCN(CCCN(CCc1ccccc1Br)Cc1c[nH]c2ccc(F)cc12)C1CC1,57,70
+CCCN(CC=O)c1cc(F)ccc1OC(=O)C(N)Cc1c[nH]c2ccccc12,212,1,Reductive amination (aldehyde),CCCN(CC=O)c1cc(F)ccc1OC(=O)[C@@H](N)Cc1c[nH]c2ccccc12,4,C1CCNCC1,1.0,CCCN(CCN1CCCCC1)c1cc(F)ccc1OC(=O)C(N)Cc1c[nH]c2ccccc12,58,71
+CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1cccc(Br)c1O)C1CCCNC1,216,1,Reductive amination (aldehyde),CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1cccc(Br)c1O)C1CCCNC1,4,CCC=O,1.0,CCCN1CCCC(N(C)CCN(Cc2c[nH]c3ccc(Br)cc23)c2cccc(Br)c2O)C1,59,70
+COc1cccc2c1CCNC2CCN(Cc1ccc(N)c(Br)c1)C1CC1,220,1,Reductive amination (aldehyde),COc1cccc2c1CCNC2CCN(Cc1ccc(N)c(Br)c1)C1CC1,4,CCC=O,1.0,CCCN1CCc2c(OC)cccc2C1CCN(Cc1ccc(N)c(Br)c1)C1CC1,60,70
+NCCN(CCC=O)CCc1c[nH]c2ccc(O)cc12,223,1,Pictet-Spengler cyclisation,NCCN(CCC=O)CCc1c[nH]c2ccc(O)cc12,3,NCCc1ccccc1Br,1.0,NCCN(CCc1c[nH]c2ccc(O)cc12)CCC1NCCc2c(Br)cccc21,61,145
+Oc1ccccc1N(Cc1c[nH]c2cc(Br)ccc12)CC1CCCN1,226,1,Direct acid -> amine (reductive),Oc1ccccc1N(Cc1c[nH]c2cc(Br)ccc12)C[C@@H]1CCCN1,3,O=C(O)C1CCN1,1.0,Oc1ccccc1N(Cc1c[nH]c2cc(Br)ccc12)CC1CCCN1CC1CCN1,62,139
+Brc1cccc2c1CCNC2CCN1CCCCC1,229,1,Reductive amination (aldehyde),Brc1cccc2c1CCNC2CCN1CCCCC1,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,Brc1ccc2c(CN3CCc4c(Br)cccc4C3CCN3CCCCC3)c[nH]c2c1,63,70
+COc1cccc2c1CCNC2CNCCc1c[nH]c2ccccc12,232,1,Reductive amination (ketone),COc1cccc2c1CCNC2CNCCc1c[nH]c2ccccc12,3,O=C1CCC1,1.0,COc1cccc2c1CCNC2CN(CCc1c[nH]c2ccccc12)C1CCC1,64,74
+CCCN1CCC1CN(Cc1c[nH]c2ccc(F)cc12)c1cccc(Br)c1N,236,1,Sonogashira coupling,CCCN1CCC1CN(Cc1c[nH]c2ccc(F)cc12)c1cccc(Br)c1N,4,C#C,1.0,C#Cc1cccc(N(Cc2c[nH]c3ccc(F)cc23)CC2CCN2CCC)c1N,65,121
+Sc1ccccc1N(C1CCNC1)C1CCNC1,239,1,Reductive amination (aldehyde),Sc1ccccc1N(C1CCNC1)C1CCNC1,3,O=Cc1c[nH]c2ccc(Br)cc12,1.0,Sc1ccccc1N(C1CCNC1)C1CCN(Cc2c[nH]c3ccc(Br)cc23)C1,66,70
+Fc1ccc(CN(CCc2c[nH]c3ccccc23)C2CCCNC2)cc1,242,1,Reductive amination (ketone),Fc1ccc(CN(CCc2c[nH]c3ccccc23)C2CCCNC2)cc1,3,O=C1CNC1,1.0,Fc1ccc(CN(CCc2c[nH]c3ccccc23)C2CCCN(C3CNC3)C2)cc1,67,74
+Brc1ccc2[nH]cc(CN(CCCNC3CC3)CCc3ccccc3)c2c1,246,1,Reductive amination (aldehyde),Brc1ccc2[nH]cc(CN(CCCNC3CC3)CCc3ccccc3)c2c1,4,C=CC=O,1.0,C=CCN(CCCN(CCc1ccccc1)Cc1c[nH]c2ccc(Br)cc12)C1CC1,68,70
+COc1cccc2c1CCN(C1CNC1)C2CNc1cc(Br)ccc1O,250,1,Pictet-Spengler cyclisation,COc1cccc2c1CCN(C1CNC1)C2CNc1cc(Br)ccc1O,4,CCC=O,1.0,CCC1c2ccc(OC)c3c2C(CN1c1cc(Br)ccc1O)N(C1CNC1)CC3,69,144
+COc1ccccc1CCN(CCCNC1CCC1)Cc1c[nH]c2cc(Br)ccc12,254,0,Functional-group interconversion (Br -> I),COc1ccccc1CCN(CCCNC1CCC1)Cc1c[nH]c2cc(Br)ccc12,4,,1.0,COc1ccccc1CCN(CCCNC1CCC1)Cc1c[nH]c2cc(I)ccc12,70,166
+CCC1c2cccc(OC)c2CCN1CCN(C)CCCN,258,1,Direct acid -> amine (reductive),CCC1c2cccc(OC)c2CCN1CCN(C)CCCN,4,O=C(O)c1ccc(F)cc1,1.0,CCC1c2cccc(OC)c2CCN1CCN(C)CCCNCc1ccc(F)cc1,71,137
+CN(CCN(c1ccccc1O)C1CCCNC1)Cc1c[nH]c2cc(Br)ccc12,262,1,Reductive amination (ketone),CN(CCN(c1ccccc1O)C1CCCNC1)Cc1c[nH]c2cc(Br)ccc12,4,O=C1CCC1,1.0,CN(CCN(c1ccccc1O)C1CCCN(C2CCC2)C1)Cc1c[nH]c2cc(Br)ccc12,72,74
+c1cc(N(CCN2CCCCC2)C2CNC2)c2[nH]ccc2c1,266,1,Reductive amination (ketone),c1cc(N(CCN2CCCCC2)C2CNC2)c2[nH]ccc2c1,4,O=C(CCl)c1ccc(Cl)c(Cl)c1,1.0,ClCC(c1ccc(Cl)c(Cl)c1)N1CC(N(CCN2CCCCC2)c2cccc3cc[nH]c23)C1,73,74
+COc1cccc2c1CCN(Cc1cccc(Br)c1)C2CNC1CCC1,270,1,Reductive amination (aldehyde),COc1cccc2c1CCN(Cc1cccc(Br)c1)C2CNC1CCC1,4,CCC=O,1.0,CCCN(CC1c2cccc(OC)c2CCN1Cc1cccc(Br)c1)C1CCC1,74,70
+CCC(CN1CCc2ccc(O)cc2C1c1c[nH]c2cc(Br)ccc12)NC1CNC1,274,0,Functional-group interconversion (Br -> Cl),CC[C@@H](CN1CCc2ccc(O)cc2C1c1c[nH]c2cc(Br)ccc12)NC1CNC1,4,,1.0,CCC(CN1CCc2ccc(O)cc2C1c1c[nH]c2cc(Cl)ccc12)NC1CNC1,75,165
+Oc1ccc2c(c1)C(c1c[nH]c3ccc(F)cc13)N(CC1CCN1)CC2,277,1,aza-Michael addition (enone),Oc1ccc2c(c1)C(c1c[nH]c3ccc(F)cc13)N(CC1CCN1)CC2,3,C=CC=O,1.0,O=CCCN1CCC1CN1CCc2ccc(O)cc2C1c1c[nH]c2ccc(F)cc12,76,58
+COc1cccc2c1CCNC2CCN(CC1CCN1)c1cccc(Br)c1O,281,1,Reductive amination (aldehyde),COc1cccc2c1CCNC2CCN(CC1CCN1)c1cccc(Br)c1O,4,CCC=O,1.0,CCCN1CCC1CN(CCC1NCCc2c(OC)cccc21)c1cccc(Br)c1O,77,70
+ClCC(c1ccc(Br)cc1)N(CCCN1CCCCC1)CCc1c[nH]c2ccccc12,285,0,Functional-group interconversion (Br -> I),ClCC(c1ccc(Br)cc1)N(CCCN1CCCCC1)CCc1c[nH]c2ccccc12,4,,1.0,ClCC(c1ccc(I)cc1)N(CCCN1CCCCC1)CCc1c[nH]c2ccccc12,78,166
+C#Cc1ccc(NCC2CCN2CC2CCN2)cc1,289,1,Reductive amination (aldehyde),C#Cc1ccc(NCC2CCN2CC2CCN2)cc1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,C#Cc1ccc(N(Cc2c[nH]c3ccc(Br)cc23)CC2CCN2CC2CCN2)cc1,79,70
+CCCN1CCCC(N(CCC=O)c2cc(Br)ccc2O)C1,293,1,Pictet-Spengler cyclisation,CCCN1CCCC(N(CCC=O)c2cc(Br)ccc2O)C1,4,NCCc1ccccc1,1.0,CCCN1CCCC(N(CCC2NCCc3ccccc32)c2cc(Br)ccc2O)C1,80,145
+NCCCN(c1ccccc1O)C1CCCN(CCBr)C1,297,1,Reductive amination (aldehyde),NCCCN(c1ccccc1O)C1CCCN(CCBr)C1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,Oc1ccccc1N(CCCNCc1c[nH]c2ccc(Br)cc12)C1CCCN(CCBr)C1,81,68
+Oc1ccccc1N(CC1CCN1)C1CCN(Cc2c[nH]c3ccc(Br)cc23)C1,301,0,Functional-group interconversion (Br -> Cl),Oc1ccccc1N(CC1CCN1)C1CCN(Cc2c[nH]c3ccc(Br)cc23)C1,4,,1.0,Oc1ccccc1N(CC1CCN1)C1CCN(Cc2c[nH]c3ccc(Cl)cc23)C1,82,165
+O=CCCN(CCc1c[nH]c2ccccc12)C1CNC1,304,1,Pictet-Spengler cyclisation,O=CCCN(CCc1c[nH]c2ccccc12)C1CNC1,3,NCCc1ccc(O)cc1,1.0,Oc1ccc2c(c1)C(CCN(CCc1c[nH]c3ccccc13)C1CNC1)NCC2,83,145
+COc1cccc2c1CCNC2CCN1CCC(Nc2cc(F)ccc2O)C1,308,1,Reductive amination (aldehyde),COc1cccc2c1CCNC2CCN1CCC(Nc2cc(F)ccc2O)C1,4,CCC=O,1.0,CCCN(c1cc(F)ccc1O)C1CCN(CCC2NCCc3c(OC)cccc32)C1,84,70
+COc1ccccc1CCN(CCN)CC1(N)CCC1,311,1,Reductive amination (aldehyde),COc1ccccc1CCN(CCN)CC1(N)CCC1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,COc1ccccc1CCN(CCN)CC1(NCc2c[nH]c3ccc(F)cc23)CCC1,85,68
+Oc1ccc2c(c1)C(c1cccc(Br)c1)N(CC1CCCN1C1CNC1)CC2,315,0,Functional-group interconversion (Br -> Cl),Oc1ccc2c(c1)C(c1cccc(Br)c1)N(C[C@H]1CCCN1C1CNC1)CC2,4,,1.0,Oc1ccc2c(c1)C(c1cccc(Cl)c1)N(CC1CCCN1C1CNC1)CC2,86,165
+NCCN(CCCNC1CC1)CCc1c[nH]c2ccccc12,319,1,Reductive amination (aldehyde),NCCN(CCCNC1CC1)CCc1c[nH]c2ccccc12,4,O=Cc1cccc(Br)c1,1.0,NCCN(CCCN(Cc1cccc(Br)c1)C1CC1)CCc1c[nH]c2ccccc12,87,70
+COc1ccccc1CCN(CCCN)Cc1c[nH]c2ccc(F)cc12,322,1,Direct acid -> amine (reductive),COc1ccccc1CCN(CCCN)Cc1c[nH]c2ccc(F)cc12,3,CC[C@H](N)C(=O)O,1.0,CCC(N)CNCCCN(CCc1ccccc1OC)Cc1c[nH]c2ccc(F)cc12,88,137
+CN(CCN(Cc1c[nH]c2ccc(Br)cc12)C1CC1)c1ccccc1CCN,326,1,Pictet-Spengler cyclisation,CN(CCN(Cc1c[nH]c2ccc(Br)cc12)C1CC1)c1ccccc1CCN,4,C=CC=O,1.0,C=CC1NCCc2c1cccc2N(C)CCN(Cc1c[nH]c2ccc(Br)cc12)C1CC1,89,144
+C#Cc1cccc(N(CC=O)CC(N)Cc2c[nH]c3ccccc23)c1O,330,1,Reductive amination (aldehyde),C#Cc1cccc(N(CC=O)C[C@@H](N)Cc2c[nH]c3ccccc23)c1O,4,C1CCNCC1,1.0,C#Cc1cccc(N(CCN2CCCCC2)CC(N)Cc2c[nH]c3ccccc23)c1O,90,71
+NCCN1CCC(N(CCC(=O)O)c2ccc(Br)cc2)C1,334,1,Direct acid -> amine (reductive),NCCN1CCC(N(CCC(=O)O)c2ccc(Br)cc2)C1,4,NCCc1c[nH]c2ccccc12,1.0,NCCN1CCC(N(CCCNCCc2c[nH]c3ccccc23)c2ccc(Br)cc2)C1,91,136
+c1ccc(CCNC2CCN(CC3CCN3)CC2)cc1,337,1,Pictet-Spengler cyclisation,c1ccc(CCNC2CCN(CC3CCN3)CC2)cc1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,Fc1ccc2[nH]cc(C3c4ccccc4CCN3C3CCN(CC4CCN4)CC3)c2c1,92,144
+O=CCCN(CCCNC1CC1)CCc1ccc(O)cc1,341,1,Reductive amination (aldehyde),O=CCCN(CCCNC1CC1)CCc1ccc(O)cc1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,O=CCCN(CCCN(Cc1c[nH]c2cc(Br)ccc12)C1CC1)CCc1ccc(O)cc1,93,70
+COc1cccc2c1CCNC2CCN(C1CC1)C1CNC1,345,1,Reductive amination (aldehyde),COc1cccc2c1CCNC2CCN(C1CC1)C1CNC1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,COc1cccc2c1CCNC2CCN(C1CC1)C1CN(Cc2c[nH]c3ccc(Br)cc23)C1,94,70
+Brc1ccc2c(C3c4ccccc4CCN3CC3CCN(C4CNC4)CC3)c[nH]c2c1,349,0,Functional-group interconversion (Br -> I),Brc1ccc2c(C3c4ccccc4CCN3CC3CCN(C4CNC4)CC3)c[nH]c2c1,4,,1.0,Ic1ccc2c(C3c4ccccc4CCN3CC3CCN(C4CNC4)CC3)c[nH]c2c1,95,166
+CCCN1CC(N(CC2CCCN2)c2ccccc2S)C1,353,1,Reductive amination (aldehyde),CCCN1CC(N(C[C@@H]2CCCN2)c2ccccc2S)C1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,CCCN1CC(N(CC2CCCN2Cc2c[nH]c3ccc(Br)cc23)c2ccccc2S)C1,96,70
+Brc1ccc2[nH]cc(CN(CCCNC3CC3)CCc3ccccc3)c2c1,356,0,Functional-group interconversion (Br -> I),Brc1ccc2[nH]cc(CN(CCCNC3CC3)CCc3ccccc3)c2c1,3,,1.0,Ic1ccc2[nH]cc(CN(CCCNC3CC3)CCc3ccccc3)c2c1,97,166
+CCCN1CCC1CN1CCc2c(Br)cccc2C1c1c[nH]c2cc(Br)ccc12,360,0,Functional-group interconversion (Br -> I),CCCN1CCC1CN1CCc2c(Br)cccc2C1c1c[nH]c2cc(Br)ccc12,4,,1.0,CCCN1CCC1CN1CCc2c(Br)cccc2C1c1c[nH]c2cc(I)ccc12,98,166
+COc1ccccc1CCNCCCN1CCCCC1,363,1,Pictet-Spengler cyclisation,COc1ccccc1CCNCCCN1CCCCC1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,COc1cccc2c1CCN(CCCN1CCCCC1)C2c1c[nH]c2ccc(F)cc12,99,144
+CNCCN(CCCN1CCCCC1)c1cccc(Br)c1O,367,1,Reductive amination (aldehyde),CNCCN(CCCN1CCCCC1)c1cccc(Br)c1O,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,CN(CCN(CCCN1CCCCC1)c1cccc(Br)c1O)Cc1c[nH]c2ccc(F)cc12,100,70
+Fc1ccc(CN(CCc2c[nH]c3ccccc23)CC2CCCN2)cc1,370,1,aza-Michael addition (enone),Fc1ccc(CN(CCc2c[nH]c3ccccc23)C[C@@H]2CCCN2)cc1,3,C=CC=O,1.0,O=CCCN1CCCC1CN(CCc1c[nH]c2ccccc12)Cc1ccc(F)cc1,101,58
+c1ccc2c(CCN(CC3CCCN3)C3CCC3)c[nH]c2c1,373,1,Reductive amination (ketone),c1ccc2c(CCN(C[C@@H]3CCCN3)C3CCC3)c[nH]c2c1,3,O=C(CCl)c1ccc(F)cc1,1.0,Fc1ccc(C(CCl)N2CCCC2CN(CCc2c[nH]c3ccccc23)C2CCC2)cc1,102,74
+O=C(O)CCN(CCNCCc1c[nH]c2ccccc12)c1ccc(Br)cc1O,377,1,Direct acid -> amine (reductive),O=C(O)CCN(CCNCCc1c[nH]c2ccccc12)c1ccc(Br)cc1O,4,C1CCNCC1,1.0,Oc1cc(Br)ccc1N(CCCN1CCCCC1)CCNCCc1c[nH]c2ccccc12,103,138
+Oc1ccc2c(c1)C(CCN(C1CC1)C(CCl)c1ccc(F)cc1)NCC2,381,1,Direct acid -> amine (reductive),Oc1ccc2c(c1)C(CCN(C1CC1)C(CCl)c1ccc(F)cc1)NCC2,4,NCC(=O)O,1.0,NCCN1CCc2ccc(O)cc2C1CCN(C1CC1)C(CCl)c1ccc(F)cc1,104,139
+Fc1ccc(C(CCl)N(CCCNCCc2c[nH]c3ccccc23)C2CCC2)cc1,385,1,Direct acid -> amine (reductive),Fc1ccc(C(CCl)N(CCCNCCc2c[nH]c3ccccc23)C2CCC2)cc1,4,C=CC(=O)O,1.0,C=CCN(CCCN(C1CCC1)C(CCl)c1ccc(F)cc1)CCc1c[nH]c2ccccc12,105,139
+O=CCCN1CCCC1C(=O)O,389,1,Direct acid -> amine (reductive),O=CCCN1CCC[C@@H]1C(=O)O,4,Sc1cccc2c1CCNC2c1c[nH]c2cc(Br)ccc12,1.0,O=CCCN1CCCC1CN1CCc2c(S)cccc2C1c1c[nH]c2cc(Br)ccc12,106,138
+CCC1c2ccccc2CCN1C1CCCNC1,392,1,Reductive amination (aldehyde),CCC1c2ccccc2CCN1C1CCCNC1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,CCC1c2ccccc2CCN1C1CCCN(Cc2c[nH]c3ccc(F)cc23)C1,107,70
+C=CC1c2cc(O)ccc2CCN1CC(C)NCc1c[nH]c2cc(Br)ccc12,396,1,Direct acid -> amine (reductive),C=CC1c2cc(O)ccc2CCN1C[C@@H](C)NCc1c[nH]c2cc(Br)ccc12,4,NCCC(=O)O,1.0,C=CC1c2cc(O)ccc2CCN1CC(C)N(CCCN)Cc1c[nH]c2cc(Br)ccc12,108,139
+COc1ccccc1CCN(CC1CCCN1)C1CNC1,399,1,Reductive amination (aldehyde),COc1ccccc1CCN(C[C@H]1CCCN1)C1CNC1,3,O=Cc1c[nH]c2ccc(Br)cc12,1.0,COc1ccccc1CCN(CC1CCCN1)C1CN(Cc2c[nH]c3ccc(Br)cc23)C1,109,70
+CCCN1CCC(N2CCc3ccccc3C2c2c[nH]c3cc(Br)ccc23)C1,403,0,Functional-group interconversion (Br -> I),CCCN1CCC(N2CCc3ccccc3C2c2c[nH]c3cc(Br)ccc23)C1,4,,1.0,CCCN1CCC(N2CCc3ccccc3C2c2c[nH]c3cc(I)ccc23)C1,110,166
+COc1ccccc1CCNCC1CCCN1CCCN,406,1,Reductive amination (aldehyde),COc1ccccc1CCNC[C@@H]1CCCN1CCCN,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,COc1ccccc1CCN(Cc1c[nH]c2cc(Br)ccc12)CC1CCCN1CCCN,111,70
+CNCCN(CC1CCN1C1CCC1)c1ccccc1O,410,1,Reductive amination (aldehyde),CNCCN(CC1CCN1C1CCC1)c1ccccc1O,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,CN(CCN(CC1CCN1C1CCC1)c1ccccc1O)Cc1c[nH]c2ccc(Br)cc12,112,70
+Fc1ccc(C(CCl)NC(Cc2c[nH]c3ccccc23)CN2CCCCC2)cc1,413,1,Direct acid -> amine (reductive),Fc1ccc(C(CCl)N[C@@H](Cc2c[nH]c3ccccc23)CN2CCCCC2)cc1,3,NCC(=O)O,1.0,NCCN(C(Cc1c[nH]c2ccccc12)CN1CCCCC1)C(CCl)c1ccc(F)cc1,113,139
+Oc1ccc2c(c1)C(c1c[nH]c3cc(Br)ccc13)N(C1CCCN(CC3CCN3)C1)CC2,417,0,Functional-group interconversion (Br -> Cl),Oc1ccc2c(c1)C(c1c[nH]c3cc(Br)ccc13)N(C1CCCN(CC3CCN3)C1)CC2,4,,1.0,Oc1ccc2c(c1)C(c1c[nH]c3cc(Cl)ccc13)N(C1CCCN(CC3CCN3)C1)CC2,114,165
+Brc1ccc(N(CC2CCN2)C2CN(C3CNC3)C2)cc1,421,1,Reductive amination (aldehyde),Brc1ccc(N(CC2CCN2)C2CN(C3CNC3)C2)cc1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,Brc1ccc(N(CC2CCN2Cc2c[nH]c3ccc(Br)cc23)C2CN(C3CNC3)C2)cc1,115,70
+NCCCC(CNCCc1ccc(O)cc1)NCc1c[nH]c2cc(Br)ccc12,424,1,aza-Michael addition (enone),NCCC[C@@H](CNCCc1ccc(O)cc1)NCc1c[nH]c2cc(Br)ccc12,3,C=CC=O,1.0,NCCCC(CN(CCC=O)CCc1ccc(O)cc1)NCc1c[nH]c2cc(Br)ccc12,116,58
+COc1cccc2c1CCN(C1CNC1)C2CNc1cc(F)ccc1O,428,1,Direct acid -> amine (reductive),COc1cccc2c1CCN(C1CNC1)C2CNc1cc(F)ccc1O,4,O=C(O)CBr,1.0,COc1cccc2c1CCN(C1CNC1)C2CN(CCBr)c1cc(F)ccc1O,117,139
+CCCNCCN(Cc1c[nH]c2ccc(Br)cc12)c1cccc(Br)c1N,432,1,Reductive amination (ketone),CCCNCCN(Cc1c[nH]c2ccc(Br)cc12)c1cccc(Br)c1N,4,O=C1CNC1,1.0,CCCN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1cccc(Br)c1N)C1CNC1,118,74
+ClCC(Nc1cccc2cc[nH]c12)c1ccc(Br)cc1,436,1,Reductive amination (aldehyde),ClCC(Nc1cccc2cc[nH]c12)c1ccc(Br)cc1,4,O=CCN(CC1CCN1)C1CCC1,1.0,ClCC(c1ccc(Br)cc1)N(CCN(CC1CCN1)C1CCC1)c1cccc2cc[nH]c12,119,70
+Oc1ccccc1NC1CCCN(CC2CCN2)C1,439,1,Reductive amination (aldehyde),Oc1ccccc1NC1CCCN(CC2CCN2)C1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,Oc1ccccc1N(Cc1c[nH]c2ccc(F)cc12)C1CCCN(CC2CCN2)C1,120,70
+NCCCN(CCc1ccc(O)cc1)CC1CCN1,442,1,Reductive amination (aldehyde),NCCCN(CCc1ccc(O)cc1)CC1CCN1,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,NCCCN(CCc1ccc(O)cc1)CC1CCN1Cc1c[nH]c2cc(Br)ccc12,121,70
+COc1cccc2c1CCN(Cc1ccc(N)c(Br)c1)C2CCN1CCCC1CO,446,0,Functional-group interconversion (Br -> Cl),COc1cccc2c1CCN(Cc1ccc(N)c(Br)c1)C2CCN1CCC[C@@H]1CO,4,,1.0,COc1cccc2c1CCN(Cc1ccc(N)c(Cl)c1)C2CCN1CCCC1CO,122,165
+Oc1c(Br)cccc1NCCCN(CC1CCN1)C1CC1,450,1,Reductive amination (aldehyde),Oc1c(Br)cccc1NCCCN(CC1CCN1)C1CC1,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,Oc1c(Br)cccc1N(CCCN(CC1CCN1)C1CC1)Cc1c[nH]c2ccc(F)cc12,123,70
+COc1cccc2c1CCNC2CN1CC(Nc2cc(Br)ccc2O)C1,454,1,Reductive amination (ketone),COc1cccc2c1CCNC2CN1CC(Nc2cc(Br)ccc2O)C1,4,O=C1CCC1,1.0,COc1cccc2c1CCNC2CN1CC(N(c2cc(Br)ccc2O)C2CCC2)C1,124,74
+c1cc(NC2CCCN(C3CNC3)C2)c2[nH]ccc2c1,457,1,Reductive amination (ketone),c1cc(NC2CCCN(C3CNC3)C2)c2[nH]ccc2c1,3,O=C(CCl)c1ccc(F)cc1,1.0,Fc1ccc(C(CCl)N(c2cccc3cc[nH]c23)C2CCCN(C3CNC3)C2)cc1,125,74
+Fc1ccc(CNCCCN(C2CC2)C2CNC2)cc1,461,1,Reductive amination (aldehyde),Fc1ccc(CNCCCN(C2CC2)C2CNC2)cc1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,Fc1ccc(CN(CCCN(C2CC2)C2CNC2)Cc2c[nH]c3ccc(Br)cc23)cc1,126,70
+CCCN(CCNc1cc(Br)ccc1O)C1CCC1,465,1,Direct acid -> amine (reductive),CCCN(CCNc1cc(Br)ccc1O)C1CCC1,4,Nc1ccc(C(=O)O)cc1Br,1.0,CCCN(CCN(Cc1ccc(N)c(Br)c1)c1cc(Br)ccc1O)C1CCC1,127,139
+N#Cc1cc(Br)cc(N(CCN2CCC(=O)C2)Cc2c[nH]c3ccc(Br)cc23)c1,469,1,Reductive amination (ketone),N#Cc1cc(Br)cc(N(CCN2CCC(=O)C2)Cc2c[nH]c3ccc(Br)cc23)c1,4,NC1CC1,1.0,N#Cc1cc(Br)cc(N(CCN2CCC(NC3CC3)C2)Cc2c[nH]c3ccc(Br)cc23)c1,128,73
+NCCCN1CCCC(N(c2cccc3cc[nH]c23)C(CCl)c2ccc(Cl)c(Cl)c2)C1,473,0,Functional-group interconversion (Cl -> I),NCCCN1CCCC(N(c2cccc3cc[nH]c23)C(CCl)c2ccc(Cl)c(Cl)c2)C1,4,,1.0,NCCCN1CCCC(N(c2cccc3cc[nH]c23)C(CCl)c2ccc(I)c(Cl)c2)C1,129,164
+OCC1CCCN1CCC1c2cccc(Br)c2CCN1Cc1c[nH]c2ccc(Br)cc12,477,0,Functional-group interconversion (Br -> Oh),OC[C@@H]1CCCN1CCC1c2cccc(Br)c2CCN1Cc1c[nH]c2ccc(Br)cc12,4,,1.0,OCC1CCCN1CCC1c2cccc(O)c2CCN1Cc1c[nH]c2ccc(Br)cc12,130,162
+CCC(N)CN(CCNCCc1c[nH]c2ccccc12)c1cc(F)ccc1C(=O)CCl,481,1,Reductive amination (aldehyde),CC[C@H](N)CN(CCNCCc1c[nH]c2ccccc12)c1cc(F)ccc1C(=O)CCl,4,CCC=O,1.0,CCCN(CCc1c[nH]c2ccccc12)CCN(CC(N)CC)c1cc(F)ccc1C(=O)CCl,131,70
+CCCN(CCNc1cccc2cc[nH]c12)C1CCNC1,485,1,Direct acid -> amine (reductive),CCCN(CCNc1cccc2cc[nH]c12)C1CCNC1,4,Nc1ccc(C(=O)O)cc1Br,1.0,CCCN(CCN(Cc1ccc(N)c(Br)c1)c1cccc2cc[nH]c12)C1CCNC1,132,139
+Brc1ccc2c(CNCCCNCCc3ccccc3I)c[nH]c2c1,489,1,Reductive amination (aldehyde),Brc1ccc2c(CNCCCNCCc3ccccc3I)c[nH]c2c1,4,CCC=O,1.0,CCCN(CCCNCCc1ccccc1I)Cc1c[nH]c2cc(Br)ccc12,133,70
+NCCN1CCCC(N2CCc3c(Br)cccc3C2c2c[nH]c3ccc(F)cc23)C1,493,0,Functional-group interconversion (Br -> Sh),NCCN1CCCC(N2CCc3c(Br)cccc3C2c2c[nH]c3ccc(F)cc23)C1,4,,1.0,NCCN1CCCC(N2CCc3c(S)cccc3C2c2c[nH]c3ccc(F)cc23)C1,134,171
+Sc1ccccc1N(CCCNC1CC1)C1CCNC1,497,1,Reductive amination (aldehyde),Sc1ccccc1N(CCCNC1CC1)C1CCNC1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,Sc1ccccc1N(CCCNC1CC1)C1CCN(Cc2c[nH]c3cc(Br)ccc23)C1,135,70
+C=CC1c2cccc(OC)c2CCN1C1CCNC1,500,1,Reductive amination (aldehyde),C=CC1c2cccc(OC)c2CCN1C1CCNC1,3,O=Cc1c[nH]c2ccc(Br)cc12,1.0,C=CC1c2cccc(OC)c2CCN1C1CCN(Cc2c[nH]c3ccc(Br)cc23)C1,136,70
+Oc1ccccc1NC1CCCN(CC2CCN2)C1,501,1,Reductive amination (ketone),Oc1ccccc1NC1CCCN(CC2CCN2)C1,1,O=C(CCl)c1ccc(F)cc1,1.0,Oc1ccccc1N(C1CCCN(CC2CCN2)C1)C(CCl)c1ccc(F)cc1,137,74
+C#CCN(CCC1NCCc2ccc(O)cc21)CC(C)N,505,1,Reductive amination (aldehyde),C#CCN(CCC1NCCc2ccc(O)cc21)C[C@H](C)N,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,C#CCN(CCC1c2cc(O)ccc2CCN1Cc1c[nH]c2cc(Br)ccc12)CC(C)N,138,70
+Oc1cc(Br)ccc1N(CCNCc1c[nH]c2ccccc12)CC1CCN1,509,1,Direct acid -> amine (reductive),Oc1cc(Br)ccc1N(CCNCc1c[nH]c2ccccc12)CC1CCN1,4,NCCC(=O)O,1.0,NCCCN(CCN(CC1CCN1)c1ccc(Br)cc1O)Cc1c[nH]c2ccccc12,139,139
+CCC1c2cccc(OC)c2CCN1C1CN(CCC(=O)O)C1,513,1,Direct acid -> amine (reductive),CCC1c2cccc(OC)c2CCN1C1CN(CCC(=O)O)C1,4,Nc1cc(F)ccc1O,1.0,CCC1c2cccc(OC)c2CCN1C1CN(CCCNc2cc(F)ccc2O)C1,140,136
+COc1ccccc1CCNCCCN1CCCC(Nc2cc(F)ccc2O)C1,517,1,Reductive amination (aldehyde),COc1ccccc1CCNCCCN1CCCC(Nc2cc(F)ccc2O)C1,4,CCC=O,1.0,CCCN(c1cc(F)ccc1O)C1CCCN(CCCNCCc2ccccc2OC)C1,141,70
+NCCN(CC1NCCc2ccc(O)cc21)C1CC1,521,1,Reductive amination (aldehyde),NCCN(CC1NCCc2ccc(O)cc21)C1CC1,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,Oc1ccc2c(c1)C(CN(CCNCc1c[nH]c3ccc(F)cc13)C1CC1)NCC2,142,68
+CN(CCC=O)CCN(CCC(=O)O)c1ccc(Br)cc1,525,1,Direct acid -> amine (reductive),CN(CCC=O)CCN(CCC(=O)O)c1ccc(Br)cc1,4,NCCc1c[nH]c2ccccc12,1.0,CN(CCC=O)CCN(CCCNCCc1c[nH]c2ccccc12)c1ccc(Br)cc1,143,136
+Oc1ccc(CCNC2CCN(C3CCNC3)C2)cc1,529,1,Reductive amination (aldehyde),Oc1ccc(CCNC2CCN(C3CCNC3)C2)cc1,4,O=Cc1c[nH]c2ccc(I)cc12,1.0,Oc1ccc(CCN(Cc2c[nH]c3ccc(I)cc23)C2CCN(C3CCNC3)C2)cc1,144,70
+CCCNCCN(CC(N)Cc1c[nH]c2ccccc12)c1cc(F)ccc1O,533,1,Direct acid -> amine (reductive),CCCNCCN(C[C@H](N)Cc1c[nH]c2ccccc12)c1cc(F)ccc1O,4,O=C(O)C1CCN1,1.0,CCCN(CCN(CC(N)Cc1c[nH]c2ccccc12)c1cc(F)ccc1O)CC1CCN1,145,139
+Brc1ccc2[nH]cc(C3c4ccccc4CCN3C3CCN(C4CCNC4)C3)c2c1,537,0,Functional-group interconversion (Br -> I),Brc1ccc2[nH]cc(C3c4ccccc4CCN3C3CCN(C4CCNC4)C3)c2c1,4,,1.0,Ic1ccc2[nH]cc(C3c4ccccc4CCN3C3CCN(C4CCNC4)C3)c2c1,146,166
+Oc1ccc(Br)cc1N(CC1CCCN1)CC1NCCc2c(Br)cccc21,541,1,Reductive amination (aldehyde),Oc1ccc(Br)cc1N(CC1NCCc2c(Br)cccc21)C[C@H]1CCCN1,4,CCC=O,1.0,CCCN1CCCC1CN(CC1NCCc2c(Br)cccc21)c1cc(Br)ccc1O,147,70
+CCCN(CC(C)NCc1ccc(F)cc1)C1CC1,545,1,Reductive amination (aldehyde),CCCN(C[C@H](C)NCc1ccc(F)cc1)C1CC1,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,CCCN(CC(C)N(Cc1ccc(F)cc1)Cc1c[nH]c2ccc(F)cc12)C1CC1,148,70
+COc1ccccc1CCN(CCCNc1cc(F)ccc1O)CC1CCN1,549,1,Direct acid -> amine (reductive),COc1ccccc1CCN(CCCNc1cc(F)ccc1O)CC1CCN1,4,NCC(=O)O,1.0,COc1ccccc1CCN(CCCN(CCN)c1cc(F)ccc1O)CC1CCN1,149,139
+COc1cccc2c1CCN(CCCNCCN)C2c1cccc(Br)c1,553,1,Reductive amination (ketone),COc1cccc2c1CCN(CCCNCCN)C2c1cccc(Br)c1,4,O=C1CNC1,1.0,COc1cccc2c1CCN(CCCN(CCN)C1CNC1)C2c1cccc(Br)c1,150,74
+COc1ccc(O)c(N(Cc2c[nH]c3cc(Br)ccc23)CC2CCN2CC2CCN2)c1,557,0,Functional-group interconversion (Br -> I),COc1ccc(O)c(N(Cc2c[nH]c3cc(Br)ccc23)CC2CCN2CC2CCN2)c1,4,,1.0,COc1ccc(O)c(N(Cc2c[nH]c3cc(I)ccc23)CC2CCN2CC2CCN2)c1,151,166
+CCCN1CCc2c(OC)cccc2C1CNc1cc(Br)ccc1O,561,1,Direct acid -> amine (reductive),CCCN1CCc2c(OC)cccc2C1CNc1cc(Br)ccc1O,4,O=C(O)[C@@H]1CCCN1,1.0,CCCN1CCc2c(OC)cccc2C1CN(CC1CCCN1)c1cc(Br)ccc1O,152,139
+COc1cccc(CN(CCCNC2CC2)Cc2c[nH]c3ccc(Br)cc23)c1,565,1,Direct acid -> amine (reductive),COc1cccc(CN(CCCNC2CC2)Cc2c[nH]c3ccc(Br)cc23)c1,4,O=C(O)CBr,1.0,COc1cccc(CN(CCCN(CCBr)C2CC2)Cc2c[nH]c3ccc(Br)cc23)c1,153,139
+NCCCN1CC(N(CCC=O)CCc2ccc(O)cc2)C1,569,1,Reductive amination (aldehyde),NCCCN1CC(N(CCC=O)CCc2ccc(O)cc2)C1,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,O=CCCN(CCc1ccc(O)cc1)C1CN(CCCNCc2c[nH]c3ccc(F)cc23)C1,154,68
+COc1ccccc1CCN(CCCN)CC(C)NCc1c[nH]c2ccc(Br)cc12,573,0,Functional-group interconversion (Br -> I),COc1ccccc1CCN(CCCN)C[C@H](C)NCc1c[nH]c2ccc(Br)cc12,4,,1.0,COc1ccccc1CCN(CCCN)CC(C)NCc1c[nH]c2ccc(I)cc12,155,166
+CCCNCCN(CC(N)CC)c1ccccc1O,577,1,Reductive amination (aldehyde),CCCNCCN(C[C@@H](N)CC)c1ccccc1O,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,CCCN(CCN(CC(N)CC)c1ccccc1O)Cc1c[nH]c2ccc(Br)cc12,156,70
+Oc1ccc(CCNCCCN(c2ccc(Br)cc2)C2CCCNC2)cc1,581,1,Direct acid -> amine (reductive),Oc1ccc(CCNCCCN(c2ccc(Br)cc2)C2CCCNC2)cc1,4,NCC(=O)O,1.0,NCCN1CCCC(N(CCCNCCc2ccc(O)cc2)c2ccc(Br)cc2)C1,157,139
+COc1cccc2c1CCNC2CN1CCC1c1nc2cccc(Br)c2o1,585,1,Reductive amination (ketone),COc1cccc2c1CCNC2CN1CCC1c1nc2cccc(Br)c2o1,4,O=C1CNC1,1.0,COc1cccc2c1CCN(C1CNC1)C2CN1CCC1c1nc2cccc(Br)c2o1,158,74
+Oc1ccc(F)cc1N(CCN1CCCCC1)CC1CCN1,589,1,Reductive amination (aldehyde),Oc1ccc(F)cc1N(CCN1CCCCC1)CC1CCN1,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,Oc1ccc(F)cc1N(CCN1CCCCC1)CC1CCN1Cc1c[nH]c2ccc(F)cc12,159,70
+Oc1ccccc1N(Cc1c[nH]c2cc(Br)ccc12)CC1CCN(CC2CCN2)CC1,593,0,Functional-group interconversion (Br -> Cl),Oc1ccccc1N(Cc1c[nH]c2cc(Br)ccc12)CC1CCN(CC2CCN2)CC1,4,,1.0,Oc1ccccc1N(Cc1c[nH]c2cc(Cl)ccc12)CC1CCN(CC2CCN2)CC1,160,165
+O=CCNCCCN(Cc1c[nH]c2ccc(Br)cc12)c1ccccc1O,597,1,Reductive amination (aldehyde),O=CCNCCCN(Cc1c[nH]c2ccc(Br)cc12)c1ccccc1O,4,C1CCNCC1,1.0,Oc1ccccc1N(CCCNCCN1CCCCC1)Cc1c[nH]c2ccc(Br)cc12,161,71
+CC(CN1CCCCC1)N(Cc1c[nH]c2ccc(Br)cc12)C(CCl)c1ccc(Br)cc1,601,0,Functional-group interconversion (Br -> Cl),C[C@H](CN1CCCCC1)N(Cc1c[nH]c2ccc(Br)cc12)C(CCl)c1ccc(Br)cc1,4,,1.0,CC(CN1CCCCC1)N(Cc1c[nH]c2ccc(Br)cc12)C(CCl)c1ccc(Cl)cc1,162,165
+CCC(N)CN(CCCNCCc1c[nH]c2ccccc12)c1ccc(Br)cc1O,605,1,Direct acid -> amine (reductive),CC[C@H](N)CN(CCCNCCc1c[nH]c2ccccc12)c1ccc(Br)cc1O,4,O=C(O)CBr,1.0,CCC(N)CN(CCCN(CCBr)CCc1c[nH]c2ccccc12)c1ccc(Br)cc1O,163,139
+CCCN(CCc1ccc(O)cc1)CC(CC)NCc1c[nH]c2cc(Br)ccc12,609,0,Functional-group interconversion (Br -> Cl),CCCN(CCc1ccc(O)cc1)C[C@H](CC)NCc1c[nH]c2cc(Br)ccc12,4,,1.0,CCCN(CCc1ccc(O)cc1)CC(CC)NCc1c[nH]c2cc(Cl)ccc12,164,165
+COc1ccccc1CCNCC1CCN1CC(C)N,612,1,Reductive amination (aldehyde),COc1ccccc1CCNCC1CCN1C[C@H](C)N,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,COc1ccccc1CCNCC1CCN1CC(C)NCc1c[nH]c2cc(Br)ccc12,165,68
+O=C(CCl)c1ccc(F)cc1N1CCC1CN1CCCCC1,615,1,Reductive amination (ketone),O=C(CCl)c1ccc(F)cc1N1CCC1CN1CCCCC1,3,NCCc1c[nH]c2ccc(O)cc12,1.0,Oc1ccc2[nH]cc(CCNC(CCl)c3ccc(F)cc3N3CCC3CN3CCCCC3)c2c1,166,73
+CCCN1CCCC1CN(Cc1c[nH]c2cc(Br)ccc12)c1cc(Br)cc(C#N)c1,619,0,Functional-group interconversion (Br -> Cl),CCCN1CCC[C@@H]1CN(Cc1c[nH]c2cc(Br)ccc12)c1cc(Br)cc(C#N)c1,4,,1.0,CCCN1CCCC1CN(Cc1c[nH]c2cc(Cl)ccc12)c1cc(Br)cc(C#N)c1,167,165
+CN(CCN(c1cccc(C=O)c1)C1CC1)CC1CCN1,623,1,Reductive amination (aldehyde),CN(CCN(c1cccc(C=O)c1)C1CC1)CC1CCN1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,CN(CCN(c1cccc(C=O)c1)C1CC1)CC1CCN1Cc1c[nH]c2cc(Br)ccc12,168,70
+CN(CCNC1CC1)CCC1NCCc2ccc(O)cc21,627,1,Reductive amination (aldehyde),CN(CCNC1CC1)CCC1NCCc2ccc(O)cc21,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,CN(CCNC1CC1)CCC1c2cc(O)ccc2CCN1Cc1c[nH]c2ccc(F)cc12,169,70
+O=Cc1c[nH]c2ccc(N3CCC3CNCCc3ccccc3Br)cc12,630,1,Direct acid -> amine (reductive),O=Cc1c[nH]c2ccc(N3CCC3CNCCc3ccccc3Br)cc12,3,O=C(O)C1CCN1,1.0,O=Cc1c[nH]c2ccc(N3CCC3CN(CCc3ccccc3Br)CC3CCN3)cc12,170,139
+CCC(N)CN1CC(N2CCc3c(OC)cccc3C2c2c[nH]c3cc(Br)ccc23)C1,634,0,Functional-group interconversion (Br -> I),CC[C@H](N)CN1CC(N2CCc3c(OC)cccc3C2c2c[nH]c3cc(Br)ccc23)C1,4,,1.0,CCC(N)CN1CC(N2CCc3c(OC)cccc3C2c2c[nH]c3cc(I)ccc23)C1,171,166
+Oc1ccc(Br)cc1N(CCNCCc1c[nH]c2ccccc12)CC1CCCN1,638,1,Reductive amination (aldehyde),Oc1ccc(Br)cc1N(CCNCCc1c[nH]c2ccccc12)C[C@H]1CCCN1,4,CCC=O,1.0,CCCN1CCCC1CN(CCNCCc1c[nH]c2ccccc12)c1cc(Br)ccc1O,172,70
+NCCCN(CCc1ccc(O)cc1)CC1CCCN1,641,1,Reductive amination (aldehyde),NCCCN(CCc1ccc(O)cc1)C[C@H]1CCCN1,3,O=Cc1c[nH]c2ccc(Br)cc12,1.0,Oc1ccc(CCN(CCCNCc2c[nH]c3ccc(Br)cc23)CC2CCCN2)cc1,173,68
+COc1ccc(O)c(N(C2CCCNC2)C(CCl)c2ccc(F)cc2)c1,644,1,Direct acid -> amine (reductive),COc1ccc(O)c(N(C2CCCNC2)C(CCl)c2ccc(F)cc2)c1,3,NCCC(=O)O,1.0,COc1ccc(O)c(N(C2CCCN(CCCN)C2)C(CCl)c2ccc(F)cc2)c1,174,139
+N#Cc1ccc(NCCN2CCCCC2)c(NCc2c[nH]c3cc(Br)ccc23)c1,648,1,Direct acid -> amine (reductive),N#Cc1ccc(NCCN2CCCCC2)c(NCc2c[nH]c3cc(Br)ccc23)c1,4,C=CC(=O)O,1.0,C=CCN(CCN1CCCCC1)c1ccc(C#N)cc1NCc1c[nH]c2cc(Br)ccc12,175,139
+Oc1ccc(F)cc1NCCCN(CCc1c[nH]c2ccccc12)CC1CCN1,652,1,Reductive amination (ketone),Oc1ccc(F)cc1NCCCN(CCc1c[nH]c2ccccc12)CC1CCN1,4,O=C1CCC1,1.0,Oc1ccc(F)cc1N(CCCN(CCc1c[nH]c2ccccc12)CC1CCN1)C1CCC1,176,74
+O=CCCNCCCN1CCc2ccc(O)cc2C1c1c[nH]c2ccc(Br)cc12,656,1,Direct acid -> amine (reductive),O=CCCNCCCN1CCc2ccc(O)cc2C1c1c[nH]c2ccc(Br)cc12,4,NCC(=O)O,1.0,NCCN(CCC=O)CCCN1CCc2ccc(O)cc2C1c1c[nH]c2ccc(Br)cc12,177,139
+Brc1ccc(NC2CCN(CC3CCN3)C2)cc1,659,1,Reductive amination (aldehyde),Brc1ccc(NC2CCN(CC3CCN3)C2)cc1,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,Brc1ccc(N(Cc2c[nH]c3cc(Br)ccc23)C2CCN(CC3CCN3)C2)cc1,178,70
+Nc1ccc(CN(CCC2NCCc3ccc(O)cc32)C2CC2)cc1Br,663,1,Direct acid -> amine (reductive),Nc1ccc(CN(CCC2NCCc3ccc(O)cc32)C2CC2)cc1Br,4,NCC(=O)O,1.0,NCCN1CCc2ccc(O)cc2C1CCN(Cc1ccc(N)c(Br)c1)C1CC1,179,139
+COc1ccccc1CCN(CC1NCCc2c(Br)cccc21)C1CNC1,667,0,Functional-group interconversion (Br -> Oh),COc1ccccc1CCN(CC1NCCc2c(Br)cccc21)C1CNC1,4,,1.0,COc1ccccc1CCN(CC1NCCc2c(O)cccc21)C1CNC1,180,162
+BrCC(CN(CCc1c[nH]c2ccccc12)C1CNC1)Nc1ccc(Br)cc1,671,1,Reductive amination (aldehyde),BrCC(CN(CCc1c[nH]c2ccccc12)C1CNC1)Nc1ccc(Br)cc1,4,CCC=O,1.0,CCCN(c1ccc(Br)cc1)C(CBr)CN(CCc1c[nH]c2ccccc12)C1CNC1,181,70
+CN(CCNCCc1ccccc1)C1CCNCC1,674,1,Pictet-Spengler cyclisation,CN(CCNCCc1ccccc1)C1CCNCC1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,CN(CCN1CCc2ccccc2C1c1c[nH]c2ccc(F)cc12)C1CCNCC1,182,144
+NCCN1CCC(CNCCc2c[nH]c3ccc(O)cc23)CC1,677,1,Direct acid -> amine (reductive),NCCN1CCC(CNCCc2c[nH]c3ccc(O)cc23)CC1,3,O=C(O)c1ccc(F)cc1,1.0,Oc1ccc2[nH]cc(CCNCC3CCN(CCNCc4ccc(F)cc4)CC3)c2c1,183,137
+Brc1cccc(CN(CCc2c[nH]c3ccccc23)CC2CCCN2)c1,680,1,Reductive amination (ketone),Brc1cccc(CN(CCc2c[nH]c3ccccc23)C[C@H]2CCCN2)c1,3,O=C1CNC1,1.0,Brc1cccc(CN(CCc2c[nH]c3ccccc23)CC2CCCN2C2CNC2)c1,184,74
+Brc1ccc(N(Cc2c[nH]c3ccc(Br)cc23)C2CCCN(C3CNC3)C2)cc1,684,0,Functional-group interconversion (Br -> Oh),Brc1ccc(N(Cc2c[nH]c3ccc(Br)cc23)C2CCCN(C3CNC3)C2)cc1,4,,1.0,Oc1ccc2[nH]cc(CN(c3ccc(Br)cc3)C3CCCN(C4CNC4)C3)c2c1,185,162
+NC(CCN1CCCCC1)CN1CCc2ccccc2C1c1c[nH]c2ccc(Br)cc12,688,0,Functional-group interconversion (Br -> Cl),N[C@H](CCN1CCCCC1)CN1CCc2ccccc2C1c1c[nH]c2ccc(Br)cc12,4,,1.0,NC(CCN1CCCCC1)CN1CCc2ccccc2C1c1c[nH]c2ccc(Cl)cc12,186,165
+NCCN1CCC(N(CCc2ccccc2Br)Cc2c[nH]c3ccc(F)cc23)CC1,692,0,Functional-group interconversion (Br -> Oh),NCCN1CCC(N(CCc2ccccc2Br)Cc2c[nH]c3ccc(F)cc23)CC1,4,,1.0,NCCN1CCC(N(CCc2ccccc2O)Cc2c[nH]c3ccc(F)cc23)CC1,187,162
+NC1(CN(CCc2ccccc2Br)Cc2c[nH]c3ccc(I)cc23)CCC1,696,1,Sonogashira coupling,NC1(CN(CCc2ccccc2Br)Cc2c[nH]c3ccc(I)cc23)CCC1,4,C#C,1.0,C#Cc1ccccc1CCN(Cc1c[nH]c2ccc(I)cc12)CC1(N)CCC1,188,121
+CNCCN(CCNc1ccc(Br)cc1)CCc1c[nH]c2ccccc12,700,1,Reductive amination (ketone),CNCCN(CCNc1ccc(Br)cc1)CCc1c[nH]c2ccccc12,4,O=C1CNC1,1.0,CNCCN(CCc1c[nH]c2ccccc12)CCN(c1ccc(Br)cc1)C1CNC1,189,74
+CNCCN(CCc1ccccc1OC)CC1CCCN1Cc1c[nH]c2cc(Br)ccc12,704,0,Functional-group interconversion (Br -> Cl),CNCCN(CCc1ccccc1OC)C[C@@H]1CCCN1Cc1c[nH]c2cc(Br)ccc12,4,,1.0,CNCCN(CCc1ccccc1OC)CC1CCCN1Cc1c[nH]c2cc(Cl)ccc12,190,165
+NC(CC(=O)O)CN(Cc1c[nH]c2ccc(Br)cc12)c1ccccc1S,707,1,Direct acid -> amine (reductive),N[C@H](CC(=O)O)CN(Cc1c[nH]c2ccc(Br)cc12)c1ccccc1S,3,C1CCNCC1,1.0,NC(CCN1CCCCC1)CN(Cc1c[nH]c2ccc(Br)cc12)c1ccccc1S,191,138
+C#CCN(CCC1NCCc2ccc(O)cc21)Cc1c[nH]c2ccc(Br)cc12,711,0,Functional-group interconversion (Br -> Cl),C#CCN(CCC1NCCc2ccc(O)cc21)Cc1c[nH]c2ccc(Br)cc12,4,,1.0,C#CCN(CCC1NCCc2ccc(O)cc21)Cc1c[nH]c2ccc(Cl)cc12,192,165
+Oc1ccc2c(c1)C(CCN(CC1CCN1)c1cc(F)ccc1O)NCC2,715,1,Reductive amination (aldehyde),Oc1ccc2c(c1)C(CCN(CC1CCN1)c1cc(F)ccc1O)NCC2,4,CCC=O,1.0,CCCN1CCC1CN(CCC1NCCc2ccc(O)cc21)c1cc(F)ccc1O,193,70
+COc1ccccc1CCNC1CCN(CCNc2cc(F)c(F)cc2O)CC1,719,1,Reductive amination (aldehyde),COc1ccccc1CCNC1CCN(CCNc2cc(F)c(F)cc2O)CC1,4,CCC=O,1.0,CCCN(CCN1CCC(NCCc2ccccc2OC)CC1)c1cc(F)c(F)cc1O,194,70
+C=CCN(CCNCc1c[nH]c2ccc(Br)cc12)c1cc(Br)cc(C#N)c1,723,1,Reductive amination (aldehyde),C=CCN(CCNCc1c[nH]c2ccc(Br)cc12)c1cc(Br)cc(C#N)c1,4,CCC=O,1.0,C=CCN(CCN(CCC)Cc1c[nH]c2ccc(Br)cc12)c1cc(Br)cc(C#N)c1,195,70
+c1ccc(CCNCCCN2CCCCC2)cc1,726,1,Reductive amination (aldehyde),c1ccc(CCNCCCN2CCCCC2)cc1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,Fc1ccc2[nH]cc(CN(CCCN3CCCCC3)CCc3ccccc3)c2c1,196,70
+CN(CCN1CCCCC1)c1ccc2c(CNc3cccc(Br)c3N)c[nH]c2c1,730,1,Reductive amination (ketone),CN(CCN1CCCCC1)c1ccc2c(CNc3cccc(Br)c3N)c[nH]c2c1,4,O=C1CNC1,1.0,CN(CCN1CCCCC1)c1ccc2c(CN(c3cccc(Br)c3N)C3CNC3)c[nH]c2c1,197,74
+COc1cccc2c1CCN(CC(C)NCCCN)C2c1c[nH]c2cc(Br)ccc12,734,1,Reductive amination (aldehyde),COc1cccc2c1CCN(C[C@@H](C)NCCCN)C2c1c[nH]c2cc(Br)ccc12,4,C=CC=O,1.0,C=CCN(CCCN)C(C)CN1CCc2c(OC)cccc2C1c1c[nH]c2cc(Br)ccc12,198,70
+CCCN1CCC1CN(CCN)c1cc(Br)cc(C#N)c1,738,1,Direct acid -> amine (reductive),CCCN1CCC1CN(CCN)c1cc(Br)cc(C#N)c1,4,O=C(O)c1ccc(F)cc1,1.0,CCCN1CCC1CN(CCNCc1ccc(F)cc1)c1cc(Br)cc(C#N)c1,199,137
+Sc1ccccc1N(Cc1c[nH]c2cc(Br)ccc12)C1CN(C2CCCNC2)C1,742,1,Reductive amination (aldehyde),Sc1ccccc1N(Cc1c[nH]c2cc(Br)ccc12)C1CN(C2CCCNC2)C1,4,CCC=O,1.0,CCCN1CCCC(N2CC(N(Cc3c[nH]c4cc(Br)ccc34)c3ccccc3S)C2)C1,200,70
+N#Cc1cc(Br)cc(N(C2CCNCC2)C(CCl)c2ccc(F)cc2)c1,745,1,Direct acid -> amine (reductive),N#Cc1cc(Br)cc(N(C2CCNCC2)C(CCl)c2ccc(F)cc2)c1,3,O=C(O)C1CCN1,1.0,N#Cc1cc(Br)cc(N(C2CCN(CC3CCN3)CC2)C(CCl)c2ccc(F)cc2)c1,201,139
+Nc1cc(N(CCNC2CC2)CC2CCN2)ccc1O,749,1,Reductive amination (aldehyde),Nc1cc(N(CCNC2CC2)CC2CCN2)ccc1O,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,Nc1cc(N(CCN(Cc2c[nH]c3ccc(F)cc23)C2CC2)CC2CCN2)ccc1O,202,70
+Oc1ccc2[nH]cc(CCNC(CCl)c3ccc(F)cc3)c2c1,751,1,Direct acid -> amine (reductive),Oc1ccc2[nH]cc(CCNC(CCl)c3ccc(F)cc3)c2c1,2,O=C(O)C1CCN1,1.0,Oc1ccc2[nH]cc(CCN(CC3CCN3)C(CCl)c3ccc(F)cc3)c2c1,203,139
+NCCCN(CCNCc1c[nH]c2ccc(Br)cc12)CCc1ccc(O)cc1,755,0,Functional-group interconversion (Br -> Cl),NCCCN(CCNCc1c[nH]c2ccc(Br)cc12)CCc1ccc(O)cc1,4,,1.0,NCCCN(CCNCc1c[nH]c2ccc(Cl)cc12)CCc1ccc(O)cc1,204,165
+NC(Cc1c[nH]c2ccccc12)CN(c1ccc(Br)cc1O)C1CCN(C2CNC2)C1,759,0,Functional-group interconversion (Br -> I),N[C@H](Cc1c[nH]c2ccccc12)CN(c1ccc(Br)cc1O)C1CCN(C2CNC2)C1,4,,1.0,NC(Cc1c[nH]c2ccccc12)CN(c1ccc(I)cc1O)C1CCN(C2CNC2)C1,205,166
+NC(CCN1CCCCC1)CN(CCc1ccccc1)Cc1c[nH]c2cc(Br)ccc12,763,0,Functional-group interconversion (Br -> I),N[C@H](CCN1CCCCC1)CN(CCc1ccccc1)Cc1c[nH]c2cc(Br)ccc12,4,,1.0,NC(CCN1CCCCC1)CN(CCc1ccccc1)Cc1c[nH]c2cc(I)ccc12,206,166
+Oc1ccc2[nH]cc(CCNC3CCN(Cc4ccc(F)cc4)CC3)c2c1,766,1,Reductive amination (ketone),Oc1ccc2[nH]cc(CCNC3CCN(Cc4ccc(F)cc4)CC3)c2c1,3,O=C1CCC1,1.0,Oc1ccc2[nH]cc(CCN(C3CCC3)C3CCN(Cc4ccc(F)cc4)CC3)c2c1,207,74
+CCCN(CC(C)NCc1cccc(Br)c1)C1CC1,770,1,Reductive amination (aldehyde),CCCN(C[C@H](C)NCc1cccc(Br)c1)C1CC1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,CCCN(CC(C)N(Cc1cccc(Br)c1)Cc1c[nH]c2cc(Br)ccc12)C1CC1,208,70
+Fc1ccc2[nH]cc(CN3CCC(N(CCc4ccccc4Br)C4CNC4)C3)c2c1,774,0,Functional-group interconversion (Br -> Sh),Fc1ccc2[nH]cc(CN3CCC(N(CCc4ccccc4Br)C4CNC4)C3)c2c1,4,,1.0,Fc1ccc2[nH]cc(CN3CCC(N(CCc4ccccc4S)C4CNC4)C3)c2c1,209,171
+Oc1c(Br)cccc1NCC1CCN1CC1CCN1,777,1,Reductive amination (aldehyde),Oc1c(Br)cccc1NCC1CCN1CC1CCN1,3,O=Cc1c[nH]c2ccc(I)cc12,1.0,Oc1c(Br)cccc1N(Cc1c[nH]c2ccc(I)cc12)CC1CCN1CC1CCN1,210,70
+Fc1ccc(CNCCN2CCC(NC3CC3)CC2)cc1,781,1,Reductive amination (aldehyde),Fc1ccc(CNCCN2CCC(NC3CC3)CC2)cc1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,Fc1ccc(CNCCN2CCC(N(Cc3c[nH]c4cc(Br)ccc34)C3CC3)CC2)cc1,211,70
+CCCN1CC(N(CC(N)CC)c2ccc(Br)cc2)C1,785,1,Reductive amination (aldehyde),CCCN1CC(N(C[C@@H](N)CC)c2ccc(Br)cc2)C1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,CCCN1CC(N(CC(CC)NCc2c[nH]c3cc(Br)ccc23)c2ccc(Br)cc2)C1,212,68
+COc1ccccc1CCNC1CCN(CC2CCCN2)C1,788,1,Reductive amination (aldehyde),COc1ccccc1CCNC1CCN(C[C@@H]2CCCN2)C1,3,O=Cc1c[nH]c2cc(Br)ccc12,1.0,COc1ccccc1CCNC1CCN(CC2CCCN2Cc2c[nH]c3cc(Br)ccc23)C1,213,70
+CCCN1CCC1CN(CC(N)Cc1c[nH]c2ccccc12)c1cc(Br)ccc1O,792,0,Functional-group interconversion (Br -> I),CCCN1CCC1CN(C[C@H](N)Cc1c[nH]c2ccccc12)c1cc(Br)ccc1O,4,,1.0,CCCN1CCC1CN(CC(N)Cc1c[nH]c2ccccc12)c1cc(I)ccc1O,214,166
+Brc1ccc(N(Cc2c[nH]c3cc(Br)ccc23)C2CCN(C3CCCNC3)C2)cc1,796,1,Sonogashira coupling,Brc1ccc(N(Cc2c[nH]c3cc(Br)ccc23)C2CCN(C3CCCNC3)C2)cc1,4,C#C,1.0,C#Cc1ccc2c(CN(c3ccc(Br)cc3)C3CCN(C4CCCNC4)C3)c[nH]c2c1,215,121
+O=C(CCl)c1ccc(F)cc1N1CCC1CNCCc1c[nH]c2ccccc12,799,1,Direct acid -> amine (reductive),O=C(CCl)c1ccc(F)cc1N1CCC1CNCCc1c[nH]c2ccccc12,3,NCCC(=O)O,1.0,NCCCN(CCc1c[nH]c2ccccc12)CC1CCN1c1cc(F)ccc1C(=O)CCl,216,139
+CN(CCN1CCCCC1)c1cccc(NCc2c[nH]c3cc(Br)ccc23)c1O,803,1,Direct acid -> amine (reductive),CN(CCN1CCCCC1)c1cccc(NCc2c[nH]c3cc(Br)ccc23)c1O,4,NCC(=O)O,1.0,CN(CCN1CCCCC1)c1cccc(N(CCN)Cc2c[nH]c3cc(Br)ccc23)c1O,217,139
+COc1ccccc1CCNCC(C)N(Cc1c[nH]c2ccc(F)cc12)C1CNC1,807,1,Pictet-Spengler cyclisation,COc1ccccc1CCNC[C@H](C)N(Cc1c[nH]c2ccc(F)cc12)C1CNC1,4,C=CC=O,1.0,C=CC1c2cccc(OC)c2CCN1CC(C)N(Cc1c[nH]c2ccc(F)cc12)C1CNC1,218,144
+Fc1ccc(C(CCl)N2CCC(N(CC3CCN3)c3cccc4cc[nH]c34)C2)cc1,811,1,Reductive amination (aldehyde),Fc1ccc(C(CCl)N2CCC(N(CC3CCN3)c3cccc4cc[nH]c34)C2)cc1,4,CCC=O,1.0,CCCN1CCC1CN(c1cccc2cc[nH]c12)C1CCN(C(CCl)c2ccc(F)cc2)C1,219,70
+CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1ccc(Br)cc1O)C1CCNCC1,815,1,Direct acid -> amine (reductive),CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1ccc(Br)cc1O)C1CCNCC1,4,O=CC(=O)O,1.0,CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1ccc(Br)cc1O)C1CCN(CC=O)CC1,220,139
+CN(CCN)CCN(CC1CCCN1)c1ccc(Br)cc1O,819,1,Reductive amination (aldehyde),CN(CCN)CCN(C[C@@H]1CCCN1)c1ccc(Br)cc1O,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,CN(CCN)CCN(CC1CCCN1Cc1c[nH]c2ccc(F)cc12)c1ccc(Br)cc1O,221,70
+CCCN(CCNc1cc(Br)ccc1O)Cc1c[nH]c2cc(Br)ccc12,823,1,Direct acid -> amine (reductive),CCCN(CCNc1cc(Br)ccc1O)Cc1c[nH]c2cc(Br)ccc12,4,CNCC(=O)O,1.0,CCCN(CCN(CCNC)c1cc(Br)ccc1O)Cc1c[nH]c2cc(Br)ccc12,222,139
+CCC(N)CN1CC(NCCc2ccc(O)cc2)C1,826,1,Pictet-Spengler cyclisation,CC[C@H](N)CN1CC(NCCc2ccc(O)cc2)C1,3,O=Cc1c[nH]c2ccc(Br)cc12,1.0,CCC(N)CN1CC(N2CCc3ccc(O)cc3C2c2c[nH]c3ccc(Br)cc23)C1,223,144
+C=CCN(CCCCN)CCCNc1cccc(Br)c1O,830,1,Reductive amination (aldehyde),C=CCN(CCCCN)CCCNc1cccc(Br)c1O,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,C=CCN(CCCCN)CCCN(Cc1c[nH]c2ccc(Br)cc12)c1cccc(Br)c1O,224,70
+O=CCN(c1ccccc1O)C(CBr)CNCCc1c[nH]c2ccccc12,834,1,Reductive amination (aldehyde),O=CCN(c1ccccc1O)C(CBr)CNCCc1c[nH]c2ccccc12,4,C1CCNCC1,1.0,Oc1ccccc1N(CCN1CCCCC1)C(CBr)CNCCc1c[nH]c2ccccc12,225,71
+COc1cccc2c1CCN(CC(C)NC1CNC1)C2c1cccc(Br)c1,838,0,Functional-group interconversion (Br -> I),COc1cccc2c1CCN(C[C@H](C)NC1CNC1)C2c1cccc(Br)c1,4,,1.0,COc1cccc2c1CCN(CC(C)NC1CNC1)C2c1cccc(I)c1,226,166
+C=CC1c2ccccc2CCN1C1CCN(Cc2c[nH]c3cc(Br)ccc23)CC1,842,0,Functional-group interconversion (Br -> Oh),C=CC1c2ccccc2CCN1C1CCN(Cc2c[nH]c3cc(Br)ccc23)CC1,4,,1.0,C=CC1c2ccccc2CCN1C1CCN(Cc2c[nH]c3cc(O)ccc23)CC1,227,162
+CCCN(c1ccccc1S)C1CCCN(CC(C)N)C1,846,1,Reductive amination (aldehyde),CCCN(c1ccccc1S)C1CCCN(C[C@H](C)N)C1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,CCCN(c1ccccc1S)C1CCCN(CC(C)NCc2c[nH]c3ccc(Br)cc23)C1,228,68
+Nc1ccc(CNCCCN2CCCC(Nc3cc(Br)ccc3O)C2)cc1Br,850,1,Reductive amination (aldehyde),Nc1ccc(CNCCCN2CCCC(Nc3cc(Br)ccc3O)C2)cc1Br,4,CCC=O,1.0,CCCN(c1cc(Br)ccc1O)C1CCCN(CCCNCc2ccc(N)c(Br)c2)C1,229,70
+CC(CN(CCc1ccc(O)cc1)C1CCCNC1)NCc1c[nH]c2ccc(Br)cc12,854,0,Functional-group interconversion (Br -> Cl),C[C@H](CN(CCc1ccc(O)cc1)C1CCCNC1)NCc1c[nH]c2ccc(Br)cc12,4,,1.0,CC(CN(CCc1ccc(O)cc1)C1CCCNC1)NCc1c[nH]c2ccc(Cl)cc12,230,165
+CCCN(CCC1=NCCc2ccc(O)cc21)C1CNC1,858,1,Reductive amination (aldehyde),CCCN(CCC1=NCCc2ccc(O)cc21)C1CNC1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,CCCN(CCC1=NCCc2ccc(O)cc21)C1CN(Cc2c[nH]c3cc(Br)ccc23)C1,231,70
+COc1cccc(CN(CCNc2ccc(Br)cc2)CC2CCCN2)c1,862,1,Reductive amination (ketone),COc1cccc(CN(CCNc2ccc(Br)cc2)C[C@@H]2CCCN2)c1,4,O=C1CNC1,1.0,COc1cccc(CN(CCN(c2ccc(Br)cc2)C2CNC2)CC2CCCN2)c1,232,74
+O=Cc1c[nH]c2ccc(N(C3CNC3)C(CCl)c3ccc(Br)cc3)cc12,866,1,Direct acid -> amine (reductive),O=Cc1c[nH]c2ccc(N(C3CNC3)C(CCl)c3ccc(Br)cc3)cc12,4,O=C(O)[C@H]1CCCN1,1.0,O=Cc1c[nH]c2ccc(N(C3CN(CC4CCCN4)C3)C(CCl)c3ccc(Br)cc3)cc12,233,139
+Brc1ccc(N(CC2CCN2)C2CCCN(Cc3c[nH]c4cc(Br)ccc34)C2)cc1,870,1,Sonogashira coupling,Brc1ccc(N(CC2CCN2)C2CCCN(Cc3c[nH]c4cc(Br)ccc34)C2)cc1,4,C#C,1.0,C#Cc1ccc(N(CC2CCN2)C2CCCN(Cc3c[nH]c4cc(Br)ccc34)C2)cc1,234,121
+COc1ccccc1CCN(Cc1c[nH]c2ccc(Br)cc12)CC1CCN1C1CCNC1,874,0,Functional-group interconversion (Br -> I),COc1ccccc1CCN(Cc1c[nH]c2ccc(Br)cc12)CC1CCN1C1CCNC1,4,,1.0,COc1ccccc1CCN(Cc1c[nH]c2ccc(I)cc12)CC1CCN1C1CCNC1,235,166
+NC(Cc1c[nH]c2ccccc12)CN(c1ccc(Br)cc1)C1CCCNC1,877,1,Reductive amination (ketone),N[C@H](Cc1c[nH]c2ccccc12)CN(c1ccc(Br)cc1)C1CCCNC1,3,O=C1CCC1,1.0,NC(Cc1c[nH]c2ccccc12)CN(c1ccc(Br)cc1)C1CCCN(C2CCC2)C1,236,74
+ClCC(NCCCN(CC1CCN1)C1CC1)c1ccccc1,881,1,Reductive amination (aldehyde),ClCC(NCCCN(CC1CCN1)C1CC1)c1ccccc1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,ClCC(c1ccccc1)N(CCCN(CC1CCN1)C1CC1)Cc1c[nH]c2cc(Br)ccc12,237,70
+CN(CCN1CC(Nc2cc(F)ccc2O)C1)c1ccccc1CCN,885,1,Reductive amination (ketone),CN(CCN1CC(Nc2cc(F)ccc2O)C1)c1ccccc1CCN,4,O=C1CCC1,1.0,CN(CCN1CC(N(c2cc(F)ccc2O)C2CCC2)C1)c1ccccc1CCN,238,74
+COc1ccc(O)c(NC2CNC2)c1,889,1,Direct acid -> amine (reductive),COc1ccc(O)c(NC2CNC2)c1,4,O=C(O)CCN(Cc1c[nH]c2ccc(Br)cc12)C1CC1,1.0,COc1ccc(O)c(N(CCCN(Cc2c[nH]c3ccc(Br)cc23)C2CC2)C2CNC2)c1,239,139
+CCC1c2cccc(Br)c2CCN1CCCNc1cc(Br)ccc1O,893,1,Reductive amination (ketone),CCC1c2cccc(Br)c2CCN1CCCNc1cc(Br)ccc1O,4,O=C1CNC1,1.0,CCC1c2cccc(Br)c2CCN1CCCN(c1cc(Br)ccc1O)C1CNC1,240,74
+CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1ccc(Br)cc1)C1CCNCC1,897,0,Functional-group interconversion (Br -> I),CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1ccc(Br)cc1)C1CCNCC1,4,,1.0,CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1ccc(I)cc1)C1CCNCC1,241,166
+Oc1cc(Br)ccc1N(Cc1c[nH]c2ccc(I)cc12)C1CCNC1,900,1,Direct acid -> amine (reductive),Oc1cc(Br)ccc1N(Cc1c[nH]c2ccc(I)cc12)C1CCNC1,3,O=C(O)C1CCN1,1.0,Oc1cc(Br)ccc1N(Cc1c[nH]c2ccc(I)cc12)C1CCN(CC2CCN2)C1,242,139
+NCCN(CCNCCc1ccccc1)Cc1c[nH]c2cc(Br)ccc12,904,1,Pictet-Spengler cyclisation,NCCN(CCNCCc1ccccc1)Cc1c[nH]c2cc(Br)ccc12,4,CCC=O,1.0,CCC1c2ccccc2CCN1CCN(CCN)Cc1c[nH]c2cc(Br)ccc12,243,144
+COc1ccccc1CN(CCNc1ccc(Br)cc1O)CC1CCN1,908,1,Reductive amination (ketone),COc1ccccc1CN(CCNc1ccc(Br)cc1O)CC1CCN1,4,O=C1CNC1,1.0,COc1ccccc1CN(CCN(c1ccc(Br)cc1O)C1CNC1)CC1CCN1,244,74
+CCC(N)CN(CCc1ccccc1OC)C1CCNC1,911,1,Reductive amination (aldehyde),CC[C@H](N)CN(CCc1ccccc1OC)C1CCNC1,3,O=Cc1c[nH]c2ccc(F)cc12,1.0,CCC(CN(CCc1ccccc1OC)C1CCNC1)NCc1c[nH]c2ccc(F)cc12,245,68
+N#Cc1ccc(N(Cc2c[nH]c3cc(Br)ccc23)CC2CCCN2C2CNC2)c(N)c1,915,1,Reductive amination (aldehyde),N#Cc1ccc(N(Cc2c[nH]c3cc(Br)ccc23)C[C@@H]2CCCN2C2CNC2)c(N)c1,4,CCC=O,1.0,CCCN1CC(N2CCCC2CN(Cc2c[nH]c3cc(Br)ccc23)c2ccc(C#N)cc2N)C1,246,70
+c1cc(N(CC2CCN2)C2CN(CC3CCN3)C2)c2[nH]ccc2c1,919,1,Reductive amination (aldehyde),c1cc(N(CC2CCN2)C2CN(CC3CCN3)C2)c2[nH]ccc2c1,4,O=Cc1cccc(Br)c1,1.0,Brc1cccc(CN2CCC2CN(c2cccc3cc[nH]c23)C2CN(CC3CCN3)C2)c1,247,70
+Oc1ccc2[nH]cc(CCNCCNC(CCl)c3ccc(Br)cc3)c2c1,922,1,Reductive amination (ketone),Oc1ccc2[nH]cc(CCNCCNC(CCl)c3ccc(Br)cc3)c2c1,3,O=C1CCNC1,1.0,Oc1ccc2[nH]cc(CCN(CCNC(CCl)c3ccc(Br)cc3)C3CCNC3)c2c1,248,74
+CCCN(c1ccc(Br)cc1O)C1CCN(C2CNC2)C1,926,1,Reductive amination (aldehyde),CCCN(c1ccc(Br)cc1O)C1CCN(C2CNC2)C1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,CCCN(c1ccc(Br)cc1O)C1CCN(C2CN(Cc3c[nH]c4cc(Br)ccc34)C2)C1,249,70
+COc1ccccc1CCNCCC(N)CNCCc1ccc(O)cc1,929,1,Pictet-Spengler cyclisation,COc1ccccc1CCNCC[C@@H](N)CNCCc1ccc(O)cc1,3,CCC=O,1.0,CCC1c2cccc(OC)c2CCN1CCC(N)CNCCc1ccc(O)cc1,250,144
+O=C(O)C1c2cc(O)ccc2CCN1CCNCc1c[nH]c2ccc(Br)cc12,933,1,Direct acid -> amine (reductive),O=C(O)C1c2cc(O)ccc2CCN1CCNCc1c[nH]c2ccc(Br)cc12,4,NC1CC1,1.0,Oc1ccc2c(c1)C(CNC1CC1)N(CCNCc1c[nH]c3ccc(Br)cc13)CC2,251,136
+COc1cccc2c1CCN(C1CCCNC1)C2c1cccc(I)c1,937,1,aza-Michael addition (enone),COc1cccc2c1CCN(C1CCCNC1)C2c1cccc(I)c1,4,C=CC=O,1.0,COc1cccc2c1CCN(C1CCCN(CCC=O)C1)C2c1cccc(I)c1,252,58
+NC(Cc1c[nH]c2ccccc12)CN1CCC1CN1CCCCC1,940,1,Direct acid -> amine (reductive),N[C@H](Cc1c[nH]c2ccccc12)CN1CCC1CN1CCCCC1,3,O=C(O)c1ccc(F)cc1,1.0,Fc1ccc(CNC(Cc2c[nH]c3ccccc23)CN2CCC2CN2CCCCC2)cc1,253,137
+COc1ccccc1CCNCCCN1CCCC1CNc1cc(Br)ccc1O,944,0,Functional-group interconversion (Br -> I),COc1ccccc1CCNCCCN1CCC[C@@H]1CNc1cc(Br)ccc1O,4,,1.0,COc1ccccc1CCNCCCN1CCCC1CNc1cc(I)ccc1O,254,166
+NC(CCN1CCCCC1)CN(Cc1c[nH]c2cc(Br)ccc12)c1cc(Br)ccc1O,948,1,Sonogashira coupling,N[C@H](CCN1CCCCC1)CN(Cc1c[nH]c2cc(Br)ccc12)c1cc(Br)ccc1O,4,C#C,1.0,C#Cc1ccc2c(CN(CC(N)CCN3CCCCC3)c3cc(Br)ccc3O)c[nH]c2c1,255,121
+Sc1ccccc1N(CCCN1CCCCC1)Cc1c[nH]c2cc(Br)ccc12,952,1,Sonogashira coupling,Sc1ccccc1N(CCCN1CCCCC1)Cc1c[nH]c2cc(Br)ccc12,4,C#C,1.0,C#Cc1ccc2c(CN(CCCN3CCCCC3)c3ccccc3S)c[nH]c2c1,256,121
+CNCCN(CCNCCc1ccccc1Br)c1ccc(Br)cc1O,956,1,Reductive amination (aldehyde),CNCCN(CCNCCc1ccccc1Br)c1ccc(Br)cc1O,4,CCC=O,1.0,CCCN(C)CCN(CCNCCc1ccccc1Br)c1ccc(Br)cc1O,257,70
+CNCCN(CC1CCN1CCN)c1cccc2cc[nH]c12,960,1,Reductive amination (ketone),CNCCN(CC1CCN1CCN)c1cccc2cc[nH]c12,4,O=C(CCl)c1ccc(Cl)c(Cl)c1,1.0,CN(CCN(CC1CCN1CCN)c1cccc2cc[nH]c12)C(CCl)c1ccc(Cl)c(Cl)c1,258,74
+Nc1cccc(S)c1N(C1CCNCC1)C1CCNC1,964,1,Reductive amination (aldehyde),Nc1cccc(S)c1N(C1CCNCC1)C1CCNC1,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,Nc1cccc(S)c1N(C1CCN(Cc2c[nH]c3cc(Br)ccc23)CC1)C1CCNC1,259,70
+NC(CCNCCc1c[nH]c2ccccc12)CN(Cc1ccc(F)cc1)C1CC1,968,1,aza-Michael addition (enone),N[C@@H](CCNCCc1c[nH]c2ccccc12)CN(Cc1ccc(F)cc1)C1CC1,4,C=CC=O,1.0,NC(CCN(CCC=O)CCc1c[nH]c2ccccc12)CN(Cc1ccc(F)cc1)C1CC1,260,58
+Oc1cc(Br)ccc1N(Cc1c[nH]c2cc(Br)ccc12)C1CCCN(CC2CNC2)C1,972,0,Functional-group interconversion (Br -> Cl),Oc1cc(Br)ccc1N(Cc1c[nH]c2cc(Br)ccc12)C1CCCN(CC2CNC2)C1,4,,1.0,Oc1cc(Br)ccc1N(Cc1c[nH]c2cc(Cl)ccc12)C1CCCN(CC2CNC2)C1,261,165
+COc1ccccc1CCNCc1ccc(N)c(Br)c1,976,1,Pictet-Spengler cyclisation,COc1ccccc1CCNCc1ccc(N)c(Br)c1,4,C#CCN(CCC=O)CCCN,1.0,C#CCN(CCCN)CCC1c2cccc(OC)c2CCN1Cc1ccc(N)c(Br)c1,262,144
+COc1cccc2c1CCNC2CN(c1ccc(Br)cc1)C1CCC1,980,1,Reductive amination (ketone),COc1cccc2c1CCNC2CN(c1ccc(Br)cc1)C1CCC1,4,O=C1CNC1,1.0,COc1cccc2c1CCN(C1CNC1)C2CN(c1ccc(Br)cc1)C1CCC1,263,74
+CN(CCN(Cc1c[nH]c2ccc(Br)cc12)C1CCC1)c1ccc(O)c(N)c1,984,1,Reductive amination (ketone),CN(CCN(Cc1c[nH]c2ccc(Br)cc12)C1CCC1)c1ccc(O)c(N)c1,4,O=C1CNC1,1.0,CN(CCN(Cc1c[nH]c2ccc(Br)cc12)C1CCC1)c1ccc(O)c(NC2CNC2)c1,264,72
+CN(CCN(Cc1c[nH]c2ccc(F)cc12)c1ccc(Br)cc1)CC1CCN1,988,1,Sonogashira coupling,CN(CCN(Cc1c[nH]c2ccc(F)cc12)c1ccc(Br)cc1)CC1CCN1,4,C#C,1.0,C#Cc1ccc(N(CCN(C)CC2CCN2)Cc2c[nH]c3ccc(F)cc23)cc1,265,121
+O=CCCN1CCC(N(CCc2ccc(O)cc2)Cc2c[nH]c3cc(Br)ccc23)C1,992,0,Functional-group interconversion (Br -> I),O=CCCN1CCC(N(CCc2ccc(O)cc2)Cc2c[nH]c3cc(Br)ccc23)C1,4,,1.0,O=CCCN1CCC(N(CCc2ccc(O)cc2)Cc2c[nH]c3cc(I)ccc23)C1,266,166
+Oc1ccc2c(c1)C(CCNCCc1ccccc1Br)NCC2,995,1,Direct acid -> amine (reductive),Oc1ccc2c(c1)C(CCNCCc1ccccc1Br)NCC2,3,O=C(O)C1CCN1,1.0,Oc1ccc2c(c1)C(CCNCCc1ccccc1Br)N(CC1CCN1)CC2,267,139
+Oc1ccc2c(c1)C(c1c[nH]c3ccc(Br)cc13)N(C1CNC1)C(CN1CCCCC1)C2,999,0,Functional-group interconversion (Br -> Cl),Oc1ccc2c(c1)C(c1c[nH]c3ccc(Br)cc13)N(C1CNC1)[C@H](CN1CCCCC1)C2,4,,1.0,Oc1ccc2c(c1)C(c1c[nH]c3ccc(Cl)cc13)N(C1CNC1)C(CN1CCCCC1)C2,268,165
+NCCCN(CCN1CCCCC1)Cc1c[nH]c2ccc(Br)cc12,1003,1,Direct acid -> amine (reductive),NCCCN(CCN1CCCCC1)Cc1c[nH]c2ccc(Br)cc12,4,O=C(O)c1ccc(F)cc1,1.0,Fc1ccc(CNCCCN(CCN2CCCCC2)Cc2c[nH]c3ccc(Br)cc23)cc1,269,137
+Brc1ccc2c(CNC(CCNCCc3ccccc3Br)CN3CCCCC3)c[nH]c2c1,1007,0,Functional-group interconversion (Br -> Sh),Brc1ccc2c(CN[C@H](CCNCCc3ccccc3Br)CN3CCCCC3)c[nH]c2c1,4,,1.0,Sc1ccccc1CCNCCC(CN1CCCCC1)NCc1c[nH]c2cc(Br)ccc12,270,171
+CCCN1CCC1CN(c1ccc(Br)cc1N)C1CCNC1,1011,1,Reductive amination (aldehyde),CCCN1CCC1CN(c1ccc(Br)cc1N)C1CCNC1,4,O=Cc1c[nH]c2ccc(F)cc12,1.0,CCCN1CCC1CN(c1ccc(Br)cc1N)C1CCN(Cc2c[nH]c3ccc(F)cc23)C1,271,70
+Nc1cccc(N2CCC2CN2CCCCC2)c1NCc1c[nH]c2cc(Br)ccc12,1015,1,Direct acid -> amine (reductive),Nc1cccc(N2CCC2CN2CCCCC2)c1NCc1c[nH]c2cc(Br)ccc12,4,O=C(O)CBr,1.0,Nc1cccc(N2CCC2CN2CCCCC2)c1N(CCBr)Cc1c[nH]c2cc(Br)ccc12,272,139
+COc1cccc2c1CCNC2CCN1CCC1C(=O)O,1018,1,Pictet-Spengler cyclisation,COc1cccc2c1CCNC2CCN1CCC1C(=O)O,3,NCCc1ccc(O)cc1,1.0,COc1cccc2c1CCNC2CCN1CCC1C1=NCCc2ccc(O)cc21,273,153
+c1cc(NC2CCCN(CC3CCCN3)C2)c2[nH]ccc2c1,1021,1,Direct acid -> amine (reductive),Fc1ccc(CN(c2cccc3cc[nH]c23)C2CCCNC2)cc1,3,O=C(O)[C@@H]1CCCN1,1.0,Fc1ccc(CN(c2cccc3cc[nH]c23)C2CCCN(CC3CCCN3)C2)cc1,274,139
+Oc1ccc(F)cc1N(CC1NCCc2c(Br)cccc21)C1CCCNC1,1025,1,Reductive amination (aldehyde),Oc1ccc(F)cc1N(CC1NCCc2c(Br)cccc21)C1CCCNC1,4,CCC=O,1.0,CCCN1CCCC(N(CC2NCCc3c(Br)cccc32)c2cc(F)ccc2O)C1,275,70
+Nc1c(Br)cccc1NC1CCCN(CC2NCCc3ccc(O)cc32)C1,1029,1,Reductive amination (aldehyde),Nc1c(Br)cccc1NC1CCCN(CC2NCCc3ccc(O)cc32)C1,4,CCC=O,1.0,CCCN(c1cccc(Br)c1N)C1CCCN(CC2NCCc3ccc(O)cc32)C1,276,70
+NCCCCN(CCNc1ccc(Br)cc1N)CC1CCN1,1033,1,Reductive amination (aldehyde),NCCCCN(CCNc1ccc(Br)cc1N)CC1CCN1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,NCCCCN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1ccc(Br)cc1N)CC1CCN1,277,70
+N#Cc1cc(Br)cc(NCCCN(CCC=O)CCc2c[nH]c3ccccc23)c1,1037,1,Direct acid -> amine (reductive),N#Cc1cc(Br)cc(NCCCN(CCC=O)CCc2c[nH]c3ccccc23)c1,4,O=C(O)CBr,1.0,N#Cc1cc(Br)cc(N(CCBr)CCCN(CCC=O)CCc2c[nH]c3ccccc23)c1,278,139
+CN(CC(=O)O)CC1CCCN1,1041,1,Direct acid -> amine (reductive),CN(CC(=O)O)C[C@H]1CCCN1,4,Oc1ccccc1NCc1c[nH]c2cc(I)ccc12,1.0,CN(CCN(Cc1c[nH]c2cc(I)ccc12)c1ccccc1O)CC1CCCN1,279,138
+NC(Cc1c[nH]c2ccccc12)CN1CCCC(Nc2ccc(Br)cc2O)C1,1044,1,Direct acid -> amine (reductive),N[C@@H](Cc1c[nH]c2ccccc12)CN1CCCC(Nc2ccc(Br)cc2O)C1,3,O=C(O)CBr,1.0,NC(Cc1c[nH]c2ccccc12)CN1CCCC(N(CCBr)c2ccc(Br)cc2O)C1,280,139
+NCCN(CCc1ccccc1)CC1(NCc2c[nH]c3cc(Br)ccc23)CCC1,1048,1,Reductive amination (aldehyde),NCCN(CCc1ccccc1)CC1(NCc2c[nH]c3cc(Br)ccc23)CCC1,4,CCC=O,1.0,CCCN(Cc1c[nH]c2cc(Br)ccc12)C1(CN(CCN)CCc2ccccc2)CCC1,281,70
+Brc1ccc2[nH]cc(C3c4cccc(Br)c4CCN3CCCNC3CC3)c2c1,1052,0,Functional-group interconversion (Br -> I),Brc1ccc2[nH]cc(C3c4cccc(Br)c4CCN3CCCNC3CC3)c2c1,4,,1.0,Brc1cccc2c1CCN(CCCNC1CC1)C2c1c[nH]c2ccc(I)cc12,282,166
+NC(Cc1ccc(O)cc1)CN1CCCCC1,1054,1,Pictet-Spengler cyclisation,N[C@H](Cc1ccc(O)cc1)CN1CCCCC1,2,O=Cc1c[nH]c2ccc(Br)cc12,1.0,Oc1ccc2c(c1)C(c1c[nH]c3ccc(Br)cc13)NC(CN1CCCCC1)C2,283,144
+O=CCN(c1ccc(Br)cc1O)C1CCCN(CCBr)C1,1058,1,Reductive amination (aldehyde),O=CCN(c1ccc(Br)cc1O)C1CCCN(CCBr)C1,4,NCCc1c[nH]c2ccc(O)cc12,1.0,Oc1ccc2[nH]cc(CCNCCN(c3ccc(Br)cc3O)C3CCCN(CCBr)C3)c2c1,284,69
+COc1ccccc1CCN(CC(C)NCc1c[nH]c2cc(Br)ccc12)CC1(N)CCC1,1062,0,Functional-group interconversion (Br -> Cl),COc1ccccc1CCN(C[C@@H](C)NCc1c[nH]c2cc(Br)ccc12)CC1(N)CCC1,4,,1.0,COc1ccccc1CCN(CC(C)NCc1c[nH]c2cc(Cl)ccc12)CC1(N)CCC1,285,165
+Brc1ccc(N(Cc2c[nH]c3ccccc23)C2CCCN(CC3CCCN3)C2)cc1,1066,0,Functional-group interconversion (Br -> Cl),Brc1ccc(N(Cc2c[nH]c3ccccc23)C2CCCN(C[C@@H]3CCCN3)C2)cc1,4,,1.0,Clc1ccc(N(Cc2c[nH]c3ccccc23)C2CCCN(CC3CCCN3)C2)cc1,286,165
+CN(CCC=O)CCN(CCCN)c1cc(Br)ccc1O,1070,1,Reductive amination (aldehyde),CN(CCC=O)CCN(CCCN)c1cc(Br)ccc1O,4,COc1ccccc1CCN,1.0,COc1ccccc1CCNCCCN(C)CCN(CCCN)c1cc(Br)ccc1O,287,69
+Brc1ccc2[nH]cc(C3c4cccc(Br)c4CCN3C3CCNCC3)c2c1,1073,1,Direct acid -> amine (reductive),Brc1ccc2[nH]cc(C3c4cccc(Br)c4CCN3C3CCNCC3)c2c1,3,O=CC(=O)O,1.0,O=CCN1CCC(N2CCc3c(Br)cccc3C2c2c[nH]c3ccc(Br)cc23)CC1,288,139
+CN(CCN(CC1CCN1)C1CC1)c1ccccc1CCN,1077,1,Reductive amination (aldehyde),CN(CCN(CC1CCN1)C1CC1)c1ccccc1CCN,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,CN(CCN(CC1CCN1)C1CC1)c1ccccc1CCNCc1c[nH]c2ccc(Br)cc12,289,68
+O=C(O)C1c2cc(O)ccc2CCN1CC1CCN1Cc1c[nH]c2cc(Br)ccc12,1081,1,Direct acid -> amine (reductive),O=C(O)C1c2cc(O)ccc2CCN1CC1CCN1Cc1c[nH]c2cc(Br)ccc12,4,NC1CC1,1.0,Oc1ccc2c(c1)C(CNC1CC1)N(CC1CCN1Cc1c[nH]c3cc(Br)ccc13)CC2,290,136
+Nc1cc(N2CCC2CN(CC2CCN2)C2CC2)ccc1O,1085,1,Reductive amination (aldehyde),Nc1cc(N2CCC2CN(CC2CCN2)C2CC2)ccc1O,4,O=Cc1c[nH]c2cc(Br)ccc12,1.0,Nc1cc(N2CCC2CN(CC2CCN2Cc2c[nH]c3cc(Br)ccc23)C2CC2)ccc1O,291,70
+NC(CCNCCc1ccc(O)cc1)CNCCc1c[nH]c2ccccc12,1088,1,Pictet-Spengler cyclisation,N[C@@H](CCNCCc1ccc(O)cc1)CNCCc1c[nH]c2ccccc12,3,CCC=O,1.0,CCC1c2cc(O)ccc2CCN1CCC(N)CNCCc1c[nH]c2ccccc12,292,144
+COc1cccc(CNCC2CCN2CCC=O)c1,1091,1,Pictet-Spengler cyclisation,COc1cccc(CNCC2CCN2CCC=O)c1,3,NCCc1ccc(O)cc1,1.0,COc1cccc(CNCC2CCN2CCC2NCCc3ccc(O)cc32)c1,293,145
+CCCN(CCc1ccc(O)cc1)CC(C)NCC1CCN1,1095,1,Reductive amination (aldehyde),CCCN(CCc1ccc(O)cc1)C[C@@H](C)NCC1CCN1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,CCCN(CCc1ccc(O)cc1)CC(C)N(Cc1c[nH]c2ccc(Br)cc12)CC1CCN1,294,70
+Brc1ccc2c(CN(CCNC3CC3)c3cccnc3Br)c[nH]c2c1,1099,1,Direct acid -> amine (reductive),Brc1ccc2c(CN(CCNC3CC3)c3cccnc3Br)c[nH]c2c1,4,NCCC(=O)O,1.0,NCCCN(CCN(Cc1c[nH]c2cc(Br)ccc12)c1cccnc1Br)C1CC1,295,139
+c1cc(NC2CCN(CC3CCN3)CC2)c2[nH]ccc2c1,1102,1,Reductive amination (ketone),c1cc(NC2CCN(CC3CCN3)CC2)c2[nH]ccc2c1,3,O=C(CCl)c1ccc(F)cc1F,1.0,Fc1ccc(C(CCl)N(c2cccc3cc[nH]c23)C2CCN(CC3CCN3)CC2)c(F)c1,296,74
+NC1(CN2CC(N(Cc3c[nH]c4ccc(Br)cc34)c3cccc(Br)c3O)C2)CCC1,1106,1,Sonogashira coupling,NC1(CN2CC(N(Cc3c[nH]c4ccc(Br)cc34)c3cccc(Br)c3O)C2)CCC1,4,C#C,1.0,C#Cc1cccc(N(Cc2c[nH]c3ccc(Br)cc23)C2CN(CC3(N)CCC3)C2)c1O,297,121
+Oc1ccc2[nH]cc(CCN(CC3CCN3C3CNC3)C(CCl)c3ccc(Cl)c(Cl)c3)c2c1,1110,0,Functional-group interconversion (Cl -> Br),Oc1ccc2[nH]cc(CCN(CC3CCN3C3CNC3)C(CCl)c3ccc(Cl)c(Cl)c3)c2c1,4,,1.0,Oc1ccc2[nH]cc(CCN(CC3CCN3C3CNC3)C(CCl)c3ccc(Cl)c(Br)c3)c2c1,298,163
+CNCCN(c1cccc(Br)c1O)C1CN(Cc2c[nH]c3cc(Br)ccc23)C1,1114,1,Direct acid -> amine (reductive),CNCCN(c1cccc(Br)c1O)C1CN(Cc2c[nH]c3cc(Br)ccc23)C1,4,O=C(O)C1CCN1,1.0,CN(CCN(c1cccc(Br)c1O)C1CN(Cc2c[nH]c3cc(Br)ccc23)C1)CC1CCN1,299,139
+CN(CCN(c1ccc(Br)cc1O)C1CCCNC1)C1CNC1,1118,1,Reductive amination (aldehyde),CN(CCN(c1ccc(Br)cc1O)C1CCCNC1)C1CNC1,4,O=Cc1c[nH]c2ccc(Br)cc12,1.0,CN(CCN(c1ccc(Br)cc1O)C1CCCN(Cc2c[nH]c3ccc(Br)cc23)C1)C1CNC1,300,70

@@ -1,0 +1,17 @@
+arm,seed,oracle_calls,distinct_at_R100,controlled_sweep
+BC-SB,43,2000,43,True
+BC-SB,43,5000,52,True
+BC-SB,43,10000,50,True
+BC-SB,43,20000,48,True
+BC-SB,43,30000,58,True
+BC-SB,44,2000,40,True
+BC-SB,44,5000,40,True
+BC-SB,44,10000,43,True
+BC-SB,44,20000,52,True
+BC-SB,44,30000,53,True
+"BC-Enum-SB (TimeLimit, lower bound)",42,131474,24,False
+BC-Enum-SB,43,170724,33,False
+BC-Enum-SB,44,175345,32,False
+hub_batching (prebuild-K 20),42,37774,70,False
+hub_batching (no prebuild-K),42,74606,82,False
+"hub_batching (no prebuild-K, wider sample)",42,92304,80,False

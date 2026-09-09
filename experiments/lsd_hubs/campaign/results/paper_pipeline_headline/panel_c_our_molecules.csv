@@ -1,0 +1,20 @@
+arm,n_seeds,budget_rxns,molecules_made,distinct_molecules,distinct_sd,rxn_per_molecule_made,source
+hub_batching (ours),1,50,41,41,,,count-once curve (seed 42)
+hub_batching (ours),1,100,82,82,,,count-once curve (seed 42)
+hub_batching (ours),1,125,100,100,,,count-once curve (seed 42)
+hub_batching (ours),1,150,123,123,,,count-once curve (seed 42)
+hub_batching (ours),1,200,160,160,,,count-once curve (seed 42)
+hub_batching (ours),1,300,228,228,,,count-once curve (seed 42)
+BC-SB,3,50,47.0,5.33,2.52,1.064,seeds=5/3/8
+BC-SB,3,100,93.3,15.33,3.06,1.072,seeds=12/16/18
+BC-SB,3,125,116.0,20.67,6.11,1.078,seeds=14/22/26
+BC-SB,3,150,138.0,20.33,6.81,1.087,seeds=15/18/28
+BC-SB,3,200,183.3,31.33,3.06,1.091,seeds=28/32/34
+BC-SB,3,300,273.3,47.67,1.53,1.098,seeds=46/48/49
+BC-Enum-SB,1,50,48,2,,1.042,bc_enum_sb_seh42_N50000
+BC-Enum-SB,1,100,98,2,,1.020,bc_enum_sb_seh42_N50000
+BC-Enum-SB,1,125,122,3,,1.025,bc_enum_sb_seh42_N50000
+BC-Enum-SB,1,150,147,3,,1.020,bc_enum_sb_seh42_N50000
+BC-Enum-SB,1,200,197,3,,1.015,bc_enum_sb_seh42_N50000
+BC-Enum-SB,1,300,296,14,,1.014,bc_enum_sb_seh42_N50000
+ratio,,300,,ours/BC-SB=4.78,,ours/BC-Enum-SB=16.29,raw distinct counts (Logs/059)

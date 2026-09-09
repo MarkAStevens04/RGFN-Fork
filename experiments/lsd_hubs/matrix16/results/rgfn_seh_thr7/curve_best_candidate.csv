@@ -1,0 +1,10 @@
+strategy,step,cum_reactions,cum_modes,cum_reward_gen_calls,reactions_added,reward,source_hub
+best_candidate,1,4,1,0,4,7.3586,O=Cc1c[nH]c2ccc(-c3nnn(CC(=O)c4ccc(N5CCC5C5=NCCc6ccccc65)cc4)n3)cc12
+best_candidate,2,8,2,0,4,7.2929,C#CCNC(=O)c1ccc2oc(-c3ccc4oc(-c5cccc(F)c5F)nc4c3)nc2c1
+best_candidate,3,12,3,0,4,7.2484,Nc1cc(-c2nnn(CC3CC3)n2)ccc1NC(Cn1nnc(-c2ccc3[nH]cc(C=O)c3c2)n1)c1ccc(F)cc1
+best_candidate,4,16,4,0,4,7.2123,C#CCNC(=O)c1ccc2oc(-c3ccc4nc(-c5ncccc5C(F)(F)F)oc4c3)nc2c1
+best_candidate,5,20,5,0,4,7.2088,N#Cc1cccc(C(=O)Cn2nnc(-c3ccc(-c4cc(NC(=O)C5CCN5)[nH]n4)cc3F)n2)c1
+best_candidate,6,24,6,0,4,7.0863,O=C1Cc2ccc(C(=O)Cn3cc(CCNC(=O)c4ccc5oc(-c6ccccn6)nc5c4)c4ccccc43)cc2N1
+best_candidate,7,28,7,0,4,7.065,O=C(Nc1cc(Br)n[nH]1)c1ccc2oc(-c3ccc4oc(-c5ccncc5)nc4c3)nc2c1
+best_candidate,8,32,8,0,4,7.0646,Nc1ccc(-c2cccc(-c3nc4cc(-c5cccnc5)ccc4[nH]3)c2)cc1N
+best_candidate,9,36,9,0,4,7.0637,N#Cc1ccc(COCC2CCCN(C(=O)Nc3cc(-c4cccnc4)n[nH]3)C2)c(F)c1

@@ -1,0 +1,77 @@
+named_reaction,n_molecules,n_class_a_subgroups,largest_class_a,mean_class_a,cell,arm,slice
+Buchwald-Hartwig amination,28,2,26,14.0,scent_seh_seed43_par50,hub_batching,at100rxn
+Amide coupling,18,2,15,9.0,scent_seh_seed43_par50,hub_batching,at100rxn
+Urea formation (amine + amine),9,1,9,9.0,scent_seh_seed43_par50,hub_batching,at100rxn
+Direct acid -> amine (reductive),8,2,6,4.0,scent_seh_seed43_par50,hub_batching,at100rxn
+N-alkylation (azole N-H + alkyl halide),5,1,5,5.0,scent_seh_seed43_par50,hub_batching,at100rxn
+Reductive amination (aldehyde),3,1,3,3.0,scent_seh_seed43_par50,hub_batching,at100rxn
+Suzuki coupling,2,1,2,2.0,scent_seh_seed43_par50,hub_batching,at100rxn
+Reductive amination (ketone),2,1,2,2.0,scent_seh_seed43_par50,hub_batching,at100rxn
+Pictet-Spengler cyclisation,2,1,2,2.0,scent_seh_seed43_par50,hub_batching,at100rxn
+Sonogashira coupling,1,1,1,1.0,scent_seh_seed43_par50,hub_batching,at100rxn
+Benzoxazole formation,1,1,1,1.0,scent_seh_seed43_par50,hub_batching,at100rxn
+Buchwald-Hartwig amination,99,6,31,16.5,scent_seh_seed43_par50,hub_batching,full
+Amide coupling,53,6,31,8.83,scent_seh_seed43_par50,hub_batching,full
+Urea formation (amine + amine),49,6,9,8.17,scent_seh_seed43_par50,hub_batching,full
+Direct acid -> amine (reductive),36,6,26,6.0,scent_seh_seed43_par50,hub_batching,full
+Reductive amination (ketone),16,6,5,2.67,scent_seh_seed43_par50,hub_batching,full
+Reductive amination (aldehyde),10,5,3,2.0,scent_seh_seed43_par50,hub_batching,full
+SNAr (halo-heteroarene + amine),10,4,3,2.5,scent_seh_seed43_par50,hub_batching,full
+Suzuki coupling,8,3,3,2.67,scent_seh_seed43_par50,hub_batching,full
+N-alkylation (azole N-H + alkyl halide),5,1,5,5.0,scent_seh_seed43_par50,hub_batching,full
+Sonogashira coupling,3,3,1,1.0,scent_seh_seed43_par50,hub_batching,full
+Pictet-Spengler cyclisation,3,1,3,3.0,scent_seh_seed43_par50,hub_batching,full
+Benzimidazole formation,2,1,2,2.0,scent_seh_seed43_par50,hub_batching,full
+SNAr (activated aryl fluoride + amine),2,2,1,1.0,scent_seh_seed43_par50,hub_batching,full
+Benzoxazole formation,1,1,1,1.0,scent_seh_seed43_par50,hub_batching,full
+Esterification,1,1,1,1.0,scent_seh_seed43_par50,hub_batching,full
+Williamson ether synthesis,1,1,1,1.0,scent_seh_seed43_par50,hub_batching,full
+Urea formation (isocyanate + amine),1,1,1,1.0,scent_seh_seed43_par50,hub_batching,full
+Amide coupling,8,8,1,1.0,scent_seh_seed43_par50,best_candidate,at100rxn
+Suzuki coupling,5,5,1,1.0,scent_seh_seed43_par50,best_candidate,at100rxn
+N-alkylation (azole N-H + alkyl halide),3,3,1,1.0,scent_seh_seed43_par50,best_candidate,at100rxn
+Direct acid -> amine (reductive),3,2,2,1.5,scent_seh_seed43_par50,best_candidate,at100rxn
+Buchwald-Hartwig amination,3,3,1,1.0,scent_seh_seed43_par50,best_candidate,at100rxn
+Reductive amination (aldehyde),3,3,1,1.0,scent_seh_seed43_par50,best_candidate,at100rxn
+Triazole formation (alkyne + alkyl halide),1,1,1,1.0,scent_seh_seed43_par50,best_candidate,at100rxn
+SNAr (halo-heteroarene + amine),1,1,1,1.0,scent_seh_seed43_par50,best_candidate,at100rxn
+Suzuki coupling,73,66,2,1.11,scent_seh_seed43_par50,best_candidate,full
+Amide coupling,62,53,5,1.17,scent_seh_seed43_par50,best_candidate,full
+Direct acid -> amine (reductive),38,36,2,1.06,scent_seh_seed43_par50,best_candidate,full
+N-alkylation (azole N-H + alkyl halide),32,32,1,1.0,scent_seh_seed43_par50,best_candidate,full
+Tetrazole formation (nitrile + alkyl halide),21,21,1,1.0,scent_seh_seed43_par50,best_candidate,full
+Reductive amination (aldehyde),15,14,2,1.07,scent_seh_seed43_par50,best_candidate,full
+Buchwald-Hartwig amination,13,12,2,1.08,scent_seh_seed43_par50,best_candidate,full
+Williamson ether synthesis,11,11,1,1.0,scent_seh_seed43_par50,best_candidate,full
+SNAr (halo-heteroarene + amine),8,7,2,1.14,scent_seh_seed43_par50,best_candidate,full
+Triazole formation (alkyne + alkyl halide),7,7,1,1.0,scent_seh_seed43_par50,best_candidate,full
+Urea formation (amine + amine),6,6,1,1.0,scent_seh_seed43_par50,best_candidate,full
+Benzoxazole formation,4,4,1,1.0,scent_seh_seed43_par50,best_candidate,full
+Suzuki coupling (pinacol boronate),4,4,1,1.0,scent_seh_seed43_par50,best_candidate,full
+Benzimidazole formation,3,3,1,1.0,scent_seh_seed43_par50,best_candidate,full
+Reductive amination (ketone),2,2,1,1.0,scent_seh_seed43_par50,best_candidate,full
+Urea formation (isocyanate + amine),1,1,1,1.0,scent_seh_seed43_par50,best_candidate,full
+Buchwald-Hartwig amination,29,2,26,14.5,scent_seh_seed43_par50,hub_batching_par50,at100rxn
+Amide coupling,19,2,16,9.5,scent_seh_seed43_par50,hub_batching_par50,at100rxn
+Direct acid -> amine (reductive),9,2,7,4.5,scent_seh_seed43_par50,hub_batching_par50,at100rxn
+Urea formation (amine + amine),9,1,9,9.0,scent_seh_seed43_par50,hub_batching_par50,at100rxn
+N-alkylation (azole N-H + alkyl halide),5,1,5,5.0,scent_seh_seed43_par50,hub_batching_par50,at100rxn
+Reductive amination (aldehyde),3,1,3,3.0,scent_seh_seed43_par50,hub_batching_par50,at100rxn
+Suzuki coupling,2,1,2,2.0,scent_seh_seed43_par50,hub_batching_par50,at100rxn
+Sonogashira coupling,1,1,1,1.0,scent_seh_seed43_par50,hub_batching_par50,at100rxn
+Benzoxazole formation,1,1,1,1.0,scent_seh_seed43_par50,hub_batching_par50,at100rxn
+Esterification,1,1,1,1.0,scent_seh_seed43_par50,hub_batching_par50,at100rxn
+Buchwald-Hartwig amination,101,6,31,16.83,scent_seh_seed43_par50,hub_batching_par50,full
+Amide coupling,55,6,31,9.17,scent_seh_seed43_par50,hub_batching_par50,full
+Urea formation (amine + amine),48,6,9,8.0,scent_seh_seed43_par50,hub_batching_par50,full
+Direct acid -> amine (reductive),38,6,26,6.33,scent_seh_seed43_par50,hub_batching_par50,full
+Reductive amination (aldehyde),28,5,19,5.6,scent_seh_seed43_par50,hub_batching_par50,full
+Suzuki coupling,8,3,3,2.67,scent_seh_seed43_par50,hub_batching_par50,full
+N-alkylation (azole N-H + alkyl halide),5,1,5,5.0,scent_seh_seed43_par50,hub_batching_par50,full
+Reductive amination (ketone),5,1,5,5.0,scent_seh_seed43_par50,hub_batching_par50,full
+Sonogashira coupling,3,3,1,1.0,scent_seh_seed43_par50,hub_batching_par50,full
+Benzimidazole formation,3,2,2,1.5,scent_seh_seed43_par50,hub_batching_par50,full
+Benzoxazole formation,2,2,1,1.0,scent_seh_seed43_par50,hub_batching_par50,full
+SNAr (activated aryl fluoride + amine),2,1,2,2.0,scent_seh_seed43_par50,hub_batching_par50,full
+Esterification,1,1,1,1.0,scent_seh_seed43_par50,hub_batching_par50,full
+Williamson ether synthesis,1,1,1,1.0,scent_seh_seed43_par50,hub_batching_par50,full
