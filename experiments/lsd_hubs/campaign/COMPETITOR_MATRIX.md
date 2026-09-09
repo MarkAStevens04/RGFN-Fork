@@ -85,6 +85,18 @@ request per round (4000, then 8000, then 12000), so summing it double-counts —
 a cell whose distinct set grew by 1,216. Use the top-level `newly_sampled`; `free_from_training` and
 `distinct_scored` are the other honest fields.
 
+**A second budget is UNAVAILABLE on the competitor side, on a measured basis.** SynFormer's three
+sEH cells trained at 10,048 oracle calls in **19.30 h / 20.70 h / 20.17 h** wall-clock
+(`timing.json`, `total_run_s` = 69,489 / 74,502 / 72,605; jobs 75753-55, 10,000 trace rows each).
+Linear in calls, 320,000 would be ~615 h per cell — **~5,530 GPU-h for its nine cells alone**.
+Saturn and TANGO are the same shape. So an iteration-matched external comparison at a second budget
+is not merely expensive, it is out of reach; a budget-dependence check has to run on generators we
+can actually train twice.
+
+*Write durations with explicit units.* On a cluster where jobs legitimately run for both twenty
+minutes and twenty hours, `20:10` is ambiguous and the failure is silent — a reader can "correct" a
+right number to a wrong one and be confident about it. This nearly happened on these very figures.
+
 **Consequence for any budget-matched comparison:** the redundancy and route-sharing mechanisms below
 are properties of the CONVERGED pool, so both are budget-dependent in principle. Nothing here has
 been measured at a second budget. If you are comparing against a run at a different oracle budget,
