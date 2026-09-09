@@ -68,8 +68,17 @@ largest surcharges are all S3-GFN's — `seh 43` +8,000, `drd2 42` +7,308, and t
 +6,300-6,500 each, all of which STALLED and still did not reach 500 modes.
 
 **So these are not "10,000 oracle call" results and must not be placed in a column that claims to
-be.** They are 500-mode-equalised results whose oracle cost varies 1.8x by generator, in the
-direction that favours the generator we care most about.
+be.** The honest label is *"arm-A training plus a measured Stage-2 surcharge of 2,000-8,000"*, with
+the 1.80x spread and its S3-GFN concentration stated rather than averaged away.
+
+**This is a LABELLING obligation, not a fairness hole — an earlier draft of this file had the
+direction backwards.** Within the competitor field the surcharge does tilt things: S3-GFN's edge over
+Saturn and TANGO is partly bought with up to 1.8x their oracle calls, and that is worth stating. But
+the inference-time oracle axis is uncontrolled for *everyone*, and **we are by far its heavier
+user** — our own campaign's per-cell `cum_reward_gen_calls` runs to **447,000-791,503** in the
+budget-scale runs (`results/budget_scale_ours_*/curve_hub_batching.csv`), i.e. 50-100x the
+competitors' entire Stage-2 surcharge. Equalising this axis is not the fix; the project deliberately
+demoted the fixed-MODE readout that equalising would force. Measure it and report it per arm.
 
 **Do not compute the surcharge from `rounds[].asked`.** That field is the CUMULATIVE escalating
 request per round (4000, then 8000, then 12000), so summing it double-counts — it reports 24,000 for
