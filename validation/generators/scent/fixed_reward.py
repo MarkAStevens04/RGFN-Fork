@@ -27,6 +27,7 @@ import gin
 
 # Plain sibling imports (NOT package-relative), matching al_loop.py — the runner keeps
 # the repo root OFF sys.path so SCENT's installed `rgfn` fork isn't shadowed.
+import library_io  # noqa: E402  (sibling module; dynamic-library persistence)
 from guidance_io import load_guidance_models, save_guidance_models  # noqa: E402
 from route import extract_route  # noqa: E402
 
@@ -116,12 +117,18 @@ class ScentFixedRewardRun:
         #    the sidecar in sync with every periodic checkpoint by saving it alongside each
         #    make_checkpoint (the Trainer's checkpoint holds only the forward state).
         self._load_guidance_models()
+        # ...and the DYNAMIC FRAGMENT LIBRARY, for the same reason one level up: the Trainer's
+        # checkpoint holds model/optimizer/lr_scheduler/metrics/replay_buffer and NOT the library,
+        # so an un-restored requeue restarts with an empty vocabulary and re-promotes onto slots
+        # whose trained embedding rows belong to the previous occupants. See library_io.
+        self._load_dynamic_library()
         if hasattr(self.trainer, "make_checkpoint"):
             _orig_make_ckpt = self.trainer.make_checkpoint
 
             def _make_ckpt_with_guidance(*a, **k):
                 _orig_make_ckpt(*a, **k)
                 self._save_guidance_models()
+                self._save_dynamic_library()
 
             self.trainer.make_checkpoint = _make_ckpt_with_guidance
 
@@ -202,6 +209,7 @@ class ScentFixedRewardRun:
         pairs.sort(key=lambda p: p[1], reverse=higher_is_better)
         top = pairs[: self.top_k]
         self._write_top_k(out_dir / "top_k.csv", top)
+        self._write_library_audit()
         self._close_trace()
         print(f"[SCENT-FR] done. candidates at {cand_dir}", flush=True)
         return top
@@ -272,6 +280,13 @@ class ScentFixedRewardRun:
             src = ckpt_dir / "guidance_models.pt"
             if src.exists():
                 shutil.copy2(src, ckpt_dir / "guidance_models_arm_a_10k.pt")
+            # Same fixed-path hazard as the guidance sidecar: a later periodic save overwrites
+            # dynamic_library.json with a LARGER library, which would pair arm-A weights with an
+            # arm-B vocabulary. Copied unconditionally -- at arm A the library is usually empty,
+            # and "empty" must not be indistinguishable from "nobody saved one".
+            lib = ckpt_dir / "dynamic_library.json"
+            if lib.exists():
+                shutil.copy2(lib, ckpt_dir / "dynamic_library_arm_a_10k.json")
             # Make it resume-clean, same as RGFN: SCENT is an RGFN fork, so its forward policy may
             # carry the same lazily populated `*_cache` buffers that break a strict
             # load_state_dict (Logs/021). SCENT's own runner resumes straight from last_gfn.pt
@@ -338,6 +353,81 @@ class ScentFixedRewardRun:
             )
         except Exception as exc:  # noqa: BLE001
             print(f"[SCENT-FR] WARNING closing trace failed ({exc})", flush=True)
+
+    def _write_library_audit(self, name: str = "library_audit.json") -> None:
+        """Dump a comparable digest of ALL library / cost-proxy / replay-buffer state.
+
+        Read by verify_library_recovery.py to diff an uninterrupted run against a resumed one
+        attribute-by-attribute, rather than only on the fields we thought to name. Cheap, and it is
+        the only thing that can show the restore inventory is COMPLETE rather than merely
+        sufficient for the cases we hit.
+        """
+        lib = getattr(self.trainer, "dynamic_fragment_library", None)
+        if lib is None:
+            return
+        try:
+            audit = library_io.audit_state(self.trainer, lib)
+            (self.run_dir / name).write_text(json.dumps(audit, indent=2, default=str))
+        except Exception as exc:  # noqa: BLE001
+            print(f"[SCENT-FR] WARNING library audit failed: {exc}", flush=True)
+
+    # ------------------------------------------------------- dynamic library persistence
+    def _library_sidecar_path(self) -> Path:
+        return Path(self.trainer.run_dir) / "train" / "checkpoints" / "dynamic_library.json"
+
+    def _save_dynamic_library(self) -> None:
+        """Write the library sidecar beside the checkpoint. Best-effort, never fatal."""
+        lib = getattr(self.trainer, "dynamic_fragment_library", None)
+        if lib is None:
+            return
+        n = library_io.save_library_state(lib, self._library_sidecar_path())
+        if n is not None and n != getattr(self, "_last_lib_saved", None):
+            print(f"[SCENT-FR] dynamic library saved ({n} promoted fragments)", flush=True)
+            self._last_lib_saved = n
+
+    def _load_dynamic_library(self) -> bool:
+        """Restore the promoted-fragment library on resume, and make its rows visible again.
+
+        Two steps, and BOTH are required: restoring the library's bookkeeping without replaying it
+        into the model would leave `current_fragments` at 418, so the trained rows past that point
+        stay invisible and the next promotion still overwrites them -- the original bug with extra
+        steps. Replaying calls the same hook a live promotion calls, so the environment, the
+        embeddings and the cost proxy all land in the state they would have been in.
+        """
+        lib = getattr(self.trainer, "dynamic_fragment_library", None)
+        path = self._library_sidecar_path()
+        if lib is None:
+            return False
+        # Armed on EVERY resume, before the early returns below: a resumed run can hit the
+        # None-on-miss cost lookup whether or not this particular sidecar restored anything, and
+        # "the library happened to be empty" is precisely the state v1 resumed into.
+        library_io.install_cache_miss_guard(getattr(lib, "path_cost_proxy", None))
+        if not path.exists():
+            return False
+        restored = library_io.load_library_state(lib, path)
+        if not restored:
+            return False
+        chosen, _ = restored
+        if not chosen:
+            print(
+                "[SCENT-FR] resume: dynamic library sidecar present but empty (0 promoted)",
+                flush=True,
+            )
+            return True
+        n = library_io.reapply_library_to_model(self.trainer, lib, iteration_idx=0)
+        # Audited HERE, before a single resumed iteration runs, so the comparison against a run
+        # stopped at this same point is free of RNG divergence (the RNG state is not checkpointed,
+        # so the resumed segment necessarily samples differently from an uninterrupted tail).
+        self._write_library_audit(name="library_audit_restore.json")
+        fp = library_io.library_fingerprint(self.trainer, lib)
+        print(
+            f"[SCENT-FR] resume: restored dynamic library -- {n} promoted fragments reapplied, "
+            f"current_fragments={fp.get('current_fragments')}, "
+            f"chosen_sha1={str(fp.get('chosen_smiles_sha1'))[:12]}, "
+            f"embed_sha1={str(fp.get('embedding_rows_sha1'))[:12]}",
+            flush=True,
+        )
+        return True
 
     def _load_guidance_models(self) -> bool:
         """Reload the backward-policy guidance MLPs from the sidecar on resume (campaign

@@ -128,12 +128,38 @@ so only the one-hot half carries stale identity.
    SLURM `compute` caps at 3 days, and v1 proves SCENT 5k does *not* fit on at least some targets. A
    requeued SCENT arm-B cell is confounded and must be discarded, not repaired.
 
-⟦OPEN, for the researcher — persisting the library across a requeue. The 2026-07-29 audit declined to
-fix this because a fix changes training behaviour mid-campaign. **That objection has expired**:
-`benchmark_v2` is a clean slate, so persisting and restoring `DynamicLibrary` state (and pinning
-fragment→row identity) is now available in a way it was not in July. Not built here — it is a
-training-behaviour change. But without it, SCENT arm B is walltime-limited by a defect the project has
-now chosen twice not to fix.⟧
+**FIXED 2026-09-07 — the library now persists across a requeue** (`validation/generators/scent/
+library_io.py`, a sidecar beside `last_gfn.pt`, on the `guidance_io.py` precedent; the clone stays
+untouched). The July audit declined this because it changes training behaviour mid-campaign; on a
+clean slate that objection expires. Four things worth carrying, because they change what the fix is:
+
+* **The trained rows were never lost, only made invisible.** `weights` is an `nn.Parameter`, so
+  `model.load_state_dict` restores all 4,418 rows; it is `current_fragments` resetting to 418 that
+  hides everything past it. So this restores *bookkeeping*, not a second weight sidecar.
+* **It restores SCENT's design rather than deviating from it.** The one-hot table is sized
+  `418 + num_additions × n_new_fragments` = **4,418** — built for a complete, never-reset run. The
+  reset is an artifact of our 3-day requeue.
+* **Three pieces of state, not two** — the ordered fragment list, the embedding rows, *and* the
+  path-cost cache entry per fragment. The third was found by crashing into it: `assign_costs` only
+  fills `molecule_num_reaction_to_cost` for states reached through a reaction action, so once the
+  restore puts promoted fragments back in the action space the policy can select one as a *starting*
+  block and hit a `None` the clone does not guard (it guards the identical lookup two lines away
+  with `or inf`, so this is an upstream gap we compensate for, not a choice). The restore re-seeds
+  the true cost, never `inf` — that value is what the next promotion records for the fragment.
+* **A resumed run with the library restored but the cache cold CRASHES.** v1 never hit this only
+  because the library was empty on resume — *the reset was accidentally what kept the crash away.*
+  Anyone who fixes the reset without the cache seeding gets a run that dies at the first promotion
+  after a resume. It is also the sharpest argument for the verification bar below: a count check
+  never even runs, because the process is already dead.
+
+**Verification: `validation/generators/scent/verify_library_recovery.py`.** Uninterrupted vs
+killed-and-resumed at the same iteration, compared on a sha1 of the *ordered* `chosen_smiles` **and**
+a sha1 of `weights[:current_fragments]` — a count check passes on precisely the bug being fixed —
+plus a blind attribute-by-attribute diff of the library, the cost proxy and the replay buffer, so the
+restore inventory is shown complete rather than merely sufficient for the cases we hit.
+
+⛔ **v2's SCENT is deliberately NOT bit-comparable to v1's.** This changes training behaviour. Do not
+diff a v2 SCENT cell against its v1 counterpart and report a regression.
 
 ### What "arm A" precisely means
 
@@ -152,7 +178,16 @@ Two details that a later reader will otherwise simplify away, both in
   proxy the training loop uses, so those rows are flipped to `phase="eval"` before sampling. Without
   it a smoke measured 600 training calls followed by 185 scoring calls, indistinguishable — and every
   budget or modes-vs-calls reading would count the second set. **Filter to `phase == "train"` for any
-  budget claim.**
+  budget claim** — and count ROWS, never the cumulative `n_scored`, which absorbs eval calls as it
+  goes (measured on `s3gfn_drd2/42`: the same file reads 12,048 / 11,048 / 10,048 depending on which
+  you take).
+* **SCENT's periodic validation was inflating its own training count 2.84×**, and this is a measured
+  figure rather than a rounding concern. Its config sets `valid_sampler = RandomSampler` with
+  `valid_n_trajectories = 1000`, so every validation pass scores a thousand molecules through the
+  same proxy — and they land labelled `train`, because `TrainingHooksMixin` has no validation hook.
+  Per-iteration train rows in a 6-iteration smoke read 63/94/96/95/96/**1088**. The arm-A budget now
+  gates on training-phase rows only, and `attach_proxy_trace` wraps the trainer's own `valid_step` to
+  flip the phase for its duration; after the fix that iteration reads **96**.
 
 ### Batch sizes: each paper's own
 

@@ -85,6 +85,15 @@ def main() -> None:
     ap.add_argument(
         "--n-samples", type=int, default=None, help="override ScentFixedRewardRun.n_samples (smoke)"
     )
+    ap.add_argument(
+        "--gin-binding",
+        action="append",
+        default=[],
+        help="extra gin binding applied AFTER the config (repeatable), e.g. "
+        "'dynamic_library/DynamicLibrary.every_n_iterations=3' to make promotions fire inside a "
+        "short run. Mirrors scripts/fixed_reward.py; needed to TEST the promotion path without a "
+        "1,000-iteration run.",
+    )
     args = ap.parse_args()
 
     if not _SCENT_ROOT.exists():
@@ -196,6 +205,7 @@ def main() -> None:
         bindings.append(f"Trainer.n_iterations={args.n_iterations}")
     if args.n_samples is not None:
         bindings.append(f"ScentFixedRewardRun.n_samples={args.n_samples}")
+    bindings.extend(args.gin_binding)  # last, so an explicit binding overrides the config
     gin.parse_config_files_and_bindings([str(cfg_abs)], bindings=bindings)
     print(
         f"[SCENT-FR] cfg={cfg_abs.name} run_dir={run_dir} seed={args.seed}\n"
