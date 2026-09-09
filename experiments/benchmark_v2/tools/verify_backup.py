@@ -37,6 +37,19 @@ THREE OUTCOMES, KEPT DISTINCT, because collapsing the last two loses the diagnos
     python experiments/benchmark_v2/tools/verify_backup.py                    # whole tree
     python experiments/benchmark_v2/tools/verify_backup.py --cell saturn/seh/42
     python experiments/benchmark_v2/tools/verify_backup.py --sizes-only       # structure, NOT content
+
+EXIT CODES, AND WHY --sizes-only DOES NOT RETURN 0. The prose output refuses to say "verified" after
+a --sizes-only run, but prose is for humans and the exit code is what `&&` chains, watchers and CI
+read -- and on this project things do get wired into those. A clean --sizes-only run returning 0
+would be indistinguishable from a content-verified pass to every one of those callers, which is the
+same "a cheap check that cannot fail the way the expensive one can" failure the --quick warning in
+ledger.py is about. So:
+
+    0   content verified: every recorded file present, right size, right md5
+    1   FAILURE: at least one file MISSING or MISMATCHed (either mode -- a real failure is real)
+    2   structural pass only: sizes and coverage are intact, CONTENT WAS NOT CHECKED
+
+A caller that wants "is this backup good" should test for 0, not for "not 1".
 """
 
 from __future__ import annotations
@@ -123,7 +136,7 @@ def main():
         "--sizes-only",
         action="store_true",
         help="check presence and size but NOT content. Fast structural pass; never reports "
-        "'content verified' and is not a substitute for the default.",
+        "'content verified', and EXITS 2 rather than 0 so a caller cannot mistake it for one.",
     )
     a = ap.parse_args()
 
@@ -185,7 +198,8 @@ def main():
     if a.sizes_only:
         print("\nStructure and sizes are intact. CONTENT WAS NOT CHECKED -- re-run without "
               "--sizes-only before treating this backup as verified.")
-        return 0
+        print("exit 2: a structural pass is not a verification. 0 is reserved for content.")
+        return 2
     print("\nEvery recorded file is present and its content matches the copy-time md5.")
     return 0
 
