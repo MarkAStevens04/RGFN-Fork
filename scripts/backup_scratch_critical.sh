@@ -105,39 +105,62 @@ rsync -a --info=stats2 $DRY \
     "$SRC/experiments/" "$DEST/experiments/" || echo "WARNING: tier-1 rsync returned $?"
 
 # ---- TIER 1b: the benchmark_v2 tree ---------------------------------------------------------------
-# v2 lives at $SRC/v2/, NOT under experiments/, so the pass above does not see it at all. Its train/
-# stage is the tier-1 case in its purest form: a copied cell's checkpoint plus the trace that
-# evidences its budget, and once verified the directory is chmod'ed read-only precisely because
-# re-creating it is impossible.
+# v2 lives at $SRC/v2/, NOT under experiments/, so the pass above does not see it at all.
+#
+# NO ALLOWLIST HERE, AND THAT IS THE FIX, NOT AN OVERSIGHT. This pass originally carried an include
+# list modelled on tier 1's. Measured against the real tree it would have copied 401 MB of 54 GB --
+# 0.74% -- and reported success: `last_gfn.pt` matches FragGFN's 9 files and nothing else, and
+# `checkpoint*.pt` matches NOTHING, because the competitors name their weights
+# mamba_<N>_agent.ckpt (131), s3gfn_seh-seed<N>_step<N>_model.pt (81), agent_step<N>.chkpt (81),
+# final_mamba_agent.ckpt (18) and agent.chkpt (9). 329 of 338 checkpoints missed.
+#
+# THAT WAS THE THIRD INSTANCE OF ONE FAILURE: a second (or third) definition of "where this
+# generator's weights live", written from OUR generators' conventions, in a place that reports
+# success either way. The copy step hit it walking checkpoint DIRECTORIES and missing REINVENT's
+# agent.chkpt in the run root. A wrong pattern is indistinguishable from a correct one in rsync's
+# output, which is what makes it dangerous.
+#
+# The right fix is not a longer allowlist. **v2/train is ALREADY curated** -- the copy step put
+# exactly what the plan named there, file by file, with a .copy_manifest.json recording every one.
+# Re-filtering an already-filtered tree through a narrower rule IS the bug. Let the copy manifest be
+# the definition of what belongs and take the tree wholesale. Retention is not a space question:
+# /project holds 949 G free of 1.2 T against a 54 GB payload, and the milestone checkpoints were
+# kept deliberately because they are irreplaceable without a retrain.
 #
 # PER-CELL, NOT PER-PHASE. Cells run concurrently and reach each stage at different times, so waiting
 # for a phase boundary means waiting a long time and probably forgetting. rsync is incremental, so
 # calling this after each cell's stage passes verification is cheap and idempotent.
 #
-# rsync copies file CONTENT, not the read-only mode of a frozen source, so a restored backup lands
-# writable -- re-run freeze_cell.sh after any restore.
+# --chmod KEEPS THE DESTINATION WRITABLE. `-a` implies `-p`, so a frozen (read-only) source cell
+# would otherwise land read-only here -- and then the NEXT incremental sync could not write into
+# those directories at all. Freeze protects the live tree; the backup must stay re-syncable. (An
+# earlier version of this comment claimed rsync does not copy the read-only mode. It does.)
 V2_SRC=${V2_SRC:-$SRC/v2}
 if [ -d "$V2_SRC" ]; then
     echo
-    echo "=== TIER 1b: benchmark_v2 train/ + provenance ==="
-    rsync -a --info=stats2 $DRY \
-        --prune-empty-dirs \
-        --include='*/' \
-        --include='last_gfn.pt' \
-        --include='guidance_models.pt' \
-        --include='checkpoint*.pt' \
-        --include='candidates.csv' \
-        --include='trace.csv*' \
-        --include='timing.json' \
-        --include='arm_meta.json' \
-        --include='.verified.json' \
-        --include='.copy_manifest.json' \
-        --include='*.gin' \
-        --include='*.yaml' \
-        --include='meta.json' \
-        --include='fragments_*.json' \
-        --exclude='*' \
+    echo "=== TIER 1b: benchmark_v2, WHOLESALE (the tree is already curated) ==="
+    rsync -a --info=stats2 $DRY --chmod=Du+w,Fu+w \
         "$V2_SRC/" "$DEST/v2/" || echo "WARNING: tier-1b rsync returned $?"
+
+    # ASSERT THE PAYLOAD LANDED. The failure this replaces was silent: rsync exited 0, printed its
+    # stats, and 53 GB was not there. Compare destination bytes against source bytes rather than
+    # trusting "files transferred", which reads ~0 on a correct incremental re-run.
+    if [ -z "$DRY" ]; then
+        v2_src_b=$(du -sb "$V2_SRC" 2>/dev/null | cut -f1)
+        v2_dst_b=$(du -sb "$DEST/v2" 2>/dev/null | cut -f1)
+        if [ -n "$v2_src_b" ] && [ -n "$v2_dst_b" ] && [ "$v2_src_b" -gt 0 ]; then
+            pct=$(( 100 * v2_dst_b / v2_src_b ))
+            printf "=== TIER 1b: backup holds %d%% of source (%.1f of %.1f GiB)\n" \
+                "$pct" "$(echo "$v2_dst_b/1073741824" | bc -l)" \
+                "$(echo "$v2_src_b/1073741824" | bc -l)" 2>/dev/null \
+                || echo "=== TIER 1b: backup holds ${pct}% of source"
+            if [ "$pct" -lt 95 ]; then
+                echo "ERROR: benchmark_v2 backup holds only ${pct}% of the source tree." >&2
+                echo "       That is the shape of the 0.74% allowlist bug -- something is filtering" >&2
+                echo "       the payload out. Do NOT treat this cell set as backed up." >&2
+            fi
+        fi
+    fi
 else
     echo
     echo "=== TIER 1b: no $V2_SRC yet -- skipping benchmark_v2 ==="
