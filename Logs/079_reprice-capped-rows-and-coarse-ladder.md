@@ -2,6 +2,11 @@
 
 **Date:** 2026-09-06, ~11pm
 
+> **Operational summary for anyone comparing against these numbers:**
+> [`experiments/lsd_hubs/campaign/COMPETITOR_MATRIX.md`](../experiments/lsd_hubs/campaign/COMPETITOR_MATRIX.md)
+> — where the results live, the quote rules, how to re-audit, and the traps that already cost
+> time. This entry is the narrative; that file is what you need before quoting anything.
+
 ## Question
 
 When we report "100 reactions buys you N distinct high-reward molecules", is N a property of
@@ -121,6 +126,9 @@ favourable one, and it makes the reaction-axis readout mean what the paper says 
 Root: `/home/markymoo/projects/RGFN_Fork/RGFN-Fork` (worktree `.claude/worktrees/fraggfn-stage2`).
 
 **Scripts**
+- `./experiments/lsd_hubs/campaign/COMPETITOR_MATRIX.md` — the handoff doc: result paths, quote
+  rules, re-audit commands, and the four traps. Start here, not with this log.
+- `./experiments/lsd_hubs/campaign/audit_matrix_coverage.py` — completeness across all 108 cells.
 - `./experiments/lsd_hubs/campaign/submit_reprice_cached.sh` — re-prices a cell from cached routes,
   changing exactly one solver knob. `ARM=sb` re-solves a time-capped budget row; `ARM=greedy`
   re-prices on a dense mode ladder. Written for this experiment.
