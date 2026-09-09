@@ -67,8 +67,18 @@ if [ -z "$(ls "$(dirname "$(dirname "$CKPT")")"/additional_fragments/fragments_*
     echo "[pilot-campaign] no additional_fragments snapshot -> --no-freeze (418 base library)"
     GARG+=(--no-freeze)
 fi
-conda run --no-capture-output -n "$GEN" python validation/lsdflow/adapters/workers/${GEN}_worker.py \
-    --mode enumerate --config validation/configs/scent_${SYSTEM}_fixed_5k.gin \
+# Per-generator env + config. RGFN reaches the proxy in-process through gin and lives in the `rgfn`
+# env; SCENT chdir's into its clone and needs the `scent` env. Hardcoding SCENT's config here made
+# the script silently SCENT-only.
+case "$GEN" in
+  scent) ENVN=scent; CFG=validation/configs/scent_${SYSTEM}_fixed_5k.gin ;;
+  rgfn)  ENVN=rgfn;  CFG=configs/glue/fixed_reward_${SYSTEM}_proxy_stdlib_5k.gin
+         [ "$SYSTEM" = drd2 ] && CFG=configs/glue/fixed_reward_drd2_stdlib_5k.gin ;;
+  *) echo "FATAL: GEN must be scent|rgfn"; exit 2 ;;
+esac
+[ -f "$CFG" ] || { echo "FATAL: no config at $CFG"; exit 2; }
+conda run --no-capture-output -n "$ENVN" python validation/lsdflow/adapters/workers/${GEN}_worker.py \
+    --mode enumerate --config "$CFG" \
     --checkpoint "$CKPT" --reward-name "$SYSTEM" --model-name "$GEN" --seed "$SEED" \
     --hubs-file "$OUT/hubs_head.csv" --enum-max-children "$ENUM_MAX" \
     --run-dir "$OUT/rundir" --out-dir "$OUT/enum" "${GARG[@]}"
