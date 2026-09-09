@@ -81,7 +81,7 @@ paused.**
 |---|---|---|
 | **external head-to-head** (us vs 6 competitors) | **A** | budget parity is what makes a cross-generator claim fair |
 | **internal matrix** (hub-batching vs best-candidate) | **B** | within-generator on an identical pool, so parity was never needed — and at arm A one of our three generators is not itself (§7.1, Logs/078) |
-| **compute↔reactions tradeoff** (new) | **A vs B**, our generators | prices GPU-hours against bench reactions: *"X more GPU-hours buys Y fewer reactions"* |
+| **compute↔reactions tradeoff** (new) | **A vs B**, our generators | prices GPU-hours against bench reactions: *"X more GPU-hours buys Y fewer reactions"*. Carries the composability control below |
 | **route dataset** | **B** | SCENT promotes nothing at arm A, so its arm-A routes bottom out at stock and lose the nested promoted-fragment case the schema is built around |
 
 **Why this is not "short vs long" but two literatures.** SCENT's paper contains the word "oracle"
@@ -100,6 +100,41 @@ iteration-matched external comparison is therefore *unavailable*, not merely exp
 That *is* the continuation, on one trajectory, at zero extra training compute — and it sidesteps
 reproducibility entirely, which matters because the docking reward is genuinely stochastic, so two
 runs at the same seed would **not** agree on ClpP or 6TD3-B.
+
+### The composability control: run HB-Enum-SB at BOTH arms
+
+**This is a control, not an exhibit.** It is not a study of whether SPARROW beats greedy; it exists
+so the arm-A external result and the arm-B internal matrix can be *discussed together* without an
+unstated assumption between them.
+
+**The risk it closes.** The two exhibits are not composed arithmetically, but the paper narrates them
+together, and a reader will infer that the internal advantage explains the external win. That
+inference needs the selector effect to be budget-independent, and nobody has checked. There is reason
+to doubt it: the greedy→SB uplift depends on how much route sharing a pool offers, and a model
+trained 32× longer converges somewhere with different sharing. The competitor side already shows the
+uplift is strongly generator-dependent (REINVENT 1.86–2.57×, S3-GFN 1.01–1.65×) and that it
+**reverses the ranking** — greedy favours S3-GFN 4 of 4 target×pool combos, SB favours REINVENT 3 of 4
+— while `CLAUDE.md` designates SB to carry the headline.
+
+**It is nearly free, because the experiment already exists.** `submit_hb_enum_sb.sh` hands SPARROW
+hub-batching's own enumerated candidates — same optimizer, same gate, same budget, only the chooser
+differs. That IS the greedy-vs-SB ratio on our pools; Logs/062 measured it at **2.27× (n=3, per-seed
+1.67 / 2.03 / 3.13)**. The marginal ask is to run it at both arms rather than one.
+
+**RUN IT ON DRD2, NOT sEH — the MILP does not converge on our sEH pools.** On the corrected uncapped
+enumerations (123k–150k above gate) a 12 h cap and `gapRel` 1e-3 both returned TimeLimit, and the
+capped answers do not trend (12 / 27 / 37 distinct across three pool sizes, no ordering), so sEH is
+reportable only as a lower bound. DRD2 converged on all six budget points (Logs/062, jobs
+74727/74728) — but note it was capped at `--top-n 50000` to match its competitor rows, so the DRD2
+MILP saw ~⅓ the variables. Expect arm A to converge more readily than arm B, since a
+less-trained model yields a smaller eligible pool (B measured 7,111 hubs at arm A against v1's
+20,874) — which is the wrong direction for a paired comparison, so **check `time_capped` on every row
+and do not form a ratio across one converged and one truncated arm.**
+
+**What it can and cannot say.** It measures budget-sensitivity of the selector effect on *our* pools.
+It cannot test the cross-generator ranking's budget-stability — that would need the competitors at
+arm B, which is unavailable (§1). Converting an unstated assumption into a measured one is the whole
+of the win.
 
 ### Resume, per generator — and why SCENT's arm B must not requeue
 
