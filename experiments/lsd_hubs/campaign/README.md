@@ -1,5 +1,11 @@
 # `campaign/` — hub-batching vs best-candidate under a budget (Logs/028)
 
+> **Looking for the COMPETITOR MATRIX** (6 generators × 3 targets × 3 seeds × 2 pools, Stage 1-4,
+> `Logs/079`)? That is a different line of work sharing this directory — see
+> **[`COMPETITOR_MATRIX.md`](COMPETITOR_MATRIX.md)** for where those results live, the quote rules
+> that apply to them, and how to re-audit. Read it before comparing anything against those numbers:
+> several of the rules there exist because breaking them already produced a wrong number.
+
 Compares two **swappable** selection strategies for building a diverse library of hits
 (modes) from a trained SCENT model, on reactions/mode (+ reward-gen calls, scaffolds, distinct
 intermediates). The strategy logic is AL-ready in `glue.samplers.lsdflow.campaign`

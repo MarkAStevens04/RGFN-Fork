@@ -91,13 +91,20 @@ def load_ranked(
                 continue
             if not smi:
                 continue
-            # NaN REJECTION IS NOT REDUNDANT WITH THE GATE. The gate is written as "skip if it fails"
-            # and every comparison against NaN is False, so an unscored molecule slipped THROUGH the
-            # gate and entered the pool as if it had passed. Found 2026-09-06 on
-            # s3gfn_seh_seed42_cmode: 3 of 8,925 rows carry score=nan, and all three are
-            # organometallics (Pt, Au) the sEH proxy could not score -- exactly the molecules that
-            # must never reach a deliverable library. `sparrow_select_frontier.load_pool` phrases the
-            # same test positively (`val > gate`) and is unaffected.
+            # NaN IS NOT A PASSING SCORE, and this gate cannot see that on its own. It is phrased as
+            # "skip if it FAILS", and every comparison against NaN is False -- so `nan < gate` does
+            # not fire the skip and an UNSCORED molecule falls straight through as if it had passed.
+            # `float("nan")` also parses cleanly, so the except above never catches it.
+            # Docking targets are hit hardest because a failed dock writes score=nan while a
+            # surrogate almost always returns a number: measured 2026-09-06, s3gfn_clpp_seed43's
+            # _stage2 pool held 422 unscored molecules of 500 (84%), against 1 for the sEH pools.
+            # Every OTHER gate in the pipeline phrases the test positively (mode_saturation:104,
+            # sparrow_select_frontier.passes_gate) or guards NaN explicitly
+            # (metrics/diversity._passes_gate), so they all reject it correctly; this was the one hole.
+            # The surrogate side is not clean either, and its cases show WHY this matters: on
+            # s3gfn_seh_seed42_cmode 3 of 8,925 rows carry score=nan and all three are
+            # organometallics (Pt, Au) the sEH proxy could not score -- exactly the molecules
+            # that must never reach a deliverable library.
             if val != val:
                 continue
             if (val < gate) if higher_is_better else (val > gate):

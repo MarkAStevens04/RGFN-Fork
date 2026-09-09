@@ -410,7 +410,13 @@ def main() -> None:
             break
 
         n_distinct = len(scored)
-        eligible = sum(1 for v in scored.values() if ((v > gate) if hib else (v < gate)))
+        # INCLUSIVE at the bar, matching metrics/diversity.py::_passes_gate (`>=` / `<=`), which is
+        # what count_modes actually applies. This line used a STRICT comparison, so a molecule
+        # sitting exactly on the gate counted as a mode but not as eligible -- and docking scores are
+        # quantised to 0.1, so on ClpP (gate -9.1) that is a large population: s3gfn_clpp/seed42
+        # logged "123 eligible, 141 modes", i.e. more modes than the molecules they were drawn from,
+        # which is impossible and made the diagnostic unreadable exactly when it mattered.
+        eligible = sum(1 for v in scored.values() if ((v >= gate) if hib else (v <= gate)))
         modes = count_modes(scored, gate, hib, a.cutoff, cap=a.target_modes)
         added = len(modes) - prev_modes
         rounds.append(
@@ -432,6 +438,29 @@ def main() -> None:
 
         if len(modes) >= a.target_modes:
             reason = "target-reached"
+            break
+        if len(rounds) > 1 and n_distinct == rounds[-2]["distinct"]:
+            # THE SAMPLER HIT ITS OWN CEILING; THE GENERATOR DID NOT RUN OUT OF CHEMISTRY.
+            # Every runner has a degeneration guard that bounds how many batches it will draw --
+            # s3gfn's is `max_sample_batches: 4000`, enforced as
+            # `while len(seen) < n_target and nb < max_batches` (run_s3gfn_fixed.py:233). Once that
+            # bound binds, asking for MORE returns the IDENTICAL set: measured 2026-08-28 on
+            # s3gfn_drd2/seed43, round 2 asked 8,000 and round 3 asked 12,000, and both stopped at
+            # batch 4000 with exactly 5,226 unique -- so round 3 added 0 modes after 55 minutes of
+            # work at rc=0, and this loop recorded `stalled`, i.e. "the generator has no more
+            # distinct chemistry above the gate". That is a claim about S3-GFN, and it was false;
+            # the true statement is about OUR batch cap. Zero NEW DISTINCT MOLECULES (not zero new
+            # modes) is the signature, because a generator that is genuinely exhausted still returns
+            # molecules it has produced before, while a capped sampler returns the same count to the
+            # digit. Raise the runner's max_sample_batches to actually push such a cell further.
+            reason = "sampler-capped"
+            print(
+                f"[upsample] round {len(rounds)} returned {n_distinct:,} distinct — IDENTICAL to "
+                f"the previous round despite asking for {asked:,}. That is the runner's batch cap, "
+                "not the generator running out of chemistry. Reporting `sampler-capped`, NOT "
+                "`stalled`.",
+                flush=True,
+            )
             break
         if len(rounds) > 1 and added < a.stall_modes:
             # A CLAIM ABOUT THE GENERATOR, not about our budget -- it has run out of distinct

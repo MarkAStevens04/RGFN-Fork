@@ -2093,9 +2093,26 @@ messages):
 
 **NOT verified, and stated as such:** the smokes run 120-400 molecule budgets where production cells
 use 10,000, and the original nine-cell failure only surfaced at hour 10. These results support "safe
-to launch", not "will finish". sEH remains blocked entirely — job 75080 showed any in-parent proxy
+to launch", not "will finish". sEH remained blocked entirely — job 75080 showed any in-parent proxy
 load breaks fork regardless of fd/thread hygiene, so it needs subprocess scoring and
 `scripts/score_batch.py` registers only docking oracles.
+
+> **sEH UNBLOCKED 2026-09-06** (`9efe9bc`). The missing entry point now exists as
+> `validation/generators/synformer/score_seh_subprocess.py`, with `SEHBridgeReward` as its
+> client, opt-in via `reward.subprocess`. It does NOT cross an env boundary — the synformer env
+> imports `bengio2021flow` and the rgfn env does not, so only the PROCESS differs, which is what
+> the fork hazard cares about. Verified against an accidental in-process control:
+>
+> | job | after pool fork | after build_provider |
+> |---|---|---|
+> | 75747 in-process | fds=0 threads=1 | **fds=6 threads=5 POISONED** |
+> | 75750 bridge | fds=0 threads=1 | fds=0 threads=1 |
+>
+> Smoke 75750 ran to completion: three generations, three worker forks AFTER scoring, parent at
+> fds=0 throughout, reward mean rising 4.862 → 5.029 across generations (so the bridge preserves
+> the signal, not just the values), 300/300 scored, 363 routed, candidates written with
+> has_routes=True. Production seeds queued as 75753/54/55.
+> STILL a 300-molecule smoke against a 10,000 budget — [074]'s own caveat applies unchanged.
 
 **A retraction.** An earlier entry attributed `s3gfn_drd2_seed43`'s greedy failure to the mode target
 exceeding the pool (46 modes available, 50 requested). The saved solve says otherwise:
@@ -2104,3 +2121,86 @@ at m=25, well below 46, so it was the unsynthesizable-target bug (`c802026`), no
 `m25/` artifacts on disk were a recorded failure, not a success. Both mechanisms are real and can
 appear in one cell; they separate on whether the failing mode point is above or below
 `modes available` — SKIPs are pool size, Errors are stock coverage.
+
+---
+
+## 2026-08-28 → 08-31 — FragGFN into Stage 2, and Stage 3 for the upsampled pools
+
+Branch `worktree-fraggfn-stage2` (11 commits, **not merged into Hub-Analysis**). Science in
+[Logs/077] (Stage 2) and [Logs/078] (Stage 3).
+
+### Structural changes
+
+| change | file | why it is not cosmetic |
+|---|---|---|
+| `fraggfn` case + explicit per-target config map | `submit_stage2_upsample.sh` | the `${GEN}_${TGT}_fixed.yaml` convention resolves for fraggfn to a file that EXISTS and is WRONG (the old 5,000-step build); the resume guard `remaining = n_train_steps - loop._it` would have silently re-trained 4,843 steps inside a sampling stage |
+| docking server, per cell | `submit_stage2_upsample.sh` | without `RGFN_DOCK_SOCKET` the reward bridge falls back to a `score_batch.py` subprocess PER STEP and writes no `dock_server_stats.json`, so the compute accounting loses its docking component silently |
+| `sampler-capped` stop reason | `upsample_to_modes.py` | a round returning the SAME distinct count means the runner hit `max_sample_batches`, not that the generator ran out of chemistry; it was being recorded as `stalled`, a claim about the GENERATOR |
+| `CANDS` override | `submit_competitor_routes.sh` | Stage 3 was hard-wired to the budget-faithful pool and could not consume what Stage 2 produces |
+| `USE_STAGE2`, `REPO_DIR`, + a snapshot assertion | `submit_competitor_routes_chain.sh` | the chain `cd`s to a fixed root and snapshots THAT tree's cell script, so a worktree's fix silently did not load |
+| `CFG_FORCE` | `submit_stage2_upsample.sh` | run one cell against a divergent config, loudly |
+| `submit_native_routes.sh` (NEW) | — | Stage 3 for a generator carrying its own routes; `--route-source external` existed but no launcher used it |
+
+### NOT verified / left open
+
+* **The competitor comparison has not started.** REINVENT, Saturn, TANGO are **0 of 58** route runs.
+  21 jobs sit at `PD (Priority)`: five of nine nodes went to a reservation and our fairshare read
+  `EffectvUsage 0.279` against `NormShares 0.023`. Left to drain by decision, not oversight.
+* **Seven cells need a follow-up Stage 3** once their Stage 2 lands (jobs 75192/75193/75194):
+  `reinvent:clpp:44`, `s3gfn:clpp:42/43/44`, `s3gfn:drd2:43/44`, `s3gfn:seh:43`. They were
+  deliberately excluded from the submitted chains rather than queued against incomplete inputs.
+* **`s3gfn_drd2` seeds 43/44 carried a FALSE `stalled` label — RESOLVED, and the re-run IS worth it.**
+  The diagnostic (75287 died on a missing oracle symlink, see below; re-run as 75674) settled it on
+  seed 44: at `max_sample_batches=4000` that cell records **168 modes / `stalled`**; at 20000 it
+  reaches **394**. The original round 2 returned the IDENTICAL 8,192 distinct — a cap, adding nothing.
+  The diagnostic's round 5 added 438 genuinely NEW molecules for only 6 new modes — a REAL plateau,
+  which is why 20000 is the right cap and not higher.
+  Both runs print `stalled`; only one of them means it. That is precisely what the `sampler-capped`
+  stop reason now distinguishes.
+  * seed 44 is CORRECTED already — `stage2_bigbatch/s3gfn_drd2_seed44` is a complete run, adopt it.
+  * seed 43 re-runs as job 75692 at the same cap; its recorded 422 is not quotable.
+  * seed 42 keeps the default config: it reached 500 `target-reached`, so the cap never bound.
+  * COST, and it belongs in the Stage-2 surcharge table: 10.8 h of sampling against 1.3 h. Two of the
+    three seeds in that band paid it and the third did not — our artifact, not the generator's.
+* **Quote `n_targets_priced`, never `n_modes`.** They are equal on every multiaiz cell and diverge
+  ~11-13% on native routes. Whether the greedy arm SHOULD force all N targets is an open methodology
+  decision that changes the headline for every route-carrying entrant.
+* **The route-less frontier ladder still starts at 25**, so a cell delivering fewer modes writes no
+  row at all (`fraggfn_drd2_seed43`, 12 modes). `submit_native_routes.sh` starts at 5. Re-running the
+  frontier is minutes — discovery is cached — so this is a cheap sweep, not a re-run.
+* **`fraggfn:drd2:44 pruned` was deliberately not resubmitted**: naive and pruned share 499/500
+  molecules on that generator+target, so it is a provable duplicate. The overlap itself is the result.
+* Chain walltimes were sized on a 3.67 h/cell reference; measured cost is **6-12 h/cell**. Five chains
+  timed out at 20 h having done one cell each. The resubmitted chains are sized on the measurement.
+
+### A results directory can be named for a pool size that never existed
+
+`submit_competitor_routes.sh` builds its output paths from `$N` -- the **requested** pool size -- while
+`POOL_DIR` is re-resolved a few lines earlier to the size the generator could actually supply. For a
+pool-limited cell those disagree, so `s3gfn_clpp_seed42_stage2_pruned` writes its frontier into
+`..._greedy_N500/` next to a pool directory called `..._N138`.
+
+Nothing is lost and no run is wrong -- but **any tally that looks up results by the pool's size finds
+nothing and reports the cell as empty**, and pool-limited cells are precisely the ones carrying the
+mode-collapse and generator-ceiling findings. Three S3-GFN ClpP cells read as "no frontier" this way
+while holding perfectly good ladders (25@57 / 50@110 / 75@147 and siblings).
+
+DELIBERATELY NOT FIXED IN THE LAUNCHER. Renaming the output directory now would orphan every result
+already written under the current convention, across the whole campaign, which is a worse failure
+than an odd directory name. Analysis code must GLOB `<tag>_greedy_N*` rather than key on the pool
+size. Fixed that way in the campaign's summary tooling; anything new that reads these results needs
+the same treatment.
+
+### A worktree does not carry untracked files, and one oracle is resolved by RELATIVE path
+
+Job 75287 died in 53 s with `FileNotFoundError: 'oracle/drd2_current.pkl'`. That path is RELATIVE, so
+it resolves against the working directory — and `REPO_DIR` (added so a launcher stops silently running
+the shared checkout's code) changes exactly that. The file is a 35 MB UNTRACKED pickle living only in
+the shared checkout, so a fresh git worktree does not have it.
+
+Only s3gfn+DRD2 hits this: sEH resolves proxy weights and ClpP a docking socket, which is why every
+other REPO_DIR job ran fine. Fixed with a symlink `oracle -> <shared checkout>/oracle`.
+
+**That symlink must never be committed.** A symlink into the shared checkout was committed on this
+project once before and a later merge DELETED the real directories behind it. It shows as `?? oracle`;
+stage files explicitly, never `git add -A`, in any worktree of this repo.

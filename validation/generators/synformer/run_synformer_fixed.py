@@ -708,6 +708,13 @@ def main() -> None:
         failed_score=float(reward_c.get("failed_score", 0.0)),
         oracle_args=dict(reward_c.get("oracle_args") or {}),
         workdir=str(run_dir / "reward_bridge"),
+        # sEH ONLY, and only for THIS entrant. Job 75080 (entry [074]) showed that loading the
+        # sEH MPNN in the coordinating process makes every later worker spawn fail with
+        # "No CUDA GPUs are available", with the parent clean on fds AND threads -- so those
+        # metrics are necessary but not sufficient and the model must not be in the parent at
+        # all. `subprocess: true` routes scoring to a child process instead. Inert for docking
+        # (already out-of-process) and for DRD2 (an sklearn pickle that forks fine).
+        subprocess_scoring=bool(reward_c.get("subprocess", False)),
     )
     print(
         f"[SF-FR] reward provider ready ({reward_c.get('type')}) — built AFTER the fork", flush=True

@@ -20,6 +20,7 @@ with the GFlowNet entrants and is unused here.
 
 import csv
 import subprocess
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -189,6 +190,95 @@ def _load_dock_server_client(repo_root):
     return mod.client_from_env()
 
 
+class SEHBridgeReward:
+    """The frozen sEH proxy, scored IN A CHILD PROCESS so the parent never loads the MPNN.
+
+    Interface-identical to :class:`SEHFrozenReward` -- same ``predict`` semantics (raw proxy value,
+    ``nan`` for unscoreable), same ``reward``, same ``higher_is_better`` -- so the run driver cannot
+    tell them apart. Only the process in which the model lives differs.
+
+    WHY. SynFormer forks workers every generation, and job 75080 (entry [074]) established that
+    loading the sEH model in the COORDINATING process makes every later spawn fail with
+    ``No CUDA GPUs are available``, with the parent measuring clean on both descriptor and thread
+    counts. Descriptor/thread hygiene is necessary but not sufficient; the model simply must not be
+    in the parent. That left the three sEH cells blocked because no out-of-process entry point for
+    the surrogate existed. ``score_seh_subprocess.py`` is that entry point and this is its client.
+
+    UNLIKE :class:`DockingBridgeReward` this does NOT cross an env boundary -- the synformer env can
+    import ``bengio2021flow`` (the rgfn env cannot), so the child runs in the same env and only the
+    PROCESS differs. Nothing here needs conda.
+
+    Caches per canonical SMILES: the GA re-scores the same survivors every generation, and a cache
+    hit costs nothing while a miss costs a model load.
+    """
+
+    higher_is_better = True
+
+    def __init__(
+        self,
+        repo_root: str,
+        device: str = "cpu",
+        clip: float = 10.0,
+        batch_size: int = 128,
+        workdir: Optional[str] = None,
+        timeout_s: int = 1800,
+    ):
+        self.repo_root = Path(repo_root)
+        self.device = device
+        self.clip = float(clip)
+        self.batch_size = int(batch_size)
+        self.timeout_s = int(timeout_s)
+        self.workdir = Path(workdir) if workdir else (self.repo_root / "reward_bridge")
+        self.workdir.mkdir(parents=True, exist_ok=True)
+        self._cache: Dict[str, float] = {}
+        self._step = 0
+        print(
+            "[seh-bridge] sEH proxy scored out-of-process (parent never loads the MPNN)", flush=True
+        )
+
+    def predict(self, smiles: List[str]) -> List[float]:
+        """Raw sEH proxy value per SMILES, ``nan`` where unscoreable. Order is preserved."""
+        need = [s for s in dict.fromkeys(smiles) if s not in self._cache]
+        if need:
+            self._step += 1
+            d = self.workdir / f"seh_step{self._step:05d}"
+            d.mkdir(parents=True, exist_ok=True)
+            smi_path, out_path = d / "in.smi", d / "scores.csv"
+            smi_path.write_text("\n".join(need) + "\n")
+            cmd = [
+                sys.executable, "-m", "validation.generators.synformer.score_seh_subprocess",
+                "--smiles", str(smi_path), "--out", str(out_path),
+                "--device", self.device, "--clip", str(self.clip),
+                "--batch-size", str(self.batch_size),
+            ]  # fmt: skip
+            proc = subprocess.run(cmd, cwd=str(self.repo_root), timeout=self.timeout_s)
+            if proc.returncode != 0 or not out_path.exists():
+                # Do NOT fall back to a default score. A silent 0 would be indistinguishable from a
+                # genuinely bad molecule and would train the policy on a scoring failure.
+                raise RuntimeError(
+                    f"sEH scoring child failed (rc={proc.returncode}); see {d}. Refusing to "
+                    "substitute a default score -- that would be trained on as if it were real."
+                )
+            with out_path.open() as fh:
+                for row in csv.DictReader(fh):
+                    self._cache[row["smiles"]] = float(row["raw_score"])
+        return [self._cache.get(s, float("nan")) for s in smiles]
+
+    def reward(self, smiles: List[str]) -> List[float]:
+        return [
+            float(np.exp(-self.clip))
+            if v != v
+            else float(np.exp(np.clip(v, -self.clip, self.clip)))
+            for v in self.predict(smiles)
+        ]
+
+    def fit(self, *args, **kwargs) -> dict:  # interface parity; never called (fixed reward)
+        return {}
+
+    def set_device(self, device: str) -> None:
+        self.device = device
+
+
 class DockingBridgeReward:
     """Per-step GPU **docking** as a fixed reward, reached across the env boundary via
     ``scripts/score_batch.py`` under the ``rgfn`` env (interface-ready for 6TD3/ClpP). Per-adapter
@@ -347,12 +437,24 @@ def build_provider(
     failed_score: float = 0.0,
     oracle_args: Optional[Dict] = None,
     workdir: Optional[str] = None,
+    subprocess_scoring: bool = False,
 ):
     """One place that maps a config ``reward.type`` onto a provider, shared by the run driver and
     the scoring component so the two can never disagree about what 'seh_proxy' means."""
     if reward_type == "drd2":
         return DRD2FrozenReward(model_path=model_path or "oracle/drd2_current.pkl", clip=clip)
     if reward_type == "seh_proxy":
+        # IN-PROCESS BY DEFAULT, out-of-process on request. SynFormer is the ONE entrant that
+        # cannot load this model in its coordinating process (entry [074], job 75080), so its
+        # config sets `subprocess: true`; every other caller keeps the cheaper in-process path.
+        if subprocess_scoring:
+            return SEHBridgeReward(
+                repo_root=str(repo_root or Path(__file__).resolve().parents[3]),
+                device=device,
+                clip=clip,
+                batch_size=batch_size,
+                workdir=str(workdir) if workdir else None,
+            )
         return SEHFrozenReward(device=device, clip=clip, batch_size=batch_size)
     if reward_type == "docking":
         # GPU docking reached ACROSS THE ENV BOUNDARY -- this entrant's env has no docking stack, so
