@@ -358,6 +358,69 @@ class ComponentTimer:
             self.totals[k] = 0.0
 
 
+# Sample-stage components. `sampling_s` is trajectory generation INCLUDING the reward the sampler
+# computes along the way -- on a docking target that is the dominant term, because recording rewards
+# in records.csv means scoring all 30,000 trajectories through the oracle. `flow_extract_s` is the
+# P_F/P_B pass. Deliberately a separate vocabulary from TIMING_COMPONENTS: the enum stage's
+# `enumeration_s` and this stage's `sampling_s` are different work and summing them under one name
+# would make the pipeline total unreadable.
+SAMPLE_TIMING_COMPONENTS = ("sampling_s", "flow_extract_s", "reward_gen_s", "unattributed_s")
+
+
+def write_sample_timings(
+    path,
+    *,
+    setup_s: float,
+    totals_s: Dict[str, float],
+    n_trajectories: int = 0,
+    n_records: int = 0,
+    device: str = "",
+    reward_name: str = "",
+    model: str = "",
+    cuda_synchronized: bool = False,
+    component_split: str = "full",
+    extra_meta: Optional[Dict] = None,
+) -> Dict:
+    """Write ``sample_timings.json`` — the SAMPLE stage's measured compute-time sidecar.
+
+    WHY THIS EXISTS AS A SHARED HELPER. The four workers had three different answers for the same
+    measurement: RGFN put ``setup_s``/``sample_s`` in ``meta.json``, SCENT wrote a richer split to
+    its own ``sample_timings.json``, and RxnFlow and FragGFN measured nothing at all. A probe of
+    ``meta.json`` therefore reported "no timing" for three generators, one of which in fact had the
+    best instrumentation of the four. One definition and one filename removes both the gap and the
+    misreading.
+
+    WHY THE SAMPLE STAGE IS NOT A ROUNDING ERROR. It is easy to assume enumeration dominates, and on
+    a surrogate target it does. On a docking target it does not: ``rgfn_6td3``'s sample stage took
+    **50,766 s and 45,179 s** (14.1 h and 12.6 h) across two seeds, because recording rewards in
+    ``records.csv`` means scoring every one of 30,000 trajectories through the docking oracle. Any
+    figure quoting whole-pipeline GPU-hours while missing this is short by half a day per cell.
+
+    ``component_split="full"`` means the components were timed separately; ``"lumped"`` means the
+    generator could only measure a total (recorded as ``unattributed_s``) — stated in the file rather
+    than silently implied by a zero column, the same convention :func:`write_enum_timings` uses.
+    """
+    totals = {k: round(float(totals_s.get(k, 0.0)), 3)
+              for k in SAMPLE_TIMING_COMPONENTS if totals_s.get(k)}
+    meta = {
+        "setup_s": round(float(setup_s), 3),
+        "device": str(device),
+        "cuda_synchronized": bool(cuda_synchronized),
+        "reward_name": reward_name,
+        "model": model,
+        "component_split": component_split,
+        "n_trajectories": int(n_trajectories),
+        "n_records": int(n_records),
+        "totals_s": totals,
+        # The number the compute-vs-reactions exhibit actually quotes, precomputed so no reader has
+        # to decide whether setup counts (it does -- a cell pays it).
+        "stage_total_s": round(float(setup_s) + sum(totals.values()), 3),
+    }
+    meta.update(extra_meta or {})
+    write_json(path, {"meta": meta})
+    return meta
+
+
 def write_enum_timings(
     path,
     *,

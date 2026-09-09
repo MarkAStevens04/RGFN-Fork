@@ -29,6 +29,7 @@ Modes:
 import argparse
 import json
 import sys
+import time
 from pathlib import Path
 
 import torch
@@ -334,15 +335,34 @@ def _run_sample(args, trainer, beta, clip, out_dir, device):
     remaining = args.n_trajectories
     routes: dict = {}
     enc = None
+    # Stage-1 compute-time. Split the same way SCENT splits it -- trajectory generation (including
+    # the reward the sampler computes) versus the P_F/P_B extraction pass -- so the two generators'
+    # numbers are directly comparable. This stage is NOT negligible on a docking target: recording
+    # rewards in records.csv means scoring all 30,000 trajectories through the oracle, which cost
+    # rgfn_6td3 over 12 hours per seed.
+    _use_cuda = torch.cuda.is_available() and str(device).startswith("cuda")
+
+    def _sync():
+        if _use_cuda:
+            torch.cuda.synchronize()
+
+    sample_timing = {"sampling_s": 0.0, "flow_extract_s": 0.0}
     while remaining > 0:
         b = min(args.batch_size, remaining)
+        _sync()
+        _s0 = time.perf_counter()
         cond = trainer.task.sample_conditional_information(b, 0)
         enc = cond["encoding"].to(device)
         with torch.no_grad():
             data = trainer.algo.graph_sampler.sample_from_model(
                 trainer.model, b, enc, random_action_prob=0.0
             )
+        _sync()
+        sample_timing["sampling_s"] += time.perf_counter() - _s0
+        _e0 = time.perf_counter()
         recs, visits = _extract_batch(trainer, beta, clip, enc, data, _score)
+        _sync()
+        sample_timing["flow_extract_s"] += time.perf_counter() - _e0
         _collect_routes(data, routes)
         all_records.extend(recs)
         for k, c in visits.items():
@@ -363,6 +383,23 @@ def _run_sample(args, trainer, beta, clip, out_dir, device):
     json.dump(routes, open(out_dir / "routes.json", "w"))
     _routes.validate_sample_routes(
         "rxnflow", out_dir, routes=routes, n_terminals=len(visit_counts) or None
+    )
+    _st = A.write_sample_timings(
+        out_dir / "sample_timings.json",
+        setup_s=getattr(args, "_setup_s", 0.0),
+        totals_s=sample_timing,
+        n_trajectories=total,
+        n_records=len(all_records),
+        device=str(device),
+        reward_name=args.reward_name,
+        model=args.model_name,
+        cuda_synchronized=_use_cuda,
+    )
+    print(
+        f"[rxnflow_worker] compute-time: setup {_st['setup_s']:.1f}s | "
+        f"sampling {sample_timing['sampling_s']:.1f}s flow {sample_timing['flow_extract_s']:.1f}s "
+        f"over {total} trajectories -> sample_timings.json",
+        flush=True,
     )
     A.write_json(
         out_dir / "meta.json",

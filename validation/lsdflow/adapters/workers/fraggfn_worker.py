@@ -283,15 +283,32 @@ def _run_sample(args, trainer, reward, beta, clip, out_dir, device):
     model, task = trainer.model, trainer.task
     all_records, visit_counts, hub_graphs, total = [], {}, {}, 0
     remaining = args.n_trajectories
+    # Stage-1 compute-time, split the same way SCENT and RxnFlow split it so the four generators'
+    # sample stages are directly comparable. Not a rounding error on a docking target: recording
+    # rewards in records.csv means scoring every trajectory through the oracle.
+    _use_cuda = torch.cuda.is_available() and str(device).startswith("cuda")
+
+    def _sync():
+        if _use_cuda:
+            torch.cuda.synchronize()
+
+    sample_timing = {"sampling_s": 0.0, "flow_extract_s": 0.0}
     while remaining > 0:
         b = min(args.batch_size, remaining)
+        _sync()
+        _s0 = time.perf_counter()
         cond = task.sample_conditional_information(b, 0)
         enc = cond["encoding"].to(device)
         with torch.no_grad():
             trajs = trainer.algo.create_training_data_from_own_samples(
                 model, b, enc, random_action_prob=0.0
             )
+        _sync()
+        sample_timing["sampling_s"] += time.perf_counter() - _s0
+        _e0 = time.perf_counter()
         recs, visits, hgs = _extract_batch(trainer, reward, beta, clip, enc, trajs, _score)
+        _sync()
+        sample_timing["flow_extract_s"] += time.perf_counter() - _e0
         all_records.extend(recs)
         for k, c in visits.items():
             visit_counts[k] = visit_counts.get(k, 0) + c
@@ -319,6 +336,23 @@ def _run_sample(args, trainer, reward, beta, clip, out_dir, device):
     # which is precisely how the rgfn/rxnflow gaps hid for months.
     json.dump({}, open(out_dir / "routes.json", "w"))
     _routes.validate_sample_routes("fraggfn", out_dir, routes={})
+    _st = A.write_sample_timings(
+        out_dir / "sample_timings.json",
+        setup_s=getattr(args, "_setup_s", 0.0),
+        totals_s=sample_timing,
+        n_trajectories=total,
+        n_records=len(all_records),
+        device=str(device),
+        reward_name=args.reward_name,
+        model=args.model_name,
+        cuda_synchronized=_use_cuda,
+    )
+    print(
+        f"[fraggfn_worker] compute-time: setup {_st['setup_s']:.1f}s | "
+        f"sampling {sample_timing['sampling_s']:.1f}s flow {sample_timing['flow_extract_s']:.1f}s "
+        f"over {total} trajectories -> sample_timings.json",
+        flush=True,
+    )
     pickle.dump(hub_graphs, open(out_dir / "hub_graphs.pkl", "wb"))  # for enumerate (§ hub-state)
     A.write_json(
         out_dir / "meta.json",
