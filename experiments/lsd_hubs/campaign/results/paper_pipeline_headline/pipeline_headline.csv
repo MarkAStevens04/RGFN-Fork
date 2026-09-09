@@ -1,0 +1,10 @@
+series,pricing_regime,reactions_for_100_modes,source
+LSD-Flow,native (as run),131,results/scent_seh_freefrag/budget_efficiency.csv
+LSD-Flow,from-scratch,305,results/scent_seh_sparrow_headline/budget_efficiency.csv (Logs/041)
+S3-GFN,MultiAiZ + SPARROW selects (as run),420,results/s3gfn_seh_select_N500/select_frontier.csv (Logs/056)
+S3-GFN,from-scratch,269,results/s3gfn_seh/s3gfn_frontier_summary.json (Logs/048)
+ratio,headline (solid vs solid),3.206,
+S3-GFN,MultiAiZ + diversity-aware greedy (their BEST),264,results/s3gfn_seh_greedy_N500/greedy_frontier.csv (Logs/056)
+ratio,conservative (vs their strongest tested config),2.018,
+LSD-Flow,"native (as run), 3-seed SPARROW band",124.3 +/- 6.1  seeds=119/123/131,"results/{scent_seh_freefrag,t45_seh_seed43,t45_seh_seed44}_k0_reconcile"
+ratio,headline if the 3-seed mean were quoted instead of seed 42,3.378,NOT the quoted headline

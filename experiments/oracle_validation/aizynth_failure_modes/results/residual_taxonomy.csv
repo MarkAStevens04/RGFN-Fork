@@ -1,0 +1,44 @@
+target,leaf,leaf_ha,category,evidence
+Brc1cc(-c2nc3cc(CN(c4ccc(NCC5CCN5)cc4)C45CC(C4)C5)ccc3o2)ccn1,COC(=O)C(Br)CCBr,9,reagent / protecting gp,poly-halide ester
+Brc1ccc(NCC2CCN2Cc2ccc3[nH]c(C4CCN4)nc3c2)cc1,O=C(CCN1C(=O)c2ccccc2C1=O)c1nc2cc(CN3CCC3C(=O)O)ccc2[nH]1,32,reagent / protecting gp,phthalimide
+C#Cc1ccc(N(Cc2ccc(C#N)nc2)c2ccc(NC(=O)C3CCN3)cc2)cc1,CC(C)(C)OC(=O)N(C(=O)C1CCN1C(=O)Cl)c1ccc(N(Cc2ccc(Br)nc2)c2ccc(I)cc2)cc1,39,reagent / protecting gp,Boc
+CC(NC(=O)c1cccc(-c2cc(NCC3CN(C4CNC4)C3)[nH]n2)c1)c1ccccc1,C[Si](C)(C)CCOCn1nc(Cl)cc1NCC1CN(C2CNC2)C1,24,reagent / protecting gp,SEM/TMS
+CC(Nc1ccc(NC(=O)c2ccc(N)c(NC(=O)c3ccc(N)c(NC(=O)C4CCCN4)c3)c2)cc1)c1ccccc1,O=C(O)C1CCCN1,8,"block, stereo only",exact flat match to a SMALL block
+ClCC(NCCc1cn(Cc2ccc(-c3nnn(CC4CC4)n3)cc2)c2ccccc12)c1ccccc1,CC(=O)c1cccc(Cl)c1[P+](C)(c1ccccc1)c1ccccc1,24,reagent / protecting gp,phosphonium
+N#Cc1ccc(CNc2ccccc2-c2ccc(O)c(NC(=O)c3ccc4oc(C5CCN5)nc4c3)c2)cn1,C#N,2,tiny reagent,<=3 heavy atoms
+N#Cc1ccc2oc(-c3c[nH]c4cc(-c5ccc(NCC6Cc7ccccc7CN6)cc5)ccc34)nc2c1,O=CC1Cc2ccccc2CN1,12,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2
+NC(C(=O)Nc1cc(-c2ccc(Nc3ccc(NC(=O)C4Cc5ccccc5CN4)cc3)cc2)n[nH]1)c1ccccc1,O=C(O)C1Cc2ccccc2CN1C(=O)O,16,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2
+Nc1ccc(NCCc2cn(CC3CC3)c3ccccc23)cc1NC(=O)C1CCCN(C(=O)NCc2c[nH]c3ccccc23)C1,COC(=O)C1CCCN(Cc2ccccc2)C1,17,other,
+O=C(C1CCN1)N1CCCC(C(=O)N(c2cncc(-c3nnn(CC4CC4)n3)c2)C2(C(=O)O)CCC2)C1,COC(=O)C1CCCN(C(=O)C2CCN2)C1,16,other,
+O=C(C1Cc2ccccc2CN1)N(Cc1ccc2[nH]c(C3CNC3)nc2c1)c1ccc(Br)cc1,COC(=O)C1Cc2ccccc2CN1,14,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2
+O=C(NC(Cc1c[nH]c2ccccc12)C(=O)Nc1ccc(-c2cnnn2CC2CC2)cc1)C1CCN1,CCOC(=O)N1CCC1C(=O)NC(Cc1c[nH]c2ccccc12)C(=O)O,26,partial assembly of block cores,contains distinctive block core c1ccc2[nH]ccc2c1
+O=C(NC1CC1)c1ccc(CN2CCC2c2nc3cccc(Br)c3o2)cc1,C#N,2,tiny reagent,<=3 heavy atoms
+O=C(NC1CC1)c1ccc(Nc2ccc3[nH]c(C4CCN4)nc3c2)c(O)c1,COC(=O)C1CCN1,8,"block core, other form",shares block scaffold C1CNC1
+O=C(NC1CC1)c1cccc(N(Cc2ccc3oc(C4Cc5ccccc5CN4)nc3c2)c2ccnc3ccccc23)n1,CC(C)(C)OC(=O)NC(Cc1ccccc1Br)c1nc2cc(CN(c3cccc(C(=O)O)n3)c3ccnc4ccccc34)ccc2o1,47,reagent / protecting gp,Boc
+O=C(NCCc1cn(CC2CC2)c2ccccc12)N(Cc1ccc2oc(C3CCN3)nc2c1)c1ccc(Br)cc1,COC(=O)C(Br)CCBr,9,reagent / protecting gp,poly-halide ester
+O=C(NCc1c[nH]c2ccccc12)Nc1cccc(-c2cccc3[nH]c(C4Cc5ccccc5CN4)nc23)c1,COC(=O)C1Cc2ccccc2CN1,14,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2
+O=C(NCc1cn(CC2CC2)c2ccccc12)C1CCCN(C(=O)C2CCCN2)C1,COC(=O)C1CCCN1C(=O)O,12,"block core, other form",shares block scaffold C1CCNC1
+O=C(NCc1cn(CC2CC2)c2ccccc12)c1ccccc1Cn1nnc(-c2ccc(COC3CN4CCC3CC4)cc2)n1,CO,2,tiny reagent,<=3 heavy atoms
+O=C(Nc1c(Br)cccc1NCC1Cc2ccccc2CN1)c1ccc2nc(C3CNC3)oc2c1,O=C(O)C1Cc2ccccc2CN1,13,"block, stereo only",exact flat match to a SMALL block
+O=C(Nc1cc(N(C(=O)c2ccc3nc(C4CNC4)oc3c2)c2ccnc3ccccc23)n[nH]1)C1CNC1,Nc1ccc(C(=O)N(c2cc([N+](=O)[O-])[nH]n2)c2ccnc3ccccc23)cc1O,29,partial assembly of block cores,contains distinctive block core c1ccc2ncccc2c1
+O=C(Nc1ccc(-c2ccc3[nH]ccc3c2)cc1)C1CCCN1CC1Cc2ccccc2CN1,COC(=O)C1CCCN1CC1Cc2ccccc2CN1,20,partial assembly of block cores,contains distinctive block core c1ccc2c(c1)CCNC2
+O=C(Nc1ccc(-c2ccnc(NCCc3cn(CC4CC4)c4ccccc34)c2)cc1)C1Cc2ccccc2CN1,O=C(O)C1Cc2ccccc2CN1C(=O)O,16,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2
+O=C(Nc1ccc(Br)cc1)C1CCN1Cc1cn(CC2CC2)c2ccccc12,COC(=O)C(Br)CCBr,9,reagent / protecting gp,poly-halide ester
+O=C(Nc1ccc(NCC2CCN2)cc1)c1ccc(-c2nc3ccc(Br)cc3o2)cc1,CCOC(=O)C(Br)CCBr,10,reagent / protecting gp,poly-halide ester
+O=C(Nc1cccc(-c2ccc(NCC3CNC3)cc2)c1)C1CCN1,CCOC(=O)C(Br)CCBr,10,reagent / protecting gp,poly-halide ester
+O=C(Nc1cccc(-c2nc(-c3ccc(NCC4CCN4)cc3)cs2)c1)Nc1cccc2ccccc12,COC(=O)C(Br)CCBr,9,reagent / protecting gp,poly-halide ester
+O=C(Nc1cccc2ccn(Cc3cc(=O)[nH]c4ccccc34)c12)C1CCCN(C(=O)C2Cc3ccccc3CN2)C1,O=C(O)C1Cc2ccccc2CN1,13,"block, stereo only",exact flat match to a SMALL block
+O=C(Nc1nc(-c2cccc(NCC3CCN3CC3Cc4ccccc4CN3)c2)cs1)C1CCNCC1,COC(=O)C1CCN1CC1Cc2ccccc2CN1,19,partial assembly of block cores,contains distinctive block core c1ccc2c(c1)CCNC2
+O=C(O)c1ccc2nc(-c3ccc4nc(C5CCCN5C(=O)NCCc5cn(CC6CC6)c6ccccc56)[nH]c4c3)oc2c1,COC(=O)C1CCCN1,9,"block core, other form",shares block scaffold C1CCNC1
+O=C1Cc2ccc(C(=O)Cn3nnc(-c4ccc(Cn5nnnc5-c5cncc(-c6ccc(NCC7Cc8ccccc8CN7)cc6)c5)cc4)n3)cc2N1,O=C(O)C1Cc2ccccc2CN1,13,"block, stereo only",exact flat match to a SMALL block
+O=C1Cc2ccc(C(=O)Cn3nnc(-c4ccc(Cn5nnnc5-c5cncc(-c6ccc(NCC7Cc8ccccc8CN7)cc6)c5)cc4)n3)cc2N1,Cc1ccc(-c2nnn(CC(=O)c3ccc(F)c([N+](=O)[O-])c3)n2)cc1,25,other,
+Oc1ccc(-c2nnn(CC3CC3)n2)cc1NCc1ccc2nc(C3Cc4ccccc4CN3)n(CC3CC3)c2c1,COC(=O)C1Cc2ccccc2CN1,14,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2
+c1cc(-c2ccc(NCc3ccc4oc(C5Cc6ccccc6CN5)nc4c3)cc2)cc(-c2nnn(CC3CC3)n2)c1,O=C(O)C1Cc2ccccc2CN1C(=O)O,16,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2
+c1cc(-c2nnn(CC3CC3)n2)ncc1CNc1cc(-c2ccc(NCC3CCN3)cc2)n[nH]1,CC1(C)OB(B2OC(C)(C)C(C)(C)O2)OC1(C)C,18,reagent / protecting gp,pinacol boronate
+c1cc(NCC2Cc3ccccc3CN2)cc(-c2ccc(NCc3ccc(-c4nnn(CC5CC5)n4)nc3)cc2)c1,O=C(O)C1Cc2ccccc2CN1C(=O)O,16,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2
+c1cc(NCc2ccc3[nH]c(C4CNC4)nc3c2)cc(-c2cc(NCC3Cc4ccccc4CN3)[nH]n2)c1,O=C(O)C1Cc2ccccc2CN1C(=O)O,16,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2
+c1cc(Nc2ccc3oc(C4CCN4)nc3c2)c2c(c1)ccn2CC1CC1,C#N,2,tiny reagent,<=3 heavy atoms
+c1cc2oc(C3CCN3)nc2cc1CNc1ccc(-c2cn(CC3CC3)nn2)cc1,C#N,2,tiny reagent,<=3 heavy atoms
+c1ccc2c(CN(c3ccc4oc(C5CCN5)nc4c3)c3cn(CC4CC4)cn3)c[nH]c2c1,c1ccc(C(c2ccccc2)(c2ccccc2)n2cnc(N(Cc3c[nH]c4ccccc34)c3ccc4oc(C5CCN5)nc4c3)c2)cc1,48,reagent / protecting gp,trityl
+c1ccc2c(c1)CNC(CNCCc1ccccc1-c1ccc(-c3nnn(CC4CC4)n3)s1)C2,O=C(O)C1Cc2ccccc2CN1C(=O)O,16,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2
+c1ccc2c(c1)CNC(c1nc3cc(CNc4ccc(-c5cn(CC6CC6)cn5)cc4)ccc3o1)C2,COC(=O)C1Cc2ccccc2CN1,14,"block core, other form",shares block scaffold c1ccc2c(c1)CCNC2

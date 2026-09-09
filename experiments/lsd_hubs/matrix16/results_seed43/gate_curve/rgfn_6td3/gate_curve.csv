@@ -1,0 +1,8 @@
+gate,best_modes,best_rxn_per_mode,best_stop_reason,hub_modes,hub_rxn_per_mode,hub_stop_reason,edge,hub_hubs_used,hub_reward_gen_calls,pool_limited
+-4.0,300,3.893,modes,300,2.157,modes,1.805,121,145120,False
+-3.5,300,3.893,modes,300,1.757,modes,2.216,81,92528,False
+-3.0,300,3.893,modes,300,1.573,modes,2.475,62,73521,False
+-2.5,300,3.893,modes,300,1.493,modes,2.608,54,62137,False
+-2.0,300,3.893,modes,300,1.413,modes,2.755,46,50154,False
+-1.5,300,3.893,modes,300,1.393,modes,2.795,43,47497,False
+-1.0,300,3.893,modes,300,1.343,modes,2.899,38,43913,False

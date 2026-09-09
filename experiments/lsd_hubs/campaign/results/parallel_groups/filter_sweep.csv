@@ -1,0 +1,16 @@
+cell,min_group,children_dropped,modes_at100,wells_at100,arrays_at100,largest_array,frac_ge4,frac_ge10,total_modes,parents_at100,rxns_used_full,status
+scent_drd2_seed43,0,0,78,69,14,16,0.769,0.359,300,2,336,mode-budget-reached
+scent_drd2_seed43,10,1632,78,69,14,16,0.769,0.359,300,2,336,mode-budget-reached
+scent_drd2_seed44,0,0,78,66,15,21,0.885,0.423,300,4,338,mode-budget-reached
+scent_drd2_seed44,10,2041,78,66,15,21,0.885,0.423,300,4,338,mode-budget-reached
+scent_drd2_seed44,50,6340,78,66,15,22,0.859,0.436,300,4,343,mode-budget-reached
+scent_drd2_seed44,200,48163,77,65,14,23,0.857,0.455,300,5,354,mode-budget-reached
+scent_drd2_seed44,400,294434,76,63,13,24,0.842,0.632,300,6,341,mode-budget-reached
+scent_drd2_seed44,800,416453,75,68,12,12,0.88,0.453,196,7,233,pool-exhausted
+scent_seh_seed43,0,0,79,74,14,26,0.772,0.519,300,2,326,mode-budget-reached
+scent_seh_seed43,10,390,79,74,13,26,0.797,0.532,300,2,326,mode-budget-reached
+scent_seh_seed43,50,1275,79,74,13,26,0.797,0.532,300,2,327,mode-budget-reached
+scent_seh_seed43,200,5709,79,73,7,26,0.962,0.734,300,2,330,mode-budget-reached
+scent_seh_seed43,800,24198,79,72,5,27,0.975,0.899,300,2,336,mode-budget-reached
+scent_seh_seed44,0,0,80,80,10,27,0.887,0.675,300,1,328,mode-budget-reached
+scent_seh_seed44,10,256,80,80,10,27,0.887,0.675,300,1,328,mode-budget-reached

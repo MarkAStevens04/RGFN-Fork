@@ -1,0 +1,561 @@
+cell,arm,slice,class,named_reaction,parent,n_molecules,n_wells,n_multi_product_wells,n_distinct_reagent_sets,n_distinct_parents,n_distinct_templates,reward_min,reward_median,reward_max,first_step,last_step
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Direct acid -> amine (reductive),COc1ccc(O)c(NC2CNC2)c1,21,14,7,14,1,1,0.587,0.916,0.991,25,70
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Direct acid -> amine (reductive),O=C(O)C1CCCN1,12,10,2,10,1,3,0.5,0.813,0.957,7,23
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Esterification,COc1ccc(O)c(NC2CNC2)c1,9,9,0,9,1,1,0.5,0.646,0.878,43,77
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Reductive amination (ketone),COc1ccc(O)c(NC2CNC2)c1,8,7,1,7,1,1,0.519,0.899,0.992,24,73
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Direct acid -> amine (reductive),CC(N)C(=O)O,6,5,1,5,1,3,0.5,0.681,1.0,1,6
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Buchwald-Hartwig amination,COc1ccc(O)c(NC2CNC2)c1,5,5,0,5,1,1,0.51,0.705,0.989,26,75
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,SNAr (activated aryl fluoride + amine),COc1ccc(O)c(NC2CNC2)c1,4,3,1,3,1,2,0.663,0.817,0.968,30,63
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Reductive amination (aldehyde),COc1ccc(O)c(NC2CNC2)c1,4,4,0,4,1,1,0.781,0.799,0.943,35,57
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Amide coupling,O=C(O)C1CCCN1,2,2,0,2,1,2,0.847,0.858,0.869,11,13
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Amide coupling,COc1ccc(O)c(NC2CNC2)c1,2,2,0,2,1,1,0.509,0.539,0.568,71,76
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Esterification,O=C(O)C1CCCN1,1,1,0,1,1,1,0.693,0.693,0.693,17,17
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Reductive amination (ketone),O=C(O)C1CCCN1,1,1,0,1,1,1,0.62,0.62,0.62,19,19
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Pictet-Spengler cyclisation,O=C(O)C1CCCN1,1,1,0,1,1,1,0.585,0.585,0.585,20,20
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Urea formation (amine + amine),COc1ccc(O)c(NC2CNC2)c1,1,1,0,1,1,1,0.703,0.703,0.703,62,62
+scent_drd2_seed44_m10,hub_batching,at100rxn,A,Buchwald-Hartwig amination,ClCC(Nc1cccc2cc[nH]c12)c1ccc(Br)cc1,1,1,0,1,1,1,0.96,0.96,0.96,78,78
+scent_drd2_seed44_m10,hub_batching,at100rxn,B,Direct acid -> amine (reductive),,39,29,10,26,3,4,0.5,0.846,1.0,1,70
+scent_drd2_seed44_m10,hub_batching,at100rxn,B,Esterification,,10,10,0,10,2,2,0.5,0.669,0.878,17,77
+scent_drd2_seed44_m10,hub_batching,at100rxn,B,Reductive amination (ketone),,9,8,1,7,2,1,0.519,0.87,0.992,19,73
+scent_drd2_seed44_m10,hub_batching,at100rxn,B,Buchwald-Hartwig amination,,6,6,0,6,2,2,0.51,0.729,0.989,26,78
+scent_drd2_seed44_m10,hub_batching,at100rxn,B,Amide coupling,,4,4,0,4,2,3,0.509,0.707,0.869,11,76
+scent_drd2_seed44_m10,hub_batching,at100rxn,B,SNAr (activated aryl fluoride + amine),,4,3,1,3,1,2,0.663,0.817,0.968,30,63
+scent_drd2_seed44_m10,hub_batching,at100rxn,B,Reductive amination (aldehyde),,4,4,0,4,1,1,0.781,0.799,0.943,35,57
+scent_drd2_seed44_m10,hub_batching,at100rxn,B,Pictet-Spengler cyclisation,,1,1,0,1,1,1,0.585,0.585,0.585,20,20
+scent_drd2_seed44_m10,hub_batching,at100rxn,B,Urea formation (amine + amine),,1,1,0,1,1,1,0.703,0.703,0.703,62,62
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),COc1ccc(O)c(NC2CNC2)c1,21,14,7,14,1,1,0.587,0.916,0.991,25,70
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCCNC1CC1,14,14,0,14,1,1,0.648,0.98,1.0,137,169
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (ketone),O=C1CN(C2CCNC2)C1,14,14,0,14,1,2,0.507,0.742,0.996,209,229
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),O=C(O)C1CCCN1,12,10,2,10,1,3,0.5,0.813,0.957,7,23
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),O=CCCN1CCCC1C(=O)O,12,11,1,11,1,2,0.533,0.921,0.997,85,109
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (ketone),CC(N)CN1CCCC(=O)C1,10,9,1,9,1,3,0.555,0.869,0.997,110,133
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),O=C(O)CNC1CCCNC1,10,8,2,8,1,3,0.51,0.572,0.843,193,208
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,10,10,0,10,1,2,0.753,0.969,1.0,230,249
+scent_drd2_seed44_m10,hub_batching,full,A,Esterification,COc1ccc(O)c(NC2CNC2)c1,9,9,0,9,1,1,0.5,0.646,0.878,43,77
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),CN(CC(=O)O)CC1CCCN1,9,9,0,9,1,2,0.562,0.665,0.987,174,190
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (ketone),COc1ccc(O)c(NC2CNC2)c1,8,7,1,7,1,1,0.519,0.899,0.992,24,73
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCC1CCNCC1,8,6,2,6,1,1,0.87,0.913,0.984,282,292
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),CN(CC(=O)O)C1CNC1,7,7,0,7,1,1,0.518,0.73,0.935,260,268
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),CC(N)C(=O)O,6,5,1,5,1,3,0.5,0.681,1.0,1,6
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (ketone),COc1ccccc1CCNCCNC1CC1,6,5,1,5,1,1,0.781,0.938,1.0,139,165
+scent_drd2_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,6,4,2,4,1,3,0.658,0.86,0.994,232,254
+scent_drd2_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,COc1ccc(O)c(NC2CNC2)c1,5,5,0,5,1,1,0.51,0.705,0.989,26,75
+scent_drd2_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,O=CCCN1CCCC1C(=O)O,5,3,2,3,1,3,0.653,0.771,0.916,94,105
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),CC(N)CN1CCCC(=O)C1,5,5,0,5,1,1,0.718,0.742,0.897,114,127
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,5,5,0,5,1,2,0.548,0.642,0.989,234,257
+scent_drd2_seed44_m10,hub_batching,full,A,SNAr (activated aryl fluoride + amine),COc1ccc(O)c(NC2CNC2)c1,4,3,1,3,1,2,0.663,0.817,0.968,30,63
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),COc1ccc(O)c(NC2CNC2)c1,4,4,0,4,1,1,0.781,0.799,0.943,35,57
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,O=CCCN1CCCC1C(=O)O,4,3,1,3,1,2,0.54,0.895,0.993,87,108
+scent_drd2_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,COc1ccccc1CCNCCNC1CC1,4,4,0,4,1,1,0.589,0.843,0.994,142,171
+scent_drd2_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),COc1ccccc1CCNCCNC1CC1,4,4,0,4,1,2,0.508,0.696,0.86,158,173
+scent_drd2_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,COc1ccccc1CCNCCNC1CC1,3,3,0,3,1,1,0.861,0.967,1.0,135,157
+scent_drd2_seed44_m10,hub_batching,full,A,SNAr (activated aryl fluoride + amine),COc1ccccc1CCNCCNC1CC1,3,3,0,3,1,2,0.826,0.942,0.952,151,162
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,CN(CC(=O)O)CC1CCCN1,3,3,0,3,1,2,0.558,0.891,0.924,175,191
+scent_drd2_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,CN(CC(=O)O)CC1CCCN1,3,3,0,3,1,2,0.709,0.804,0.92,176,185
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,O=C(O)CNC1CCCNC1,3,3,0,3,1,2,0.511,0.579,0.853,192,207
+scent_drd2_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),O=C1CN(C2CCNC2)C1,3,3,0,3,1,2,0.516,0.644,0.862,213,227
+scent_drd2_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,COc1ccccc1CCNCC1CCNCC1,3,3,0,3,1,1,0.82,0.972,1.0,276,293
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (ketone),COc1ccccc1CCNCC1CCNCC1,3,2,1,2,1,1,0.883,0.996,0.997,279,290
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,O=C(O)C1CCCN1,2,2,0,2,1,2,0.847,0.858,0.869,11,13
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,COc1ccc(O)c(NC2CNC2)c1,2,2,0,2,1,1,0.509,0.539,0.568,71,76
+scent_drd2_seed44_m10,hub_batching,full,A,N-alkylation (azole N-H + alkyl halide),ClCC(Nc1cccc2cc[nH]c12)c1ccc(Br)cc1,2,2,0,2,1,1,0.646,0.719,0.791,82,83
+scent_drd2_seed44_m10,hub_batching,full,A,Benzimidazole formation (N-substituted),O=CCCN1CCCC1C(=O)O,2,2,0,2,1,2,0.604,0.769,0.935,91,107
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),O=CCCN1CCCC1C(=O)O,2,2,0,2,1,2,0.761,0.806,0.851,98,102
+scent_drd2_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),CC(N)CN1CCCC(=O)C1,2,2,0,2,1,2,0.735,0.856,0.978,112,125
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,CC(N)CN1CCCC(=O)C1,2,2,0,2,1,1,0.811,0.85,0.889,115,122
+scent_drd2_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,CC(N)CN1CCCC(=O)C1,2,2,0,2,1,1,0.625,0.734,0.843,119,131
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),CC(N)CN1CCCC(=O)C1,2,2,0,2,1,1,0.652,0.728,0.804,123,129
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),COc1ccccc1CCNCCNC1CC1,2,2,0,2,1,1,1.0,1.0,1.0,134,136
+scent_drd2_seed44_m10,hub_batching,full,A,SNAr (halo-heteroarene + amine),COc1ccccc1CCNCCNC1CC1,2,2,0,2,1,2,0.697,0.814,0.931,153,167
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,COc1ccccc1CCNCCNC1CC1,2,2,0,2,1,1,0.605,0.733,0.862,156,170
+scent_drd2_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,CN(CC(=O)O)CC1CCCN1,2,2,0,2,1,1,0.73,0.737,0.744,183,184
+scent_drd2_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,O=C(O)CNC1CCCNC1,2,2,0,2,1,1,0.786,0.794,0.803,194,195
+scent_drd2_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,O=C1CN(C2CCNC2)C1,2,2,0,2,1,1,0.686,0.729,0.773,216,222
+scent_drd2_seed44_m10,hub_batching,full,A,Esterification,O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,2,2,0,2,1,1,0.687,0.777,0.867,243,252
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,2,2,0,2,1,2,0.824,0.834,0.844,244,246
+scent_drd2_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,2,2,0,2,1,2,0.535,0.603,0.67,253,258
+scent_drd2_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,CN(CC(=O)O)C1CNC1,2,2,0,2,1,1,0.541,0.544,0.548,266,267
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),COc1ccccc1CCNCC1CCNCC1,2,2,0,2,1,1,1.0,1.0,1.0,277,278
+scent_drd2_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,COc1ccccc1CCNCC1CCNCC1,2,1,1,1,1,1,0.935,0.962,0.988,281,286
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,COc1ccccc1CCNCC1CCNCC1,2,2,0,2,1,1,0.5,0.589,0.677,294,296
+scent_drd2_seed44_m10,hub_batching,full,A,Esterification,O=C(O)C1CCCN1,1,1,0,1,1,1,0.693,0.693,0.693,17,17
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (ketone),O=C(O)C1CCCN1,1,1,0,1,1,1,0.62,0.62,0.62,19,19
+scent_drd2_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,O=C(O)C1CCCN1,1,1,0,1,1,1,0.585,0.585,0.585,20,20
+scent_drd2_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),COc1ccc(O)c(NC2CNC2)c1,1,1,0,1,1,1,0.703,0.703,0.703,62,62
+scent_drd2_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,ClCC(Nc1cccc2cc[nH]c12)c1ccc(Br)cc1,1,1,0,1,1,1,0.96,0.96,0.96,78,78
+scent_drd2_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),ClCC(Nc1cccc2cc[nH]c12)c1ccc(Br)cc1,1,1,0,1,1,1,0.938,0.938,0.938,79,79
+scent_drd2_seed44_m10,hub_batching,full,A,Williamson ether synthesis,ClCC(Nc1cccc2cc[nH]c12)c1ccc(Br)cc1,1,1,0,1,1,1,0.913,0.913,0.913,80,80
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (ketone),ClCC(Nc1cccc2cc[nH]c12)c1ccc(Br)cc1,1,1,0,1,1,1,0.902,0.902,0.902,81,81
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),ClCC(Nc1cccc2cc[nH]c12)c1ccc(Br)cc1,1,1,0,1,1,1,0.596,0.596,0.596,84,84
+scent_drd2_seed44_m10,hub_batching,full,A,SNAr (activated aryl fluoride + amine),CC(N)CN1CCCC(=O)C1,1,1,0,1,1,1,0.62,0.62,0.62,132,132
+scent_drd2_seed44_m10,hub_batching,full,A,Benzimidazole formation (N-substituted),CN(CC(=O)O)CC1CCCN1,1,1,0,1,1,1,0.878,0.878,0.878,179,179
+scent_drd2_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,O=C(O)CNC1CCCNC1,1,1,0,1,1,1,0.72,0.72,0.72,197,197
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (ketone),O=C(O)CNC1CCCNC1,1,1,0,1,1,1,0.549,0.549,0.549,203,203
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,O=C1CN(C2CCNC2)C1,1,1,0,1,1,1,0.771,0.771,0.771,217,217
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),O=C1CN(C2CCNC2)C1,1,1,0,1,1,1,0.771,0.771,0.771,218,218
+scent_drd2_seed44_m10,hub_batching,full,A,Benzoxazole formation,O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,1,1,0,1,1,1,0.906,0.906,0.906,241,241
+scent_drd2_seed44_m10,hub_batching,full,A,Benzimidazole formation,O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,1,1,0,1,1,1,0.835,0.835,0.835,245,245
+scent_drd2_seed44_m10,hub_batching,full,A,Benzimidazole formation (N-substituted),O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,1,1,0,1,1,1,0.511,0.511,0.511,259,259
+scent_drd2_seed44_m10,hub_batching,full,A,Amide coupling,CN(CC(=O)O)C1CNC1,1,1,0,1,1,1,0.5,0.5,0.5,269,269
+scent_drd2_seed44_m10,hub_batching,full,A,aza-Michael addition (enone),N#Cc1cc(Br)cc(NCCN2CCCC(NCCc3c[nH]c4ccccc34)C2)c1,1,1,0,1,1,1,1.0,1.0,1.0,270,270
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),N#Cc1cc(Br)cc(NCCN2CCCC(NCCc3c[nH]c4ccccc34)C2)c1,1,1,0,1,1,1,0.997,0.997,0.997,271,271
+scent_drd2_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,N#Cc1cc(Br)cc(NCCN2CCCC(NCCc3c[nH]c4ccccc34)C2)c1,1,1,0,1,1,1,0.985,0.985,0.985,272,272
+scent_drd2_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,N#Cc1cc(Br)cc(NCCN2CCCC(NCCc3c[nH]c4ccccc34)C2)c1,1,1,0,1,1,1,0.967,0.967,0.967,273,273
+scent_drd2_seed44_m10,hub_batching,full,A,N-alkylation (azole N-H + alkyl halide),N#Cc1cc(Br)cc(NCCN2CCCC(NCCc3c[nH]c4ccccc34)C2)c1,1,1,0,1,1,1,0.949,0.949,0.949,274,274
+scent_drd2_seed44_m10,hub_batching,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1cc(Br)cc(NCCN2CCCC(NCCc3c[nH]c4ccccc34)C2)c1,1,1,0,1,1,1,0.587,0.587,0.587,275,275
+scent_drd2_seed44_m10,hub_batching,full,A,SNAr (activated aryl fluoride + amine),COc1ccccc1CCNCC1CCNCC1,1,1,0,1,1,1,0.536,0.536,0.536,295,295
+scent_drd2_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,O=CCCN1CCCC(Nc2cc(F)ccc2O)C1,1,1,0,1,1,1,1.0,1.0,1.0,297,297
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),O=CCCN1CCCC(Nc2cc(F)ccc2O)C1,1,1,0,1,1,1,1.0,1.0,1.0,298,298
+scent_drd2_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),O=CCCN1CCCC(Nc2cc(F)ccc2O)C1,1,1,0,1,1,1,1.0,1.0,1.0,299,299
+scent_drd2_seed44_m10,hub_batching,full,A,Reductive amination (ketone),O=CCCN1CCCC(Nc2cc(F)ccc2O)C1,1,1,0,1,1,1,1.0,1.0,1.0,300,300
+scent_drd2_seed44_m10,hub_batching,full,B,Direct acid -> amine (reductive),,117,102,15,48,14,4,0.5,0.853,1.0,1,299
+scent_drd2_seed44_m10,hub_batching,full,B,Reductive amination (ketone),,45,41,4,30,9,4,0.507,0.87,1.0,19,300
+scent_drd2_seed44_m10,hub_batching,full,B,Pictet-Spengler cyclisation,,26,22,4,12,10,5,0.541,0.84,1.0,20,297
+scent_drd2_seed44_m10,hub_batching,full,B,Amide coupling,,24,23,1,16,11,4,0.5,0.818,0.993,11,296
+scent_drd2_seed44_m10,hub_batching,full,B,Buchwald-Hartwig amination,,23,22,1,14,10,4,0.51,0.773,0.994,26,286
+scent_drd2_seed44_m10,hub_batching,full,B,Reductive amination (aldehyde),,19,19,0,14,8,4,0.548,0.807,1.0,35,298
+scent_drd2_seed44_m10,hub_batching,full,B,Esterification,,12,12,0,12,3,2,0.5,0.69,0.878,17,252
+scent_drd2_seed44_m10,hub_batching,full,B,Urea formation (amine + amine),,11,11,0,9,5,4,0.508,0.735,0.978,62,227
+scent_drd2_seed44_m10,hub_batching,full,B,SNAr (activated aryl fluoride + amine),,9,8,1,5,4,3,0.536,0.826,0.968,30,295
+scent_drd2_seed44_m10,hub_batching,full,B,Benzimidazole formation (N-substituted),,4,4,0,2,3,2,0.511,0.741,0.935,91,259
+scent_drd2_seed44_m10,hub_batching,full,B,N-alkylation (azole N-H + alkyl halide),,3,3,0,3,2,2,0.646,0.791,0.949,82,274
+scent_drd2_seed44_m10,hub_batching,full,B,SNAr (halo-heteroarene + amine),,2,2,0,2,1,2,0.697,0.814,0.931,153,167
+scent_drd2_seed44_m10,hub_batching,full,B,Williamson ether synthesis,,1,1,0,1,1,1,0.913,0.913,0.913,80,80
+scent_drd2_seed44_m10,hub_batching,full,B,Benzoxazole formation,,1,1,0,1,1,1,0.906,0.906,0.906,241,241
+scent_drd2_seed44_m10,hub_batching,full,B,Benzimidazole formation,,1,1,0,1,1,1,0.835,0.835,0.835,245,245
+scent_drd2_seed44_m10,hub_batching,full,B,aza-Michael addition (enone),,1,1,0,1,1,1,1.0,1.0,1.0,270,270
+scent_drd2_seed44_m10,hub_batching,full,B,Tetrazole formation (nitrile + alkyl halide),,1,1,0,1,1,1,0.587,0.587,0.587,275,275
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),Oc1ccccc1N(CCN1CCCCC1)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,1,1
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Direct acid -> amine (reductive),O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,1,1,0,1,1,1,1.0,1.0,1.0,2,2
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),C=CCN(CCC1NCCc2ccccc21)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,3,3
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Direct acid -> amine (reductive),O=C(O)[C@H]1CCCN1C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,4,4
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),COc1ccccc1CCN(CCCN)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,5,5
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),COc1ccccc1CCNCCNC1CC1,1,1,0,1,1,1,1.0,1.0,1.0,6,6
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),COc1cccc2c1CCN(C[C@@H]1CCCN1)C2c1c[nH]c2ccc(Br)cc12,1,1,0,1,1,1,1.0,1.0,1.0,7,7
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Functional-group interconversion (Br -> Cl),COc1cccc2c1CCN(C1CN(C3CCC3)C1)C2c1c[nH]c2ccc(Br)cc12,1,1,0,0,1,1,1.0,1.0,1.0,8,8
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (ketone),CNCCN(c1ccccc1S)C1CN(Cc2c[nH]c3ccc(F)cc23)C1,1,1,0,1,1,1,1.0,1.0,1.0,9,9
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (ketone),COc1ccccc1CCN(Cc1c[nH]c2cc(Br)ccc12)C1CCCNC1,1,1,0,1,1,1,1.0,1.0,1.0,10,10
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),CCC1c2cccc(OC)c2CCN1C1CCNCC1,1,1,0,1,1,1,1.0,1.0,1.0,11,11
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),Fc1ccc(CNCCCN2CCCC(Nc3cccc4cc[nH]c34)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,12,12
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Functional-group interconversion (Br -> I),COc1ccccc1CCN(C[C@H]1CCCN1Cc1c[nH]c2ccc(Br)cc12)C1CNC1,1,1,0,0,1,1,1.0,1.0,1.0,13,13
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Functional-group interconversion (Br -> Cl),COc1cccc2c1CCN(Cc1c[nH]c3ccc(Br)cc13)C2CCN1CCCCC1,1,1,0,0,1,1,1.0,1.0,1.0,14,14
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Direct acid -> amine (reductive),Oc1c(Br)cccc1NCCN1CCCC(NCCc2c[nH]c3ccccc23)C1,1,1,0,1,1,1,1.0,1.0,1.0,15,15
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Pictet-Spengler cyclisation,Oc1ccc(CCNC2CCN(C3CNC3)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,16,16
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Pictet-Spengler cyclisation,COc1ccccc1CCNC1CCN(C2CNC2)C1,1,1,0,1,1,1,1.0,1.0,1.0,17,17
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),COc1ccccc1CCNC[C@H]1CCCN1,1,1,0,1,1,1,1.0,1.0,1.0,18,18
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),CN(CCN(c1cccc2cc[nH]c12)C1CCNC1)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,19,19
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (ketone),CCC1c2cc(O)ccc2CCN1CCCNCc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,20,20
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (ketone),CNCCN1CCc2c(OC)cccc2C1c1c[nH]c2cc(Cl)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,21,21
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Direct acid -> amine (reductive),N[C@H](CCNC1CC1)CNCCc1c[nH]c2ccc(O)cc12,1,1,0,1,1,1,1.0,1.0,1.0,22,22
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Direct acid -> amine (reductive),ClCC(c1ccc(Br)cc1)N(CCCNC1CC1)CCc1c[nH]c2ccccc12,1,1,0,1,1,1,1.0,1.0,1.0,23,23
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),CCCN(CCc1ccccc1OC)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,24,24
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Pictet-Spengler cyclisation,Oc1ccc(F)cc1NCC1c2ccccc2CCN1CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,25,25
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Functional-group interconversion (Br -> Cl),COc1ccccc1CCN(CCCN)C1CN(Cc2c[nH]c3cc(Br)ccc23)C1,1,1,0,0,1,1,1.0,1.0,1.0,26,26
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),Nc1ccc(Br)cc1NCCN(CCc1c[nH]c2ccccc12)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,27,27
+scent_drd2_seed44_m10,best_candidate,at100rxn,A,Reductive amination (aldehyde),CCCN1CCC1CN(CCNC)c1cccc(Br)c1N,1,1,0,1,1,1,1.0,1.0,1.0,28,28
+scent_drd2_seed44_m10,best_candidate,at100rxn,B,Reductive amination (aldehyde),,12,12,0,5,12,2,1.0,1.0,1.0,1,28
+scent_drd2_seed44_m10,best_candidate,at100rxn,B,Direct acid -> amine (reductive),,5,5,0,5,5,3,1.0,1.0,1.0,2,23
+scent_drd2_seed44_m10,best_candidate,at100rxn,B,Reductive amination (ketone),,4,4,0,2,4,1,1.0,1.0,1.0,9,21
+scent_drd2_seed44_m10,best_candidate,at100rxn,B,Functional-group interconversion (Br -> Cl),,3,3,0,0,3,1,1.0,1.0,1.0,8,26
+scent_drd2_seed44_m10,best_candidate,at100rxn,B,Pictet-Spengler cyclisation,,3,3,0,3,3,1,1.0,1.0,1.0,16,25
+scent_drd2_seed44_m10,best_candidate,at100rxn,B,Functional-group interconversion (Br -> I),,1,1,0,0,1,1,1.0,1.0,1.0,13,13
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Oc1ccccc1N(CCN1CCCCC1)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,1,1
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,1,1,0,1,1,1,1.0,1.0,1.0,2,2
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),C=CCN(CCC1NCCc2ccccc21)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,3,3
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)[C@H]1CCCN1C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,4,4
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCN(CCCN)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,5,5
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCNCCNC1CC1,1,1,0,1,1,1,1.0,1.0,1.0,6,6
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1cccc2c1CCN(C[C@@H]1CCCN1)C2c1c[nH]c2ccc(Br)cc12,1,1,0,1,1,1,1.0,1.0,1.0,7,7
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),COc1cccc2c1CCN(C1CN(C3CCC3)C1)C2c1c[nH]c2ccc(Br)cc12,1,1,0,0,1,1,1.0,1.0,1.0,8,8
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CNCCN(c1ccccc1S)C1CN(Cc2c[nH]c3ccc(F)cc23)C1,1,1,0,1,1,1,1.0,1.0,1.0,9,9
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),COc1ccccc1CCN(Cc1c[nH]c2cc(Br)ccc12)C1CCCNC1,1,1,0,1,1,1,1.0,1.0,1.0,10,10
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCC1c2cccc(OC)c2CCN1C1CCNCC1,1,1,0,1,1,1,1.0,1.0,1.0,11,11
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Fc1ccc(CNCCCN2CCCC(Nc3cccc4cc[nH]c34)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,12,12
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),COc1ccccc1CCN(C[C@H]1CCCN1Cc1c[nH]c2ccc(Br)cc12)C1CNC1,1,1,0,0,1,1,1.0,1.0,1.0,13,13
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),COc1cccc2c1CCN(Cc1c[nH]c3ccc(Br)cc13)C2CCN1CCCCC1,1,1,0,0,1,1,1.0,1.0,1.0,14,14
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Oc1c(Br)cccc1NCCN1CCCC(NCCc2c[nH]c3ccccc23)C1,1,1,0,1,1,1,1.0,1.0,1.0,15,15
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,Oc1ccc(CCNC2CCN(C3CNC3)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,16,16
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,COc1ccccc1CCNC1CCN(C2CNC2)C1,1,1,0,1,1,1,1.0,1.0,1.0,17,17
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCNC[C@H]1CCCN1,1,1,0,1,1,1,1.0,1.0,1.0,18,18
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CN(CCN(c1cccc2cc[nH]c12)C1CCNC1)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,19,19
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CCC1c2cc(O)ccc2CCN1CCCNCc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,20,20
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CNCCN1CCc2c(OC)cccc2C1c1c[nH]c2cc(Cl)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,21,21
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),N[C@H](CCNC1CC1)CNCCc1c[nH]c2ccc(O)cc12,1,1,0,1,1,1,1.0,1.0,1.0,22,22
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),ClCC(c1ccc(Br)cc1)N(CCCNC1CC1)CCc1c[nH]c2ccccc12,1,1,0,1,1,1,1.0,1.0,1.0,23,23
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN(CCc1ccccc1OC)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,24,24
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,Oc1ccc(F)cc1NCC1c2ccccc2CCN1CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,25,25
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),COc1ccccc1CCN(CCCN)C1CN(Cc2c[nH]c3cc(Br)ccc23)C1,1,1,0,0,1,1,1.0,1.0,1.0,26,26
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Nc1ccc(Br)cc1NCCN(CCc1c[nH]c2ccccc12)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,27,27
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN1CCC1CN(CCNC)c1cccc(Br)c1N,1,1,0,1,1,1,1.0,1.0,1.0,28,28
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Sc1ccccc1N(CCNCc1c[nH]c2cc(Br)ccc12)C1CCC1,1,1,0,1,1,1,1.0,1.0,1.0,29,29
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,c1ccc(CCNCC2CCN2C2CNC2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,30,30
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),N[C@@H](Cc1c[nH]c2ccccc12)CN(CCNc1ccc(Br)cc1O)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,31,31
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Oc1ccc2c(c1)C(c1c[nH]c3cc(Br)ccc13)N(CC1CCN1)CC2,1,1,0,1,1,1,1.0,1.0,1.0,32,32
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),Oc1ccc(CCNCC2CCN2Cc2c[nH]c3ccc(Br)cc23)cc1,1,1,0,1,1,1,1.0,1.0,1.0,33,33
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CN(CCN1CCCCC1)c1cccc2c1CCNC2c1c[nH]c2ccc(Br)cc12,1,1,0,1,1,1,1.0,1.0,1.0,34,34
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,NCCN1CCC(NCCc2ccc(O)cc2)CC1,1,1,0,1,1,1,1.0,1.0,1.0,35,35
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,NCCN(C[C@H](Cc1ccccc1)NCc1c[nH]c2ccc(F)cc12)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,36,36
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,COc1ccccc1CCNC(CBr)CN1CCCCC1,1,1,0,1,1,1,1.0,1.0,1.0,37,37
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1cccc2c1CCNC2CCN(C[C@@H](C)N)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,38,38
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CNCCN(c1ccc(Br)cc1)C1CCCN(CCN)C1,1,1,0,1,1,1,1.0,1.0,1.0,39,39
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),C=CC1c2cccc(OC)c2CCN1CCCNCc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,40,40
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),NC1(CN(CCNc2ccc(Br)cc2)CCc2c[nH]c3ccccc23)CCC1,1,1,0,1,1,1,1.0,1.0,1.0,41,41
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),Oc1ccc(CCNCC2CCN2CCCNCc2c[nH]c3cc(Br)ccc23)cc1,1,1,0,0,1,1,1.0,1.0,1.0,42,42
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Brc1ccc2[nH]cc(CNCCN(c3ccccn3)C3CNC3)c2c1,1,1,0,1,1,1,1.0,1.0,1.0,43,43
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),NCCN1CCN(c2cc(F)ccc2C(CCl)Nc2ccccc2O)CC1,1,1,0,1,1,1,1.0,1.0,1.0,44,44
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),COc1cccc2c1CCNC2CCN1CCC1CNc1cc(Br)ccc1O,1,1,0,0,1,1,1.0,1.0,1.0,45,45
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,NCCCN(CCCNCCc1ccccc1)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,46,46
+scent_drd2_seed44_m10,best_candidate,full,A,aza-Michael addition (enone),CN(CCN(Cc1c[nH]c2cc(Br)ccc12)c1ccccc1S)C1CCCNC1,1,1,0,1,1,1,1.0,1.0,1.0,47,47
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=Cc1c[nH]c2cc(N(CC(=O)O)C3CN(Cc4ccc(F)cc4)C3)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,48,48
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CNCCN(CC1NCCc2ccc(O)cc21)c1cc(Br)cc(C#N)c1,1,1,0,1,1,1,1.0,1.0,1.0,49,49
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Sc1ccccc1N(CCNC1CC1)Cc1c[nH]c2ccc(Br)cc12,1,1,0,1,1,1,1.0,1.0,1.0,50,50
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCNCC1CN(C2CCC2)C1,1,1,0,1,1,1,1.0,1.0,1.0,51,51
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CC[C@H](N)CN(CCCN)CCc1ccccc1OC,1,1,0,1,1,1,1.0,1.0,1.0,52,52
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),C[C@H](N)CN(CCN1CCCCC1)c1cccc(Br)c1O,1,1,0,1,1,1,1.0,1.0,1.0,53,53
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN(CCCNc1cc(Br)cc(C#N)c1)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,54,54
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Brc1ccc(NC2CCCN(CCCNCc3c[nH]c4cc(Br)ccc34)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,55,55
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),COc1ccccc1CCN(Cc1c[nH]c2ccc(Br)cc12)C1CCN(CC2CCN2)C1,1,1,0,0,1,1,1.0,1.0,1.0,56,56
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),NCCN(CCCNCCc1ccccc1Br)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,57,57
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN(CC=O)c1cc(F)ccc1OC(=O)[C@@H](N)Cc1c[nH]c2ccccc12,1,1,0,1,1,1,1.0,1.0,1.0,58,58
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1cccc(Br)c1O)C1CCCNC1,1,1,0,1,1,1,1.0,1.0,1.0,59,59
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1cccc2c1CCNC2CCN(Cc1ccc(N)c(Br)c1)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,60,60
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,NCCN(CCC=O)CCc1c[nH]c2ccc(O)cc12,1,1,0,1,1,1,1.0,1.0,1.0,61,61
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Oc1ccccc1N(Cc1c[nH]c2cc(Br)ccc12)C[C@@H]1CCCN1,1,1,0,1,1,1,1.0,1.0,1.0,62,62
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Brc1cccc2c1CCNC2CCN1CCCCC1,1,1,0,1,1,1,1.0,1.0,1.0,63,63
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),COc1cccc2c1CCNC2CNCCc1c[nH]c2ccccc12,1,1,0,1,1,1,1.0,1.0,1.0,64,64
+scent_drd2_seed44_m10,best_candidate,full,A,Sonogashira coupling,CCCN1CCC1CN(Cc1c[nH]c2ccc(F)cc12)c1cccc(Br)c1N,1,1,0,1,1,1,1.0,1.0,1.0,65,65
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Sc1ccccc1N(C1CCNC1)C1CCNC1,1,1,0,1,1,1,1.0,1.0,1.0,66,66
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),Fc1ccc(CN(CCc2c[nH]c3ccccc23)C2CCCNC2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,67,67
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Brc1ccc2[nH]cc(CN(CCCNC3CC3)CCc3ccccc3)c2c1,1,1,0,1,1,1,1.0,1.0,1.0,68,68
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,COc1cccc2c1CCN(C1CNC1)C2CNc1cc(Br)ccc1O,1,1,0,1,1,1,1.0,1.0,1.0,69,69
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),COc1ccccc1CCN(CCCNC1CCC1)Cc1c[nH]c2cc(Br)ccc12,1,1,0,0,1,1,1.0,1.0,1.0,70,70
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CCC1c2cccc(OC)c2CCN1CCN(C)CCCN,1,1,0,1,1,1,1.0,1.0,1.0,71,71
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CN(CCN(c1ccccc1O)C1CCCNC1)Cc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,72,72
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),c1cc(N(CCN2CCCCC2)C2CNC2)c2[nH]ccc2c1,1,1,0,1,1,1,1.0,1.0,1.0,73,73
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1cccc2c1CCN(Cc1cccc(Br)c1)C2CNC1CCC1,1,1,0,1,1,1,1.0,1.0,1.0,74,74
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),CC[C@@H](CN1CCc2ccc(O)cc2C1c1c[nH]c2cc(Br)ccc12)NC1CNC1,1,1,0,0,1,1,1.0,1.0,1.0,75,75
+scent_drd2_seed44_m10,best_candidate,full,A,aza-Michael addition (enone),Oc1ccc2c(c1)C(c1c[nH]c3ccc(F)cc13)N(CC1CCN1)CC2,1,1,0,1,1,1,1.0,1.0,1.0,76,76
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1cccc2c1CCNC2CCN(CC1CCN1)c1cccc(Br)c1O,1,1,0,1,1,1,1.0,1.0,1.0,77,77
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),ClCC(c1ccc(Br)cc1)N(CCCN1CCCCC1)CCc1c[nH]c2ccccc12,1,1,0,0,1,1,1.0,1.0,1.0,78,78
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),C#Cc1ccc(NCC2CCN2CC2CCN2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,79,79
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,CCCN1CCCC(N(CCC=O)c2cc(Br)ccc2O)C1,1,1,0,1,1,1,1.0,1.0,1.0,80,80
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),NCCCN(c1ccccc1O)C1CCCN(CCBr)C1,1,1,0,1,1,1,1.0,1.0,1.0,81,81
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),Oc1ccccc1N(CC1CCN1)C1CCN(Cc2c[nH]c3ccc(Br)cc23)C1,1,1,0,0,1,1,1.0,1.0,1.0,82,82
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,O=CCCN(CCc1c[nH]c2ccccc12)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,83,83
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1cccc2c1CCNC2CCN1CCC(Nc2cc(F)ccc2O)C1,1,1,0,1,1,1,1.0,1.0,1.0,84,84
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCN(CCN)CC1(N)CCC1,1,1,0,1,1,1,1.0,1.0,1.0,85,85
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),Oc1ccc2c(c1)C(c1cccc(Br)c1)N(C[C@H]1CCCN1C1CNC1)CC2,1,1,0,0,1,1,1.0,1.0,1.0,86,86
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),NCCN(CCCNC1CC1)CCc1c[nH]c2ccccc12,1,1,0,1,1,1,1.0,1.0,1.0,87,87
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),COc1ccccc1CCN(CCCN)Cc1c[nH]c2ccc(F)cc12,1,1,0,1,1,1,1.0,1.0,1.0,88,88
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,CN(CCN(Cc1c[nH]c2ccc(Br)cc12)C1CC1)c1ccccc1CCN,1,1,0,1,1,1,1.0,1.0,1.0,89,89
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),C#Cc1cccc(N(CC=O)C[C@@H](N)Cc2c[nH]c3ccccc23)c1O,1,1,0,1,1,1,1.0,1.0,1.0,90,90
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),NCCN1CCC(N(CCC(=O)O)c2ccc(Br)cc2)C1,1,1,0,1,1,1,1.0,1.0,1.0,91,91
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,c1ccc(CCNC2CCN(CC3CCN3)CC2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,92,92
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=CCCN(CCCNC1CC1)CCc1ccc(O)cc1,1,1,0,1,1,1,1.0,1.0,1.0,93,93
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1cccc2c1CCNC2CCN(C1CC1)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,94,94
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),Brc1ccc2c(C3c4ccccc4CCN3CC3CCN(C4CNC4)CC3)c[nH]c2c1,1,1,0,0,1,1,1.0,1.0,1.0,95,95
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN1CC(N(C[C@@H]2CCCN2)c2ccccc2S)C1,1,1,0,1,1,1,1.0,1.0,1.0,96,96
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),Brc1ccc2[nH]cc(CN(CCCNC3CC3)CCc3ccccc3)c2c1,1,1,0,0,1,1,1.0,1.0,1.0,97,97
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),CCCN1CCC1CN1CCc2c(Br)cccc2C1c1c[nH]c2cc(Br)ccc12,1,1,0,0,1,1,1.0,1.0,1.0,98,98
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,COc1ccccc1CCNCCCN1CCCCC1,1,1,0,1,1,1,1.0,1.0,1.0,99,99
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CNCCN(CCCN1CCCCC1)c1cccc(Br)c1O,1,1,0,1,1,1,1.0,1.0,1.0,100,100
+scent_drd2_seed44_m10,best_candidate,full,A,aza-Michael addition (enone),Fc1ccc(CN(CCc2c[nH]c3ccccc23)C[C@@H]2CCCN2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,101,101
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),c1ccc2c(CCN(C[C@@H]3CCCN3)C3CCC3)c[nH]c2c1,1,1,0,1,1,1,1.0,1.0,1.0,102,102
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)CCN(CCNCCc1c[nH]c2ccccc12)c1ccc(Br)cc1O,1,1,0,1,1,1,1.0,1.0,1.0,103,103
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Oc1ccc2c(c1)C(CCN(C1CC1)C(CCl)c1ccc(F)cc1)NCC2,1,1,0,1,1,1,1.0,1.0,1.0,104,104
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Fc1ccc(C(CCl)N(CCCNCCc2c[nH]c3ccccc23)C2CCC2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,105,105
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=CCCN1CCC[C@@H]1C(=O)O,1,1,0,1,1,1,1.0,1.0,1.0,106,106
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCC1c2ccccc2CCN1C1CCCNC1,1,1,0,1,1,1,1.0,1.0,1.0,107,107
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),C=CC1c2cc(O)ccc2CCN1C[C@@H](C)NCc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,108,108
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCN(C[C@H]1CCCN1)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,109,109
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),CCCN1CCC(N2CCc3ccccc3C2c2c[nH]c3cc(Br)ccc23)C1,1,1,0,0,1,1,1.0,1.0,1.0,110,110
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCNC[C@@H]1CCCN1CCCN,1,1,0,1,1,1,1.0,1.0,1.0,111,111
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CNCCN(CC1CCN1C1CCC1)c1ccccc1O,1,1,0,1,1,1,1.0,1.0,1.0,112,112
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Fc1ccc(C(CCl)N[C@@H](Cc2c[nH]c3ccccc23)CN2CCCCC2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,113,113
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),Oc1ccc2c(c1)C(c1c[nH]c3cc(Br)ccc13)N(C1CCCN(CC3CCN3)C1)CC2,1,1,0,0,1,1,1.0,1.0,1.0,114,114
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Brc1ccc(N(CC2CCN2)C2CN(C3CNC3)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,115,115
+scent_drd2_seed44_m10,best_candidate,full,A,aza-Michael addition (enone),NCCC[C@@H](CNCCc1ccc(O)cc1)NCc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,116,116
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),COc1cccc2c1CCN(C1CNC1)C2CNc1cc(F)ccc1O,1,1,0,1,1,1,1.0,1.0,1.0,117,117
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CCCNCCN(Cc1c[nH]c2ccc(Br)cc12)c1cccc(Br)c1N,1,1,0,1,1,1,1.0,1.0,1.0,118,118
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),ClCC(Nc1cccc2cc[nH]c12)c1ccc(Br)cc1,1,1,0,1,1,1,1.0,1.0,1.0,119,119
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Oc1ccccc1NC1CCCN(CC2CCN2)C1,1,1,0,1,1,1,1.0,1.0,1.0,120,120
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),NCCCN(CCc1ccc(O)cc1)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,121,121
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),COc1cccc2c1CCN(Cc1ccc(N)c(Br)c1)C2CCN1CCC[C@@H]1CO,1,1,0,0,1,1,1.0,1.0,1.0,122,122
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Oc1c(Br)cccc1NCCCN(CC1CCN1)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,123,123
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),COc1cccc2c1CCNC2CN1CC(Nc2cc(Br)ccc2O)C1,1,1,0,1,1,1,1.0,1.0,1.0,124,124
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),c1cc(NC2CCCN(C3CNC3)C2)c2[nH]ccc2c1,1,1,0,1,1,1,1.0,1.0,1.0,125,125
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Fc1ccc(CNCCCN(C2CC2)C2CNC2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,126,126
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CCCN(CCNc1cc(Br)ccc1O)C1CCC1,1,1,0,1,1,1,1.0,1.0,1.0,127,127
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),N#Cc1cc(Br)cc(N(CCN2CCC(=O)C2)Cc2c[nH]c3ccc(Br)cc23)c1,1,1,0,1,1,1,1.0,1.0,1.0,128,128
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Cl -> I),NCCCN1CCCC(N(c2cccc3cc[nH]c23)C(CCl)c2ccc(Cl)c(Cl)c2)C1,1,1,0,0,1,1,1.0,1.0,1.0,129,129
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Oh),OC[C@@H]1CCCN1CCC1c2cccc(Br)c2CCN1Cc1c[nH]c2ccc(Br)cc12,1,1,0,0,1,1,1.0,1.0,1.0,130,130
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CC[C@H](N)CN(CCNCCc1c[nH]c2ccccc12)c1cc(F)ccc1C(=O)CCl,1,1,0,1,1,1,1.0,1.0,1.0,131,131
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CCCN(CCNc1cccc2cc[nH]c12)C1CCNC1,1,1,0,1,1,1,1.0,1.0,1.0,132,132
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Brc1ccc2c(CNCCCNCCc3ccccc3I)c[nH]c2c1,1,1,0,1,1,1,1.0,1.0,1.0,133,133
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Sh),NCCN1CCCC(N2CCc3c(Br)cccc3C2c2c[nH]c3ccc(F)cc23)C1,1,1,0,0,1,1,1.0,1.0,1.0,134,134
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Sc1ccccc1N(CCCNC1CC1)C1CCNC1,1,1,0,1,1,1,1.0,1.0,1.0,135,135
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),C=CC1c2cccc(OC)c2CCN1C1CCNC1,1,1,0,1,1,1,1.0,1.0,1.0,136,136
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),Oc1ccccc1NC1CCCN(CC2CCN2)C1,1,1,0,1,1,1,1.0,1.0,1.0,137,137
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),C#CCN(CCC1NCCc2ccc(O)cc21)C[C@H](C)N,1,1,0,1,1,1,1.0,1.0,1.0,138,138
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Oc1cc(Br)ccc1N(CCNCc1c[nH]c2ccccc12)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,139,139
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CCC1c2cccc(OC)c2CCN1C1CN(CCC(=O)O)C1,1,1,0,1,1,1,1.0,1.0,1.0,140,140
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCNCCCN1CCCC(Nc2cc(F)ccc2O)C1,1,1,0,1,1,1,1.0,1.0,1.0,141,141
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),NCCN(CC1NCCc2ccc(O)cc21)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,142,142
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CN(CCC=O)CCN(CCC(=O)O)c1ccc(Br)cc1,1,1,0,1,1,1,1.0,1.0,1.0,143,143
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Oc1ccc(CCNC2CCN(C3CCNC3)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,144,144
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CCCNCCN(C[C@H](N)Cc1c[nH]c2ccccc12)c1cc(F)ccc1O,1,1,0,1,1,1,1.0,1.0,1.0,145,145
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),Brc1ccc2[nH]cc(C3c4ccccc4CCN3C3CCN(C4CCNC4)C3)c2c1,1,1,0,0,1,1,1.0,1.0,1.0,146,146
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Oc1ccc(Br)cc1N(CC1NCCc2c(Br)cccc21)C[C@H]1CCCN1,1,1,0,1,1,1,1.0,1.0,1.0,147,147
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN(C[C@H](C)NCc1ccc(F)cc1)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,148,148
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),COc1ccccc1CCN(CCCNc1cc(F)ccc1O)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,149,149
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),COc1cccc2c1CCN(CCCNCCN)C2c1cccc(Br)c1,1,1,0,1,1,1,1.0,1.0,1.0,150,150
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),COc1ccc(O)c(N(Cc2c[nH]c3cc(Br)ccc23)CC2CCN2CC2CCN2)c1,1,1,0,0,1,1,1.0,1.0,1.0,151,151
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CCCN1CCc2c(OC)cccc2C1CNc1cc(Br)ccc1O,1,1,0,1,1,1,1.0,1.0,1.0,152,152
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),COc1cccc(CN(CCCNC2CC2)Cc2c[nH]c3ccc(Br)cc23)c1,1,1,0,1,1,1,1.0,1.0,1.0,153,153
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),NCCCN1CC(N(CCC=O)CCc2ccc(O)cc2)C1,1,1,0,1,1,1,1.0,1.0,1.0,154,154
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),COc1ccccc1CCN(CCCN)C[C@H](C)NCc1c[nH]c2ccc(Br)cc12,1,1,0,0,1,1,1.0,1.0,1.0,155,155
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCNCCN(C[C@@H](N)CC)c1ccccc1O,1,1,0,1,1,1,1.0,1.0,1.0,156,156
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Oc1ccc(CCNCCCN(c2ccc(Br)cc2)C2CCCNC2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,157,157
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),COc1cccc2c1CCNC2CN1CCC1c1nc2cccc(Br)c2o1,1,1,0,1,1,1,1.0,1.0,1.0,158,158
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Oc1ccc(F)cc1N(CCN1CCCCC1)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,159,159
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),Oc1ccccc1N(Cc1c[nH]c2cc(Br)ccc12)CC1CCN(CC2CCN2)CC1,1,1,0,0,1,1,1.0,1.0,1.0,160,160
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=CCNCCCN(Cc1c[nH]c2ccc(Br)cc12)c1ccccc1O,1,1,0,1,1,1,1.0,1.0,1.0,161,161
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),C[C@H](CN1CCCCC1)N(Cc1c[nH]c2ccc(Br)cc12)C(CCl)c1ccc(Br)cc1,1,1,0,0,1,1,1.0,1.0,1.0,162,162
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CC[C@H](N)CN(CCCNCCc1c[nH]c2ccccc12)c1ccc(Br)cc1O,1,1,0,1,1,1,1.0,1.0,1.0,163,163
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),CCCN(CCc1ccc(O)cc1)C[C@H](CC)NCc1c[nH]c2cc(Br)ccc12,1,1,0,0,1,1,1.0,1.0,1.0,164,164
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCNCC1CCN1C[C@H](C)N,1,1,0,1,1,1,1.0,1.0,1.0,165,165
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),O=C(CCl)c1ccc(F)cc1N1CCC1CN1CCCCC1,1,1,0,1,1,1,1.0,1.0,1.0,166,166
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),CCCN1CCC[C@@H]1CN(Cc1c[nH]c2cc(Br)ccc12)c1cc(Br)cc(C#N)c1,1,1,0,0,1,1,1.0,1.0,1.0,167,167
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CN(CCN(c1cccc(C=O)c1)C1CC1)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,168,168
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CN(CCNC1CC1)CCC1NCCc2ccc(O)cc21,1,1,0,1,1,1,1.0,1.0,1.0,169,169
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=Cc1c[nH]c2ccc(N3CCC3CNCCc3ccccc3Br)cc12,1,1,0,1,1,1,1.0,1.0,1.0,170,170
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),CC[C@H](N)CN1CC(N2CCc3c(OC)cccc3C2c2c[nH]c3cc(Br)ccc23)C1,1,1,0,0,1,1,1.0,1.0,1.0,171,171
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Oc1ccc(Br)cc1N(CCNCCc1c[nH]c2ccccc12)C[C@H]1CCCN1,1,1,0,1,1,1,1.0,1.0,1.0,172,172
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),NCCCN(CCc1ccc(O)cc1)C[C@H]1CCCN1,1,1,0,1,1,1,1.0,1.0,1.0,173,173
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),COc1ccc(O)c(N(C2CCCNC2)C(CCl)c2ccc(F)cc2)c1,1,1,0,1,1,1,1.0,1.0,1.0,174,174
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),N#Cc1ccc(NCCN2CCCCC2)c(NCc2c[nH]c3cc(Br)ccc23)c1,1,1,0,1,1,1,1.0,1.0,1.0,175,175
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),Oc1ccc(F)cc1NCCCN(CCc1c[nH]c2ccccc12)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,176,176
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=CCCNCCCN1CCc2ccc(O)cc2C1c1c[nH]c2ccc(Br)cc12,1,1,0,1,1,1,1.0,1.0,1.0,177,177
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Brc1ccc(NC2CCN(CC3CCN3)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,178,178
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc(CN(CCC2NCCc3ccc(O)cc32)C2CC2)cc1Br,1,1,0,1,1,1,1.0,1.0,1.0,179,179
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Oh),COc1ccccc1CCN(CC1NCCc2c(Br)cccc21)C1CNC1,1,1,0,0,1,1,1.0,1.0,1.0,180,180
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),BrCC(CN(CCc1c[nH]c2ccccc12)C1CNC1)Nc1ccc(Br)cc1,1,1,0,1,1,1,1.0,1.0,1.0,181,181
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,CN(CCNCCc1ccccc1)C1CCNCC1,1,1,0,1,1,1,1.0,1.0,1.0,182,182
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),NCCN1CCC(CNCCc2c[nH]c3ccc(O)cc23)CC1,1,1,0,1,1,1,1.0,1.0,1.0,183,183
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),Brc1cccc(CN(CCc2c[nH]c3ccccc23)C[C@H]2CCCN2)c1,1,1,0,1,1,1,1.0,1.0,1.0,184,184
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Oh),Brc1ccc(N(Cc2c[nH]c3ccc(Br)cc23)C2CCCN(C3CNC3)C2)cc1,1,1,0,0,1,1,1.0,1.0,1.0,185,185
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),N[C@H](CCN1CCCCC1)CN1CCc2ccccc2C1c1c[nH]c2ccc(Br)cc12,1,1,0,0,1,1,1.0,1.0,1.0,186,186
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Oh),NCCN1CCC(N(CCc2ccccc2Br)Cc2c[nH]c3ccc(F)cc23)CC1,1,1,0,0,1,1,1.0,1.0,1.0,187,187
+scent_drd2_seed44_m10,best_candidate,full,A,Sonogashira coupling,NC1(CN(CCc2ccccc2Br)Cc2c[nH]c3ccc(I)cc23)CCC1,1,1,0,1,1,1,1.0,1.0,1.0,188,188
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CNCCN(CCNc1ccc(Br)cc1)CCc1c[nH]c2ccccc12,1,1,0,1,1,1,1.0,1.0,1.0,189,189
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),CNCCN(CCc1ccccc1OC)C[C@@H]1CCCN1Cc1c[nH]c2cc(Br)ccc12,1,1,0,0,1,1,1.0,1.0,1.0,190,190
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),N[C@H](CC(=O)O)CN(Cc1c[nH]c2ccc(Br)cc12)c1ccccc1S,1,1,0,1,1,1,1.0,1.0,1.0,191,191
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),C#CCN(CCC1NCCc2ccc(O)cc21)Cc1c[nH]c2ccc(Br)cc12,1,1,0,0,1,1,1.0,1.0,1.0,192,192
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Oc1ccc2c(c1)C(CCN(CC1CCN1)c1cc(F)ccc1O)NCC2,1,1,0,1,1,1,1.0,1.0,1.0,193,193
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCNC1CCN(CCNc2cc(F)c(F)cc2O)CC1,1,1,0,1,1,1,1.0,1.0,1.0,194,194
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),C=CCN(CCNCc1c[nH]c2ccc(Br)cc12)c1cc(Br)cc(C#N)c1,1,1,0,1,1,1,1.0,1.0,1.0,195,195
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),c1ccc(CCNCCCN2CCCCC2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,196,196
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CN(CCN1CCCCC1)c1ccc2c(CNc3cccc(Br)c3N)c[nH]c2c1,1,1,0,1,1,1,1.0,1.0,1.0,197,197
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1cccc2c1CCN(C[C@@H](C)NCCCN)C2c1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,198,198
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CCCN1CCC1CN(CCN)c1cc(Br)cc(C#N)c1,1,1,0,1,1,1,1.0,1.0,1.0,199,199
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Sc1ccccc1N(Cc1c[nH]c2cc(Br)ccc12)C1CN(C2CCCNC2)C1,1,1,0,1,1,1,1.0,1.0,1.0,200,200
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),N#Cc1cc(Br)cc(N(C2CCNCC2)C(CCl)c2ccc(F)cc2)c1,1,1,0,1,1,1,1.0,1.0,1.0,201,201
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Nc1cc(N(CCNC2CC2)CC2CCN2)ccc1O,1,1,0,1,1,1,1.0,1.0,1.0,202,202
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Oc1ccc2[nH]cc(CCNC(CCl)c3ccc(F)cc3)c2c1,1,1,0,1,1,1,1.0,1.0,1.0,203,203
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),NCCCN(CCNCc1c[nH]c2ccc(Br)cc12)CCc1ccc(O)cc1,1,1,0,0,1,1,1.0,1.0,1.0,204,204
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),N[C@H](Cc1c[nH]c2ccccc12)CN(c1ccc(Br)cc1O)C1CCN(C2CNC2)C1,1,1,0,0,1,1,1.0,1.0,1.0,205,205
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),N[C@H](CCN1CCCCC1)CN(CCc1ccccc1)Cc1c[nH]c2cc(Br)ccc12,1,1,0,0,1,1,1.0,1.0,1.0,206,206
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),Oc1ccc2[nH]cc(CCNC3CCN(Cc4ccc(F)cc4)CC3)c2c1,1,1,0,1,1,1,1.0,1.0,1.0,207,207
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN(C[C@H](C)NCc1cccc(Br)c1)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,208,208
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Sh),Fc1ccc2[nH]cc(CN3CCC(N(CCc4ccccc4Br)C4CNC4)C3)c2c1,1,1,0,0,1,1,1.0,1.0,1.0,209,209
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Oc1c(Br)cccc1NCC1CCN1CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,210,210
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Fc1ccc(CNCCN2CCC(NC3CC3)CC2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,211,211
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN1CC(N(C[C@@H](N)CC)c2ccc(Br)cc2)C1,1,1,0,1,1,1,1.0,1.0,1.0,212,212
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),COc1ccccc1CCNC1CCN(C[C@@H]2CCCN2)C1,1,1,0,1,1,1,1.0,1.0,1.0,213,213
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),CCCN1CCC1CN(C[C@H](N)Cc1c[nH]c2ccccc12)c1cc(Br)ccc1O,1,1,0,0,1,1,1.0,1.0,1.0,214,214
+scent_drd2_seed44_m10,best_candidate,full,A,Sonogashira coupling,Brc1ccc(N(Cc2c[nH]c3cc(Br)ccc23)C2CCN(C3CCCNC3)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,215,215
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(CCl)c1ccc(F)cc1N1CCC1CNCCc1c[nH]c2ccccc12,1,1,0,1,1,1,1.0,1.0,1.0,216,216
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CN(CCN1CCCCC1)c1cccc(NCc2c[nH]c3cc(Br)ccc23)c1O,1,1,0,1,1,1,1.0,1.0,1.0,217,217
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,COc1ccccc1CCNC[C@H](C)N(Cc1c[nH]c2ccc(F)cc12)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,218,218
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Fc1ccc(C(CCl)N2CCC(N(CC3CCN3)c3cccc4cc[nH]c34)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,219,219
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1ccc(Br)cc1O)C1CCNCC1,1,1,0,1,1,1,1.0,1.0,1.0,220,220
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CN(CCN)CCN(C[C@@H]1CCCN1)c1ccc(Br)cc1O,1,1,0,1,1,1,1.0,1.0,1.0,221,221
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CCCN(CCNc1cc(Br)ccc1O)Cc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,222,222
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,CC[C@H](N)CN1CC(NCCc2ccc(O)cc2)C1,1,1,0,1,1,1,1.0,1.0,1.0,223,223
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),C=CCN(CCCCN)CCCNc1cccc(Br)c1O,1,1,0,1,1,1,1.0,1.0,1.0,224,224
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=CCN(c1ccccc1O)C(CBr)CNCCc1c[nH]c2ccccc12,1,1,0,1,1,1,1.0,1.0,1.0,225,225
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),COc1cccc2c1CCN(C[C@H](C)NC1CNC1)C2c1cccc(Br)c1,1,1,0,0,1,1,1.0,1.0,1.0,226,226
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Oh),C=CC1c2ccccc2CCN1C1CCN(Cc2c[nH]c3cc(Br)ccc23)CC1,1,1,0,0,1,1,1.0,1.0,1.0,227,227
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN(c1ccccc1S)C1CCCN(C[C@H](C)N)C1,1,1,0,1,1,1,1.0,1.0,1.0,228,228
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Nc1ccc(CNCCCN2CCCC(Nc3cc(Br)ccc3O)C2)cc1Br,1,1,0,1,1,1,1.0,1.0,1.0,229,229
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),C[C@H](CN(CCc1ccc(O)cc1)C1CCCNC1)NCc1c[nH]c2ccc(Br)cc12,1,1,0,0,1,1,1.0,1.0,1.0,230,230
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN(CCC1=NCCc2ccc(O)cc21)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,231,231
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),COc1cccc(CN(CCNc2ccc(Br)cc2)C[C@@H]2CCCN2)c1,1,1,0,1,1,1,1.0,1.0,1.0,232,232
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=Cc1c[nH]c2ccc(N(C3CNC3)C(CCl)c3ccc(Br)cc3)cc12,1,1,0,1,1,1,1.0,1.0,1.0,233,233
+scent_drd2_seed44_m10,best_candidate,full,A,Sonogashira coupling,Brc1ccc(N(CC2CCN2)C2CCCN(Cc3c[nH]c4cc(Br)ccc34)C2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,234,234
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),COc1ccccc1CCN(Cc1c[nH]c2ccc(Br)cc12)CC1CCN1C1CCNC1,1,1,0,0,1,1,1.0,1.0,1.0,235,235
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),N[C@H](Cc1c[nH]c2ccccc12)CN(c1ccc(Br)cc1)C1CCCNC1,1,1,0,1,1,1,1.0,1.0,1.0,236,236
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),ClCC(NCCCN(CC1CCN1)C1CC1)c1ccccc1,1,1,0,1,1,1,1.0,1.0,1.0,237,237
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CN(CCN1CC(Nc2cc(F)ccc2O)C1)c1ccccc1CCN,1,1,0,1,1,1,1.0,1.0,1.0,238,238
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),COc1ccc(O)c(NC2CNC2)c1,1,1,0,1,1,1,1.0,1.0,1.0,239,239
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CCC1c2cccc(Br)c2CCN1CCCNc1cc(Br)ccc1O,1,1,0,1,1,1,1.0,1.0,1.0,240,240
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),CN(CCN(Cc1c[nH]c2ccc(Br)cc12)c1ccc(Br)cc1)C1CCNCC1,1,1,0,0,1,1,1.0,1.0,1.0,241,241
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Oc1cc(Br)ccc1N(Cc1c[nH]c2ccc(I)cc12)C1CCNC1,1,1,0,1,1,1,1.0,1.0,1.0,242,242
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,NCCN(CCNCCc1ccccc1)Cc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,243,243
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),COc1ccccc1CN(CCNc1ccc(Br)cc1O)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,244,244
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CC[C@H](N)CN(CCc1ccccc1OC)C1CCNC1,1,1,0,1,1,1,1.0,1.0,1.0,245,245
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),N#Cc1ccc(N(Cc2c[nH]c3cc(Br)ccc23)C[C@@H]2CCCN2C2CNC2)c(N)c1,1,1,0,1,1,1,1.0,1.0,1.0,246,246
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),c1cc(N(CC2CCN2)C2CN(CC3CCN3)C2)c2[nH]ccc2c1,1,1,0,1,1,1,1.0,1.0,1.0,247,247
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),Oc1ccc2[nH]cc(CCNCCNC(CCl)c3ccc(Br)cc3)c2c1,1,1,0,1,1,1,1.0,1.0,1.0,248,248
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN(c1ccc(Br)cc1O)C1CCN(C2CNC2)C1,1,1,0,1,1,1,1.0,1.0,1.0,249,249
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,COc1ccccc1CCNCC[C@@H](N)CNCCc1ccc(O)cc1,1,1,0,1,1,1,1.0,1.0,1.0,250,250
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)C1c2cc(O)ccc2CCN1CCNCc1c[nH]c2ccc(Br)cc12,1,1,0,1,1,1,1.0,1.0,1.0,251,251
+scent_drd2_seed44_m10,best_candidate,full,A,aza-Michael addition (enone),COc1cccc2c1CCN(C1CCCNC1)C2c1cccc(I)c1,1,1,0,1,1,1,1.0,1.0,1.0,252,252
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),N[C@H](Cc1c[nH]c2ccccc12)CN1CCC1CN1CCCCC1,1,1,0,1,1,1,1.0,1.0,1.0,253,253
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),COc1ccccc1CCNCCCN1CCC[C@@H]1CNc1cc(Br)ccc1O,1,1,0,0,1,1,1.0,1.0,1.0,254,254
+scent_drd2_seed44_m10,best_candidate,full,A,Sonogashira coupling,N[C@H](CCN1CCCCC1)CN(Cc1c[nH]c2cc(Br)ccc12)c1cc(Br)ccc1O,1,1,0,1,1,1,1.0,1.0,1.0,255,255
+scent_drd2_seed44_m10,best_candidate,full,A,Sonogashira coupling,Sc1ccccc1N(CCCN1CCCCC1)Cc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,256,256
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CNCCN(CCNCCc1ccccc1Br)c1ccc(Br)cc1O,1,1,0,1,1,1,1.0,1.0,1.0,257,257
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CNCCN(CC1CCN1CCN)c1cccc2cc[nH]c12,1,1,0,1,1,1,1.0,1.0,1.0,258,258
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Nc1cccc(S)c1N(C1CCNCC1)C1CCNC1,1,1,0,1,1,1,1.0,1.0,1.0,259,259
+scent_drd2_seed44_m10,best_candidate,full,A,aza-Michael addition (enone),N[C@@H](CCNCCc1c[nH]c2ccccc12)CN(Cc1ccc(F)cc1)C1CC1,1,1,0,1,1,1,1.0,1.0,1.0,260,260
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),Oc1cc(Br)ccc1N(Cc1c[nH]c2cc(Br)ccc12)C1CCCN(CC2CNC2)C1,1,1,0,0,1,1,1.0,1.0,1.0,261,261
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,COc1ccccc1CCNCc1ccc(N)c(Br)c1,1,1,0,1,1,1,1.0,1.0,1.0,262,262
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),COc1cccc2c1CCNC2CN(c1ccc(Br)cc1)C1CCC1,1,1,0,1,1,1,1.0,1.0,1.0,263,263
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CN(CCN(Cc1c[nH]c2ccc(Br)cc12)C1CCC1)c1ccc(O)c(N)c1,1,1,0,1,1,1,1.0,1.0,1.0,264,264
+scent_drd2_seed44_m10,best_candidate,full,A,Sonogashira coupling,CN(CCN(Cc1c[nH]c2ccc(F)cc12)c1ccc(Br)cc1)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,265,265
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),O=CCCN1CCC(N(CCc2ccc(O)cc2)Cc2c[nH]c3cc(Br)ccc23)C1,1,1,0,0,1,1,1.0,1.0,1.0,266,266
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Oc1ccc2c(c1)C(CCNCCc1ccccc1Br)NCC2,1,1,0,1,1,1,1.0,1.0,1.0,267,267
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),Oc1ccc2c(c1)C(c1c[nH]c3ccc(Br)cc13)N(C1CNC1)[C@H](CN1CCCCC1)C2,1,1,0,0,1,1,1.0,1.0,1.0,268,268
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),NCCCN(CCN1CCCCC1)Cc1c[nH]c2ccc(Br)cc12,1,1,0,1,1,1,1.0,1.0,1.0,269,269
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Sh),Brc1ccc2c(CN[C@H](CCNCCc3ccccc3Br)CN3CCCCC3)c[nH]c2c1,1,1,0,0,1,1,1.0,1.0,1.0,270,270
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN1CCC1CN(c1ccc(Br)cc1N)C1CCNC1,1,1,0,1,1,1,1.0,1.0,1.0,271,271
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1cccc(N2CCC2CN2CCCCC2)c1NCc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,272,272
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,COc1cccc2c1CCNC2CCN1CCC1C(=O)O,1,1,0,1,1,1,1.0,1.0,1.0,273,273
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Fc1ccc(CN(c2cccc3cc[nH]c23)C2CCCNC2)cc1,1,1,0,1,1,1,1.0,1.0,1.0,274,274
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Oc1ccc(F)cc1N(CC1NCCc2c(Br)cccc21)C1CCCNC1,1,1,0,1,1,1,1.0,1.0,1.0,275,275
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Nc1c(Br)cccc1NC1CCCN(CC2NCCc3ccc(O)cc32)C1,1,1,0,1,1,1,1.0,1.0,1.0,276,276
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),NCCCCN(CCNc1ccc(Br)cc1N)CC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,277,277
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),N#Cc1cc(Br)cc(NCCCN(CCC=O)CCc2c[nH]c3ccccc23)c1,1,1,0,1,1,1,1.0,1.0,1.0,278,278
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CN(CC(=O)O)C[C@H]1CCCN1,1,1,0,1,1,1,1.0,1.0,1.0,279,279
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),N[C@@H](Cc1c[nH]c2ccccc12)CN1CCCC(Nc2ccc(Br)cc2O)C1,1,1,0,1,1,1,1.0,1.0,1.0,280,280
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),NCCN(CCc1ccccc1)CC1(NCc2c[nH]c3cc(Br)ccc23)CCC1,1,1,0,1,1,1,1.0,1.0,1.0,281,281
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> I),Brc1ccc2[nH]cc(C3c4cccc(Br)c4CCN3CCCNC3CC3)c2c1,1,1,0,0,1,1,1.0,1.0,1.0,282,282
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,N[C@H](Cc1ccc(O)cc1)CN1CCCCC1,1,1,0,1,1,1,1.0,1.0,1.0,283,283
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=CCN(c1ccc(Br)cc1O)C1CCCN(CCBr)C1,1,1,0,1,1,1,1.0,1.0,1.0,284,284
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),COc1ccccc1CCN(C[C@@H](C)NCc1c[nH]c2cc(Br)ccc12)CC1(N)CCC1,1,1,0,0,1,1,1.0,1.0,1.0,285,285
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Br -> Cl),Brc1ccc(N(Cc2c[nH]c3ccccc23)C2CCCN(C[C@@H]3CCCN3)C2)cc1,1,1,0,0,1,1,1.0,1.0,1.0,286,286
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CN(CCC=O)CCN(CCCN)c1cc(Br)ccc1O,1,1,0,1,1,1,1.0,1.0,1.0,287,287
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Brc1ccc2[nH]cc(C3c4cccc(Br)c4CCN3C3CCNCC3)c2c1,1,1,0,1,1,1,1.0,1.0,1.0,288,288
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CN(CCN(CC1CCN1)C1CC1)c1ccccc1CCN,1,1,0,1,1,1,1.0,1.0,1.0,289,289
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)C1c2cc(O)ccc2CCN1CC1CCN1Cc1c[nH]c2cc(Br)ccc12,1,1,0,1,1,1,1.0,1.0,1.0,290,290
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Nc1cc(N2CCC2CN(CC2CCN2)C2CC2)ccc1O,1,1,0,1,1,1,1.0,1.0,1.0,291,291
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,N[C@@H](CCNCCc1ccc(O)cc1)CNCCc1c[nH]c2ccccc12,1,1,0,1,1,1,1.0,1.0,1.0,292,292
+scent_drd2_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,COc1cccc(CNCC2CCN2CCC=O)c1,1,1,0,1,1,1,1.0,1.0,1.0,293,293
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CCCN(CCc1ccc(O)cc1)C[C@@H](C)NCC1CCN1,1,1,0,1,1,1,1.0,1.0,1.0,294,294
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Brc1ccc2c(CN(CCNC3CC3)c3cccnc3Br)c[nH]c2c1,1,1,0,1,1,1,1.0,1.0,1.0,295,295
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (ketone),c1cc(NC2CCN(CC3CCN3)CC2)c2[nH]ccc2c1,1,1,0,1,1,1,1.0,1.0,1.0,296,296
+scent_drd2_seed44_m10,best_candidate,full,A,Sonogashira coupling,NC1(CN2CC(N(Cc3c[nH]c4ccc(Br)cc34)c3cccc(Br)c3O)C2)CCC1,1,1,0,1,1,1,1.0,1.0,1.0,297,297
+scent_drd2_seed44_m10,best_candidate,full,A,Functional-group interconversion (Cl -> Br),Oc1ccc2[nH]cc(CCN(CC3CCN3C3CNC3)C(CCl)c3ccc(Cl)c(Cl)c3)c2c1,1,1,0,0,1,1,1.0,1.0,1.0,298,298
+scent_drd2_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),CNCCN(c1cccc(Br)c1O)C1CN(Cc2c[nH]c3cc(Br)ccc23)C1,1,1,0,1,1,1,1.0,1.0,1.0,299,299
+scent_drd2_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),CN(CCN(c1ccc(Br)cc1O)C1CCCNC1)C1CNC1,1,1,0,1,1,1,1.0,1.0,1.0,300,300
+scent_drd2_seed44_m10,best_candidate,full,B,Reductive amination (aldehyde),,110,110,0,11,110,4,1.0,1.0,1.0,1,300
+scent_drd2_seed44_m10,best_candidate,full,B,Direct acid -> amine (reductive),,63,63,0,21,63,4,1.0,1.0,1.0,2,299
+scent_drd2_seed44_m10,best_candidate,full,B,Reductive amination (ketone),,34,34,0,8,34,3,1.0,1.0,1.0,9,296
+scent_drd2_seed44_m10,best_candidate,full,B,Pictet-Spengler cyclisation,,25,25,0,9,25,3,1.0,1.0,1.0,16,293
+scent_drd2_seed44_m10,best_candidate,full,B,Functional-group interconversion (Br -> Cl),,22,22,0,0,22,1,1.0,1.0,1.0,8,286
+scent_drd2_seed44_m10,best_candidate,full,B,Functional-group interconversion (Br -> I),,22,22,0,0,22,1,1.0,1.0,1.0,13,282
+scent_drd2_seed44_m10,best_candidate,full,B,Sonogashira coupling,,8,8,0,1,8,1,1.0,1.0,1.0,65,297
+scent_drd2_seed44_m10,best_candidate,full,B,aza-Michael addition (enone),,6,6,0,1,6,1,1.0,1.0,1.0,47,260
+scent_drd2_seed44_m10,best_candidate,full,B,Functional-group interconversion (Br -> Oh),,5,5,0,0,5,1,1.0,1.0,1.0,130,227
+scent_drd2_seed44_m10,best_candidate,full,B,Functional-group interconversion (Br -> Sh),,3,3,0,0,3,1,1.0,1.0,1.0,134,270
+scent_drd2_seed44_m10,best_candidate,full,B,Functional-group interconversion (Cl -> I),,1,1,0,0,1,1,1.0,1.0,1.0,129,129
+scent_drd2_seed44_m10,best_candidate,full,B,Functional-group interconversion (Cl -> Br),,1,1,0,0,1,1,1.0,1.0,1.0,298,298
+scent_drd2_seed44_m10,hub_batching_modes10_reward,at100rxn,A,Direct acid -> amine (reductive),COc1ccc(O)c(NC2CNC2)c1,24,16,8,16,1,1,0.5,0.88,0.991,16,39
+scent_drd2_seed44_m10,hub_batching_modes10_reward,at100rxn,A,Direct acid -> amine (reductive),O=C(O)C1CCCN1,15,12,3,12,1,3,0.5,0.858,0.997,1,15
+scent_drd2_seed44_m10,hub_batching_modes10_reward,at100rxn,A,Reductive amination (ketone),CC(N)CN1CCCC(=O)C1,14,13,1,13,1,3,0.615,0.844,0.997,50,63
+scent_drd2_seed44_m10,hub_batching_modes10_reward,at100rxn,A,Direct acid -> amine (reductive),COc1ccccc1CCNCCNC1CC1,12,12,0,12,1,1,0.876,0.996,1.0,64,75
+scent_drd2_seed44_m10,hub_batching_modes10_reward,at100rxn,A,Direct acid -> amine (reductive),O=CCCN1CCCC1C(=O)O,10,9,1,9,1,2,0.533,0.886,0.993,40,49
+scent_drd2_seed44_m10,hub_batching_modes10_reward,at100rxn,B,Direct acid -> amine (reductive),,61,49,12,35,4,3,0.5,0.92,1.0,1,75
+scent_drd2_seed44_m10,hub_batching_modes10_reward,at100rxn,B,Reductive amination (ketone),,14,13,1,13,1,3,0.615,0.844,0.997,50,63
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),COc1ccc(O)c(NC2CNC2)c1,24,16,8,16,1,1,0.5,0.88,0.991,16,39
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Buchwald-Hartwig amination,NCCCN1CCC(NCCc2ccccc2Br)CC1,16,15,1,15,1,4,0.626,0.921,0.994,193,208
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),O=C(O)C1CCCN1,15,12,3,12,1,3,0.5,0.858,0.997,1,15
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCCNC1CC1,15,15,0,15,1,1,0.864,0.983,1.0,64,78
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),NC(CCNC1CC1)CNCCc1ccc(O)cc1,15,12,2,12,1,2,0.5,0.958,1.0,257,271
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Reductive amination (ketone),CC(N)CN1CCCC(=O)C1,14,13,1,13,1,3,0.615,0.844,0.997,50,63
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),NCCCCN(CCC(=O)O)Cc1cccc(Br)c1,14,14,0,14,1,3,0.52,0.902,1.0,209,227
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Buchwald-Hartwig amination,Brc1ccccc1CCNC1CN(C2CCC2)C1,14,14,0,14,1,4,0.5,0.944,1.0,272,294
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Buchwald-Hartwig amination,Brc1ccccc1CCNC1CCCN(C2CNC2)C1,13,12,1,12,1,3,0.678,0.967,1.0,173,185
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Buchwald-Hartwig amination,NCCCN(CCc1ccccc1Br)CC1CCN1,13,11,2,11,1,4,0.824,0.978,1.0,228,240
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Reductive amination (ketone),O=C1CN(C2CCNC2)C1,12,12,0,12,1,2,0.507,0.721,0.996,97,108
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,11,11,0,11,1,2,0.753,0.957,1.0,109,119
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),O=CCCN1CCCC1C(=O)O,10,9,1,9,1,2,0.533,0.886,0.993,40,49
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),Oc1ccc(CCNC2CCN(C3CCNC3)C2)cc1,10,7,3,7,1,1,0.577,0.977,0.994,151,160
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),CN(CC(=O)O)CC1CCCN1,9,9,0,9,1,3,0.562,0.787,0.94,79,87
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),O=C(O)CNC1CCCNC1,9,7,2,7,1,3,0.51,0.574,0.843,88,96
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),O=C(O)C1CCCN1C1CNC1,9,9,0,9,1,2,0.576,0.672,0.953,135,146
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),COc1cccc2c1CCNC2CCN1CCC1C(=O)O,9,7,2,7,1,3,0.757,0.989,1.0,248,256
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),Brc1ccccc1CCNC1CN(C2CCC2)C1,9,9,0,9,1,1,0.705,0.962,0.991,275,292
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),NCCCN(CC(=O)O)Cc1c[nH]c2ccc(Br)cc12,8,8,0,8,1,3,0.953,0.982,1.0,161,168
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Amide coupling,O=C(O)C1CCCN1C1CNC1,7,7,0,7,1,2,0.534,0.886,0.996,132,147
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),CN(CC(=O)O)C1CNC1,6,6,0,6,1,1,0.554,0.741,0.92,120,125
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Buchwald-Hartwig amination,NCCCN1CCCC(Nc2ccc(Br)cc2O)C1,6,4,2,4,1,4,0.933,0.974,1.0,295,300
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCC1CCN1,5,5,0,5,1,1,0.773,0.955,0.997,188,192
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Amide coupling,NCCCCN(CCC(=O)O)Cc1cccc(Br)c1,5,5,0,5,1,3,0.668,0.69,0.911,216,224
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCC1CCNCC1,4,4,0,4,1,1,0.568,0.933,1.0,126,129
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCC1CCCN1,4,4,0,4,1,1,0.738,0.994,1.0,169,172
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCCCNCCCN,4,4,0,4,1,2,0.841,0.992,0.995,241,244
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCC1CCCNC1,3,3,0,3,1,1,0.966,0.995,1.0,148,150
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCCCNCC1CCN1,3,3,0,3,1,1,0.976,0.99,1.0,245,247
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Reductive amination (aldehyde),O=CCNC1CC1,2,2,0,2,1,1,0.599,0.77,0.941,130,131
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNC1CCCNC1,2,2,0,2,1,1,0.995,0.997,1.0,186,187
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,B,Direct acid -> amine (reductive),,198,176,21,57,22,4,0.5,0.938,1.0,1,292
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,B,Buchwald-Hartwig amination,,62,56,6,37,5,5,0.5,0.969,1.0,173,300
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,B,Reductive amination (ketone),,26,25,1,22,2,3,0.507,0.8,0.997,50,108
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,B,Amide coupling,,12,12,0,9,2,3,0.534,0.7,0.996,132,224
+scent_drd2_seed44_m10,hub_batching_modes10_reward,full,B,Reductive amination (aldehyde),,2,2,0,2,1,1,0.599,0.77,0.941,130,131
+scent_drd2_seed44_m10,hub_batching_modes10_group,at100rxn,A,Direct acid -> amine (reductive),COc1ccc(O)c(NC2CNC2)c1,24,16,8,16,1,1,0.5,0.88,0.991,16,39
+scent_drd2_seed44_m10,hub_batching_modes10_group,at100rxn,A,Direct acid -> amine (reductive),O=C(O)C1CCCN1,15,12,3,12,1,3,0.5,0.858,0.997,1,15
+scent_drd2_seed44_m10,hub_batching_modes10_group,at100rxn,A,Reductive amination (ketone),CC(N)CN1CCCC(=O)C1,14,13,1,13,1,3,0.615,0.844,0.997,50,63
+scent_drd2_seed44_m10,hub_batching_modes10_group,at100rxn,A,Direct acid -> amine (reductive),COc1ccccc1CCNCCNC1CC1,12,12,0,12,1,1,0.876,0.996,1.0,64,75
+scent_drd2_seed44_m10,hub_batching_modes10_group,at100rxn,A,Direct acid -> amine (reductive),O=CCCN1CCCC1C(=O)O,10,9,1,9,1,2,0.533,0.886,0.993,40,49
+scent_drd2_seed44_m10,hub_batching_modes10_group,at100rxn,B,Direct acid -> amine (reductive),,61,49,12,35,4,3,0.5,0.92,1.0,1,75
+scent_drd2_seed44_m10,hub_batching_modes10_group,at100rxn,B,Reductive amination (ketone),,14,13,1,13,1,3,0.615,0.844,0.997,50,63
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),COc1ccc(O)c(NC2CNC2)c1,24,16,8,16,1,1,0.5,0.88,0.991,16,39
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Buchwald-Hartwig amination,NCCCN1CCC(NCCc2ccccc2Br)CC1,16,15,1,15,1,4,0.626,0.921,0.994,193,208
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),O=C(O)C1CCCN1,15,12,3,12,1,3,0.5,0.858,0.997,1,15
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCCNC1CC1,15,15,0,15,1,1,0.864,0.983,1.0,64,78
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),NC(CCNC1CC1)CNCCc1ccc(O)cc1,15,12,2,12,1,2,0.5,0.958,1.0,257,271
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Reductive amination (ketone),CC(N)CN1CCCC(=O)C1,14,13,1,13,1,3,0.615,0.844,0.997,50,63
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),NCCCCN(CCC(=O)O)Cc1cccc(Br)c1,14,14,0,14,1,3,0.52,0.902,1.0,209,222
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Buchwald-Hartwig amination,Brc1ccccc1CCNC1CN(C2CCC2)C1,14,14,0,14,1,4,0.5,0.944,1.0,272,285
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Buchwald-Hartwig amination,Brc1ccccc1CCNC1CCCN(C2CNC2)C1,13,12,1,12,1,3,0.678,0.967,1.0,173,185
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Buchwald-Hartwig amination,NCCCN(CCc1ccccc1Br)CC1CCN1,13,11,2,11,1,4,0.824,0.978,1.0,228,240
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Reductive amination (ketone),O=C1CN(C2CCNC2)C1,12,12,0,12,1,2,0.507,0.721,0.996,97,108
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),O=CCCN(CCC(=O)O)Cc1cccc(Br)c1,11,11,0,11,1,2,0.753,0.957,1.0,109,119
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),O=CCCN1CCCC1C(=O)O,10,9,1,9,1,2,0.533,0.886,0.993,40,49
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),Oc1ccc(CCNC2CCN(C3CCNC3)C2)cc1,10,7,3,7,1,1,0.577,0.977,0.994,151,160
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),CN(CC(=O)O)CC1CCCN1,9,9,0,9,1,3,0.562,0.787,0.94,79,87
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),O=C(O)CNC1CCCNC1,9,7,2,7,1,3,0.51,0.574,0.843,88,96
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),O=C(O)C1CCCN1C1CNC1,9,9,0,9,1,2,0.576,0.672,0.953,132,140
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),COc1cccc2c1CCNC2CCN1CCC1C(=O)O,9,7,2,7,1,3,0.757,0.989,1.0,248,256
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),Brc1ccccc1CCNC1CN(C2CCC2)C1,9,9,0,9,1,1,0.705,0.962,0.991,286,294
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),NCCCN(CC(=O)O)Cc1c[nH]c2ccc(Br)cc12,8,8,0,8,1,3,0.953,0.982,1.0,161,168
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Amide coupling,O=C(O)C1CCCN1C1CNC1,7,7,0,7,1,2,0.534,0.886,0.996,141,147
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),CN(CC(=O)O)C1CNC1,6,6,0,6,1,1,0.554,0.741,0.92,120,125
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Buchwald-Hartwig amination,NCCCN1CCCC(Nc2ccc(Br)cc2O)C1,6,4,2,4,1,4,0.933,0.974,1.0,295,300
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCC1CCN1,5,5,0,5,1,1,0.773,0.955,0.997,188,192
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Amide coupling,NCCCCN(CCC(=O)O)Cc1cccc(Br)c1,5,5,0,5,1,3,0.668,0.69,0.911,223,227
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCC1CCNCC1,4,4,0,4,1,1,0.568,0.933,1.0,126,129
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCC1CCCN1,4,4,0,4,1,1,0.738,0.994,1.0,169,172
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCCCNCCCN,4,4,0,4,1,2,0.841,0.992,0.995,241,244
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCC1CCCNC1,3,3,0,3,1,1,0.966,0.995,1.0,148,150
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNCCCNCC1CCN1,3,3,0,3,1,1,0.976,0.99,1.0,245,247
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Reductive amination (aldehyde),O=CCNC1CC1,2,2,0,2,1,1,0.599,0.77,0.941,130,131
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),COc1ccccc1CCNC1CCCNC1,2,2,0,2,1,1,0.995,0.997,1.0,186,187
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,B,Direct acid -> amine (reductive),,198,176,21,57,22,4,0.5,0.938,1.0,1,294
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,B,Buchwald-Hartwig amination,,62,56,6,37,5,5,0.5,0.969,1.0,173,300
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,B,Reductive amination (ketone),,26,25,1,22,2,3,0.507,0.8,0.997,50,108
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,B,Amide coupling,,12,12,0,9,2,3,0.534,0.7,0.996,141,227
+scent_drd2_seed44_m10,hub_batching_modes10_group,full,B,Reductive amination (aldehyde),,2,2,0,2,1,1,0.599,0.77,0.941,130,131

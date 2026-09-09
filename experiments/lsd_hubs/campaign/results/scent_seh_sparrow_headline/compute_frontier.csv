@@ -1,0 +1,3 @@
+strategy,generation_s,hub_pick_s,enumeration_s,reward_gen_s,flow_extract_s,mode_selection_s,route_finding_s,sparrow_mip_s,total_s,reactions,n_priced_modes,reactions_per_compute_hour
+hub_batching,0.0,0.159,1578.5404,101.5897,296.4384,0.8858,12153.084,0.061,14130.7583,502,183,127.8912
+best_candidate,0.0,0.0,0.0,0.0,0.0,0.4019,13394.973,0.066,13395.4409,564,154,151.574

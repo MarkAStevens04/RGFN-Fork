@@ -1,0 +1,3 @@
+tag,target,arm,child_policy,modes,priced,unpriced,used_rxns,stop_reason,mean_route_yield,median_route_yield,mean_step_yield,mean_route_len,pct_steps_direct,expected_molecules,sd_if_independent,sd_with_shared_prefixes,n_shared_batches,pct_in_multi_batches,largest_batch,expected_lost_to_shared_prefix,worst_batch_loss_prob
+seh_seed44,seh,best_candidate,,28,28,0,103,reactions,0.6275,0.7,0.7651,1.89,13.21,17.57,2.39,2.39,1,7.1,2,0.39,0.25
+seh_seed44,seh,hub_batching,free_frag,83,83,0,100,reactions,0.5701,0.5625,0.77,2.13,10.17,47.32,4.48,8.81,12,95.2,12,13.74,0.3

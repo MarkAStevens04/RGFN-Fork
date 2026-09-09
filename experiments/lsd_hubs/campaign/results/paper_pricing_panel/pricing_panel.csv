@@ -1,0 +1,12 @@
+panel,regime,strategy,reactions,modes,reactions_per_mode,source
+A/B,Native (by construction),hub-batching,367,300,1.223,Logs/044 - results/scent_seh_strategy_summary/strategy_compute_summary.csv (committed)
+A/B,Native (by construction),best-candidate,929,300,3.097,Logs/044 - results/scent_seh_strategy_summary/strategy_compute_summary.csv (committed)
+A/B,MultiAiZ + ZINC,hub-batching,301,163,1.847,Logs/048 job 71531 - results/scent_seh_multiaiz_zinc/budget_efficiency.csv
+A/B,MultiAiZ + ZINC,best-candidate,536,182,2.945,Logs/048 job 71531 - results/scent_seh_multiaiz_zinc/budget_efficiency.csv
+A/B,MultiAiZ + ZINC u SMALL,hub-batching,540,283,1.908,Logs/048 job 71529 - results/scent_seh_multiaiz_zincsmall/budget_efficiency.csv
+A/B,MultiAiZ + ZINC u SMALL,best-candidate,768,257,2.988,Logs/048 job 71529 - results/scent_seh_multiaiz_zincsmall/budget_efficiency.csv
+A/B,From-scratch AiZynth,hub-batching,502,183,2.743,Logs/041 - results/scent_seh_sparrow_headline/budget_efficiency.csv
+A/B,From-scratch AiZynth,best-candidate,564,154,3.662,Logs/041 - results/scent_seh_sparrow_headline/budget_efficiency.csv
+C,ZINC catalogue,AiZynth route-success,2314/4749,,48.7%,Logs/041 timed route cache
+C,+ reaction-GFN blocks in stock,AiZynth route-success,3506/4749,,73.8%,Logs/047 job 71436
+C,+ 10x search budget,AiZynth route-success,3228/3500,,92.2%,Logs/048 job 71534 (partial - 74% routed) [PARTIAL]

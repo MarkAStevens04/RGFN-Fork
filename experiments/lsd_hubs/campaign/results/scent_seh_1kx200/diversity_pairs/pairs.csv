@@ -1,0 +1,14 @@
+cutoff,tanimoto,n_modes,smiles_a,reward_a,hub_a,smiles_b,reward_b,hub_b
+0.3,0.3,300,c1ccc2c(c1)c(CNc1ccc3[nH]c(C4CNC4)nc3c1)cn2CC1CC1,8.325,ClCC1CC1,c1cc2nc(C3CNC3)[nH]c2cc1-c1cn(CC2CC2)nn1,8.121,ClCC1CC1
+0.35,0.35,300,c1cc(-c2cn(CC3CC3)cn2)ccc1NCC1CCN1,8.136,ClCC1CC1,O=C(Nc1cccc(-c2cn(CC3CC3)cn2)c1)C1Cc2ccccc2CN1,8.029,O=C(O)C1Cc2ccccc2CN1
+0.4,0.4,300,O=C(NCc1cn(CC2CC2)c2ccccc12)N1CCN(CC2Cc3ccccc3CN2)CC1,7.744,ClCC1CC1,O=C(NCc1cn(CC2CC2)c2ccccc12)C1CCCN(C(=O)Nc2cc(Br)n[nH]2)C1,7.118,ClCC1CC1
+0.45,0.45,300,O=C(NC1CC1)c1ccc(CNCCc2cn(CC3CC3)c3ccccc23)cc1,7.986,ClCC1CC1,O=C(Nc1ccc(-c2cccc(CNCCc3cn(CC4CC4)c4ccccc34)c2)cc1)Nc1cccc2ccccc12,7.713,NCCc1cn(CC2CC2)c2ccccc12
+0.5,0.5,300,O=C(NCc1cn(Cc2ccc(-c3nnn(CC4CC4)n3)cc2)c2ccccc12)C1CNC1,8.302,ClCC1CC1,O=C(NCCc1cn(Cc2ccc(-c3nnnn3CC3CC3)cc2)c2ccccc12)C1CNC1,7.761,ClCC1CC1
+0.55,0.5496,300,O=C(NCCc1c[nH]c2ccccc12)C1CCN(Cc2ccc(-c3nnn(CC4CC4)n3)nc2)CC1,7.858,ClCC1CC1,O=C(NCCc1c[nH]c2ccccc12)c1cccc2oc(-c3ccc(-c4nnn(CC5CC5)n4)nc3)nc12,7.51,ClCC1CC1
+0.6,0.6,300,c1ccc2c(c1)c(CNc1ccc3oc(C4CCN4)nc3c1)cn2CC1CC1,8.137,ClCC1CC1,Nc1cc(-c2nc3cc(NCc4cn(CC5CC5)c5ccccc45)ccc3o2)ccc1O,7.13,ClCC1CC1
+0.65,0.65,300,c1cc(-c2cc(NCc3nc4ccccc4[nH]3)[nH]n2)cc(-c2nnn(CC3CC3)n2)c1,7.724,ClCC1CC1,c1cc(-c2ccc(NCc3nc4ccccc4[nH]3)cc2)cc(-c2nnn(CC3CC3)n2)c1,7.676,ClCC1CC1
+0.7,0.7,300,c1cc2c(ccn2CC2CC2)cc1-c1ccc2oc(C3CNC3)nc2c1,7.981,ClCC1CC1,c1cc2c(ccn2CC2CC2)cc1-c1ccc2nc(C3CNC3)oc2c1,7.954,ClCC1CC1
+0.75,0.75,300,O=C(NCc1cn(CC2CC2)c2ccccc12)c1ccc2nc(C3CNC3)oc2c1,8.271,ClCC1CC1,O=C(NCc1cn(CC2CC2)c2ccccc12)c1ccc2oc(C3CNC3)nc2c1,8.228,ClCC1CC1
+0.8,0.8,300,c1cc(NCc2ccc3oc(-c4ccc(-c5nnn(CC6CC6)n5)nc4)nc3c2)c2[nH]ccc2c1,7.72,ClCC1CC1,c1cc(NCc2ccc3nc(-c4ccc(-c5nnn(CC6CC6)n5)nc4)oc3c2)c2[nH]ccc2c1,7.656,ClCC1CC1
+0.85,0.8438,300,O=C(NCc1cn(Cc2ccc(-c3nnnn3CC3CC3)cc2)c2ccccc12)C1CNC1,7.909,ClCC1CC1,O=C(NCc1cn(Cc2ccc(-c3nnnn3CC3CC3)cc2)c2ccccc12)C1CCNCC1,7.602,ClCC1CC1
+0.9,0.8837,300,c1ccc2c(c1)c(CNc1ccc3oc(C4CCN4)nc3c1)cn2CC1CC1,8.137,ClCC1CC1,c1ccc2c(c1)c(CNc1ccc3oc(C4CCCN4)nc3c1)cn2CC1CC1,7.937,ClCC1CC1

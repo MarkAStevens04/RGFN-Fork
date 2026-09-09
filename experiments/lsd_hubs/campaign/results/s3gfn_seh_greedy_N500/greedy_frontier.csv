@@ -1,0 +1,7 @@
+n_modes,used_rxns,n_selected,mode_rate,rxn_per_mode,milp_status,n_targets_priced
+25,70,25,1.0,2.8,Optimal,25
+50,128,50,1.0,2.56,Optimal,50
+75,178,75,1.0,2.3733,Optimal,75
+100,235,100,1.0,2.35,Optimal,100
+125,311,125,1.0,2.488,Optimal,125
+150,376,150,1.0,2.5067,Optimal,150

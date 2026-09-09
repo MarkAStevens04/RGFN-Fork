@@ -1,0 +1,11 @@
+stock,tau,strategy,reactions,modes,reactions_per_mode,source_dir
+zincsmall,0.3,best_candidate,779,258,3.019,scent_seh_multiaiz_zincsmall_t03
+zincsmall,0.3,hub_batching,540,283,1.908,scent_seh_multiaiz_zincsmall_t03
+zincsmall,0.5,best_candidate,768,257,2.988,scent_seh_multiaiz_zincsmall
+zincsmall,0.5,hub_batching,540,283,1.908,scent_seh_multiaiz_zincsmall
+zincsmall,0.7,best_candidate,769,257,2.992,scent_seh_multiaiz_zincsmall_t07
+zincsmall,0.7,hub_batching,550,284,1.937,scent_seh_multiaiz_zincsmall_t07
+zincsmall,0.9,best_candidate,769,257,2.992,scent_seh_multiaiz_zincsmall_t09
+zincsmall,0.9,hub_batching,541,283,1.912,scent_seh_multiaiz_zincsmall_t09
+anchor:Logs/037/044,0.5,native (by construction),,,1.220,Logs/037/044
+anchor:Logs/041,0.5,from-scratch AiZynth,,,2.740,Logs/041

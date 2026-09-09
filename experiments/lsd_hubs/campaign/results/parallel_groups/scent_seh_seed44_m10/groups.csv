@@ -1,0 +1,501 @@
+cell,arm,slice,class,named_reaction,parent,n_molecules,n_wells,n_multi_product_wells,n_distinct_reagent_sets,n_distinct_parents,n_distinct_templates,reward_min,reward_median,reward_max,first_step,last_step
+scent_seh_seed44_m10,hub_batching,at100rxn,A,Amide coupling,O=C(O)C1Cc2ccccc2CN1,27,27,0,27,1,3,5.288,6.182,7.154,1,74
+scent_seh_seed44_m10,hub_batching,at100rxn,A,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,27,27,0,27,1,3,5.146,6.21,6.906,7,79
+scent_seh_seed44_m10,hub_batching,at100rxn,A,Urea formation (amine + amine),O=C(O)C1Cc2ccccc2CN1,9,9,0,9,1,2,5.129,5.345,5.852,52,80
+scent_seh_seed44_m10,hub_batching,at100rxn,A,Buchwald-Hartwig amination,O=C(O)C1Cc2ccccc2CN1,8,8,0,8,1,1,5.982,6.327,6.969,4,49
+scent_seh_seed44_m10,hub_batching,at100rxn,A,Pictet-Spengler cyclisation,O=C(O)C1Cc2ccccc2CN1,3,3,0,3,1,2,5.462,6.646,6.936,6,64
+scent_seh_seed44_m10,hub_batching,at100rxn,A,Benzimidazole formation,O=C(O)C1Cc2ccccc2CN1,2,2,0,2,1,1,6.069,6.102,6.134,41,45
+scent_seh_seed44_m10,hub_batching,at100rxn,A,Benzoxazole formation,O=C(O)C1Cc2ccccc2CN1,1,1,0,1,1,1,6.519,6.519,6.519,18,18
+scent_seh_seed44_m10,hub_batching,at100rxn,A,Esterification,O=C(O)C1Cc2ccccc2CN1,1,1,0,1,1,1,6.287,6.287,6.287,28,28
+scent_seh_seed44_m10,hub_batching,at100rxn,A,SNAr (halo-heteroarene + amine),O=C(O)C1Cc2ccccc2CN1,1,1,0,1,1,1,5.458,5.458,5.458,65,65
+scent_seh_seed44_m10,hub_batching,at100rxn,A,Williamson ether synthesis,O=C(O)C1Cc2ccccc2CN1,1,1,0,1,1,1,5.241,5.241,5.241,76,76
+scent_seh_seed44_m10,hub_batching,at100rxn,B,Amide coupling,,27,27,0,27,1,3,5.288,6.182,7.154,1,74
+scent_seh_seed44_m10,hub_batching,at100rxn,B,Direct acid -> amine (reductive),,27,27,0,27,1,3,5.146,6.21,6.906,7,79
+scent_seh_seed44_m10,hub_batching,at100rxn,B,Urea formation (amine + amine),,9,9,0,9,1,2,5.129,5.345,5.852,52,80
+scent_seh_seed44_m10,hub_batching,at100rxn,B,Buchwald-Hartwig amination,,8,8,0,8,1,1,5.982,6.327,6.969,4,49
+scent_seh_seed44_m10,hub_batching,at100rxn,B,Pictet-Spengler cyclisation,,3,3,0,3,1,2,5.462,6.646,6.936,6,64
+scent_seh_seed44_m10,hub_batching,at100rxn,B,Benzimidazole formation,,2,2,0,2,1,1,6.069,6.102,6.134,41,45
+scent_seh_seed44_m10,hub_batching,at100rxn,B,Benzoxazole formation,,1,1,0,1,1,1,6.519,6.519,6.519,18,18
+scent_seh_seed44_m10,hub_batching,at100rxn,B,Esterification,,1,1,0,1,1,1,6.287,6.287,6.287,28,28
+scent_seh_seed44_m10,hub_batching,at100rxn,B,SNAr (halo-heteroarene + amine),,1,1,0,1,1,1,5.458,5.458,5.458,65,65
+scent_seh_seed44_m10,hub_batching,at100rxn,B,Williamson ether synthesis,,1,1,0,1,1,1,5.241,5.241,5.241,76,76
+scent_seh_seed44_m10,hub_batching,full,A,Amide coupling,O=C(O)C1Cc2ccccc2CN1,31,31,0,31,1,3,5.02,6.146,7.154,1,88
+scent_seh_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,29,29,0,29,1,3,5.038,6.106,6.906,7,87
+scent_seh_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),NC12CC(C1)C2,14,14,0,14,1,2,5.557,6.079,6.502,279,300
+scent_seh_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,13,13,0,13,1,2,5.308,6.721,7.406,99,133
+scent_seh_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,13,12,1,12,1,2,5.25,6.717,7.335,168,198
+scent_seh_seed44_m10,hub_batching,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NC1CC1)c1ccc(CCl)cc1,13,13,0,13,1,1,5.053,5.955,7.289,242,262
+scent_seh_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,Nc1ccc(-c2cn(CC3CC3)nn2)cc1,11,11,0,11,1,1,5.958,7.762,8.2,201,232
+scent_seh_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,NC12CC(C1)C2,11,11,0,11,1,1,6.601,7.153,7.646,266,278
+scent_seh_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,10,10,0,10,1,1,5.521,7.422,7.784,91,131
+scent_seh_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),O=C(O)C1Cc2ccccc2CN1,9,9,0,9,1,2,5.129,5.345,5.852,52,80
+scent_seh_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,O=C(O)C1Cc2ccccc2CN1,8,8,0,8,1,1,5.982,6.327,6.969,4,49
+scent_seh_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,NCCc1cn(CC2CC2)c2ccccc12,8,8,0,8,1,1,5.702,7.699,8.197,136,159
+scent_seh_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),NCCc1cn(CC2CC2)c2ccccc12,8,8,0,8,1,2,6.832,7.174,7.623,141,150
+scent_seh_seed44_m10,hub_batching,full,A,Urea formation (amine + amine),Nc1ccc(-c2cn(CC3CC3)nn2)cc1,8,8,0,8,1,2,6.229,7.12,8.001,205,230
+scent_seh_seed44_m10,hub_batching,full,A,Benzimidazole formation,Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,7,7,0,7,1,2,6.784,7.016,8.083,89,113
+scent_seh_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,Nc1cccc2ccn(CC3CC3)c12,7,7,0,7,1,1,5.35,7.259,7.623,166,196
+scent_seh_seed44_m10,hub_batching,full,A,Williamson ether synthesis,O=C(NC1CC1)c1ccc(CCl)cc1,6,6,0,6,1,1,5.073,6.058,7.958,240,261
+scent_seh_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,NCCc1cn(CC2CC2)c2ccccc12,5,5,0,5,1,2,5.466,5.644,6.284,153,162
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (ketone),Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,4,4,0,4,1,1,6.417,6.458,6.948,106,121
+scent_seh_seed44_m10,hub_batching,full,A,SNAr (activated aryl fluoride + amine),Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,4,4,0,4,1,4,5.102,5.532,6.361,125,135
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),Nc1ccc(-c2cn(CC3CC3)nn2)cc1,4,4,0,4,1,1,5.787,7.27,7.574,209,235
+scent_seh_seed44_m10,hub_batching,full,A,SNAr (halo-heteroarene + amine),Nc1ccc(-c2cn(CC3CC3)nn2)cc1,4,4,0,4,1,3,5.862,6.461,7.467,210,234
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (ketone),Nc1ccc(-c2cn(CC3CC3)nn2)cc1,4,4,0,4,1,1,6.438,6.882,7.406,213,226
+scent_seh_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,O=C(O)C1Cc2ccccc2CN1,3,3,0,3,1,2,5.462,6.646,6.936,6,64
+scent_seh_seed44_m10,hub_batching,full,A,Amide coupling,Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,3,3,0,3,1,1,5.771,6.584,7.327,100,129
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,3,3,0,3,1,1,6.569,6.836,7.012,104,117
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (ketone),NCCc1cn(CC2CC2)c2ccccc12,3,3,0,3,1,1,5.398,5.997,7.071,146,163
+scent_seh_seed44_m10,hub_batching,full,A,Amide coupling,Nc1cccc2ccn(CC3CC3)c12,3,3,0,3,1,1,6.301,6.422,8.061,165,182
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (ketone),Nc1cccc2ccn(CC3CC3)c12,3,3,0,3,1,1,5.638,5.679,6.899,176,190
+scent_seh_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),Nc1cccc2ccn(CC3CC3)c12,3,3,0,3,1,1,5.373,5.406,5.946,187,195
+scent_seh_seed44_m10,hub_batching,full,A,SNAr (halo-heteroarene + amine),Nc1cccc2ccn(CC3CC3)c12,3,3,0,3,1,2,5.167,5.272,5.744,188,199
+scent_seh_seed44_m10,hub_batching,full,A,Amide coupling,NC12CC(C1)C2,3,3,0,3,1,1,5.896,6.872,6.917,275,291
+scent_seh_seed44_m10,hub_batching,full,A,Urea formation (isocyanate + amine),NC12CC(C1)C2,3,3,0,3,1,1,5.658,5.662,6.134,286,298
+scent_seh_seed44_m10,hub_batching,full,A,Benzimidazole formation,O=C(O)C1Cc2ccccc2CN1,2,2,0,2,1,1,6.069,6.102,6.134,41,45
+scent_seh_seed44_m10,hub_batching,full,A,SNAr (halo-heteroarene + amine),O=C(O)C1Cc2ccccc2CN1,2,2,0,2,1,2,5.113,5.285,5.458,65,82
+scent_seh_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,2,2,0,2,1,1,5.141,6.45,7.76,92,134
+scent_seh_seed44_m10,hub_batching,full,A,SNAr (halo-heteroarene + amine),NCCc1cn(CC2CC2)c2ccccc12,2,2,0,2,1,2,6.15,6.501,6.853,149,155
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),NCCc1cn(CC2CC2)c2ccccc12,2,2,0,2,1,1,5.157,5.866,6.575,151,164
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),Nc1cccc2ccn(CC3CC3)c12,2,2,0,2,1,1,6.075,6.081,6.086,184,185
+scent_seh_seed44_m10,hub_batching,full,A,SNAr (activated aryl fluoride + amine),Nc1cccc2ccn(CC3CC3)c12,2,2,0,2,1,2,5.026,5.292,5.559,192,200
+scent_seh_seed44_m10,hub_batching,full,A,Amide coupling,Nc1ccc(-c2cn(CC3CC3)nn2)cc1,2,2,0,2,1,1,6.182,6.794,7.407,212,231
+scent_seh_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),Nc1ccc(-c2cn(CC3CC3)nn2)cc1,2,2,0,2,1,1,5.322,6.171,7.02,217,237
+scent_seh_seed44_m10,hub_batching,full,A,SNAr (activated aryl fluoride + amine),Nc1ccc(-c2cn(CC3CC3)nn2)cc1,2,2,0,2,1,2,5.347,5.956,6.564,224,236
+scent_seh_seed44_m10,hub_batching,full,A,Sulfonamide formation (sulfonyl fluoride),Nc1ccc(-c2cn(CC3CC3)nn2)cc1,2,2,0,2,1,1,5.224,5.236,5.249,238,239
+scent_seh_seed44_m10,hub_batching,full,A,Tetrazole formation (nitrile + alkyl halide),O=C(NC1CC1)c1ccc(CCl)cc1,2,2,0,2,1,2,6.252,6.518,6.784,245,247
+scent_seh_seed44_m10,hub_batching,full,A,Triazole formation (alkyne + alkyl halide),O=C(NC1CC1)c1ccc(CCl)cc1,2,2,0,2,1,2,5.311,5.399,5.486,256,257
+scent_seh_seed44_m10,hub_batching,full,A,Pictet-Spengler cyclisation,NCCc1cn(Cc2ccc(-c3nnn(CC4CC4)n3)cc2)c2ccccc12,2,2,0,2,1,2,6.883,7.239,7.595,264,265
+scent_seh_seed44_m10,hub_batching,full,A,Benzoxazole formation,O=C(O)C1Cc2ccccc2CN1,1,1,0,1,1,1,6.519,6.519,6.519,18,18
+scent_seh_seed44_m10,hub_batching,full,A,Esterification,O=C(O)C1Cc2ccccc2CN1,1,1,0,1,1,1,6.287,6.287,6.287,28,28
+scent_seh_seed44_m10,hub_batching,full,A,Williamson ether synthesis,O=C(O)C1Cc2ccccc2CN1,1,1,0,1,1,1,5.241,5.241,5.241,76,76
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (ketone),O=C(O)C1Cc2ccccc2CN1,1,1,0,1,1,1,5.051,5.051,5.051,86,86
+scent_seh_seed44_m10,hub_batching,full,A,SNAr (halo-heteroarene + amine),Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,1,1,0,1,1,1,6.926,6.926,6.926,107,107
+scent_seh_seed44_m10,hub_batching,full,A,SNAr (activated aryl fluoride + amine),NCCc1cn(CC2CC2)c2ccccc12,1,1,0,1,1,1,6.153,6.153,6.153,154,154
+scent_seh_seed44_m10,hub_batching,full,A,Buchwald-Hartwig amination,NCCc1cn(Cc2ccc(-c3nnn(CC4CC4)n3)cc2)c2ccccc12,1,1,0,1,1,1,8.244,8.244,8.244,263,263
+scent_seh_seed44_m10,hub_batching,full,A,Direct acid -> amine (reductive),NC12CC(C1)C2,1,1,0,1,1,1,6.168,6.168,6.168,285,285
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (ketone),NC12CC(C1)C2,1,1,0,1,1,1,5.971,5.971,5.971,289,289
+scent_seh_seed44_m10,hub_batching,full,A,Reductive amination (aldehyde),NC12CC(C1)C2,1,1,0,1,1,1,5.668,5.668,5.668,294,294
+scent_seh_seed44_m10,hub_batching,full,A,SNAr (halo-heteroarene + amine),NC12CC(C1)C2,1,1,0,1,1,1,5.627,5.627,5.627,299,299
+scent_seh_seed44_m10,hub_batching,full,B,Urea formation (amine + amine),,65,64,1,37,6,4,5.129,6.395,8.001,52,300
+scent_seh_seed44_m10,hub_batching,full,B,Buchwald-Hartwig amination,,56,56,0,24,7,2,5.35,7.146,8.244,4,278
+scent_seh_seed44_m10,hub_batching,full,B,Amide coupling,,42,42,0,36,5,4,5.02,6.194,8.061,1,291
+scent_seh_seed44_m10,hub_batching,full,B,Direct acid -> amine (reductive),,37,37,0,35,5,4,5.038,6.019,7.76,7,285
+scent_seh_seed44_m10,hub_batching,full,B,Reductive amination (ketone),,16,16,0,8,6,2,5.051,6.441,7.406,86,289
+scent_seh_seed44_m10,hub_batching,full,B,SNAr (halo-heteroarene + amine),,13,13,0,7,6,5,5.113,5.862,7.467,65,299
+scent_seh_seed44_m10,hub_batching,full,B,N-alkylation (azole N-H + alkyl halide),,13,13,0,13,1,1,5.053,5.955,7.289,242,262
+scent_seh_seed44_m10,hub_batching,full,B,Reductive amination (aldehyde),,12,12,0,9,5,1,5.157,6.572,7.574,104,294
+scent_seh_seed44_m10,hub_batching,full,B,Pictet-Spengler cyclisation,,10,10,0,10,3,4,5.462,5.998,7.595,6,265
+scent_seh_seed44_m10,hub_batching,full,B,Benzimidazole formation,,9,9,0,9,2,3,6.069,6.994,8.083,41,113
+scent_seh_seed44_m10,hub_batching,full,B,SNAr (activated aryl fluoride + amine),,9,9,0,6,4,5,5.026,5.559,6.564,125,236
+scent_seh_seed44_m10,hub_batching,full,B,Williamson ether synthesis,,7,7,0,7,2,2,5.073,5.64,7.958,76,261
+scent_seh_seed44_m10,hub_batching,full,B,Urea formation (isocyanate + amine),,3,3,0,3,1,1,5.658,5.662,6.134,286,298
+scent_seh_seed44_m10,hub_batching,full,B,Sulfonamide formation (sulfonyl fluoride),,2,2,0,2,1,1,5.224,5.236,5.249,238,239
+scent_seh_seed44_m10,hub_batching,full,B,Tetrazole formation (nitrile + alkyl halide),,2,2,0,2,1,2,6.252,6.518,6.784,245,247
+scent_seh_seed44_m10,hub_batching,full,B,Triazole formation (alkyne + alkyl halide),,2,2,0,2,1,2,5.311,5.399,5.486,256,257
+scent_seh_seed44_m10,hub_batching,full,B,Benzoxazole formation,,1,1,0,1,1,1,6.519,6.519,6.519,18,18
+scent_seh_seed44_m10,hub_batching,full,B,Esterification,,1,1,0,1,1,1,6.287,6.287,6.287,28,28
+scent_seh_seed44_m10,best_candidate,at100rxn,A,N-alkylation (azole N-H + alkyl halide),c1nc(-c2ccc(NCc3ccc4oc(C5CNC5)nc4c3)cc2)c[nH]1,1,1,0,1,1,1,8.404,8.404,8.404,1,1
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Triazole formation (alkyne + alkyl halide),C#Cc1ccc(NCc2ccc3[nH]c(C4CNC4)nc3c2)cc1,1,1,0,1,1,1,8.396,8.396,8.396,2,2
+scent_seh_seed44_m10,best_candidate,at100rxn,A,N-alkylation (azole N-H + alkyl halide),c1ccc2c(CNc3ccc4[nH]c(-c5ccc(CO[C@H]6CN7CCC6CC7)cc5)nc4c3)c[nH]c2c1,1,1,0,1,1,1,8.393,8.393,8.393,3,3
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Amide coupling,O=C(O)c1ccc2nc(-c3ccc(C(=O)NCc4cn(CC5CC5)c5ccccc45)cc3)oc2c1,1,1,0,1,1,1,8.356,8.356,8.356,4,4
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Buchwald-Hartwig amination,O=C(Nc1ccc(Br)cc1)C1CNC1,1,1,0,1,1,1,8.351,8.351,8.351,5,5
+scent_seh_seed44_m10,best_candidate,at100rxn,A,N-alkylation (azole N-H + alkyl halide),O=C(NCc1c[nH]c2ccccc12)c1cccc(-c2ccc3oc(C4CNC4)nc3c2)c1,1,1,0,1,1,1,8.333,8.333,8.333,6,6
+scent_seh_seed44_m10,best_candidate,at100rxn,A,N-alkylation (azole N-H + alkyl halide),c1ccc2c(CNc3ccc(-c4cn(CC5CC5)nn4)cc3)c[nH]c2c1,1,1,0,1,1,1,8.328,8.328,8.328,7,7
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Williamson ether synthesis,O[C@H]1CN2CCC1CC2,1,1,0,1,1,1,8.326,8.326,8.326,8,8
+scent_seh_seed44_m10,best_candidate,at100rxn,A,N-alkylation (azole N-H + alkyl halide),c1cc(NCc2ccc3nc(C4CNC4)[nH]c3c2)cc(-c2c[nH]cn2)c1,1,1,0,1,1,1,8.319,8.319,8.319,9,9
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Suzuki coupling (pinacol boronate),Brc1cn(CC2CC2)cn1,1,1,0,1,1,1,8.315,8.315,8.315,10,10
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Triazole formation (alkyne + alkyl halide),C#Cc1cc(NCc2ccc3nc(C4CNC4)oc3c2)[nH]n1,1,1,0,1,1,1,8.313,8.313,8.313,11,11
+scent_seh_seed44_m10,best_candidate,at100rxn,A,N-alkylation (azole N-H + alkyl halide),O=C(NC1CC1)c1ccc2oc(-c3ccc(CCl)cc3)nc2c1,1,1,0,1,1,1,8.31,8.31,8.31,12,12
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Suzuki coupling,OB(O)c1cccc(NCc2ccc(-c3nnn(CC4CC4)n3)nc2)c1,1,1,0,1,1,1,8.309,8.309,8.309,13,13
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Direct acid -> amine (reductive),O=C(O)c1ccc2nc(C3CNC3)oc2c1,1,1,0,1,1,1,8.305,8.305,8.305,14,14
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Triazole formation (alkyne + alkyl halide),C#Cc1ccc(NCc2ccc(C3=NCCc4ccccc43)cc2)cc1,1,1,0,1,1,1,8.305,8.305,8.305,15,15
+scent_seh_seed44_m10,best_candidate,at100rxn,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1cc(-c2ccc3[nH]ccc3c2)n[nH]1)C1CNC1,1,1,0,1,1,1,8.303,8.303,8.303,16,16
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Suzuki coupling,OB(O)c1cccc(NCc2ccc3oc(C4CNC4)nc3c2)c1,1,1,0,1,1,1,8.298,8.298,8.298,17,17
+scent_seh_seed44_m10,best_candidate,at100rxn,A,N-alkylation (azole N-H + alkyl halide),c1nc(-c2ccc(NCc3ccc4[nH]c(C5CCN5)nc4c3)nc2)c[nH]1,1,1,0,1,1,1,8.293,8.293,8.293,18,18
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Amide coupling,O=C(O)c1ccc(-c2nc3ccc(-c4nnn(CC5CC5)n4)cc3[nH]2)cc1,1,1,0,1,1,1,8.287,8.287,8.287,19,19
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Suzuki coupling,OB(O)c1ccc2c(ccn2CC2CC2)c1,1,1,0,1,1,1,8.283,8.283,8.283,20,20
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Direct acid -> amine (reductive),O=C(O)c1ccc2nc(C3CNC3)[nH]c2c1,1,1,0,1,1,1,8.28,8.28,8.28,21,21
+scent_seh_seed44_m10,best_candidate,at100rxn,A,N-alkylation (azole N-H + alkyl halide),c1nc(-c2ccc(NCc3ccc(CO[C@H]4CN5CCC4CC5)cc3)cc2)c[nH]1,1,1,0,1,1,1,8.277,8.277,8.277,22,22
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Buchwald-Hartwig amination,O=C(NC1CC1)c1cccc(-c2nc3cc(Br)ccc3[nH]2)c1,1,1,0,1,1,1,8.277,8.277,8.277,23,23
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Amide coupling,Nc1cccc2ccn(Cc3ccc(-c4nnn(CC5CC5)n4)cc3)c12,1,1,0,1,1,1,8.276,8.276,8.276,24,24
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Direct acid -> amine (reductive),Nc1cccc(-c2cncc(-c3nnn(CC4CC4)n3)c2)c1,1,1,0,1,1,1,8.275,8.275,8.275,25,25
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Direct acid -> amine (reductive),Nc1ccc(-c2cc(NC[C@@H]3Cc4ccccc4CN3)[nH]n2)cc1,1,1,0,1,1,1,8.271,8.271,8.271,26,26
+scent_seh_seed44_m10,best_candidate,at100rxn,A,Amide coupling,O=C(O)c1ccc2oc(-c3ccc(CO[C@H]4CN5CCC4CC5)cc3)nc2c1,1,1,0,1,1,1,8.266,8.266,8.266,27,27
+scent_seh_seed44_m10,best_candidate,at100rxn,B,N-alkylation (azole N-H + alkyl halide),,9,9,0,3,9,3,8.277,8.319,8.404,1,22
+scent_seh_seed44_m10,best_candidate,at100rxn,B,Amide coupling,,4,4,0,4,4,2,8.266,8.282,8.356,4,27
+scent_seh_seed44_m10,best_candidate,at100rxn,B,Direct acid -> amine (reductive),,4,4,0,4,4,2,8.271,8.278,8.305,14,26
+scent_seh_seed44_m10,best_candidate,at100rxn,B,Triazole formation (alkyne + alkyl halide),,3,3,0,1,3,1,8.305,8.313,8.396,2,15
+scent_seh_seed44_m10,best_candidate,at100rxn,B,Suzuki coupling,,3,3,0,2,3,1,8.283,8.298,8.309,13,20
+scent_seh_seed44_m10,best_candidate,at100rxn,B,Buchwald-Hartwig amination,,2,2,0,2,2,1,8.277,8.314,8.351,5,23
+scent_seh_seed44_m10,best_candidate,at100rxn,B,Williamson ether synthesis,,1,1,0,1,1,1,8.326,8.326,8.326,8,8
+scent_seh_seed44_m10,best_candidate,at100rxn,B,Suzuki coupling (pinacol boronate),,1,1,0,1,1,1,8.315,8.315,8.315,10,10
+scent_seh_seed44_m10,best_candidate,full,A,Buchwald-Hartwig amination,O=C(Nc1ccc(Br)cc1)C1CNC1,2,2,0,2,1,1,8.139,8.245,8.351,5,123
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1ccc2c(ccn2CC2CC2)c1,2,2,0,2,1,1,8.17,8.226,8.283,20,86
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(NCc2ccc3[nH]c(C4CNC4)nc3c2)c1,2,2,0,2,1,1,8.249,8.251,8.253,31,32
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2nc([C@@H]3Cc4ccccc4CN3)oc2c1,2,2,0,2,1,1,8.184,8.193,8.202,57,72
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(-c2nnn(CC3CC3)n2)c1,2,2,0,2,1,1,8.176,8.186,8.196,63,82
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,NCCc1cn(CC2CC2)c2ccccc12,2,2,0,2,1,1,8.117,8.154,8.192,66,150
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1nc2ccccc2n1CC1CC1,2,2,0,2,1,1,8.098,8.139,8.18,76,186
+scent_seh_seed44_m10,best_candidate,full,A,Benzimidazole formation,Nc1ccc(CNC23CC(C2)C3)cc1N,2,2,0,2,1,2,8.13,8.145,8.161,93,132
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,Nc1cccc2ccn(CC3CC3)c12,2,2,0,2,1,1,8.12,8.139,8.159,95,147
+scent_seh_seed44_m10,best_candidate,full,A,Benzoxazole formation,Nc1cc(-c2nnn(CC3CC3)n2)ccc1O,2,2,0,2,1,1,8.117,8.136,8.156,100,152
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc(CNC23CC(C2)C3)cc1,2,2,0,2,1,1,8.083,8.113,8.143,120,220
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1ccc(-c2nnn(CC3CC3)n2)s1,2,2,0,2,1,1,8.097,8.114,8.131,130,189
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1cccc2nc(C3CCN3)oc12,2,2,0,2,1,1,8.064,8.085,8.106,171,248
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1nc(-c2ccc(NCc3ccc4oc(C5CNC5)nc4c3)cc2)c[nH]1,1,1,0,1,1,1,8.404,8.404,8.404,1,1
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1ccc(NCc2ccc3[nH]c(C4CNC4)nc3c2)cc1,1,1,0,1,1,1,8.396,8.396,8.396,2,2
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1ccc2c(CNc3ccc4[nH]c(-c5ccc(CO[C@H]6CN7CCC6CC7)cc5)nc4c3)c[nH]c2c1,1,1,0,1,1,1,8.393,8.393,8.393,3,3
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2nc(-c3ccc(C(=O)NCc4cn(CC5CC5)c5ccccc45)cc3)oc2c1,1,1,0,1,1,1,8.356,8.356,8.356,4,4
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NCc1c[nH]c2ccccc12)c1cccc(-c2ccc3oc(C4CNC4)nc3c2)c1,1,1,0,1,1,1,8.333,8.333,8.333,6,6
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1ccc2c(CNc3ccc(-c4cn(CC5CC5)nn4)cc3)c[nH]c2c1,1,1,0,1,1,1,8.328,8.328,8.328,7,7
+scent_seh_seed44_m10,best_candidate,full,A,Williamson ether synthesis,O[C@H]1CN2CCC1CC2,1,1,0,1,1,1,8.326,8.326,8.326,8,8
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1cc(NCc2ccc3nc(C4CNC4)[nH]c3c2)cc(-c2c[nH]cn2)c1,1,1,0,1,1,1,8.319,8.319,8.319,9,9
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),Brc1cn(CC2CC2)cn1,1,1,0,1,1,1,8.315,8.315,8.315,10,10
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1cc(NCc2ccc3nc(C4CNC4)oc3c2)[nH]n1,1,1,0,1,1,1,8.313,8.313,8.313,11,11
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NC1CC1)c1ccc2oc(-c3ccc(CCl)cc3)nc2c1,1,1,0,1,1,1,8.31,8.31,8.31,12,12
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(NCc2ccc(-c3nnn(CC4CC4)n3)nc2)c1,1,1,0,1,1,1,8.309,8.309,8.309,13,13
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)c1ccc2nc(C3CNC3)oc2c1,1,1,0,1,1,1,8.305,8.305,8.305,14,14
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1ccc(NCc2ccc(C3=NCCc4ccccc43)cc2)cc1,1,1,0,1,1,1,8.305,8.305,8.305,15,15
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1cc(-c2ccc3[nH]ccc3c2)n[nH]1)C1CNC1,1,1,0,1,1,1,8.303,8.303,8.303,16,16
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(NCc2ccc3oc(C4CNC4)nc3c2)c1,1,1,0,1,1,1,8.298,8.298,8.298,17,17
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1nc(-c2ccc(NCc3ccc4[nH]c(C5CCN5)nc4c3)nc2)c[nH]1,1,1,0,1,1,1,8.293,8.293,8.293,18,18
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc(-c2nc3ccc(-c4nnn(CC5CC5)n4)cc3[nH]2)cc1,1,1,0,1,1,1,8.287,8.287,8.287,19,19
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)c1ccc2nc(C3CNC3)[nH]c2c1,1,1,0,1,1,1,8.28,8.28,8.28,21,21
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1nc(-c2ccc(NCc3ccc(CO[C@H]4CN5CCC4CC5)cc3)cc2)c[nH]1,1,1,0,1,1,1,8.277,8.277,8.277,22,22
+scent_seh_seed44_m10,best_candidate,full,A,Buchwald-Hartwig amination,O=C(NC1CC1)c1cccc(-c2nc3cc(Br)ccc3[nH]2)c1,1,1,0,1,1,1,8.277,8.277,8.277,23,23
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,Nc1cccc2ccn(Cc3ccc(-c4nnn(CC5CC5)n4)cc3)c12,1,1,0,1,1,1,8.276,8.276,8.276,24,24
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1cccc(-c2cncc(-c3nnn(CC4CC4)n3)c2)c1,1,1,0,1,1,1,8.275,8.275,8.275,25,25
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc(-c2cc(NC[C@@H]3Cc4ccccc4CN3)[nH]n2)cc1,1,1,0,1,1,1,8.271,8.271,8.271,26,26
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2oc(-c3ccc(CO[C@H]4CN5CCC4CC5)cc3)nc2c1,1,1,0,1,1,1,8.266,8.266,8.266,27,27
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1cn(CC2CC2)c2ccccc12,1,1,0,1,1,1,8.265,8.265,8.265,28,28
+scent_seh_seed44_m10,best_candidate,full,A,Benzoxazole formation,Nc1cc(-c2nnnn2Cc2ccc(-c3nnn(CC4CC4)n3)cc2)ccc1O,1,1,0,1,1,1,8.259,8.259,8.259,29,29
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1ccc(NCc2c[nH]c3ccc(-c4nnn(CC5CC5)n4)cc23)cc1,1,1,0,1,1,1,8.254,8.254,8.254,30,30
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2nc(C3CNC3)[nH]c2c1,1,1,0,1,1,1,8.247,8.247,8.247,33,33
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1cccc(-c2ccc(NCc3cccc(C4=NCCc5ccccc54)c3)cc2)c1,1,1,0,1,1,1,8.246,8.246,8.246,34,34
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1ccc(NCc2cccc(C(=O)NC3CC3)c2)cc1,1,1,0,1,1,1,8.243,8.243,8.243,35,35
+scent_seh_seed44_m10,best_candidate,full,A,Buchwald-Hartwig amination,Brc1cccc(-c2nc3cc(-c4nnn(CC5CC5)n4)ccc3o2)c1,1,1,0,1,1,1,8.235,8.235,8.235,36,36
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1ccc(NCc2cccc(-c3nc4ccccc4o3)c2)cc1,1,1,0,1,1,1,8.234,8.234,8.234,37,37
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2[nH]c(C3CNC3)nc2c1,1,1,0,1,1,1,8.233,8.233,8.233,38,38
+scent_seh_seed44_m10,best_candidate,full,A,Benzimidazole formation,Nc1ccc(CNc2cccc(-c3cnc(F)nc3)c2)cc1N,1,1,0,1,1,1,8.232,8.232,8.232,39,39
+scent_seh_seed44_m10,best_candidate,full,A,Benzimidazole formation,Nc1ccc(C(=O)NCc2nc3cc(-c4nnn(CC5CC5)n4)ccc3o2)cc1N,1,1,0,1,1,1,8.232,8.232,8.232,40,40
+scent_seh_seed44_m10,best_candidate,full,A,Urea formation (amine + amine),Nc1cccc(-c2cc(NC(=O)c3ccc(CO[C@H]4CN5CCC4CC5)cc3)[nH]n2)c1,1,1,0,1,1,1,8.231,8.231,8.231,41,41
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1ccc2c(C3NCCc4ccccc43)c[nH]c2c1,1,1,0,1,1,1,8.226,8.226,8.226,42,42
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(NCc2ccc(C(=O)NC3CC3)cc2)cc1,1,1,0,1,1,1,8.221,8.221,8.221,43,43
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1cccc(C2=NCCc3ccccc32)c1,1,1,0,1,1,1,8.221,8.221,8.221,44,44
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1cccc2cc[nH]c12)c1cccc(-c2cc(NC(=O)C3CNC3)[nH]n2)c1,1,1,0,1,1,1,8.218,8.218,8.218,45,45
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NCc1c[nH]c2ccccc12)c1cccc(-c2cc(C3NCCc4ccccc43)ccn2)c1,1,1,0,1,1,1,8.217,8.217,8.217,46,46
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)c1cccc2oc(C3CCN3)nc12,1,1,0,1,1,1,8.217,8.217,8.217,47,47
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc(COCC2CNC2)cc1,1,1,0,1,1,1,8.214,8.214,8.214,48,48
+scent_seh_seed44_m10,best_candidate,full,A,Williamson ether synthesis,O=C(c1ccc(CCl)cc1)N(Cc1ccc(-c2nnn(CC3CC3)n2)nc1)c1ccnc2ccccc12,1,1,0,1,1,1,8.208,8.208,8.208,49,49
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc(-c2nc(-c3cccc(-c4nnn(CC5CC5)n4)c3)cs2)cc1,1,1,0,1,1,1,8.207,8.207,8.207,50,50
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1cccc(-c2cc(NC(=O)c3ccc(COCC4CNC4)cc3)[nH]n2)c1,1,1,0,1,1,1,8.206,8.206,8.206,51,51
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc2[nH]c(C3CCNCC3)nc2c1,1,1,0,1,1,1,8.205,8.205,8.205,52,52
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1ccc(-c2ccc(NCc3ccc(-c4nnn(CC5CC5)n4)nc3)cc2)cc1,1,1,0,1,1,1,8.205,8.205,8.205,53,53
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),CC1(C)OB(c2ccc(NCc3ccc4nc(C5CNC5)oc4c3)nc2)OC1(C)C,1,1,0,1,1,1,8.205,8.205,8.205,54,54
+scent_seh_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,O=C(O)c1cccc(-c2ccc(NCc3ccc4[nH]c(C5CNC5)nc4c3)cc2)c1,1,1,0,1,1,1,8.204,8.204,8.204,55,55
+scent_seh_seed44_m10,best_candidate,full,A,Benzoxazole formation,Nc1cc(-c2nc3cc(CNC45CC(C4)C5)ccc3[nH]2)ccc1O,1,1,0,1,1,1,8.203,8.203,8.203,56,56
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2oc(-c3cccc(C4=NCCc5ccccc54)c3)nc2c1,1,1,0,1,1,1,8.2,8.2,8.2,58,58
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,NCc1cn(CC2CC2)c2ccccc12,1,1,0,1,1,1,8.2,8.2,8.2,59,59
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1cc(-c2cccc(-c3nc4ccc(C(=O)NC5CC5)cc4o3)c2)n[nH]1,1,1,0,1,1,1,8.199,8.199,8.199,60,60
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1cccc(-c2nc3ccc(-c4nc5cc(CNC67CC(C6)C7)ccc5[nH]4)cc3o2)c1,1,1,0,1,1,1,8.199,8.199,8.199,61,61
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NCc1c[nH]c2ccccc12)[C@@H]1C[C@@H](OCc2ccc(-c3nnn(CC4CC4)n3)cc2)CN1,1,1,0,1,1,1,8.197,8.197,8.197,62,62
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1cccc(-c2ccc3nc(-c4cccc(C(=O)NC5CC5)c4)[nH]c3c2)c1,1,1,0,1,1,1,8.195,8.195,8.195,64,64
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(-c2nnn(Cc3ccc(C4=NCCc5ccccc54)cc3)n2)c1,1,1,0,1,1,1,8.193,8.193,8.193,65,65
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(Nc1cccc(B(O)O)c1)c1ccc2nc(-c3ccccc3)oc2c1,1,1,0,1,1,1,8.19,8.19,8.19,67,67
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1ccc2nc(C3CNC3)[nH]c2c1,1,1,0,1,1,1,8.189,8.189,8.189,68,68
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1cccc2cc[nH]c12)c1ccc(Cn2cc(CNC(=O)C3CNC3)c3ccccc32)cc1,1,1,0,1,1,1,8.188,8.188,8.188,69,69
+scent_seh_seed44_m10,best_candidate,full,A,Buchwald-Hartwig amination,Nc1ccc(-c2cn(CC3CC3)nn2)cc1,1,1,0,1,1,1,8.184,8.184,8.184,70,70
+scent_seh_seed44_m10,best_candidate,full,A,Benzimidazole formation,Nc1ccc(-c2nnnn2Cc2ccc(C(=O)NC3CC3)cc2)cc1N,1,1,0,1,1,1,8.184,8.184,8.184,71,71
+scent_seh_seed44_m10,best_candidate,full,A,Benzimidazole formation,Nc1ccc(-c2nnn(Cc3ccc(-c4nnn(CC5CC5)n4)cc3)n2)cc1N,1,1,0,1,1,1,8.184,8.184,8.184,73,73
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1cccc(-c2cccc(-c3nc4cc(CNC56CC(C5)C6)ccc4o3)c2)c1,1,1,0,1,1,1,8.181,8.181,8.181,74,74
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1cccc(CNc2cccc(-c3cc(NC(=O)C4CNC4)[nH]n3)c2)c1,1,1,0,1,1,1,8.181,8.181,8.181,75,75
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1c[nH]c2ccc(-c3nnn(CC4CC4)n3)cc12,1,1,0,1,1,1,8.179,8.179,8.179,77,77
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),NCCc1cn(CC2CC2)c2ccccc12,1,1,0,1,1,1,8.179,8.179,8.179,78,78
+scent_seh_seed44_m10,best_candidate,full,A,Williamson ether synthesis,ClCc1ccc(-c2nc3ccc(-c4cccc(NC[C@@H]5Cc6ccccc6CN5)c4)cc3o2)cc1,1,1,0,1,1,1,8.178,8.178,8.178,79,79
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)[C@@H]1Cc2ccccc2CN1,1,1,0,1,1,1,8.177,8.177,8.177,80,80
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc(-c2cccc(NCc3ccc4oc(C5CNC5)nc4c3)c2)cc1,1,1,0,1,1,1,8.177,8.177,8.177,81,81
+scent_seh_seed44_m10,best_candidate,full,A,SNAr (halo-heteroarene + amine),Fc1cc(-c2cccc(NCc3ccc4nc(C5CNC5)oc4c3)c2)ccn1,1,1,0,1,1,1,8.175,8.175,8.175,83,83
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1ccc(-c2ccnc(NCCc3c[nH]c4ccccc34)c2)cc1)C1CCN1,1,1,0,1,1,1,8.175,8.175,8.175,84,84
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2nc(-c3ccccc3NCc3ccc(-c4nnn(CC5CC5)n4)nc3)oc2c1,1,1,0,1,1,1,8.172,8.172,8.172,85,85
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(Cn2cc(CCNCc3ccc(CO[C@H]4CN5CCC4CC5)cc3)c3ccccc32)cc1,1,1,0,1,1,1,8.168,8.168,8.168,87,87
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1ccc(-c2cn(CC3CC3)nn2)cc1)Nc1cccc2cc[nH]c12,1,1,0,1,1,1,8.167,8.167,8.167,88,88
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),O=C(Nc1ccc(Br)cc1)Nc1ccnc2ccccc12,1,1,0,1,1,1,8.166,8.166,8.166,89,89
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(Nc1ccc(Br)cc1)C1CCN1,1,1,0,1,1,1,8.165,8.165,8.165,90,90
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1cccc2cc[nH]c12)[C@@H]1CCCN(C(=O)NCc2cn(CC3CC3)c3ccccc23)C1,1,1,0,1,1,1,8.162,8.162,8.162,91,91
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1cccc(-c2nc3ccc(-c4nnn(CC5CC5)n4)cc3[nH]2)c1,1,1,0,1,1,1,8.162,8.162,8.162,92,92
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),CC1(C)OB(c2ccc(NCc3ccc4oc(-c5ccc(CO[C@H]6CN7CCC6CC7)cc5)nc4c3)nc2)OC1(C)C,1,1,0,1,1,1,8.159,8.159,8.159,94,94
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(NCCc1cn(CC2CC2)c2ccccc12)c1cccc(B(O)O)c1,1,1,0,1,1,1,8.159,8.159,8.159,96,96
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1cncc(-c2ccc(NCc3ccc4[nH]c(C5CNC5)nc4c3)nc2)c1,1,1,0,1,1,1,8.158,8.158,8.158,97,97
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc(-c2cccc(NC(=O)c3ccc4nc(C5CNC5)[nH]c4c3)c2)cc1,1,1,0,1,1,1,8.157,8.157,8.157,98,98
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),c1ccc2c(NCc3ccc4nc(C5CNC5)oc4c3)ccnc2c1,1,1,0,1,1,1,8.156,8.156,8.156,99,99
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(Cn2nncc2CNC(=O)c2ccc3nc(C4CNC4)oc3c2)cc1,1,1,0,1,1,1,8.156,8.156,8.156,101,101
+scent_seh_seed44_m10,best_candidate,full,A,Buchwald-Hartwig amination,Brc1ccc2nc(-c3ccc(-c4nnn(CC5CC5)n4)nc3)oc2c1,1,1,0,1,1,1,8.155,8.155,8.155,102,102
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NCc1c[nH]c2ccccc12)[C@@H]1CCCN(C(=O)c2ccc(CO[C@H]3CN4CCC3CC4)cc2)C1,1,1,0,1,1,1,8.155,8.155,8.155,103,103
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(NCC2CCN2)c1,1,1,0,1,1,1,8.154,8.154,8.154,104,104
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1ccc(-c2ccc3[nH]ccc3c2)cc1)c1ccc(CO[C@H]2CN3CCC2CC3)cc1,1,1,0,1,1,1,8.154,8.154,8.154,105,105
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NC1CC1)c1ccc(CCl)cc1,1,1,0,1,1,1,8.152,8.152,8.152,106,106
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),NC1(C(=O)Nc2ccnc3ccccc23)CCC1,1,1,0,1,1,1,8.152,8.152,8.152,107,107
+scent_seh_seed44_m10,best_candidate,full,A,Buchwald-Hartwig amination,O=C(Nc1ccc(Br)cc1)C1CCN1,1,1,0,1,1,1,8.152,8.152,8.152,108,108
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1cn(CC2CC2)cn1,1,1,0,1,1,1,8.151,8.151,8.151,109,109
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)c1ccc2oc(-c3ccc4nc(-c5ccc6oc(C7CNC7)nc6c5)[nH]c4c3)nc2c1,1,1,0,1,1,1,8.15,8.15,8.15,110,110
+scent_seh_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,O=C(O)c1ccc2nc(-c3ccc4nc(-c5ccc(CO[C@H]6CN7CCC6CC7)cc5)oc4c3)[nH]c2c1,1,1,0,1,1,1,8.15,8.15,8.15,111,111
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1cccc(-c2ccc3oc(-c4ccc(CO[C@H]5CN6CCC5CC6)cc4)nc3c2)c1,1,1,0,1,1,1,8.15,8.15,8.15,112,112
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(NCc2ccc3oc([C@@H]4CCCN4)nc3c2)c1,1,1,0,1,1,1,8.149,8.149,8.149,113,113
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(COC[C@H]2CCCN2Cc2ccc3oc(C4CNC4)nc3c2)cc1,1,1,0,1,1,1,8.149,8.149,8.149,114,114
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),Brc1ccc2nc(-c3ccccc3CO[C@H]3CN4CCC3CC4)oc2c1,1,1,0,1,1,1,8.148,8.148,8.148,115,115
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1cccc2cc[nH]c12)c1cccc2oc(-c3ccc(CO[C@H]4CN5CCC4CC5)cc3)nc12,1,1,0,1,1,1,8.146,8.146,8.146,116,116
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Nc1cccc2ccn(CC3CC3)c12,1,1,0,1,1,1,8.146,8.146,8.146,117,117
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1cncc(-c2nnn(Cc3ccc(-c4nnn(CC5CC5)n4)cc3)n2)c1,1,1,0,1,1,1,8.143,8.143,8.143,118,118
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1nc(-c2ccc(NCc3cn(CC4CC4)c4ccccc34)nc2)cs1,1,1,0,1,1,1,8.143,8.143,8.143,119,119
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1cc(-c2cccc(-c3nc4ccccc4o3)c2)n[nH]1,1,1,0,1,1,1,8.14,8.14,8.14,121,121
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)c1cccc(C2NCCc3ccccc32)c1,1,1,0,1,1,1,8.14,8.14,8.14,122,122
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(NC1CC1)c1cccc(B(O)O)c1,1,1,0,1,1,1,8.135,8.135,8.135,124,124
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1cccc2cc[nH]c12)c1ccc(-c2nc3cc(-c4nnn(CC5CC5)n4)ccc3o2)cc1,1,1,0,1,1,1,8.135,8.135,8.135,125,125
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1cccc(-c2ccc3c(-c4nc5ccc(C(=O)NC6CC6)cc5o4)c[nH]c3c2)c1,1,1,0,1,1,1,8.134,8.134,8.134,126,126
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2nc(-c3ccc4nc(C5CCNCC5)[nH]c4c3)oc2c1,1,1,0,1,1,1,8.134,8.134,8.134,127,127
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1cc(-c2ccc3[nH]ccc3c2)c2oc(-c3ccc(CO[C@H]4CN5CCC4CC5)cc3)nc2c1,1,1,0,1,1,1,8.133,8.133,8.133,128,128
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),Nc1cccc(-c2ccc(NC(=O)C3CCN3)cc2)c1,1,1,0,1,1,1,8.133,8.133,8.133,129,129
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,c1cc(NCc2ccc(-c3nnn(CC4CC4)n3)nc2)c2c(c1)ccn2CC1CC1,1,1,0,1,1,1,8.13,8.13,8.13,131,131
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),NC1(c2nc3cc(-c4nnn(CC5CC5)n4)ccc3o2)CCC1,1,1,0,1,1,1,8.129,8.129,8.129,133,133
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1ccc2c(-c3nc4cc(-c5nnn(CC6CC6)n5)ccc4o3)c[nH]c2c1,1,1,0,1,1,1,8.129,8.129,8.129,134,134
+scent_seh_seed44_m10,best_candidate,full,A,SNAr (halo-heteroarene + amine),Fc1ccc(-c2nnnn2Cc2ccc(-c3nnn(CC4CC4)n3)cc2)cn1,1,1,0,1,1,1,8.129,8.129,8.129,135,135
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1ccc2c(ccn2Cc2cccc(-c3nnn(CC4CC4)n3)c2)c1,1,1,0,1,1,1,8.129,8.129,8.129,136,136
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(Nc1ccc(Br)cc1)c1ccc2nc(-c3ccc(CO[C@H]4CN5CCC4CC5)cc3)[nH]c2c1,1,1,0,1,1,1,8.128,8.128,8.128,137,137
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1ccc(NCc2ccc3nc(C4CNC4)[nH]c3c2)cc1,1,1,0,1,1,1,8.127,8.127,8.127,138,138
+scent_seh_seed44_m10,best_candidate,full,A,Buchwald-Hartwig amination,Brc1ccc2nc(-c3ccc4oc(C5CNC5)nc4c3)[nH]c2c1,1,1,0,1,1,1,8.127,8.127,8.127,139,139
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NCc1cn(CC2CC2)nn1)c1cccc(-c2c[nH]cn2)c1,1,1,0,1,1,1,8.126,8.126,8.126,140,140
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),NC1(c2nc3ccc(C(=O)NC4CC4)cc3[nH]2)CCC1,1,1,0,1,1,1,8.124,8.124,8.124,141,141
+scent_seh_seed44_m10,best_candidate,full,A,Buchwald-Hartwig amination,NCc1cn(CC2CC2)c2ccccc12,1,1,0,1,1,1,8.124,8.124,8.124,142,142
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1cc(NCc2ccc(-c3nnn(CC4CC4)n3)nc2)c2[nH]ccc2c1,1,1,0,1,1,1,8.124,8.124,8.124,143,143
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),O=C(NCCc1ccccc1Br)[C@@H]1Cc2ccccc2CN1,1,1,0,1,1,1,8.122,8.122,8.122,144,144
+scent_seh_seed44_m10,best_candidate,full,A,Benzoxazole formation,Nc1c(O)cccc1C(=O)Nc1cccc(-c2cn(CC3CC3)cn2)c1,1,1,0,1,1,1,8.121,8.121,8.121,145,145
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(NCc2cccc3oc(C4CNC4)nc23)c1,1,1,0,1,1,1,8.12,8.12,8.12,146,146
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccccc1CO[C@H]1CN2CCC1CC2,1,1,0,1,1,1,8.118,8.118,8.118,148,148
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (ketone),CC(=O)c1cccc(-c2cc(NC(=O)c3ccc(CO[C@H]4CN5CCC4CC5)cc3)[nH]n2)c1,1,1,0,1,1,1,8.117,8.117,8.117,149,149
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1ccc2nc(C3CNC3)oc2c1,1,1,0,1,1,1,8.117,8.117,8.117,151,151
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1cccc(N2CCN(C(=O)[C@@H]3Cc4ccccc4CN3)CC2)n1,1,1,0,1,1,1,8.116,8.116,8.116,153,153
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),BrCc1cccc(-c2nnn(CC3CC3)n2)c1,1,1,0,1,1,1,8.116,8.116,8.116,154,154
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1ccc(C(=O)NC2CC2)cc1,1,1,0,1,1,1,8.115,8.115,8.115,155,155
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(NCc1ccccc1)c1ccc(Cn2nnnc2-c2cccc(B(O)O)c2)cc1,1,1,0,1,1,1,8.114,8.114,8.114,156,156
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (ketone),O=C1CCN(C[C@@H]2Cc3ccccc3CN2)CC1,1,1,0,1,1,1,8.114,8.114,8.114,157,157
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc(-c2cn(Cc3ccc(-c4nnn(CC5CC5)n4)cc3)nn2)cc1,1,1,0,1,1,1,8.113,8.113,8.113,158,158
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1ccnc2ccccc12)c1ccc(CNc2ccc(-c3c[nH]cn3)cc2)cc1,1,1,0,1,1,1,8.113,8.113,8.113,159,159
+scent_seh_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,O=C(O)c1ccc2nc([C@@H]3C[C@@H](OCc4ccc(-c5nnn(CC6CC6)n5)cc4)CN3)[nH]c2c1,1,1,0,1,1,1,8.113,8.113,8.113,160,160
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1ccc(NCC2CCN2)cc1,1,1,0,1,1,1,8.113,8.113,8.113,161,161
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),CC1(C)OB(c2ccc(NCc3cccc(-c4nc5ccc(C(=O)NC6CC6)cc5o4)c3)nc2)OC1(C)C,1,1,0,1,1,1,8.112,8.112,8.112,162,162
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1cc(-c2cc(CNCc3c[nH]c4ccccc34)ccn2)cc(-c2nnn(CC3CC3)n2)c1,1,1,0,1,1,1,8.111,8.111,8.111,163,163
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NC1CC1)c1ccccc1CCl,1,1,0,1,1,1,8.11,8.11,8.11,164,164
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1cccc(-c2ccc(NCc3ccc4nc(C5CNC5)oc4c3)cc2)c1,1,1,0,1,1,1,8.11,8.11,8.11,165,165
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),CC1(C)OB(c2ccc(NCc3ccc4oc(-c5nc6ccccc6[nH]5)nc4c3)nc2)OC1(C)C,1,1,0,1,1,1,8.11,8.11,8.11,166,166
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc(-c2ccc(-c3nnn(CC4CC4)n3)s2)cc1,1,1,0,1,1,1,8.109,8.109,8.109,167,167
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),Brc1ccc2nc(-c3ccc(CNC45CC(C4)C5)cc3)oc2c1,1,1,0,1,1,1,8.108,8.108,8.108,168,168
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1cc(NCc2c[nH]c3ccc(-c4nnn(CC5CC5)n4)cc23)[nH]n1,1,1,0,1,1,1,8.107,8.107,8.107,169,169
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,Nc1cccc(-c2cccc(CNc3ccccn3)c2)c1,1,1,0,1,1,1,8.106,8.106,8.106,170,170
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(Nc2nc3ccccc3n2CC2CC2)c1,1,1,0,1,1,1,8.106,8.106,8.106,172,172
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1cc(CNc2ccc(-c3ccc4[nH]ccc4c3)cc2)c2nc(C3CNC3)oc2c1,1,1,0,1,1,1,8.105,8.105,8.105,173,173
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2[nH]c(-c3ccc4nc([C@H]5CCCN5)oc4c3)nc2c1,1,1,0,1,1,1,8.105,8.105,8.105,174,174
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(Cn2nncc2-c2ccc(NC(=O)C3CCN3)cc2)cc1,1,1,0,1,1,1,8.105,8.105,8.105,175,175
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1cccc2cc[nH]c12)[C@@H]1CCCN1Cc1ccc(-c2nnn(CC3CC3)n2)nc1,1,1,0,1,1,1,8.104,8.104,8.104,176,176
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),c1cc(-c2nnn(CC3CC3)n2)ccc1COCC1CNC1,1,1,0,1,1,1,8.103,8.103,8.103,177,177
+scent_seh_seed44_m10,best_candidate,full,A,Williamson ether synthesis,O=C(NCc1cn(CC2CC2)c2ccccc12)c1ccc(Cn2nnnc2-c2cccc(CBr)c2)cc1,1,1,0,1,1,1,8.103,8.103,8.103,178,178
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2nc(CNc3nnnn3-c3cccc(-c4nnn(CC5CC5)n4)c3)oc2c1,1,1,0,1,1,1,8.102,8.102,8.102,179,179
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(NCC2CNC2)c1,1,1,0,1,1,1,8.102,8.102,8.102,180,180
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NC1CC1)c1ccc2nc(-c3ncc[nH]3)oc2c1,1,1,0,1,1,1,8.102,8.102,8.102,181,181
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(Nc1ccc(Nc2cccc(B(O)O)c2)cc1)[C@@H]1Cc2ccccc2CN1,1,1,0,1,1,1,8.101,8.101,8.101,182,182
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1cc(-c2c[nH]cn2)cc(-c2nnn(CC3CC3)n2)c1,1,1,0,1,1,1,8.1,8.1,8.1,183,183
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc2[nH]c(-c3cccc(C(=O)NCc4cn(CC5CC5)nn4)c3)nc2c1,1,1,0,1,1,1,8.099,8.099,8.099,184,184
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(NC1CC1)c1ccccc1Cn1nnc(-c2ccc(B(O)O)s2)n1,1,1,0,1,1,1,8.098,8.098,8.098,185,185
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),c1cc2oc([C@H]3CCCN3)nc2cc1-c1nnn(CC2CC2)n1,1,1,0,1,1,1,8.098,8.098,8.098,187,187
+scent_seh_seed44_m10,best_candidate,full,A,Benzimidazole formation,Nc1ccc(-c2cccc(NC(=O)[C@@H](N)c3ccccc3)c2)cc1N,1,1,0,1,1,1,8.097,8.097,8.097,188,188
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc2oc(-c3ccc(Cn4cc(CCNC(=O)[C@@H]5Cc6ccccc6CN5)c5ccccc54)cc3)nc2c1,1,1,0,1,1,1,8.096,8.096,8.096,190,190
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,NCCc1cn(Cc2ccc(C3=NCCc4ccccc43)cc2)c2ccccc12,1,1,0,1,1,1,8.096,8.096,8.096,191,191
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=C(Nc1ccnc2ccccc12)C1CCNCC1,1,1,0,1,1,1,8.095,8.095,8.095,192,192
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1cccc(-c2nc3ccc(CNC45CC(C4)C5)cc3o2)c1,1,1,0,1,1,1,8.095,8.095,8.095,193,193
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1cccc(-c2nc3cc(-c4nnnn4CC4CC4)ccc3o2)c1,1,1,0,1,1,1,8.095,8.095,8.095,194,194
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1ccc2oc(-c3ccc(COCC4CNC4)cc3)nc2c1,1,1,0,1,1,1,8.094,8.094,8.094,195,195
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2oc([C@H]3CCCN3)nc2c1,1,1,0,1,1,1,8.094,8.094,8.094,196,196
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc2nc(-c3ccc(COCC4CNC4)cc3)oc2c1,1,1,0,1,1,1,8.091,8.091,8.091,197,197
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1nc(-c2ccc3c(ccn3CC3CC3)c2)c[nH]1,1,1,0,1,1,1,8.091,8.091,8.091,198,198
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1cccc2nc([C@@H]3CCCN3)oc12,1,1,0,1,1,1,8.09,8.09,8.09,199,199
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(-c2nnnn2CC2CC2)c1,1,1,0,1,1,1,8.09,8.09,8.09,200,200
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc(CO[C@H]2CN3CCC2CC3)cc1,1,1,0,1,1,1,8.09,8.09,8.09,201,201
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NCc1c[nH]c2ccccc12)c1ccc2nc(-c3ccccc3CO[C@H]3CN4CCC3CC4)[nH]c2c1,1,1,0,1,1,1,8.089,8.089,8.089,202,202
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc2[nH]c(-c3ccc(COCC4CNC4)cc3)nc2c1,1,1,0,1,1,1,8.089,8.089,8.089,203,203
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc(-c2ccc3oc(-c4ccccc4)nc3c2)cc1,1,1,0,1,1,1,8.089,8.089,8.089,204,204
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1cccc(-c2c[nH]nc2NCc2ccc(-c3nnn(CC4CC4)n3)nc2)c1,1,1,0,1,1,1,8.088,8.088,8.088,205,205
+scent_seh_seed44_m10,best_candidate,full,A,Urea formation (amine + amine),Nc1cc(NCc2cn(Cc3cccc(-c4nnn(CC5CC5)n4)c3)c3ccccc23)n[nH]1,1,1,0,1,1,1,8.088,8.088,8.088,206,206
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1cccc(-c2ccc(NCc3ccc(-c4nnn(CC5CC5)n4)nc3)cc2)c1,1,1,0,1,1,1,8.088,8.088,8.088,207,207
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc(CN(Cc2ccc(-c3nnn(CC4CC4)n3)nc2)C2CC2)cc1,1,1,0,1,1,1,8.087,8.087,8.087,208,208
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1cccc(N2CCC(c3nc4cc(-c5nnn(CC6CC6)n5)ccc4o3)CC2)n1,1,1,0,1,1,1,8.087,8.087,8.087,209,209
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)c1ccc2[nH]c(-c3cccc(-c4cc(NC(=O)C5CNC5)[nH]n4)c3)nc2c1,1,1,0,1,1,1,8.087,8.087,8.087,210,210
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(NC1CC1)c1ccc(CNc2cccc(B(O)O)c2)cc1,1,1,0,1,1,1,8.087,8.087,8.087,211,211
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1ccc(-c2cncc(-c3nnnn3Cc3ccc(-c4nnn(CC5CC5)n4)cc3)c2)cc1,1,1,0,1,1,1,8.087,8.087,8.087,212,212
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(C1CCN1)N1CC(c2nc3cc(NCc4c[nH]c5ccccc45)ccc3o2)C1,1,1,0,1,1,1,8.086,8.086,8.086,213,213
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc2nc([C@@H]3CCCN3Cc3ccc(-c4nnn(CC5CC5)n4)nc3)[nH]c2c1,1,1,0,1,1,1,8.085,8.085,8.085,214,214
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),Brc1cc(NCc2ccc(CO[C@H]3CN4CCC3CC4)cc2)[nH]n1,1,1,0,1,1,1,8.085,8.085,8.085,215,215
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1ccc2c(CNc3cc(-c4nc5cc(-c6nnnn6CC6CC6)ccc5o4)ccn3)c[nH]c2c1,1,1,0,1,1,1,8.085,8.085,8.085,216,216
+scent_seh_seed44_m10,best_candidate,full,A,Williamson ether synthesis,ClCc1ccc(CNC2(c3nc4ccc(-c5nnn(CC6CC6)n5)cc4[nH]3)CCC2)cc1,1,1,0,1,1,1,8.084,8.084,8.084,217,217
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1ccc2c(ccn2Cc2ccccc2-c2nnn(CC3CC3)n2)c1,1,1,0,1,1,1,8.084,8.084,8.084,218,218
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(Nc1ccnc2ccccc12)c1cccc(Nc2cccc(B(O)O)c2)n1,1,1,0,1,1,1,8.083,8.083,8.083,219,219
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(NCc2ccc3[nH]c(-c4ccccc4)nc3c2)c1,1,1,0,1,1,1,8.082,8.082,8.082,221,221
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)c1ccc2nc(-c3cccc(NCc4cn(CC5CC5)c5ccccc45)n3)oc2c1,1,1,0,1,1,1,8.082,8.082,8.082,222,222
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc2oc(-c3ccnc(NCc4cn(CC5CC5)nn4)c3)nc2c1,1,1,0,1,1,1,8.081,8.081,8.081,223,223
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(Nc1ccc(Br)cc1)Nc1cccc2ccn(CC3CC3)c12,1,1,0,1,1,1,8.081,8.081,8.081,224,224
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(NCc1ccccc1)c1ccc2nc(C3CNC3)oc2c1,1,1,0,1,1,1,8.08,8.08,8.08,225,225
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1cccc(-c2nc3cc(C(=O)NCc4cn(CC5CC5)nn4)ccc3o2)c1,1,1,0,1,1,1,8.078,8.078,8.078,226,226
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc(CNc2ccc(-c3cn(CC4CC4)nn3)cc2)cc1,1,1,0,1,1,1,8.077,8.077,8.077,227,227
+scent_seh_seed44_m10,best_candidate,full,A,Benzoxazole formation,O=C(O)c1ccc2nc(-c3cccnc3)oc2c1,1,1,0,1,1,1,8.077,8.077,8.077,228,228
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1ccc2oc(C3CCN3)nc2c1,1,1,0,1,1,1,8.076,8.076,8.076,229,229
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),c1ccc2c(c1)CCNC2c1c[nH]c2ccc(-c3nnn(CC4CC4)n3)cc12,1,1,0,1,1,1,8.076,8.076,8.076,230,230
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,Nc1cc(-c2cccc(-c3nnn(CC4CC4)n3)c2)n[nH]1,1,1,0,1,1,1,8.075,8.075,8.075,231,231
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NC12CC(C1)C2)c1ccc2oc(-c3cccc(NCCc4c[nH]c5ccccc45)n3)nc2c1,1,1,0,1,1,1,8.075,8.075,8.075,232,232
+scent_seh_seed44_m10,best_candidate,full,A,Williamson ether synthesis,O=C(Nc1ccnc2ccccc12)C1(NCc2ccc3nc(-c4ccc(CCl)cc4)[nH]c3c2)CCC1,1,1,0,1,1,1,8.074,8.074,8.074,233,233
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(Nc1cccc(B(O)O)c1)Nc1cccc2ccccc12,1,1,0,1,1,1,8.073,8.073,8.073,234,234
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc(-c2cccc(NC(=O)NCCc3cn(CC4CC4)c4ccccc34)c2)cc1,1,1,0,1,1,1,8.073,8.073,8.073,235,235
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1c[nH]c(-c2nc3cc(-c4nnn(CC5CC5)n4)ccc3o2)n1,1,1,0,1,1,1,8.072,8.072,8.072,236,236
+scent_seh_seed44_m10,best_candidate,full,A,Benzoxazole formation,Nc1ccc(C(=O)NCc2c[nH]c3ccccc23)cc1O,1,1,0,1,1,1,8.072,8.072,8.072,237,237
+scent_seh_seed44_m10,best_candidate,full,A,Urea formation (isocyanate + amine),O=C=Nc1ccc(-c2cccc(NCc3ccc4nc(-c5ccccc5)oc4c3)c2)cc1,1,1,0,1,1,1,8.072,8.072,8.072,238,238
+scent_seh_seed44_m10,best_candidate,full,A,Pictet-Spengler cyclisation,O=C(O)c1ccc2nc([C@H]3CCCN3Cc3ccc(-c4nnn(CC5CC5)n4)nc3)oc2c1,1,1,0,1,1,1,8.071,8.071,8.071,239,239
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(Cn2c(-c3nc4ccc(C(=O)NC5CC5)cc4o3)nc3ccccc32)cc1,1,1,0,1,1,1,8.071,8.071,8.071,240,240
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccccc1Cn1nnc(-c2ccc(-c3cc(NC(=O)C4CNC4)[nH]n3)s2)n1,1,1,0,1,1,1,8.07,8.07,8.07,241,241
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc(CN2CC(COCc3ccc(-c4nnn(CC5CC5)n4)cc3)C2)cc1,1,1,0,1,1,1,8.07,8.07,8.07,242,242
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NCc1c[nH]c2ccccc12)Nc1cccc(-c2cccc3nc(C4CNC4)oc23)c1,1,1,0,1,1,1,8.068,8.068,8.068,243,243
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(Cn2c(=O)cc(Cn3ccc4cccc(NC(=O)NC5CC5)c43)c3ccccc32)cc1,1,1,0,1,1,1,8.068,8.068,8.068,244,244
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc(CO[C@@H]2CCN(C(=O)C3CCN3)C2)cc1,1,1,0,1,1,1,8.067,8.067,8.067,245,245
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#CCNC(=O)c1ccc(-c2nc3ccc(C4=NCCc5ccccc54)cc3o2)cc1,1,1,0,1,1,1,8.067,8.067,8.067,246,246
+scent_seh_seed44_m10,best_candidate,full,A,Williamson ether synthesis,O=C(NCc1cn(Cc2cccc(-c3nnn(CC4CC4)n3)c2)nn1)c1ccc(CCl)cc1,1,1,0,1,1,1,8.066,8.066,8.066,247,247
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(Nc1cc(-c2cccc(NCc3ccc(C(=O)O)cc3)c2)n[nH]1)Nc1cccc2ccccc12,1,1,0,1,1,1,8.064,8.064,8.064,249,249
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1ccc2oc(C3CNC3)nc2c1,1,1,0,1,1,1,8.064,8.064,8.064,250,250
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccc(Cn2nnc(-c3cccc(-c4cc(NCC5CCN5)[nH]n4)c3)n2)cc1,1,1,0,1,1,1,8.063,8.063,8.063,251,251
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1cccc2nc(-c3cccc(C(=O)NC4CC4)c3)oc12,1,1,0,1,1,1,8.063,8.063,8.063,252,252
+scent_seh_seed44_m10,best_candidate,full,A,Urea formation (isocyanate + amine),Nc1cccc(-c2ccc(NCc3ccc(CO[C@H]4CN5CCC4CC5)cc3)cc2)c1,1,1,0,1,1,1,8.063,8.063,8.063,253,253
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NCc1cn(CC2CC2)c2ccccc12)c1ccc(-c2nnn(Cc3cc(=O)[nH]c4ccccc34)n2)nc1,1,1,0,1,1,1,8.063,8.063,8.063,254,254
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1ccc(-c2ccc(NCc3ccc4oc(C5CCN5)nc4c3)cc2)cc1,1,1,0,1,1,1,8.062,8.062,8.062,255,255
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(Nc1ccnc2ccccc12)c1cccc(B(O)O)c1,1,1,0,1,1,1,8.062,8.062,8.062,256,256
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),Brc1ccc2oc(C3CNC3)nc2c1,1,1,0,1,1,1,8.062,8.062,8.062,257,257
+scent_seh_seed44_m10,best_candidate,full,A,Buchwald-Hartwig amination,Brc1ccc(NCc2ccc3nc(-c4ccc(CO[C@H]5CN6CCC5CC6)cc4)[nH]c3c2)cc1,1,1,0,1,1,1,8.061,8.061,8.061,258,258
+scent_seh_seed44_m10,best_candidate,full,A,Benzoxazole formation,O=C(O)C1CCN(Cc2c[nH]c3ccc(-c4nnn(CC5CC5)n4)cc23)CC1,1,1,0,1,1,1,8.061,8.061,8.061,259,259
+scent_seh_seed44_m10,best_candidate,full,A,Urea formation (amine + amine),Nc1cccc(-c2ccc(Nc3ccc(NC(=O)C4CCN4)cc3)cc2)c1,1,1,0,1,1,1,8.061,8.061,8.061,260,260
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1ccc(NC23CC(C2)C3)cc1,1,1,0,1,1,1,8.06,8.06,8.06,261,261
+scent_seh_seed44_m10,best_candidate,full,A,Buchwald-Hartwig amination,O=C(Nc1ccc(Br)cc1)c1ccc2nc(C3CCN3)oc2c1,1,1,0,1,1,1,8.06,8.06,8.06,262,262
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),Nc1cccc(-c2cccc3[nH]c(C4CNC4)nc23)c1,1,1,0,1,1,1,8.06,8.06,8.06,263,263
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NCCc1c[nH]c2ccccc12)N1CCC[C@@H]1COCc1ccc(-c2nnn(CC3CC3)n2)cc1,1,1,0,1,1,1,8.059,8.059,8.059,264,264
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1ccc(C(=O)Nc2ccc(-c3cn(CC4CC4)cn3)cc2)cc1,1,1,0,1,1,1,8.058,8.058,8.058,265,265
+scent_seh_seed44_m10,best_candidate,full,A,Williamson ether synthesis,ClCc1ccccc1-c1nc2cc(-c3ccc(-c4nnn(CC5CC5)n4)s3)ccc2o1,1,1,0,1,1,1,8.058,8.058,8.058,266,266
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),c1ccc2c(NCc3ccc(CO[C@H]4CN5CCC4CC5)cc3)ccnc2c1,1,1,0,1,1,1,8.058,8.058,8.058,267,267
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)C1(Nc2cc(-c3cccc(-c4nnn(CC5CC5)n4)c3)ccn2)CCC1,1,1,0,1,1,1,8.057,8.057,8.057,268,268
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling (pinacol boronate),CC1(C)OB(c2ccc(NCc3ccc4oc(C5CNC5)nc4c3)nc2)OC1(C)C,1,1,0,1,1,1,8.057,8.057,8.057,269,269
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(-c2nc3cc(CNC45CC(C4)C5)ccc3o2)c1,1,1,0,1,1,1,8.056,8.056,8.056,270,270
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(Nc1nc(F)nc2[nH]cnc12)c1ccc(-c2nc3ccc(C(=O)NC4CC4)cc3o2)cc1,1,1,0,1,1,1,8.056,8.056,8.056,271,271
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(CNC23CC(C2)C3)cn1,1,1,0,1,1,1,8.056,8.056,8.056,272,272
+scent_seh_seed44_m10,best_candidate,full,A,Triazole formation (alkyne + alkyl halide),C#Cc1ccc2nc(-c3ccc(CNC45CC(C4)C5)cc3)[nH]c2c1,1,1,0,1,1,1,8.055,8.055,8.055,273,273
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,c1cc(-c2nnn(CC3CC3)n2)ccc1Cn1nnc(-c2ccc3oc(C4CCNCC4)nc3c2)n1,1,1,0,1,1,1,8.054,8.054,8.054,274,274
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(CN2CC(COCc3ccc(C4=NCCc5ccccc54)cc3)C2)cn1,1,1,0,1,1,1,8.054,8.054,8.054,275,275
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(CN2CCC(c3nc4cc(C(=O)Nc5ccnc6ccccc56)ccc4o3)CC2)cn1,1,1,0,1,1,1,8.053,8.053,8.053,276,276
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1cccc(-c2cnc(F)nc2)c1,1,1,0,1,1,1,8.052,8.052,8.052,277,277
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,Nc1cccc(-c2cn(Cc3cccc(-c4nnn(CC5CC5)n4)c3)cn2)c1,1,1,0,1,1,1,8.051,8.051,8.051,278,278
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)[C@H]1CCCN1Cc1ccc2nc(-c3ccc(CO[C@H]4CN5CCC4CC5)cc3)[nH]c2c1,1,1,0,1,1,1,8.051,8.051,8.051,279,279
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),c1cc(Nc2cc(-c3nc4ccc(-c5nnn(CC6CC6)n5)cc4[nH]3)ccn2)c2[nH]ccc2c1,1,1,0,1,1,1,8.051,8.051,8.051,280,280
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(Nc1cccc(B(O)O)c1)[C@@H]1Cc2ccccc2CN1,1,1,0,1,1,1,8.051,8.051,8.051,281,281
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1cccc2nc(C3CNC3)[nH]c12,1,1,0,1,1,1,8.05,8.05,8.05,282,282
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1ccc(O)c(NCc2ccc(-c3cn(CC4CC4)cn3)cc2)c1,1,1,0,1,1,1,8.05,8.05,8.05,283,283
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1ccc(Nc2ccc3nc(C4CCN4)[nH]c3c2)cc1,1,1,0,1,1,1,8.05,8.05,8.05,284,284
+scent_seh_seed44_m10,best_candidate,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NC1CC1)c1cccc(-c2nc3cc(-c4ccc5[nH]ccc5c4)ccc3o2)c1,1,1,0,1,1,1,8.05,8.05,8.05,285,285
+scent_seh_seed44_m10,best_candidate,full,A,Reductive amination (aldehyde),O=Cc1c[nH]c2ccc(-c3nnnn3CC3CC3)cc12,1,1,0,1,1,1,8.049,8.049,8.049,286,286
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,O=C(Cn1nnnc1-c1cccc(B(O)O)c1)c1cccc(-c2nnn(CC3CC3)n2)c1,1,1,0,1,1,1,8.048,8.048,8.048,287,287
+scent_seh_seed44_m10,best_candidate,full,A,Benzoxazole formation,Nc1ccc(C(=O)N2CC[C@@H](OCc3ccc(-c4nnn(CC5CC5)n4)cc3)C2)cc1O,1,1,0,1,1,1,8.048,8.048,8.048,288,288
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(-c2nc3ccc(-c4nnnn4CC4CC4)cc3[nH]2)c1,1,1,0,1,1,1,8.048,8.048,8.048,289,289
+scent_seh_seed44_m10,best_candidate,full,A,Benzimidazole formation,Nc1ccc(-c2nnnn2Cc2ccc(-c3nnn(CC4CC4)n3)cc2)cc1N,1,1,0,1,1,1,8.048,8.048,8.048,290,290
+scent_seh_seed44_m10,best_candidate,full,A,Williamson ether synthesis,O=C(NCc1nc2cc(-c3nnn(CC4CC4)n3)ccc2o1)c1ccccc1CCl,1,1,0,1,1,1,8.047,8.047,8.047,291,291
+scent_seh_seed44_m10,best_candidate,full,A,Tetrazole formation (nitrile + alkyl halide),N#Cc1cncc(-c2cn(CC3CC3)nn2)c1,1,1,0,1,1,1,8.046,8.046,8.046,292,292
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),O=C(O)c1cccc(CN(C(=O)c2ccc(CO[C@H]3CN4CCC3CC4)cc2)C23CC(C2)C3)c1,1,1,0,1,1,1,8.046,8.046,8.046,293,293
+scent_seh_seed44_m10,best_candidate,full,A,Direct acid -> amine (reductive),NC1(C(=O)Nc2ccc(-c3cnc(F)nc3)cc2)CCC1,1,1,0,1,1,1,8.046,8.046,8.046,294,294
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1cccc2nc([C@H]3CCCN3)[nH]c12,1,1,0,1,1,1,8.046,8.046,8.046,295,295
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,Brc1ccc(NC[C@@H]2Cc3ccccc3CN2)cc1,1,1,0,1,1,1,8.046,8.046,8.046,296,296
+scent_seh_seed44_m10,best_candidate,full,A,Suzuki coupling,OB(O)c1cccc(C2=NCCc3ccccc32)c1,1,1,0,1,1,1,8.044,8.044,8.044,297,297
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,NCCc1ccccc1-c1cccc(-c2nnn(CC3CC3)n2)c1,1,1,0,1,1,1,8.044,8.044,8.044,298,298
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,c1cc(-c2nnnn2Cc2ccc(-c3nnn(CC4CC4)n3)cc2)ccc1CO[C@@H]1CCNC1,1,1,0,1,1,1,8.043,8.043,8.043,299,299
+scent_seh_seed44_m10,best_candidate,full,A,Amide coupling,O=C(O)c1ccccc1Cn1nnc(-c2ccc3oc(-c4ccc(CO[C@H]5CN6CCC5CC6)cc4)nc3c2)n1,1,1,0,1,1,1,8.043,8.043,8.043,300,300
+scent_seh_seed44_m10,best_candidate,full,B,Suzuki coupling,,57,57,0,36,52,2,8.044,8.107,8.309,13,297
+scent_seh_seed44_m10,best_candidate,full,B,Amide coupling,,51,51,0,26,47,3,8.043,8.106,8.356,4,300
+scent_seh_seed44_m10,best_candidate,full,B,N-alkylation (azole N-H + alkyl halide),,44,44,0,6,44,4,8.05,8.129,8.404,1,285
+scent_seh_seed44_m10,best_candidate,full,B,Direct acid -> amine (reductive),,36,36,0,19,36,3,8.046,8.14,8.305,14,294
+scent_seh_seed44_m10,best_candidate,full,B,Tetrazole formation (nitrile + alkyl halide),,22,22,0,2,22,2,8.046,8.094,8.246,34,292
+scent_seh_seed44_m10,best_candidate,full,B,Reductive amination (aldehyde),,16,16,0,12,15,3,8.049,8.124,8.265,28,286
+scent_seh_seed44_m10,best_candidate,full,B,Triazole formation (alkyne + alkyl halide),,12,12,0,1,12,1,8.055,8.145,8.396,2,273
+scent_seh_seed44_m10,best_candidate,full,B,Suzuki coupling (pinacol boronate),,12,12,0,8,12,2,8.057,8.117,8.315,10,269
+scent_seh_seed44_m10,best_candidate,full,B,Buchwald-Hartwig amination,,11,11,0,8,10,2,8.06,8.152,8.351,5,262
+scent_seh_seed44_m10,best_candidate,full,B,Williamson ether synthesis,,9,9,0,2,9,3,8.047,8.084,8.326,8,291
+scent_seh_seed44_m10,best_candidate,full,B,Benzoxazole formation,,9,9,0,7,8,2,8.048,8.117,8.259,29,288
+scent_seh_seed44_m10,best_candidate,full,B,Benzimidazole formation,,8,8,0,5,7,2,8.048,8.172,8.232,39,290
+scent_seh_seed44_m10,best_candidate,full,B,Pictet-Spengler cyclisation,,4,4,0,1,4,1,8.071,8.131,8.204,55,239
+scent_seh_seed44_m10,best_candidate,full,B,Urea formation (amine + amine),,3,3,0,2,3,2,8.061,8.088,8.231,41,260
+scent_seh_seed44_m10,best_candidate,full,B,SNAr (halo-heteroarene + amine),,2,2,0,2,2,1,8.129,8.152,8.175,83,135
+scent_seh_seed44_m10,best_candidate,full,B,Reductive amination (ketone),,2,2,0,2,2,1,8.114,8.116,8.117,149,157
+scent_seh_seed44_m10,best_candidate,full,B,Urea formation (isocyanate + amine),,2,2,0,2,2,2,8.063,8.067,8.072,238,253
+scent_seh_seed44_m10,hub_batching_modes10_reward,at100rxn,A,Amide coupling,O=C(O)C1Cc2ccccc2CN1,31,31,0,31,1,3,5.02,6.146,7.154,1,60
+scent_seh_seed44_m10,hub_batching_modes10_reward,at100rxn,A,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,29,29,0,29,1,3,5.038,6.106,6.906,5,59
+scent_seh_seed44_m10,hub_batching_modes10_reward,at100rxn,A,Urea formation (amine + amine),Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,10,10,0,10,1,2,6.361,6.853,7.406,68,79
+scent_seh_seed44_m10,hub_batching_modes10_reward,at100rxn,A,Buchwald-Hartwig amination,Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,9,9,0,9,1,1,6.434,7.504,7.814,61,77
+scent_seh_seed44_m10,hub_batching_modes10_reward,at100rxn,B,Amide coupling,,31,31,0,31,1,3,5.02,6.146,7.154,1,60
+scent_seh_seed44_m10,hub_batching_modes10_reward,at100rxn,B,Direct acid -> amine (reductive),,29,29,0,29,1,3,5.038,6.106,6.906,5,59
+scent_seh_seed44_m10,hub_batching_modes10_reward,at100rxn,B,Urea formation (amine + amine),,10,10,0,10,1,2,6.361,6.853,7.406,68,79
+scent_seh_seed44_m10,hub_batching_modes10_reward,at100rxn,B,Buchwald-Hartwig amination,,9,9,0,9,1,1,6.434,7.504,7.814,61,77
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Buchwald-Hartwig amination,O=C(Nc1ccc(Br)cc1)C1CCN1,48,44,4,44,1,4,5.047,6.543,7.449,222,286
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Amide coupling,O=C(O)C1Cc2ccccc2CN1,31,31,0,31,1,3,5.02,6.146,7.154,1,60
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,29,29,0,29,1,3,5.038,6.106,6.906,5,59
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Urea formation (amine + amine),NC12CC(C1)C2,21,20,1,20,1,2,5.027,5.688,6.502,151,171
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Reductive amination (aldehyde),O=Cc1cn(CC2CC2)c2ccccc12,21,19,2,19,1,2,5.281,6.517,7.459,183,203
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),O=C(O)c1ccccc1COC1CN2CCC1CC2,18,18,0,18,1,2,5.112,6.713,7.267,204,221
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Urea formation (amine + amine),O=C(Nc1ccc(Br)cc1)C1CCN1,18,17,1,17,1,2,5.046,6.047,6.646,245,287
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Buchwald-Hartwig amination,Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,13,13,0,13,1,1,5.16,7.417,7.814,61,86
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Urea formation (amine + amine),Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,13,13,0,13,1,2,5.765,6.721,7.406,68,85
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NC1CC1)c1ccc(CCl)cc1,13,13,0,13,1,1,5.053,5.955,7.289,127,139
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Buchwald-Hartwig amination,Nc1cccc2ccn(CC3CC3)c12,12,12,0,12,1,1,5.032,7.073,7.76,88,107
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Buchwald-Hartwig amination,Nc1ccc(-c2cn(CC3CC3)nn2)cc1,11,11,0,11,1,1,5.81,6.915,8.2,108,126
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Buchwald-Hartwig amination,NC12CC(C1)C2,11,11,0,11,1,1,6.601,7.153,7.646,140,150
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Suzuki coupling,OB(O)c1cccc(-c2nnn(CC3CC3)n2)c1,11,11,0,11,1,1,5.098,7.08,8.077,172,182
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,9,9,0,9,1,2,5.343,6.717,7.905,87,104
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Urea formation (amine + amine),Nc1ccc(-c2cn(CC3CC3)nn2)cc1,8,8,0,8,1,2,6.229,7.12,8.001,112,124
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Direct acid -> amine (reductive),O=C(O)c1ccc(COC2CN3CCC2CC3)cc1,7,7,0,7,1,2,7.216,7.304,7.532,291,300
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,A,Amide coupling,O=C(O)c1ccc(COC2CN3CCC2CC3)cc1,6,6,0,6,1,2,7.323,7.522,7.958,288,296
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,B,Buchwald-Hartwig amination,,95,91,4,58,5,5,5.032,6.769,8.2,61,286
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,B,Urea formation (amine + amine),,69,67,2,41,5,4,5.027,6.247,8.001,68,287
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,B,Direct acid -> amine (reductive),,54,54,0,41,3,3,5.038,6.324,7.532,5,300
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,B,Amide coupling,,37,37,0,33,2,3,5.02,6.205,7.958,1,296
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,B,Reductive amination (aldehyde),,21,19,2,19,1,2,5.281,6.517,7.459,183,203
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,B,N-alkylation (azole N-H + alkyl halide),,13,13,0,13,1,1,5.053,5.955,7.289,127,139
+scent_seh_seed44_m10,hub_batching_modes10_reward,full,B,Suzuki coupling,,11,11,0,11,1,1,5.098,7.08,8.077,172,182
+scent_seh_seed44_m10,hub_batching_modes10_group,at100rxn,A,Amide coupling,O=C(O)C1Cc2ccccc2CN1,33,33,0,33,1,3,5.02,6.152,7.154,1,33
+scent_seh_seed44_m10,hub_batching_modes10_group,at100rxn,A,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,27,27,0,27,1,3,5.038,6.019,6.906,34,60
+scent_seh_seed44_m10,hub_batching_modes10_group,at100rxn,A,Buchwald-Hartwig amination,Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,12,12,0,12,1,1,5.939,7.422,7.814,61,72
+scent_seh_seed44_m10,hub_batching_modes10_group,at100rxn,A,Urea formation (amine + amine),Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,7,7,0,7,1,2,6.822,6.881,7.406,73,79
+scent_seh_seed44_m10,hub_batching_modes10_group,at100rxn,B,Amide coupling,,33,33,0,33,1,3,5.02,6.152,7.154,1,33
+scent_seh_seed44_m10,hub_batching_modes10_group,at100rxn,B,Direct acid -> amine (reductive),,27,27,0,27,1,3,5.038,6.019,6.906,34,60
+scent_seh_seed44_m10,hub_batching_modes10_group,at100rxn,B,Buchwald-Hartwig amination,,12,12,0,12,1,1,5.939,7.422,7.814,61,72
+scent_seh_seed44_m10,hub_batching_modes10_group,at100rxn,B,Urea formation (amine + amine),,7,7,0,7,1,2,6.822,6.881,7.406,73,79
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Buchwald-Hartwig amination,O=C(Nc1ccc(Br)cc1)C1CCN1,49,45,4,45,1,4,5.047,6.507,7.449,224,272
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Amide coupling,O=C(O)C1Cc2ccccc2CN1,33,33,0,33,1,3,5.02,6.152,7.154,1,33
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),O=C(O)C1Cc2ccccc2CN1,27,27,0,27,1,3,5.038,6.019,6.906,34,60
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Urea formation (amine + amine),NC12CC(C1)C2,21,20,1,20,1,2,5.027,5.688,6.502,153,173
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Reductive amination (aldehyde),O=Cc1cn(CC2CC2)c2ccccc12,21,19,2,19,1,2,5.281,6.517,7.459,185,205
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Direct acid -> amine (reductive),O=C(O)c1ccccc1COC1CN2CCC1CC2,18,18,0,18,1,2,5.112,6.713,7.267,206,223
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Urea formation (amine + amine),O=C(Nc1ccc(Br)cc1)C1CCN1,17,16,1,16,1,2,5.046,6.008,6.646,273,289
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Urea formation (amine + amine),Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,16,16,0,16,1,2,5.691,6.584,7.406,73,88
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,N-alkylation (azole N-H + alkyl halide),O=C(NC1CC1)c1ccc(CCl)cc1,13,13,0,13,1,1,5.053,5.955,7.289,129,141
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Buchwald-Hartwig amination,Nc1ccc(-c2nnn(CC3CC3)n2)cc1N,12,12,0,12,1,1,5.939,7.422,7.814,61,72
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Buchwald-Hartwig amination,Nc1cccc2ccn(CC3CC3)c12,12,12,0,12,1,1,5.032,7.073,7.76,98,109
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Buchwald-Hartwig amination,Nc1ccc(-c2cn(CC3CC3)nn2)cc1,11,11,0,11,1,1,5.81,6.915,8.2,110,120
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Buchwald-Hartwig amination,NC12CC(C1)C2,11,11,0,11,1,1,6.601,7.153,7.646,142,152
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Suzuki coupling,OB(O)c1cccc(-c2nnn(CC3CC3)n2)c1,11,11,0,11,1,1,5.098,7.08,8.077,174,184
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Amide coupling,O=C(O)c1ccc(COC2CN3CCC2CC3)cc1,11,11,0,11,1,2,6.39,7.323,7.958,290,300
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Urea formation (amine + amine),Nc1cccc2ccn(CC3CC3)c12,9,9,0,9,1,2,5.343,6.717,7.905,89,97
+scent_seh_seed44_m10,hub_batching_modes10_group,full,A,Urea formation (amine + amine),Nc1ccc(-c2cn(CC3CC3)nn2)cc1,8,8,0,8,1,2,6.229,7.12,8.001,121,128
+scent_seh_seed44_m10,hub_batching_modes10_group,full,B,Buchwald-Hartwig amination,,95,91,4,58,5,5,5.032,6.769,8.2,61,272
+scent_seh_seed44_m10,hub_batching_modes10_group,full,B,Urea formation (amine + amine),,71,69,2,42,5,4,5.027,6.239,8.001,73,289
+scent_seh_seed44_m10,hub_batching_modes10_group,full,B,Direct acid -> amine (reductive),,45,45,0,36,2,3,5.038,6.234,7.267,34,223
+scent_seh_seed44_m10,hub_batching_modes10_group,full,B,Amide coupling,,44,44,0,37,2,3,5.02,6.405,7.958,1,300
+scent_seh_seed44_m10,hub_batching_modes10_group,full,B,Reductive amination (aldehyde),,21,19,2,19,1,2,5.281,6.517,7.459,185,205
+scent_seh_seed44_m10,hub_batching_modes10_group,full,B,N-alkylation (azole N-H + alkyl halide),,13,13,0,13,1,1,5.053,5.955,7.289,129,141
+scent_seh_seed44_m10,hub_batching_modes10_group,full,B,Suzuki coupling,,11,11,0,11,1,1,5.098,7.08,8.077,174,184

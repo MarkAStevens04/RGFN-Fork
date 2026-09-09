@@ -1,0 +1,59 @@
+named_reaction,n_molecules,n_class_a_subgroups,largest_class_a,mean_class_a,cell,arm,slice
+Direct acid -> amine (reductive),39,3,21,13.0,scent_drd2_seed44_par200,hub_batching,at100rxn
+Esterification,10,2,9,5.0,scent_drd2_seed44_par200,hub_batching,at100rxn
+Reductive amination (ketone),9,2,8,4.5,scent_drd2_seed44_par200,hub_batching,at100rxn
+Buchwald-Hartwig amination,6,2,5,3.0,scent_drd2_seed44_par200,hub_batching,at100rxn
+Amide coupling,4,2,2,2.0,scent_drd2_seed44_par200,hub_batching,at100rxn
+SNAr (activated aryl fluoride + amine),4,1,4,4.0,scent_drd2_seed44_par200,hub_batching,at100rxn
+Reductive amination (aldehyde),4,1,4,4.0,scent_drd2_seed44_par200,hub_batching,at100rxn
+Pictet-Spengler cyclisation,1,1,1,1.0,scent_drd2_seed44_par200,hub_batching,at100rxn
+Urea formation (amine + amine),1,1,1,1.0,scent_drd2_seed44_par200,hub_batching,at100rxn
+Direct acid -> amine (reductive),117,14,21,8.36,scent_drd2_seed44_par200,hub_batching,full
+Reductive amination (ketone),45,9,14,5.0,scent_drd2_seed44_par200,hub_batching,full
+Pictet-Spengler cyclisation,26,10,6,2.6,scent_drd2_seed44_par200,hub_batching,full
+Amide coupling,24,11,4,2.18,scent_drd2_seed44_par200,hub_batching,full
+Buchwald-Hartwig amination,23,10,5,2.3,scent_drd2_seed44_par200,hub_batching,full
+Reductive amination (aldehyde),19,8,5,2.38,scent_drd2_seed44_par200,hub_batching,full
+Esterification,12,3,9,4.0,scent_drd2_seed44_par200,hub_batching,full
+Urea formation (amine + amine),11,5,4,2.2,scent_drd2_seed44_par200,hub_batching,full
+SNAr (activated aryl fluoride + amine),9,4,4,2.25,scent_drd2_seed44_par200,hub_batching,full
+Benzimidazole formation (N-substituted),4,3,2,1.33,scent_drd2_seed44_par200,hub_batching,full
+N-alkylation (azole N-H + alkyl halide),3,2,2,1.5,scent_drd2_seed44_par200,hub_batching,full
+SNAr (halo-heteroarene + amine),2,1,2,2.0,scent_drd2_seed44_par200,hub_batching,full
+Williamson ether synthesis,1,1,1,1.0,scent_drd2_seed44_par200,hub_batching,full
+Benzoxazole formation,1,1,1,1.0,scent_drd2_seed44_par200,hub_batching,full
+Benzimidazole formation,1,1,1,1.0,scent_drd2_seed44_par200,hub_batching,full
+aza-Michael addition (enone),1,1,1,1.0,scent_drd2_seed44_par200,hub_batching,full
+Tetrazole formation (nitrile + alkyl halide),1,1,1,1.0,scent_drd2_seed44_par200,hub_batching,full
+Reductive amination (aldehyde),12,12,1,1.0,scent_drd2_seed44_par200,best_candidate,at100rxn
+Direct acid -> amine (reductive),5,5,1,1.0,scent_drd2_seed44_par200,best_candidate,at100rxn
+Reductive amination (ketone),4,4,1,1.0,scent_drd2_seed44_par200,best_candidate,at100rxn
+Functional-group interconversion (Br -> Cl),3,3,1,1.0,scent_drd2_seed44_par200,best_candidate,at100rxn
+Pictet-Spengler cyclisation,3,3,1,1.0,scent_drd2_seed44_par200,best_candidate,at100rxn
+Functional-group interconversion (Br -> I),1,1,1,1.0,scent_drd2_seed44_par200,best_candidate,at100rxn
+Reductive amination (aldehyde),110,110,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Direct acid -> amine (reductive),63,63,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Reductive amination (ketone),34,34,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Pictet-Spengler cyclisation,25,25,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Functional-group interconversion (Br -> Cl),22,22,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Functional-group interconversion (Br -> I),22,22,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Sonogashira coupling,8,8,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+aza-Michael addition (enone),6,6,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Functional-group interconversion (Br -> Oh),5,5,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Functional-group interconversion (Br -> Sh),3,3,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Functional-group interconversion (Cl -> I),1,1,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Functional-group interconversion (Cl -> Br),1,1,1,1.0,scent_drd2_seed44_par200,best_candidate,full
+Direct acid -> amine (reductive),47,4,23,11.75,scent_drd2_seed44_par200,hub_batching_par200,at100rxn
+Esterification,10,2,9,5.0,scent_drd2_seed44_par200,hub_batching_par200,at100rxn
+Buchwald-Hartwig amination,7,2,6,3.5,scent_drd2_seed44_par200,hub_batching_par200,at100rxn
+Amide coupling,6,3,2,2.0,scent_drd2_seed44_par200,hub_batching_par200,at100rxn
+Reductive amination (aldehyde),4,1,4,4.0,scent_drd2_seed44_par200,hub_batching_par200,at100rxn
+Urea formation (amine + amine),3,2,2,1.5,scent_drd2_seed44_par200,hub_batching_par200,at100rxn
+Direct acid -> amine (reductive),148,21,23,7.05,scent_drd2_seed44_par200,hub_batching_par200,full
+Buchwald-Hartwig amination,42,13,13,3.23,scent_drd2_seed44_par200,hub_batching_par200,full
+Amide coupling,25,9,4,2.78,scent_drd2_seed44_par200,hub_batching_par200,full
+Reductive amination (aldehyde),24,8,8,3.0,scent_drd2_seed44_par200,hub_batching_par200,full
+Reductive amination (ketone),24,2,14,12.0,scent_drd2_seed44_par200,hub_batching_par200,full
+Urea formation (amine + amine),14,7,4,2.0,scent_drd2_seed44_par200,hub_batching_par200,full
+Pictet-Spengler cyclisation,12,3,5,4.0,scent_drd2_seed44_par200,hub_batching_par200,full
+Esterification,11,3,9,3.67,scent_drd2_seed44_par200,hub_batching_par200,full

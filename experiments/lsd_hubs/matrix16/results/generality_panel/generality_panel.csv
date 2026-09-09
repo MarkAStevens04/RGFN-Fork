@@ -1,0 +1,12 @@
+cell,label,target,ctrl,hub,best,edge,thr,policy,k
+scent_seh,SCENT  free-frag+K20,sEH,False,1.303,3.383,2.5963161933998467,7.0,free_frag,20
+scent_seh_naive,SCENT  naive,sEH,False,2.78,3.383,1.216906474820144,7.0,reward,0
+rxnflow_seh,RxnFlow  naive,sEH,False,2.446,3.0,1.2264922322158625,7.0,reward,0
+rgfn_seh,RGFN  naive,sEH,False,2.993,4.0,1.3364517206815905,7.0,reward,0
+fraggfn_cap9_seh,FragGFN  naive  (control),sEH,True,2.307,8.0,3.4677069787602948,7.0,reward,0
+scent_drd2,SCENT  free-frag+K20,DRD2,False,1.16,3.673,3.1663793103448277,0.5,free_frag,20
+scent_drd2_naive,SCENT  naive,DRD2,False,2.653,3.673,1.3844704108556352,0.5,reward,0
+rxnflow_drd2,RxnFlow  naive,DRD2,False,1.833,2.935,1.6012002182214948,0.5,reward,0
+rgfn_drd2,RGFN  naive,DRD2,False,1.197,3.843,3.2105263157894735,0.5,reward,0
+fraggfn_drd2,FragGFN cap-6  naive  (control),DRD2,True,1.173,4.68,3.989769820971867,0.5,reward,0
+fraggfn_cap9_drd2,FragGFN cap-9  naive  (superseded),DRD2,True,3.984,8.0,2.0080321285140563,0.5,reward,0

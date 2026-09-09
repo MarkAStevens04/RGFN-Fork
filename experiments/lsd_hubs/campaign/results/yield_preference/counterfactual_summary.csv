@@ -1,0 +1,5 @@
+cell,target,n_pairs,mean_recorded_amine,mean_counterfactual_amide,delta,pct_amine_higher
+seed43,seh,4000,6.34521,6.42007,-0.07486,38.0
+seed44,seh,4000,6.14515,6.23735,-0.0922,35.52
+drd2_seed43,drd2,4000,0.5585,0.34784,0.21065,93.83
+drd2_seed44,drd2,4000,0.57658,0.33191,0.24467,94.4

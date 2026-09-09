@@ -1,0 +1,6 @@
+strategy,reactions,reactions_per_mode,hubs_used,reward_gen_calls,compute_total_s,median_reward,ct_setup_s,ct_enumeration_s,ct_reward_gen_s,ct_flow_extract_s,ct_mode_selection_s
+best-candidate,929,3.097,254,0,1.1254,8.103,0.0,0.0,0.0,0.0,1.1254
+free-frag (K=0),367,1.223,57,315539,7471.7133,7.302,26.848,5941.2978,366.2061,1135.6883,1.6731
+pre-select K=50,378,1.26,29,158660,3732.2506,7.343,26.848,2950.9393,186.2244,567.3001,0.9389
+pre-select K=100,422,1.407,19,85165,2004.4515,7.436,26.848,1578.5404,101.5897,296.4384,1.035
+pre-select K=200,556,1.853,10,52865,1218.8783,7.511,26.848,945.0363,63.3874,182.6563,0.9503
